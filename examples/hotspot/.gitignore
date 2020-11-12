@@ -1,0 +1,8 @@
+hotspot
+build
+output.*
+hotspot.*
+1
+*.json
+
+!hotspot.cpp

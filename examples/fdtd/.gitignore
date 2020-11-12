@@ -1,0 +1,9 @@
+fdtd
+output.*
+fdtd.*
+1
+*.json
+*.csv
+*.gz
+
+!fdtd.cpp
