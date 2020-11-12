@@ -7,7 +7,7 @@
 #SBATCH --mem=8GB
 #SBATCH --time=00:15:00
 
-source /cm/shared/opt/intel_oneapi/beta-09/setvars.sh
+source /cm/shared/opt/intel_oneapi/beta-10/setvars.sh
 module load nalla_pcie compiler/GCC 
 
 export HARDWARE=1

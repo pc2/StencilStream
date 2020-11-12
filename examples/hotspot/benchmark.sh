@@ -6,7 +6,7 @@
 #SBATCH --mail-type=ALL
 #SBATCH --time=30:00
 
-source /cm/shared/opt/intel_oneapi/beta-09/setvars.sh
+source /cm/shared/opt/intel_oneapi/beta-10/setvars.sh
 module load nalla_pcie compiler/GCC 
 
 export STEP_SIZE=200

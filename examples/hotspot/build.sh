@@ -6,7 +6,7 @@
 #SBATCH --exclusive
 #SBATCH --time=3-00:00:00
 
-source /cm/shared/opt/intel_oneapi/beta-09/setvars.sh
+source /cm/shared/opt/intel_oneapi/beta-10/setvars.sh
 module load nalla_pcie compiler/GCC 
 
 function archive_build {
@@ -17,6 +17,6 @@ function archive_build {
 }
 
 export HARDWARE=1
-export PIPELINE_LEN=40
+export PIPELINE_LEN=250
 
 time make hotspot && archive_build

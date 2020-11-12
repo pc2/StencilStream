@@ -8,7 +8,7 @@
 CC = dpcpp
 STENCIL_PATH = ./
 
-ARGS = -fintelfpga -Xsv -std=c++17 -DSTENCIL_INDEX_WIDTH=64 -I$(STENCIL_PATH) -lpthread -lz
+ARGS = -fintelfpga -Xsv -std=c++17 -DSTENCIL_INDEX_WIDTH=64 -DFDTD_BURST_SIZE=1024 -I$(STENCIL_PATH) -lpthread -lz
 
 ifdef EBROOTGCC
 	ARGS += --gcc-toolchain=$(EBROOTGCC)

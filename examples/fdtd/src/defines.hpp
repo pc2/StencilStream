@@ -61,7 +61,7 @@ constexpr stencil::index_t stencil_radius = 1;
 const cl::sycl::range<2> working_range(n_columns, n_rows);
 
 // Number of samples in a frame block.
-constexpr uindex_t frame_block_size = STENCIL_BURST_SIZE / sizeof(float_vec);
+constexpr uindex_t frame_block_size = FDTD_BURST_SIZE / sizeof(float_vec);
 static_assert(n_rows * n_columns % frame_block_size == 0);
 constexpr uindex_t blocks_per_frame = n_rows * n_columns / frame_block_size;
 
