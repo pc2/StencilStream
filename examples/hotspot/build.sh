@@ -12,8 +12,8 @@ module load nalla_pcie compiler/GCC
 function archive_build {
     tar -cf - hotspot hotspot.prj/reports | ~/pigz > lean.tar.gz &
     tar -cf - hotspot hotspot.prj | ~/pigz > full.tar.gz &
-    rm -r hotspot.prj
     wait
+    rm -r hotspot.prj
 }
 
 export HARDWARE=1

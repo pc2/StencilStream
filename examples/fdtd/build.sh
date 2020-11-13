@@ -12,8 +12,8 @@ module load nalla_pcie compiler/GCC lib/zlib devel/Boost
 function archive_build {
     tar -cf - fdtd fdtd.prj/reports | ~/pigz > lean.tar.gz &
     tar -cf - fdtd fdtd.prj | ~/pigz > full.tar.gz &
-    rm -r fdtd.prj
     wait
+    rm -r fdtd.prj
 }
 
 export HARDWARE=1

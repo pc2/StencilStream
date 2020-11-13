@@ -7,7 +7,7 @@
 module load compiler/GCC
 
 export RODINIA=$PC2DATA/hpc-prf-hpmesh/joo/rodinia/openmp/hotspot/hotspot
-export STEP_SIZE=200
+export STEP_SIZE=250
 export RUNS=`seq 1 100`
 
 echo "value_derivation = {"

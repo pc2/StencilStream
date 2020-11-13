@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -p fpgasyn
 #SBATCH -o build.log
-#SBATCH -J main-build
+#SBATCH -J conway-build
 #SBATCH --mail-type=ALL
 #SBATCH --mem=75GB
 #SBATCH --time=3-00:00:00
@@ -12,8 +12,8 @@ module load nalla_pcie compiler/GCC
 export HARDWARE=1
 export PIPELINE_LEN=10
 
-time make main
-tar -cf - main main.prj/reports | ~/pigz > lean.tar.gz &
-tar -cf - main main.prj | ~/pigz > full.tar.gz &
+time make conway
+tar -cf - conway conway.prj/reports | ~/pigz > lean.tar.gz &
+tar -cf - conway conway.prj | ~/pigz > full.tar.gz &
 wait
-rm -r main.prj
+rm -r conway.prj

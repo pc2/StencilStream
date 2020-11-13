@@ -57,7 +57,7 @@ void write_output(buffer<vec<FLOAT, 2>, 2> vect, string file)
     {
         for (index_t c = 0; c < n_columns; c++)
         {
-            out << i << "\t" << vect_ac[id<2>(r, c)][0] << std::endl;
+            out << i << "\t" << vect_ac[id<2>(c, r)][0] << std::endl;
             i++;
         }
     }
@@ -89,7 +89,7 @@ read_input(string temp_file, string power_file, range<2> buffer_range)
             {
                 temp >> tmp_temp;
                 power >> tmp_power;
-                vect_ac[id<2>(r, c)] = vec<FLOAT, 2>(tmp_temp, tmp_power);
+                vect_ac[id<2>(c, r)] = vec<FLOAT, 2>(tmp_temp, tmp_power);
             }
         }
     }
@@ -147,7 +147,7 @@ int main(int argc, char **argv)
         usage(argc, argv);
     if ((n_columns = atoi(argv[2])) <= 0)
         usage(argc, argv);
-    if ((sim_time = atoi(argv[3])) < 0)
+    if ((sim_time = atoi(argv[3])) <= 0)
         usage(argc, argv);
 
     /* read initial temperatures and input power	*/
