@@ -187,6 +187,30 @@ private:
         return in_buffer;
     }
 
+    class BufferEventGroup
+    {
+        std::deque<cl::sycl::event> events;
+        std::optional<cl::sycl::buffer<T, 2>> buffer;
+
+    public:
+        BufferEventGroup(cl::sycl::buffer<T, 2> buffer) : events(), buffer(buffer) {}
+
+        void wait()
+        {
+            while (!events.empty())
+            {
+                events.back().wait();
+                events.pop_back();
+            }
+            buffer.reset();
+        }
+
+        void push(cl::sycl::event event)
+        {
+            events.push_front(event);
+        }
+    };
+
     template <typename ExecutionKernel>
     cl::sycl::buffer<T, 2> feed_grid_to_worker(cl::sycl::buffer<T, 2> in_buffer, uindex_t n_passes)
     {
@@ -196,7 +220,7 @@ private:
         using InputKernel = IOKernel<T, n_blocks / 2, block_size, true, ExecutionKernel>;
         using OutputKernel = IOKernel<T, n_blocks / 2, block_size, false, ExecutionKernel>;
 
-        std::queue<cl::sycl::buffer<T, 2>> buffers;
+        std::queue<BufferEventGroup> groups;
 
         // Submit the InputKernel with one half of the in_buffer each.
         for (uindex_t half = 0; half < 2; half++)
@@ -205,17 +229,23 @@ private:
                 in_buffer,
                 cl::sycl::id<2>(half * n_blocks / 2, 0),
                 cl::sycl::range<2>(n_blocks / 2, block_size));
-            InputKernel::submit(queue, half_buffer);
-            buffers.push(half_buffer);
+            BufferEventGroup group(half_buffer);
+
+            group.push(InputKernel::submit(queue, half_buffer));
+
+            groups.push(group);
         }
 
         // Feed the output of the execution kernel back to it for every additional grid pass.
         for (uindex_t half = 0; half < 2 * (n_passes - 1); half++)
         {
             cl::sycl::buffer<T, 2> half_buffer(cl::sycl::range<2>(n_blocks / 2, block_size));
-            OutputKernel::submit(queue, half_buffer);
-            InputKernel::submit(queue, half_buffer);
-            buffers.push(half_buffer);
+            BufferEventGroup group(half_buffer);
+
+            group.push(OutputKernel::submit(queue, half_buffer));
+            group.push(InputKernel::submit(queue, half_buffer));
+
+            groups.push(group);
         }
 
         // Collect the final output in a separate buffer.
@@ -227,14 +257,18 @@ private:
                 out_buffer,
                 cl::sycl::id<2>(half * n_blocks / 2, 0),
                 cl::sycl::range<2>(n_blocks / 2, block_size));
-            OutputKernel::submit(queue, half_buffer);
-            buffers.push(half_buffer);
+            BufferEventGroup group(half_buffer);
+
+            group.push(OutputKernel::submit(queue, half_buffer));
+
+            groups.push(group);
         }
 
         // Wait for all kernels to finish and deallocate their buffers in the process.
-        while (!buffers.empty())
+        while (!groups.empty())
         {
-            buffers.pop();
+            groups.back().wait();
+            groups.pop();
         }
 
         return out_buffer;
@@ -250,11 +284,12 @@ private:
         if (grid_width == max_grid_width && grid_height == max_grid_height)
         {
             queue.submit([&](cl::sycl::handler &cgh) {
-                auto out_buffer_ac = out_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
-                auto orig_buffer_ac = orig_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
+                     auto out_buffer_ac = out_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
+                     auto orig_buffer_ac = orig_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
 
-                cgh.copy(out_buffer_ac, orig_buffer_ac);
-            });
+                     cgh.copy(out_buffer_ac, orig_buffer_ac);
+                 })
+                .wait();
         }
         else
         {
