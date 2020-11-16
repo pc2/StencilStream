@@ -146,4 +146,6 @@ struct Stencil2DInfo
      */
     uindex_t pipeline_position = 0;
 };
+
+using sync_buffer = cl::sycl::buffer<uint8_t, 1>;
 } // namespace stencil

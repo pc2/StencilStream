@@ -187,14 +187,53 @@ private:
         return in_buffer;
     }
 
+    /**
+     * Manager for a single half-buffer.
+     * 
+     * It is used to either create or derive the half-buffer, submit the kernel to the queue, synchronize it to other kernel submissions, and wait for it's completion.
+     */
     class BufferEventGroup
     {
         std::deque<cl::sycl::event> events;
-        std::optional<cl::sycl::buffer<T, 2>> buffer;
+        std::deque<sync_buffer> sync_buffers;
+        cl::sycl::buffer<T, 2> half_buffer;
 
     public:
-        BufferEventGroup(cl::sycl::buffer<T, 2> buffer) : events(), buffer(buffer) {}
+        /**
+         * Create a group with an anonymous half-buffer.
+         * 
+         * The new half-buffer isn't accessible outside of this group and only used to store intermediate values.
+         */
+        BufferEventGroup() : events(), sync_buffers(), half_buffer(cl::sycl::range<2>(n_blocks / 2, block_size)) {}
 
+        /**
+         * Create a group with a derived half-buffer.
+         * 
+         * The new half-buffer is either the upper or the lower half of the given, full buffer, depending on `half`. If `half` is 0, the upper half of the buffer is used, if `half` is 1, the lower half of the buffer is used.
+         */
+        BufferEventGroup(cl::sycl::buffer<T, 2> buffer, uindex_t half) : events(), sync_buffers(), half_buffer(buffer, cl::sycl::id<2>(half * n_blocks / 2, 0), cl::sycl::range<2>(n_blocks / 2, block_size)) {
+            assert(half == 1 || half == 0);
+        }
+
+        /**
+         * Submit the IO kernel to the queue.
+         * 
+         * This will use the previously created or derive half-buffer for operation and synchronize it with the given sync buffer.
+         * 
+         * The sync buffer will be replaced with a new one. Using the new sync buffer for further submissions assures that these following submissions will be executed after this one.
+         */
+        template <typename IOKernel>
+        void submit(cl::sycl::queue queue, sync_buffer &sync)
+        {
+            sync_buffer next_sync(cl::sycl::range<1>(1));
+            events.push_front(IOKernel::submit(queue, half_buffer, sync, next_sync));
+            sync_buffers.push_front(sync);
+            sync = next_sync;
+        }
+
+        /**
+         * Wait for all submissions to finish. 
+         */
         void wait()
         {
             while (!events.empty())
@@ -202,12 +241,6 @@ private:
                 events.back().wait();
                 events.pop_back();
             }
-            buffer.reset();
-        }
-
-        void push(cl::sycl::event event)
-        {
-            events.push_front(event);
         }
     };
 
@@ -222,29 +255,23 @@ private:
 
         std::queue<BufferEventGroup> groups;
 
+        sync_buffer input_sync(cl::sycl::range<1>(1));
+        sync_buffer output_sync(cl::sycl::range<1>(1));
+
         // Submit the InputKernel with one half of the in_buffer each.
         for (uindex_t half = 0; half < 2; half++)
         {
-            cl::sycl::buffer<T, 2> half_buffer(
-                in_buffer,
-                cl::sycl::id<2>(half * n_blocks / 2, 0),
-                cl::sycl::range<2>(n_blocks / 2, block_size));
-            BufferEventGroup group(half_buffer);
-
-            group.push(InputKernel::submit(queue, half_buffer));
-
+            BufferEventGroup group(in_buffer, half);
+            group.template submit<InputKernel>(queue, input_sync);
             groups.push(group);
         }
 
         // Feed the output of the execution kernel back to it for every additional grid pass.
         for (uindex_t half = 0; half < 2 * (n_passes - 1); half++)
         {
-            cl::sycl::buffer<T, 2> half_buffer(cl::sycl::range<2>(n_blocks / 2, block_size));
-            BufferEventGroup group(half_buffer);
-
-            group.push(OutputKernel::submit(queue, half_buffer));
-            group.push(InputKernel::submit(queue, half_buffer));
-
+            BufferEventGroup group;
+            group.template submit<OutputKernel>(queue, output_sync);
+            group.template submit<InputKernel>(queue, input_sync);
             groups.push(group);
         }
 
@@ -253,14 +280,8 @@ private:
 
         for (uindex_t half = 0; half < 2; half++)
         {
-            cl::sycl::buffer<T, 2> half_buffer(
-                out_buffer,
-                cl::sycl::id<2>(half * n_blocks / 2, 0),
-                cl::sycl::range<2>(n_blocks / 2, block_size));
-            BufferEventGroup group(half_buffer);
-
-            group.push(OutputKernel::submit(queue, half_buffer));
-
+            BufferEventGroup group(out_buffer, half);
+            group.template submit<OutputKernel>(queue, output_sync);
             groups.push(group);
         }
 

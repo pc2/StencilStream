@@ -77,10 +77,20 @@ public:
         }
     }
 
-    static cl::sycl::event submit(cl::sycl::queue queue, cl::sycl::buffer<T, 2> buffer)
+    /**
+     * Submit the IO kernel to the queue.
+     * 
+     * Depending on `input`, the kernel with either send values from `buffer` to the execution kernel or write values from the execution kernel to the buffer. To support both, the buffer is accessed in read/write mode.
+     * 
+     * The `prev_sync_buffer` and `next_sync_buffer` are used to synchronized multiple submissions of the IO kernel. The `prev_sync_buffer` is accessed in read mode and the `next_sync_buffer` is accessed in write mode, which means that the submission won't be executed before a previous submission released our `prev_sync_buffer`. The same goes for the next submissions. No memory operations are actually executed on these buffers.
+     */
+    static cl::sycl::event submit(cl::sycl::queue queue, cl::sycl::buffer<T, 2> buffer, sync_buffer prev_sync_buffer, sync_buffer next_sync_buffer)
     {
         return queue.submit([&](cl::sycl::handler &cgh) {
             IOKernel kernel(buffer, cgh);
+            auto prev_sync_ac = prev_sync_buffer.get_access<cl::sycl::access::mode::read>();
+            auto next_sync_ac = next_sync_buffer.get_access<cl::sycl::access::mode::write>();
+
             cgh.single_task<class InputKernel>(kernel);
         });
     }
