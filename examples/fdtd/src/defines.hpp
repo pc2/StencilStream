@@ -49,30 +49,29 @@ constexpr float sqrt_2 = 1.4142135623730951;
 constexpr float dt = (dx / (c0 * sqrt_2)) * 0.99;
 
 // Number of values in a vector cell.
-constexpr uindex_t vector_len = 2;
+constexpr uindex_t vector_len = 8;
 typedef cl::sycl::vec<float, vector_len> float_vec;
-typedef cl::sycl::vec<double, vector_len> double_vec;
 
 /* stencil parameters */
-constexpr uindex_t n_rows = 4096;
+constexpr uindex_t n_logical_rows = 4096;
+constexpr uindex_t n_buffer_rows = n_logical_rows / vector_len;
 constexpr uindex_t n_logical_columns = 4096;
-constexpr uindex_t n_columns = n_logical_columns / vector_len;
+constexpr uindex_t n_buffer_columns = n_logical_columns;
 constexpr stencil::index_t stencil_radius = 1;
-const cl::sycl::range<2> working_range(n_columns, n_rows);
 
 // Number of samples in a frame block.
 constexpr uindex_t frame_block_size = FDTD_BURST_SIZE / sizeof(float_vec);
-static_assert(n_rows * n_columns % frame_block_size == 0);
-constexpr uindex_t blocks_per_frame = n_rows * n_columns / frame_block_size;
+static_assert(n_buffer_rows * n_buffer_columns % frame_block_size == 0);
+constexpr uindex_t blocks_per_frame = n_buffer_rows * n_buffer_columns / frame_block_size;
 
 // Default radius of the cavity in dx.
-constexpr double default_radius = 80.0;
-constexpr double default_tau = 100e-15;
-constexpr double default_frequency = 121.5e12;
+constexpr float default_radius = 80.0;
+constexpr float default_tau = 100e-15;
+constexpr float default_frequency = 121.5e12;
 
 // Coordinates of the cavity center in dx.
-constexpr uindex_t mid_y = n_columns / 2;
-constexpr uindex_t mid_x = n_rows / 2;
+constexpr uindex_t mid_y = n_logical_columns / 2;
+constexpr uindex_t mid_x = n_logical_rows / 2;
 
 // Collection time for a single frame in dx.
 constexpr uindex_t dt_collection = STENCIL_PIPELINE_LEN;
@@ -130,7 +129,7 @@ struct Parameters
     }
 
     // Radius of the cavity in dx.
-    double disk_radius;
+    float disk_radius;
 
     // Timescale (?) for the source wave in s.
     float tau() const
