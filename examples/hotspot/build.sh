@@ -17,6 +17,6 @@ function archive_build {
 }
 
 export HARDWARE=1
-export PIPELINE_LEN=250
+export PIPELINE_LEN=300
 
 time make hotspot && archive_build
