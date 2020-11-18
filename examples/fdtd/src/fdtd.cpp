@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 
     std::cout << "Simulating..." << std::endl;
 
-    StencilExecutor<FDTDCell, stencil_radius, n_buffer_columns, n_buffer_rows, FDTD_BURST_SIZE> executor(fpga_queue);
+    StencilExecutor<FDTDCell, stencil_radius, n_columns, n_rows, FDTD_BURST_SIZE> executor(fpga_queue);
     executor.set_buffer(FDTDKernel::setup_cell_buffer(fpga_queue));
     executor.set_generations(2 * parameters.n_time_steps);
     event comp_event = executor.run(FDTDKernel(parameters));

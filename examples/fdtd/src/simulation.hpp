@@ -35,7 +35,7 @@ struct FDTDCell
 
 class FDTDKernel
 {
-    float disk_radius;
+    double disk_radius;
     float tau;
     float omega;
     float t0;
@@ -48,7 +48,7 @@ public:
 
     static buffer<FDTDCell, 2> setup_cell_buffer(cl::sycl::queue queue)
     {
-        buffer<FDTDCell, 2> cell_buffer(range<2>(n_buffer_columns, n_buffer_rows));
+        buffer<FDTDCell, 2> cell_buffer(working_range);
 
         queue.submit([&](cl::sycl::handler &cgh) {
             FDTDCell new_cell;
@@ -71,17 +71,17 @@ public:
     {
         FDTDCell cell = stencil[ID(0, 0)];
 
-        float_vec center_cell_row;
+        double_vec center_cell_column;
 #pragma unroll
         for (uindex_t i = 0; i < vector_len; i++)
         {
-            center_cell_row[i] = vector_len * info.center_cell_id.r + i;
+            center_cell_column[i] = double(vector_len * info.center_cell_id.c + i);
         }
-        float_vec center_cell_column = float_vec(info.center_cell_id.c);
+        double_vec center_cell_row = double_vec(info.center_cell_id.r);
 
-        float_vec a = center_cell_row - mid_y;
-        float_vec b = center_cell_column - mid_x;
-        float_vec distance = cl::sycl::sqrt(a * a + b * b);
+        double_vec a = center_cell_row - double(mid_y);
+        double_vec b = center_cell_column - double(mid_x);
+        double_vec distance = cl::sycl::sqrt(a * a + b * b);
 
         float_vec ca, cb, da, db;
 #pragma unroll
@@ -109,43 +109,39 @@ public:
 
         if ((info.pipeline_position & 0b1) == 0)
         {
-            float_vec left_neighbours, top_neighbours;
-            left_neighbours = stencil[ID(-1, 0)].hz;
-            top_neighbours = stencil[ID(0, 0)].hz;
+            float_vec left_neighbors = stencil[ID(0, 0)].hz;
 #pragma unroll
             for (uindex_t i = 0; i < vector_len - 1; i++)
             {
-                top_neighbours[i + 1] = top_neighbours[i];
+                left_neighbors[i + 1] = left_neighbors[i];
             }
-            top_neighbours[0] = stencil[ID(0, -1)].hz[vector_len - 1];
+            left_neighbors[0] = stencil[ID(-1, 0)].hz[vector_len - 1];
 
             cell.ex *= ca;
-            cell.ex += cb * (stencil[ID(0, 0)].hz - top_neighbours);
+            cell.ex += cb * (stencil[ID(0, 0)].hz - stencil[ID(0, -1)].hz);
 
             cell.ey *= ca;
-            cell.ey += cb * (left_neighbours - stencil[ID(0, 0)].hz);
+            cell.ey += cb * (left_neighbors - stencil[ID(0, 0)].hz);
         }
         else
         {
-            float_vec right_neighbours, bottom_neighbours;
-            right_neighbours = stencil[ID(1, 0)].ey;
-            bottom_neighbours = stencil[ID(0, 0)].ex;
+            float_vec right_neighbors = stencil[ID(0, 0)].ey;
 #pragma unroll
             for (uindex_t i = 0; i < vector_len - 1; i++)
             {
-                bottom_neighbours[i] = bottom_neighbours[i + 1];
+                right_neighbors[i] = right_neighbors[i + 1];
             }
-            bottom_neighbours[vector_len - 1] = stencil[ID(0, 1)].ex[0];
+            right_neighbors[vector_len - 1] = stencil[ID(1, 0)].ey[0];
 
             cell.hz *= da;
-            cell.hz += db * (bottom_neighbours - stencil[ID(0, 0)].ex + stencil[ID(0, 0)].ey - right_neighbours);
+            cell.hz += db * (stencil[ID(0, 1)].ex - stencil[ID(0, 0)].ex + stencil[ID(0, 0)].ey - right_neighbors);
 
             uindex_t field_generation = info.cell_generation >> 1;
             float current_time = field_generation * dt;
             if (current_time < t_cutoff)
             {
                 float wave_progress = (current_time - t0) / tau;
-                cell.hz += cl::sycl::cos(omega * current_time) * cl::sycl::exp(-1 * wave_progress * wave_progress);
+                cell.hz += float_vec(cl::sycl::cos(omega * current_time) * cl::sycl::exp(-1 * wave_progress * wave_progress));
             }
 
             cell.hz_sum += cell.hz * cell.hz;
