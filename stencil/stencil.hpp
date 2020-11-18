@@ -165,14 +165,21 @@ private:
         uindex_t grid_height = orig_buffer.get_range()[1];
         cl::sycl::buffer<T, 2> in_buffer(cl::sycl::range<2>(max_grid_width, max_grid_height));
 
-        auto orig_buffer_ac = orig_buffer.template get_access<cl::sycl::access::mode::read>();
-        auto in_buffer_ac = in_buffer.template get_access<cl::sycl::access::mode::discard_write>();
-
-        for (uindex_t c = 0; c < grid_width; c++)
+        if (grid_width == max_grid_width && grid_height == max_grid_height)
         {
-            for (uindex_t r = 0; r < grid_height; r++)
+            in_buffer = orig_buffer;
+        }
+        else
+        {
+            auto orig_buffer_ac = orig_buffer.template get_access<cl::sycl::access::mode::read>();
+            auto in_buffer_ac = in_buffer.template get_access<cl::sycl::access::mode::discard_write>();
+
+            for (uindex_t c = 0; c < grid_width; c++)
             {
-                in_buffer_ac[c][r] = orig_buffer_ac[c][r];
+                for (uindex_t r = 0; r < grid_height; r++)
+                {
+                    in_buffer_ac[c][r] = orig_buffer_ac[c][r];
+                }
             }
         }
 
@@ -204,8 +211,7 @@ private:
          * 
          * The new half-buffer is either the upper or the lower half of the given, full buffer, depending on `half`. If `half` is 0, the upper half of the buffer is used, if `half` is 1, the lower half of the buffer is used.
          */
-        BufferEventGroup(cl::sycl::buffer<T, 2> buffer, uindex_t half) : events(), sync_buffers(), half_buffer(buffer, cl::sycl::id<2>(half * n_blocks / 2, 0), cl::sycl::range<2>(n_blocks / 2, block_size))
-        {
+        BufferEventGroup(cl::sycl::buffer<T, 2> buffer, uindex_t half) : events(), sync_buffers(), half_buffer(buffer, cl::sycl::id<2>(half * n_blocks / 2, 0), cl::sycl::range<2>(n_blocks / 2, block_size)) {
             assert(half == 1 || half == 0);
         }
 
@@ -296,14 +302,27 @@ private:
 
         out_buffer = out_buffer.template reinterpret<T, 2>(cl::sycl::range<2>(max_grid_width, max_grid_height));
 
-        auto out_buffer_ac = out_buffer.template get_access<cl::sycl::access::mode::read>();
-        auto orig_buffer_ac = orig_buffer.template get_access<cl::sycl::access::mode::discard_write>();
-
-        for (uindex_t c = 0; c < grid_width; c++)
+        if (grid_width == max_grid_width && grid_height == max_grid_height)
         {
-            for (uindex_t r = 0; r < grid_height; r++)
+            queue.submit([&](cl::sycl::handler &cgh) {
+                     auto out_buffer_ac = out_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
+                     auto orig_buffer_ac = orig_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
+
+                     cgh.copy(out_buffer_ac, orig_buffer_ac);
+                 })
+                .wait();
+        }
+        else
+        {
+            auto out_buffer_ac = out_buffer.template get_access<cl::sycl::access::mode::read>();
+            auto orig_buffer_ac = orig_buffer.template get_access<cl::sycl::access::mode::discard_write>();
+
+            for (uindex_t c = 0; c < grid_width; c++)
             {
-                orig_buffer_ac[c][r] = out_buffer_ac[c][r];
+                for (uindex_t r = 0; r < grid_height; r++)
+                {
+                    orig_buffer_ac[c][r] = out_buffer_ac[c][r];
+                }
             }
         }
     }
