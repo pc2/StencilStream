@@ -8,4 +8,7 @@
 
 source /cm/shared/opt/intel_oneapi/beta-10/setvars.sh
 module load nalla_pcie compiler/GCC lib/zlib devel/Boost
-./fdtd -t 64000 -c 160
+
+mkdir -p output
+cd output
+../fdtd -t 60000 -c 60
