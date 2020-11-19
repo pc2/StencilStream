@@ -238,6 +238,90 @@ private:
         }
     };
 
+    /**
+     * Manager for all enqueued kernel submissions.
+     */
+    class GroupQueue
+    {
+        std::deque<BufferEventGroup> groups;
+
+        /**
+         * Return the newest, latest group, or none if it doesn't exist.
+         */
+        std::optional<BufferEventGroup> latest_group()
+        {
+            if (groups.empty())
+            {
+                return std::nullopt;
+            }
+            else
+            {
+                return groups.front();
+            }
+        }
+
+    public:
+        /**
+         * Create a new group queue.
+         */
+        GroupQueue() : groups() {}
+
+        /**
+         * Create a new group with an anonymous buffer.
+         * 
+         * See BufferEventGroup() for details.
+         */
+        void new_group()
+        {
+            groups.push_front(BufferEventGroup());
+        }
+
+        /**
+         * Create a new group with access to one half of the buffer.
+         * 
+         * See BufferEventGroup(cl::sycl::buffer<T, 2>, uindex_t) for details.
+         */
+        void new_group(cl::sycl::buffer<T, 2> buffer, uindex_t half)
+        {
+            groups.push_front(BufferEventGroup(buffer, half));
+        }
+
+        /**
+         * Wait for all submissions to complete and de-allocate their buffers.
+         */
+        void wait()
+        {
+            while (!groups.empty())
+            {
+                groups.back().wait();
+                groups.pop_back();
+            }
+        }
+
+        /**
+         * Submit a new IO kernel invocation.
+         * 
+         * See BufferEventGroup::submit for details. Fails if no group has been created by throwing std::bad_optional_access.
+         */
+        template <typename IOKernel>
+        void submit(cl::sycl::queue queue, sync_buffer &sync)
+        {
+            BufferEventGroup latest_group = this->latest_group().value();
+            try
+            {
+                // Try to submit the kernel invocation.
+                latest_group.template submit<IOKernel>(queue, sync);
+            }
+            catch (cl::sycl::nd_range_error e)
+            {
+                // If the buffer allocation fails, wait for all previous invocations,
+                // De-allocate their buffers and try again.
+                wait();
+                latest_group.template submit<IOKernel>(queue, sync);
+            }
+        }
+    };
+
     template <typename ExecutionKernel>
     cl::sycl::buffer<T, 2> feed_grid_to_worker(cl::sycl::buffer<T, 2> in_buffer, uindex_t n_passes)
     {
@@ -247,7 +331,7 @@ private:
         using InputKernel = IOKernel<T, n_blocks / 2, block_size, true, ExecutionKernel>;
         using OutputKernel = IOKernel<T, n_blocks / 2, block_size, false, ExecutionKernel>;
 
-        std::queue<BufferEventGroup> groups;
+        GroupQueue groups;
 
         sync_buffer input_sync(cl::sycl::range<1>(1));
         sync_buffer output_sync(cl::sycl::range<1>(1));
@@ -255,18 +339,16 @@ private:
         // Submit the InputKernel with one half of the in_buffer each.
         for (uindex_t half = 0; half < 2; half++)
         {
-            BufferEventGroup group(in_buffer, half);
-            group.template submit<InputKernel>(queue, input_sync);
-            groups.push(group);
+            groups.new_group(in_buffer, half);
+            groups.template submit<InputKernel>(queue, input_sync);
         }
 
         // Feed the output of the execution kernel back to it for every additional grid pass.
         for (uindex_t half = 0; half < 2 * (n_passes - 1); half++)
         {
-            BufferEventGroup group;
-            group.template submit<OutputKernel>(queue, output_sync);
-            group.template submit<InputKernel>(queue, input_sync);
-            groups.push(group);
+            groups.new_group();
+            groups.template submit<OutputKernel>(queue, output_sync);
+            groups.template submit<InputKernel>(queue, input_sync);
         }
 
         // Collect the final output in a separate buffer.
@@ -274,17 +356,12 @@ private:
 
         for (uindex_t half = 0; half < 2; half++)
         {
-            BufferEventGroup group(out_buffer, half);
-            group.template submit<OutputKernel>(queue, output_sync);
-            groups.push(group);
+            groups.new_group(out_buffer, half);
+            groups.template submit<OutputKernel>(queue, output_sync);
         }
 
         // Wait for all kernels to finish and deallocate their buffers in the process.
-        while (!groups.empty())
-        {
-            groups.back().wait();
-            groups.pop();
-        }
+        groups.wait();
 
         return out_buffer;
     }

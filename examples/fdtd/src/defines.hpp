@@ -124,8 +124,12 @@ struct Parameters
     // The number of sample frames to collect.
     uindex_t n_frames() const
     {
-        assert(n_time_steps % n_sample_steps == 0);
-        return n_time_steps / n_sample_steps;
+        uindex_t n_frames = n_time_steps / n_sample_steps;
+        if (n_time_steps % n_sample_steps != 0)
+        {
+            n_frames++;
+        }
+        return n_frames;
     }
 
     // Radius of the cavity in dx.
