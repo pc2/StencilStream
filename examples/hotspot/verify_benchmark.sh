@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -p short
-#SBATCH -o verify_benchmark.log
+#SBATCH -o verify_benchmark.py
 #SBATCH -J verify-hotspot-benchmark
 #SBATCH --mail-type=ALL
 

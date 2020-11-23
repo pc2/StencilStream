@@ -4,5 +4,8 @@ output.*
 hotspot.*
 1
 *.json
+benchmark.py
+verify_benchmark.py
+__pycache__
 
 !hotspot.cpp

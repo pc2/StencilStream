@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -p fpga
-#SBATCH -o benchmark.log
+#SBATCH -o benchmark.py
 #SBATCH -J hotspot-benchmark
 #SBATCH --constraint=19.4.0_max
 #SBATCH --mail-type=ALL
