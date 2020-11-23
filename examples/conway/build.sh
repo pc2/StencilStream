@@ -7,13 +7,18 @@
 #SBATCH --time=3-00:00:00
 
 source /cm/shared/opt/intel_oneapi/beta-10/setvars.sh
-module load nalla_pcie compiler/GCC 
+module load compiler/GCC 
+
+echo "Building for Board $FPGA_BOARD_NAME"
+
+function archive_build {
+    tar -cf - conway conway.prj/reports | ~/pigz > lean.tar.gz &
+    tar -cf - conway conway.prj | ~/pigz > full.tar.gz &
+    wait
+    rm -r conway.prj
+}
 
 export HARDWARE=1
 export PIPELINE_LEN=10
 
-time make conway
-tar -cf - conway conway.prj/reports | ~/pigz > lean.tar.gz &
-tar -cf - conway conway.prj | ~/pigz > full.tar.gz &
-wait
-rm -r conway.prj
+time make conway && archive_build

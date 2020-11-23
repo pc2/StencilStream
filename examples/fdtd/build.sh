@@ -7,11 +7,13 @@
 #SBATCH --time=3-00:00:00
 
 source /cm/shared/opt/intel_oneapi/beta-10/setvars.sh
-module load nalla_pcie compiler/GCC lib/zlib devel/Boost
+module load compiler/GCC lib/zlib devel/Boost
+
+echo "Building for Board $FPGA_BOARD_NAME"
 
 function archive_build {
-    tar -cf - fdtd fdtd.prj/reports | ~/pigz > lean.tar.gz &
-    tar -cf - fdtd fdtd.prj | ~/pigz > full.tar.gz &
+    tar -cf - fdtd fdtd.prj/reports | ~/pigz > lean.$FPGA_BOARD_NAME.tar.gz &
+    tar -cf - fdtd fdtd.prj | ~/pigz > full.$FPGA_BOARD_NAME.tar.gz &
     wait
     rm -r fdtd.prj
 }

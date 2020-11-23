@@ -7,11 +7,13 @@
 #SBATCH --time=3-00:00:00
 
 source /cm/shared/opt/intel_oneapi/beta-10/setvars.sh
-module load nalla_pcie compiler/GCC 
+module load compiler/GCC
+
+echo "Building for Board $FPGA_BOARD_NAME"
 
 function archive_build {
-    tar -cf - hotspot hotspot.prj/reports | ~/pigz > lean.tar.gz &
-    tar -cf - hotspot hotspot.prj | ~/pigz > full.tar.gz &
+    tar -cf - hotspot hotspot.prj/reports | ~/pigz > lean.$FPGA_BOARD_NAME.tar.gz &
+    tar -cf - hotspot hotspot.prj | ~/pigz > full.$FPGA_BOARD_NAME.tar.gz &
     wait
     rm -r hotspot.prj
 }
