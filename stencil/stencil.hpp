@@ -100,6 +100,14 @@ public:
     }
 
     /**
+     * Return the buffer used by the executor.
+     */
+    cl::sycl::buffer<T, 2> get_buffer() const
+    {
+        return orig_buffer;
+    }
+
+    /**
      * Set the number of generations to compute.
      * 
      * Due to obvious reasons, this number must not be zero. If the number of generations isn't a

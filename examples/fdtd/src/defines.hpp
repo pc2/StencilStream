@@ -76,60 +76,51 @@ constexpr uindex_t mid_x = n_logical_rows / 2;
 // Collection time for a single frame in dx.
 constexpr uindex_t dt_collection = STENCIL_PIPELINE_LEN;
 
+struct FDTDCell
+{
+    float_vec ex, ey, hz, hz_sum;
+};
+
 struct Parameters
 {
-    Parameters(int argc, char **argv) : n_time_steps(pipeline_length), n_sample_steps(pipeline_length), disk_radius(default_radius), write_frames(true)
+    Parameters(int argc, char **argv) : n_frames(10), n_sample_steps(pipeline_length), disk_radius(default_radius)
     {
         int c;
-        while ((c = getopt(argc, argv, "sht:c:r:")) != -1)
+        while ((c = getopt(argc, argv, "hf:c:r:")) != -1)
         {
             switch (c)
             {
-            case 't':
-                n_time_steps = stol(optarg);
+            case 'f':
+                n_frames = stol(optarg);
                 break;
             case 'c':
                 n_sample_steps = stol(optarg);
-                if (n_sample_steps % pipeline_length != 0)
-                {
-                    n_sample_steps += pipeline_length - n_sample_steps % pipeline_length;
-                    cerr << "Collecting " << n_time_steps << " time steps per frame to account for pipeline length." << std::endl;
-                }
             case 'r':
                 disk_radius = stod(optarg);
-                break;
-            case 's':
-                write_frames = false;
                 break;
             case 'h':
             case '?':
             default:
                 cerr << "Options:" << std::endl;
-                cerr << "-t <steps>: Number of time steps to calculate (default " << pipeline_length << ")" << std::endl;
+                cerr << "-f <steps>: Number of frames to calculate (default " << 10 << ")" << std::endl;
                 cerr << "-c <steps>: Number of time steps to collect for a frame (default " << pipeline_length << ")" << std::endl;
                 cerr << "-r <radius>: Radius of the cavity in cell widths (default " << default_radius << ")" << std::endl;
-                cerr << "-s: Don't write collected frames into files." << std::endl;
                 exit(1);
             }
         }
     }
 
-    // The number of dt time steps to calculate.
-    uindex_t n_time_steps;
+    // The number of sample frames to collect.
+    uindex_t n_frames;
 
     // The number of samples to collect for one frame.
     // You can think of it as the "shutter speed" of the sample collection.
     uindex_t n_sample_steps;
 
-    // The number of sample frames to collect.
-    uindex_t n_frames() const
+    // The number of dt time steps to calculate.
+    uindex_t n_time_steps() const
     {
-        uindex_t n_frames = n_time_steps / n_sample_steps;
-        if (n_time_steps % n_sample_steps != 0)
-        {
-            n_frames++;
-        }
-        return n_frames;
+        return n_frames * n_sample_steps;
     }
 
     // Radius of the cavity in dx.
@@ -164,6 +155,4 @@ struct Parameters
     {
         return 7.0 * tau();
     }
-
-    bool write_frames;
 };

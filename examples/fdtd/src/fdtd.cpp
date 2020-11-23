@@ -37,21 +37,27 @@ int main(int argc, char **argv)
 #endif
     cl::sycl::queue fpga_queue(device_selector, exception_handler, {property::queue::enable_profiling{}});
 
-    std::deque<std::thread> collection_threads = SampleCollector::start_collecting(fpga_queue, parameters);
+    std::deque<std::thread> collection_threads;
 
     std::cout << "Simulating..." << std::endl;
 
     StencilExecutor<FDTDCell, stencil_radius, n_buffer_columns, n_buffer_rows, FDTD_BURST_SIZE> executor(fpga_queue);
+    executor.set_generations(2 * parameters.n_sample_steps);
     executor.set_buffer(FDTDKernel::setup_cell_buffer(fpga_queue));
-    executor.set_generations(2 * parameters.n_time_steps);
-    event comp_event = executor.run(FDTDKernel(parameters));
+
+    for (uindex_t i_frame = 0; i_frame < parameters.n_frames; i_frame++)
+    {
+        event comp_event = executor.run(FDTDKernel(i_frame * parameters.n_sample_steps, parameters));
+        comp_event.wait();
+
+        unsigned long event_start = comp_event.template get_profiling_info<info::event_profiling::command_start>();
+        unsigned long event_end = comp_event.template get_profiling_info<info::event_profiling::command_end>();
+        std::cout << "Collected frame " << i_frame << ", simulation time: " << (event_end - event_start) / 1000000000.0 << " s" << std::endl;
+
+        collection_threads.push_front(std::thread(SampleCollector(i_frame, executor.get_buffer())));
+    }
 
     std::cout << "Simulation complete!" << std::endl;
-
-    unsigned long event_start = comp_event.get_profiling_info<info::event_profiling::command_start>();
-    unsigned long event_end = comp_event.get_profiling_info<info::event_profiling::command_end>();
-    std::cout << "Total simulation time: " << (event_end - event_start) / 1000000000.0 << " s" << std::endl;
-
     std::cout << "Awaiting frame writeout completion." << std::endl;
 
     while (!collection_threads.empty())

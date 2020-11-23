@@ -28,11 +28,6 @@ constexpr static Material vacuum{
     (dt / (mu_0 * dx)) / (1 + (sigma * dt) / (2 * mu_0)),                                // db
 };
 
-struct FDTDCell
-{
-    float_vec ex, ey, hz, hz_sum;
-};
-
 class FDTDKernel
 {
     float disk_radius;
@@ -40,11 +35,10 @@ class FDTDKernel
     float omega;
     float t0;
     float t_cutoff;
-    uindex_t n_time_steps;
-    uindex_t n_sample_steps;
+    uindex_t n_frame_offset;
 
 public:
-    FDTDKernel(Parameters const &parameters) : disk_radius(parameters.disk_radius), tau(parameters.tau()), omega(parameters.omega()), t0(parameters.t0()), t_cutoff(parameters.t_cutoff()), n_time_steps(parameters.n_time_steps), n_sample_steps(parameters.n_sample_steps) {}
+    FDTDKernel(uindex_t n_frame_offset, Parameters const &parameters) : n_frame_offset(n_frame_offset), disk_radius(parameters.disk_radius), tau(parameters.tau()), omega(parameters.omega()), t0(parameters.t0()), t_cutoff(parameters.t_cutoff()) {}
 
     static buffer<FDTDCell, 2> setup_cell_buffer(cl::sycl::queue queue)
     {
@@ -70,6 +64,11 @@ public:
         stencil::Stencil2DInfo const &info)
     {
         FDTDCell cell = stencil[ID(0, 0)];
+
+        if (info.cell_generation == 0)
+        {
+            cell.hz_sum = 0;
+        }
 
         float_vec center_cell_row;
 #pragma unroll
@@ -99,12 +98,6 @@ public:
                 da[i] = vacuum.da;
                 db[i] = vacuum.db;
             }
-        }
-
-        if (info.may_have_sideeffects && info.cell_generation % n_sample_steps == 0 && info.cell_generation >= 0 && info.cell_generation < n_time_steps)
-        {
-            SampleCollectorKernel::in_pipe::write(cell.hz_sum);
-            cell.hz_sum = float_vec(0);
         }
 
         if ((info.pipeline_position & 0b1) == 0)
@@ -140,7 +133,7 @@ public:
             cell.hz *= da;
             cell.hz += db * (bottom_neighbours - stencil[ID(0, 0)].ex + stencil[ID(0, 0)].ey - right_neighbours);
 
-            uindex_t field_generation = info.cell_generation >> 1;
+            uindex_t field_generation = (info.cell_generation >> 1) + n_frame_offset;
             float current_time = field_generation * dt;
             if (current_time < t_cutoff)
             {
