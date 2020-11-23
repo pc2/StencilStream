@@ -7,7 +7,7 @@
 #SBATCH --time=3-00:00:00
 
 source /cm/shared/opt/intel_oneapi/beta-10/setvars.sh
-module load nalla_pcie compiler/GCC 
+module load intel_pac/19.2.0_usm compiler/GCC 
 
 export HARDWARE=1
 export PIPELINE_LEN=10
