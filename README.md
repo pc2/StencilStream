@@ -4,6 +4,18 @@ Generic Stencil Simulation Library for FPGAs.
 
 This project uses Intel's OneAPI to provide a C++ template library that can execute arbitrary Moore-like stencil kernels on arbitrary cell types in arbitrary buffers, using FPGAs.
 
+## Performance Metrics
+
+Below are performance metrics of some sample applications, as of release [v1.0.0-rc1](https://github.com/pc2/StencilStream/tag/v1.0.0-rc1). Note that the `conway` application does not provide runtime information and therefore has some blank fields.
+
+### Nallatech/Bittware 520N Board (Stratix 10 GX 2800)
+
+| Application | Main Loop II | Pipeline Depth | Cycle Frequency | Generations per Second | Overall Performance | Logic Usage | Register Usage | RAM Usage | DSP Usage |
+|-------------|--------------|----------------|-----------------|------------------------|---------------------|-------------|----------------|-----------|-----------|
+| `hotspot`   | 1.05 cycles  | 225 cores      | 79.63 MHz       | 16,328 G/s             | 256.84 GFLOPS       | 85.34%      | 51.23%         | 38.31%    | 58.64%    |
+| `fdtd`      | 1.73 cycles  | 30 cores       | 225 MHz         | 233.10 G/s             | 29.02 KFLOPS        | 83.19%      | 50.37%         | 43.91%    | 45.42%    |
+| `conway`    | -            | 10 cores       | 353.33 Mhz      | -                      | -                   | 25.41%      | 12.78%         | 8.45%     | 0.05%     |
+
 ## How to use StencilStream
 
 ### Required Software
@@ -17,7 +29,7 @@ source /cm/shared/opt/intel_oneapi/{latest-version}/setvars.sh
 module load nalla_pcie compiler/GCC
 ```
 
-### A basic stencil kernel
+### A basic stencil kernelcs
 
 As an example, we are going to implement a simple version of [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life). However, please note that this isn't the most efficient way to do it, just an example.
 
