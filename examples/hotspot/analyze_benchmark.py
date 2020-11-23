@@ -4,10 +4,8 @@
 
 First, run the benchmark.sh and verify_benchmark.sh scripts and pipe their output into `benchmark.py`
 and `verify_benchmark.py` respectively. If you submit the scripts as slurm jobs, this is done
-automatically.
-
-The output is formatted like a Python dict, but you need to remove error and output messages. Then,
-execute this script. It loads the outputs automatically. 
+automatically. The output is formatted like a Python dict, but you need to remove error and output
+messages. Lastly, you need to copy the cycle frequency and the pipeline length from the reports into this script. 
 """
 from matplotlib import pyplot
 import numpy as np
@@ -15,12 +13,8 @@ import numpy as np
 from benchmark import runtime
 from verify_benchmark import value_derivation
 
-cycle_frequency = {
-    225: 79.63 * 10**6,
-}
-pipeline_length = {
-    225: 225,
-}
+cycle_frequency = 79.63 * 10**6
+pipeline_length = 225
 
 height = width = 1024
 radius = 1
@@ -42,8 +36,8 @@ for i in runtime.keys():
     overhead = runtime[i][0] - mean_delta
     print("\tOverhead: {:.2f} seconds".format(overhead))
     
-    executed_flop = pipeline_length[i] * flo_per_cell * height * width
-    executed_cycles = mean_delta * cycle_frequency[i]
+    executed_flop = pipeline_length * flo_per_cell * height * width
+    executed_cycles = mean_delta * cycle_frequency
     
     gflops = executed_flop / mean_delta * 10**-9
     ii = executed_cycles / (width * height)
