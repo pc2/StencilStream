@@ -314,9 +314,12 @@ private:
             }
             catch (cl::sycl::nd_range_error e)
             {
-                // If the buffer allocation fails, wait for all previous invocations,
-                // De-allocate their buffers and try again.
+                // If the buffer allocation fails, wait for all previous invocations and deallocate
+                // their buffers.
                 wait();
+                // The latest group has been removed from the queue and has to be added again.
+                groups.push_front(latest_group);
+                // Submit the kernel invocation. There should be space for it now.
                 latest_group.template submit<IOKernel>(queue, sync);
             }
         }
