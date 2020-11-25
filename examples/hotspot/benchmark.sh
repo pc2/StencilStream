@@ -6,8 +6,10 @@
 #SBATCH --mail-type=ALL
 #SBATCH --time=30:00
 
+export BSP_MODULE=$1
+
 source /cm/shared/opt/intel_oneapi/beta-10/setvars.sh
-module load compiler/GCC 
+module load $BSP_MODULE compiler/GCC 
 
 export STEP_SIZE=225
 export RUNS=`seq 1 100`
