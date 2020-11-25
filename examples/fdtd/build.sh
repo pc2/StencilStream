@@ -19,6 +19,6 @@ function archive_build {
 }
 
 export HARDWARE=1
-export PIPELINE_LEN=40
+export PIPELINE_LEN=35
 
 time make fdtd && archive_build
