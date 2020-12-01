@@ -6,4 +6,4 @@
 #SBATCH --exclusive
 #SBATCH --time=3-00:00:00
 
-../build nalla_pcie 35 fdtd
+../build.sh nalla_pcie 35 fdtd
