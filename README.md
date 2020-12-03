@@ -6,7 +6,7 @@ This project uses Intel's OneAPI to provide a C++ template library that can exec
 
 ## Performance Metrics
 
-Below are performance metrics of some sample applications, as of release [v1.0.0-rc1](https://github.com/pc2/StencilStream/tag/v1.0.0-rc1). Note that the `conway` application does not provide runtime information and therefore has some blank fields.
+Below are performance metrics of some sample applications, as of release [v1.0.0](https://github.com/pc2/StencilStream/tag/v1.0.0). The `conway` application is optimized for readability, not for performance, and is therefore not listed.
 
 ### Nallatech/Bittware 520N Board (Stratix 10 GX 2800)
 
@@ -14,7 +14,13 @@ Below are performance metrics of some sample applications, as of release [v1.0.0
 |-------------|--------------|----------------|-----------------|------------------------|---------------------|-------------|----------------|-----------|-----------|
 | `hotspot`   | 1.05 cycles  | 225 cores      | 79.63 MHz       | 16,328 G/s             | 256.84 GFLOPS       | 85.34%      | 51.23%         | 38.31%    | 58.64%    |
 | `fdtd`      | 1.73 cycles  | 30 cores       | 225 MHz         | 233.10 G/s             | 29.02 KFLOPS        | 83.19%      | 50.37%         | 43.91%    | 45.42%    |
-| `conway`    | -            | 10 cores       | 353.33 Mhz      | -                      | -                   | 25.41%      | 12.78%         | 8.45%     | 0.05%     |
+
+### Intel PAC (Stratix 10 SX)
+
+| Application | Main Loop II | Pipeline Depth | Cycle Frequency | Generations per Second | Overall Performance | Logic Usage | Register Usage | RAM Usage | DSP Usage |
+|-------------|--------------|----------------|-----------------|------------------------|---------------------|-------------|----------------|-----------|-----------|
+| `hotspot`   | 1.06 cycles  | 100 cores      | 225.00 MHz      | 20,161.29 G/s          | 317.17 GFLOPS       | 64.26%      | 35.75%         | 25.09%    | 26.11%    |
+| `fdtd`      | 1.45 cycles  | 20 cores       | 218.00 MHz      | 178.95 G/s             | 24.43 KFLOPS        | 69.41%      | 37.87%         | 34.66%    | 30.29%    |
 
 ## How to use StencilStream
 
