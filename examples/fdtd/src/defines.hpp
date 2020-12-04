@@ -83,10 +83,10 @@ struct FDTDCell
 
 struct Parameters
 {
-    Parameters(int argc, char **argv) : n_frames(10), n_sample_steps(pipeline_length), disk_radius(default_radius)
+    Parameters(int argc, char **argv) : n_frames(10), n_sample_steps(pipeline_length), disk_radius(default_radius), benchmark_mode(false)
     {
         int c;
-        while ((c = getopt(argc, argv, "hf:c:r:")) != -1)
+        while ((c = getopt(argc, argv, "hf:c:r:b")) != -1)
         {
             switch (c)
             {
@@ -98,6 +98,9 @@ struct Parameters
             case 'r':
                 disk_radius = stod(optarg);
                 break;
+            case 'b':
+                benchmark_mode = true;
+                break;
             case 'h':
             case '?':
             default:
@@ -105,6 +108,7 @@ struct Parameters
                 cerr << "-f <steps>: Number of frames to calculate (default " << 10 << ")" << std::endl;
                 cerr << "-c <steps>: Number of time steps to collect for a frame (default " << pipeline_length << ")" << std::endl;
                 cerr << "-r <radius>: Radius of the cavity in cell widths (default " << default_radius << ")" << std::endl;
+                cerr << "-b: Run the application in benchmark mode. This will run the simulation several times and analyze the performance of the design" << std::endl;
                 exit(1);
             }
         }
@@ -155,4 +159,6 @@ struct Parameters
     {
         return 7.0 * tau();
     }
+
+    bool benchmark_mode;
 };

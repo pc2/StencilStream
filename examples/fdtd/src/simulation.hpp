@@ -74,13 +74,13 @@ public:
 #pragma unroll
         for (uindex_t i = 0; i < vector_len; i++)
         {
-            center_cell_row[i] = vector_len * info.center_cell_id.r + i;
+            center_cell_row[i] = vector_len * info.center_cell_id.r + i; // 1 + 8 FOs
         }
         float_vec center_cell_column = float_vec(info.center_cell_id.c);
 
-        float_vec a = center_cell_row - mid_y;
-        float_vec b = center_cell_column - mid_x;
-        float_vec distance = cl::sycl::sqrt(a * a + b * b);
+        float_vec a = center_cell_row - mid_y; // 8 FOs
+        float_vec b = center_cell_column - mid_x; // 8 FOs
+        float_vec distance = cl::sycl::sqrt(a * a + b * b); // 8 * 4 = 32 FOs
 
         float_vec ca, cb, da, db;
 #pragma unroll
@@ -100,6 +100,8 @@ public:
             }
         }
 
+        // Since info.pipeline_position is a constant, the compiler only needs to synthesize one
+        // branch per core. Therefore, the mean number of FOs in this block is the mean of these branches.
         if ((info.pipeline_position & 0b1) == 0)
         {
             float_vec left_neighbours, top_neighbours;
@@ -112,11 +114,11 @@ public:
             }
             top_neighbours[0] = stencil[ID(0, -1)].hz[vector_len - 1];
 
-            cell.ex *= ca;
-            cell.ex += cb * (stencil[ID(0, 0)].hz - top_neighbours);
+            cell.ex *= ca; // 8 FOs
+            cell.ex += cb * (stencil[ID(0, 0)].hz - top_neighbours); // 8*2 = 16 FOs
 
-            cell.ey *= ca;
-            cell.ey += cb * (left_neighbours - stencil[ID(0, 0)].hz);
+            cell.ey *= ca; // 8FOs
+            cell.ey += cb * (left_neighbours - stencil[ID(0, 0)].hz); // 8*2 = 16 FOs
         }
         else
         {
@@ -130,18 +132,18 @@ public:
             }
             bottom_neighbours[vector_len - 1] = stencil[ID(0, 1)].ex[0];
 
-            cell.hz *= da;
-            cell.hz += db * (bottom_neighbours - stencil[ID(0, 0)].ex + stencil[ID(0, 0)].ey - right_neighbours);
+            cell.hz *= da; // 8 FOs
+            cell.hz += db * (bottom_neighbours - stencil[ID(0, 0)].ex + stencil[ID(0, 0)].ey - right_neighbours); // 8*4 = 32 FOs
 
-            uindex_t field_generation = (info.cell_generation >> 1) + n_frame_offset;
-            float current_time = field_generation * dt;
+            uindex_t field_generation = (info.cell_generation >> 1) + n_frame_offset; // No floats, therefore no FOs
+            float current_time = field_generation * dt; // 1 FO
             if (current_time < t_cutoff)
             {
-                float wave_progress = (current_time - t0) / tau;
-                cell.hz += cl::sycl::cos(omega * current_time) * cl::sycl::exp(-1 * wave_progress * wave_progress);
+                float wave_progress = (current_time - t0) / tau; // 3 FOs
+                cell.hz += cl::sycl::cos(omega * current_time) * cl::sycl::exp(-1 * wave_progress * wave_progress); // 8 + 6 FOs
             }
 
-            cell.hz_sum += cell.hz * cell.hz;
+            cell.hz_sum += cell.hz * cell.hz; // 2*8 = 16 FOs
         }
         return cell;
     }
