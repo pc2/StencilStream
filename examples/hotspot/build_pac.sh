@@ -6,4 +6,4 @@
 #SBATCH --exclusive
 #SBATCH --time=3-00:00:00
 
-../build.sh intel_pac/19.2.0_usm 150 hotspot
+../build.sh intel_pac/19.2.0 225 hotspot
