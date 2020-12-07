@@ -6,4 +6,4 @@
 #SBATCH --mem=60GB
 #SBATCH --time=3-00:00:00
 
-../build.sh nalla_pcie 10 main
+../build.sh nalla_pcie/19.4.0_max 10 main

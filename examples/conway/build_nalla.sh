@@ -6,4 +6,4 @@
 #SBATCH --mem=90GB
 #SBATCH --time=3-00:00:00
 
-../build.sh nalla_pcie 10 conway
+../build.sh nalla_pcie/19.4.0_max 10 conway
