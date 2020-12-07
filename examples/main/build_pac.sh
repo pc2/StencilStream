@@ -6,4 +6,4 @@
 #SBATCH --mem=60GB
 #SBATCH --time=3-00:00:00
 
-../build.sh intel_pac/19.2.0_usm 10 main
+../build.sh intel_pac/19.2.0 10 main
