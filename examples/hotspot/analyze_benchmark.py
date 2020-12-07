@@ -7,14 +7,12 @@ and `verify_benchmark.py` respectively. If you submit the scripts as slurm jobs,
 automatically. The output is formatted like a Python dict, but you need to remove error and output
 messages. Lastly, you need to copy the cycle frequency and the pipeline length from the reports into this script. 
 """
-from matplotlib import pyplot
-import numpy as np
 
 from benchmark import runtime
-from verify_benchmark import value_derivation
 
 cycle_frequency = 79.63 * 10**6
 pipeline_length = 225
+step_size = 900
 
 height = width = 1024
 radius = 1
@@ -29,7 +27,7 @@ for i in runtime.keys():
     offset_runtime = [original_runtime[0]] + original_runtime
     
     delta = [current_sample - next_sample for (current_sample, next_sample) in zip(original_runtime, offset_runtime)]
-    mean_delta = sum(delta) / len(delta)
+    mean_delta = (sum(delta) / len(delta)) * (pipeline_length / step_size)
     
     print("\tDelta Time per Grid Pass: {:.2f} milliseconds".format(mean_delta * 10**3))
     
@@ -48,18 +46,3 @@ for i in runtime.keys():
     throughput = (2 * cell_size * width * height) / mean_delta * 10**-9
     
     print("\tGlobal Memory Throughput: {:.2f} GB/s".format(throughput))
-
-pyplot.title("Ratio of correct values")
-for length in value_derivation:
-    pyplot.plot([deriv[0] for deriv in value_derivation[length]])
-pyplot.show()
-
-pyplot.title("Mean result derivation")
-for length in value_derivation:
-    pyplot.plot([deriv[1] for deriv in value_derivation[length]])
-pyplot.show()
-
-pyplot.title("Maximal absolute result derivation")
-for length in value_derivation:
-    pyplot.plot([deriv[2] for deriv in value_derivation[length]])
-pyplot.show()

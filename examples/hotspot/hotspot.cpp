@@ -276,20 +276,18 @@ int main(int argc, char **argv)
             std::cout << "Run " << i << " with " << (i + 1) * sim_time << " passes took " << runtimes[i] << " seconds" << std::endl;
         }
 
-        double delta_passes = sim_time / pipeline_length;
-
         // Actually the mean delta seconds per pass.
         double delta_seconds_per_pass = 0.0;
         for (uindex_t i = 0; i < n_simulations - 1; i++)
         {
-            delta_seconds_per_pass += abs(double(runtimes[i + 1]) - double(runtimes[i])) / delta_passes;
+            delta_seconds_per_pass += abs(double(runtimes[i + 1]) - double(runtimes[i]));
         }
-        delta_seconds_per_pass /= n_simulations - 1;
+        delta_seconds_per_pass = (delta_seconds_per_pass / (n_simulations - 1)) * (pipeline_length / sim_time);
 
         std::cout << "Time per buffer pass: " << delta_seconds_per_pass << "s" << std::endl;
 
         double loops_per_pass = max_width * max_height;
-        double seconds_per_loop = delta_seconds_per_pass * loops_per_pass;
+        double seconds_per_loop = delta_seconds_per_pass / loops_per_pass;
         double cycles_per_loop = seconds_per_loop * clock_frequency;
 
         std::cout << "Cycles per Loop, aka II.: " << cycles_per_loop << std::endl;

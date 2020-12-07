@@ -95,20 +95,18 @@ int main(int argc, char **argv)
             std::cout << "Run " << i << " with " << (i + 1) * parameters.n_sample_steps << " passes took " << runtimes.back() << " seconds" << std::endl;
         }
 
-        double delta_passes = parameters.n_sample_steps / pipeline_length;
-
         // Actually the mean delta seconds per pass.
         double delta_seconds_per_pass = 0.0;
         for (uindex_t i = 0; i < runtimes.size() - 1; i++)
         {
-            delta_seconds_per_pass += abs(double(runtimes[i + 1]) - double(runtimes[i])) / delta_passes;
+            delta_seconds_per_pass += abs(double(runtimes[i + 1]) - double(runtimes[i]));
         }
-        delta_seconds_per_pass /= runtimes.size() - 1;
+        delta_seconds_per_pass = (delta_seconds_per_pass / (runtimes.size() - 1)) * (pipeline_length / paraemeters.n_sample_steps);
 
         std::cout << "Time per buffer pass: " << delta_seconds_per_pass << "s" << std::endl;
 
         double loops_per_pass = n_buffer_rows * n_buffer_columns;
-        double seconds_per_loop = delta_seconds_per_pass * loops_per_pass;
+        double seconds_per_loop = delta_seconds_per_pass / loops_per_pass;
         double cycles_per_loop = seconds_per_loop * clock_frequency;
 
         std::cout << "Cycles per Loop, aka II.: " << cycles_per_loop << std::endl;
