@@ -101,7 +101,7 @@ int main(int argc, char **argv)
         {
             delta_seconds_per_pass += abs(double(runtimes[i + 1]) - double(runtimes[i]));
         }
-        delta_seconds_per_pass = (delta_seconds_per_pass / (runtimes.size() - 1)) * (pipeline_length / paraemeters.n_sample_steps);
+        delta_seconds_per_pass = (delta_seconds_per_pass / (runtimes.size() - 1)) * (pipeline_length / parameters.n_sample_steps);
 
         std::cout << "Time per buffer pass: " << delta_seconds_per_pass << "s" << std::endl;
 
