@@ -6,21 +6,21 @@ This project uses Intel's OneAPI to provide a C++ template library that can exec
 
 ## Performance Metrics
 
-Below are performance metrics of some sample applications, as of release [v1.0.0](https://github.com/pc2/StencilStream/releases/tag/v1.0.0). The `conway` application is optimized for readability, not for performance, and is therefore not listed.
+Below are performance metrics of some sample applications, as of release [v1.1.0](https://github.com/pc2/StencilStream/releases/tag/v1.1.0). The `conway` application is optimized for readability, not for performance, and is therefore not listed.
 
 ### Nallatech/Bittware 520N Board (Stratix 10 GX 2800)
 
 | Application | Main Loop II | Pipeline Depth | Cycle Frequency | Generations per Second | Overall Performance | Logic Usage | Register Usage | RAM Usage | DSP Usage |
 |-------------|--------------|----------------|-----------------|------------------------|---------------------|-------------|----------------|-----------|-----------|
-| `hotspot`   | 1.05 cycles  | 225 cores      | 79.63 MHz       | 16,328 G/s             | 256.84 GFLOPS       | 85.34%      | 51.23%         | 38.31%    | 58.64%    |
-| `fdtd`      | 1.73 cycles  | 30 cores       | 225 MHz         | 233.10 G/s             | 29.02 KFLOPS        | 83.19%      | 50.37%         | 43.91%    | 45.42%    |
+| `hotspot`   | 1.07 cycles  | 200 cores      | 206.25 MHz      | 36933 G/s              | 580.91 GFLOPS       | 79.38%      | 49.02%         | 35.35%    | 52.13%    |
+| `fdtd`      | 16.54 cycles | 35 cores       | 272.50 MHz      | 243.56 G/s             | 136.10 GFLOPS       | 79.93%      | 49.61%         | 47.64%    | 52.66%    |
 
 ### Intel PAC (Stratix 10 SX)
 
 | Application | Main Loop II | Pipeline Depth | Cycle Frequency | Generations per Second | Overall Performance | Logic Usage | Register Usage | RAM Usage | DSP Usage |
 |-------------|--------------|----------------|-----------------|------------------------|---------------------|-------------|----------------|-----------|-----------|
-| `hotspot`   | 1.06 cycles  | 100 cores      | 225.00 MHz      | 20,161.29 G/s          | 317.17 GFLOPS       | 64.26%      | 35.75%         | 25.09%    | 26.11%    |
-| `fdtd`      | 1.45 cycles  | 20 cores       | 218.00 MHz      | 178.95 G/s             | 24.43 KFLOPS        | 69.41%      | 37.87%         | 34.66%    | 30.29%    |
+| `hotspot`   | 0.98 cycles  | 200 cores      | 163.00 MHz      | 31644.4 G/s            | 497.724 GFLOPS      | 83.67%      | 50.16%         | 35.60%    | 52.13%    |
+| `fdtd`      | 6.69 cycles  | 20 cores       | 221.00 MHz      | 157.61 G/s             | 78.01 GFLOPS        | 63.93%      | 35.65%         | 33.45%    | 30.30%    |
 
 ## How to use StencilStream
 
