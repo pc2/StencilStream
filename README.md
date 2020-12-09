@@ -6,7 +6,7 @@ This project uses Intel's OneAPI to provide a C++ template library that can exec
 
 ## Performance Metrics
 
-Below are performance metrics of some sample applications, as of release [v1.1.0](https://github.com/pc2/StencilStream/releases/tag/v1.1.0). The `conway` application is optimized for readability, not for performance, and is therefore not listed.
+Below are performance metrics of some sample applications, as of release [v1.1.1](https://github.com/pc2/StencilStream/releases/tag/v1.1.1). The `conway` application is optimized for readability, not for performance, and is therefore not listed.
 
 ### Nallatech/Bittware 520N Board (Stratix 10 GX 2800)
 
