@@ -1,4 +1,4 @@
-# StencilSteam
+# StencilStream
 
 Generic Stencil Simulation Library for FPGAs.
 
