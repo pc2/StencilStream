@@ -8,19 +8,19 @@ This project uses Intel's OneAPI to provide a C++ template library that can exec
 
 Below are performance metrics of some sample applications, as of release [v1.1.1](https://github.com/pc2/StencilStream/releases/tag/v1.1.1). The `conway` application is optimized for readability, not for performance, and is therefore not listed.
 
-### Nallatech/Bittware 520N Board (Stratix 10 GX 2800)
+### Bittware/Nallatech 520N (Stratix 10 GX 2800)
 
-| Application | Main Loop II | Pipeline Depth | Cycle Frequency | Generations per Second | Overall Performance | Logic Usage | Register Usage | RAM Usage | DSP Usage |
-|-------------|--------------|----------------|-----------------|------------------------|---------------------|-------------|----------------|-----------|-----------|
-| `hotspot`   | 1.07 cycles  | 200 cores      | 206.25 MHz      | 36933 G/s              | 580.91 GFLOPS       | 79.38%      | 49.02%         | 35.35%    | 52.13%    |
-| `fdtd`      | 16.54 cycles | 35 cores       | 272.50 MHz      | 243.56 G/s             | 136.10 GFLOPS       | 79.93%      | 49.61%         | 47.64%    | 52.66%    |
+| Application | Cycles per Loop | Pipeline Depth | Cycle Frequency | Generations per Second | Overall Performance | Logic Usage | Register Usage | RAM Usage | DSP Usage |
+|-------------|-----------------|----------------|-----------------|------------------------|---------------------|-------------|----------------|-----------|-----------|
+| `hotspot`   | 1.07 cycles     | 200 cores      | 206.25 MHz      | 36933 G/s              | 580.91 GFLOPS       | 79.38%      | 49.02%         | 35.35%    | 52.13%    |
+| `fdtd`      | 16.54 cycles    | 35 cores       | 272.50 MHz      | 243.56 G/s             | 136.10 GFLOPS       | 79.93%      | 49.61%         | 47.64%    | 52.66%    |
 
-### Intel PAC (Stratix 10 SX)
+### Intel PAC D5005 (Stratix 10 SX 2800)
 
-| Application | Main Loop II | Pipeline Depth | Cycle Frequency | Generations per Second | Overall Performance | Logic Usage | Register Usage | RAM Usage | DSP Usage |
-|-------------|--------------|----------------|-----------------|------------------------|---------------------|-------------|----------------|-----------|-----------|
-| `hotspot`   | 0.98 cycles  | 200 cores      | 163.00 MHz      | 31644.4 G/s            | 497.724 GFLOPS      | 83.67%      | 50.16%         | 35.60%    | 52.13%    |
-| `fdtd`      | 6.69 cycles  | 20 cores       | 221.00 MHz      | 157.61 G/s             | 78.01 GFLOPS        | 63.93%      | 35.65%         | 33.45%    | 30.30%    |
+| Application | Cycles per Loop | Pipeline Depth | Cycle Frequency | Generations per Second | Overall Performance | Logic Usage | Register Usage | RAM Usage | DSP Usage |
+|-------------|-----------------|----------------|-----------------|------------------------|---------------------|-------------|----------------|-----------|-----------|
+| `hotspot`   | 0.98 cycles     | 200 cores      | 163.00 MHz      | 31644.4 G/s            | 497.724 GFLOPS      | 83.67%      | 50.16%         | 35.60%    | 52.13%    |
+| `fdtd`      | 6.69 cycles     | 20 cores       | 221.00 MHz      | 157.61 G/s             | 78.01 GFLOPS        | 63.93%      | 35.65%         | 33.45%    | 30.30%    |
 
 ## How to use StencilStream
 
