@@ -8,7 +8,7 @@
 CC = dpcpp
 STENCIL_PATH = ./
 
-ARGS = -fintelfpga -Xsv -std=c++17 -DSTENCIL_INDEX_WIDTH=32 -I$(STENCIL_PATH) 
+ARGS = -std=c++17 -DSTENCIL_INDEX_WIDTH=32 -I$(STENCIL_PATH) 
 
 ifdef EBROOTGCC
 	ARGS += --gcc-toolchain=$(EBROOTGCC)
@@ -23,16 +23,22 @@ ifdef HARDWARE
 	ARGS += -DHARDWARE
 endif
 
-ifdef AOCL_BOARD_PACKAGE_ROOT
-	ARGS += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
-endif
-
-SYNTH_ARGS = $(ARGS)
+SYNTH_ARGS = $(ARGS) -fintelfpga -Xsv
 ifdef HARDWARE
 	SYNTH_ARGS += -Xshardware
 endif
 
-REPORT_ARGS = $(ARGS) -fsycl-link -Xshardware
+ifdef AOCL_BOARD_PACKAGE_ROOT
+	SYNTH_ARGS += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
+endif
+
+REPORT_ARGS = $(SYNTH_ARGS) -fsycl-link -Xshardware
+
+hotspot.ll: hotspot.cpp Makefile
+	$(CC) $(ARGS) -fsycl-targets=spir64-unknown-linux-sycldevice -c hotspot.cpp -o hotspot.o
+	$(CC) $(ARGS) -fsycl-link-targets=spir64-unknown-linux-sycldevice hotspot.o -o hotspot.spv
+	llvm-spirv -r hotspot.spv
+	llvm-dis hotspot.bc
 
 hotspot: hotspot.cpp Makefile
 	$(CC) $(SYNTH_ARGS) hotspot.cpp -o hotspot
