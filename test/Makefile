@@ -19,7 +19,7 @@ ifndef PIPELINE_LEN
 endif
 ARGS += -DSTENCIL_PIPELINE_LEN=$(PIPELINE_LEN)
 
-OBJECTS = src/main.o
+OBJECTS = src/main.o src/Stencil.o
 
 test: $(OBJECTS) Makefile
 	$(CC) $(ARGS) $(OBJECTS) -o test
@@ -29,4 +29,4 @@ src/%.o: src/%.cpp src/*.hpp Makefile
 
 clean:
 	git clean -dXf
-	rm src/*.o
+	rm -f src/*.o

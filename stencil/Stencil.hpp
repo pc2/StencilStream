@@ -24,18 +24,18 @@ namespace stencil
  * Therefore, (0,0) points to the middle of the stencil. This is the value that is going to be replaced. 
  * `UID` is unsigned and the column and row axies are within the range of [0 : 2*radius + 1). Therefore, (0,0) points to the upper-left corner of the stencil.
  */
-template <typename T, Index radius>
+template <typename T, UIndex radius>
 class Stencil
 {
-    static UIndex diameter()
+public:
+    static constexpr UIndex diameter()
     {
         return 2 * radius + 1;
     }
 
-    static_assert(diameter() < std::numeric_limits<Index>::max());
+    static_assert(diameter() < std::numeric_limits<UIndex>::max());
     static_assert(diameter() >= 3);
 
-public:
     Stencil() : internal() {}
 
     T const &operator[](ID id) const { return internal[id.c + radius][id.r + radius]; }
