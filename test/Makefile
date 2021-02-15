@@ -8,7 +8,7 @@
 CC = dpcpp
 STENCIL_PATH = ../stencil
 
-ARGS = -std=c++17 -I$(STENCIL_PATH) 
+ARGS = -std=c++17 -g -I$(STENCIL_PATH) 
 
 ifdef EBROOTGCC
 	ARGS += --gcc-toolchain=$(EBROOTGCC)
@@ -19,12 +19,12 @@ ifndef PIPELINE_LEN
 endif
 ARGS += -DSTENCIL_PIPELINE_LEN=$(PIPELINE_LEN)
 
-OBJECTS = src/main.o src/Stencil.o
+OBJECTS = src/ExecutionCore.o src/main.o src/Stencil.o
 
 test: $(OBJECTS) Makefile
 	$(CC) $(ARGS) $(OBJECTS) -o test
 
-src/%.o: src/%.cpp src/*.hpp Makefile
+src/%.o: src/%.cpp src/*.hpp ../stencil/* Makefile
 	$(CC) $(ARGS) -c $< -o $@
 
 clean:

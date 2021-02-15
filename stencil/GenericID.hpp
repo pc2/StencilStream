@@ -21,6 +21,8 @@ template <typename T>
 class GenericID
 {
 public:
+    GenericID() : c(), r() {}
+
     GenericID(T column, T row) : c(column), r(row) {}
 
     GenericID(cl::sycl::id<2> sycl_id) : c(sycl_id[0]), r(sycl_id[1]) {}
