@@ -7,7 +7,7 @@
 # 
 # THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-export HEADER=stencil/pregen.hpp
+export HEADER="stencil/ExecutionKernel_pregen.hpp"
 export MAX_LEN=1024
 
 function generate_header {
@@ -42,7 +42,7 @@ EOF
             "intelfpga::memory, " \
             "intelfpga::numbanks(2)" \
         "]] \\\n" \
-        "T cache_" $0-1 "[2][grid_height][B_SIZE(radius, 1) - 1]; \\\n" \
+        "T cache_" $0-1 "[2][grid_height][Stencil<T, radius>::diameter() - 1]; \\\n" \
         "ExecutionCore<T, radius, grid_width, grid_height, " $0-1 ", Kernel> core_" $0-1 "(cache_" $0-1 ", n_generations, kernel);\n" \
     }'
 
