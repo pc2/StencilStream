@@ -41,7 +41,7 @@ public:
      * class. Instead, it has to be defined as a variable and be passed as a reference into the core object.
      */
     ExecutionCore(
-        T (&cache)[2][grid_height][Stencil<T, radius>::diameter() - 1],
+        T (&cache)[2][2*radius + grid_height][Stencil<T, radius>::diameter() - 1],
         UIndex cell_generation,
         UIndex logical_column_offset,
         UIndex logical_row_offset,
@@ -91,7 +91,7 @@ public:
                 new_value = cache[active_cache][input_row][cache_c];
             }
 
-            stencil[UID(cache_c, stencil.diameter())] = new_value;
+            stencil[UID(cache_c, stencil.diameter() - 1)] = new_value;
             if (cache_c > 0)
             {
                 cache[passive_cache()][input_row][cache_c - 1] = new_value;
@@ -106,11 +106,6 @@ public:
             Index logical_row = input_row - (stencil.diameter() - 1) + logical_row_offset;
             info.center_cell_id = UID(logical_column, logical_row);
 
-            if (logical_column == logical_column_offset && logical_row == logical_row_offset)
-            {
-                info.cell_generation += pipeline_length;
-            }
-
             output = kernel(stencil, info);
         }
         else
@@ -119,11 +114,11 @@ public:
         }
 
         // Increase column and row counters.
-        if (input_row == grid_height + stencil.diameter() - 2)
+        if (input_row == 2*radius + grid_height - 1)
         {
             active_cache = passive_cache();
             input_row = 0;
-            if (input_column == grid_width + stencil.diameter() - 2)
+            if (input_column == 2*radius + grid_width - 1)
             {
                 input_column = 0;
             }
@@ -152,7 +147,7 @@ private:
     UIndex logical_row_offset;
 
     T(&cache)
-    [2][grid_height][Stencil<T, radius>::diameter() - 1];
+    [2][2*radius + grid_height][Stencil<T, radius>::diameter() - 1];
     UIndex active_cache;
 
     Kernel kernel;

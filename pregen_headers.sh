@@ -42,7 +42,7 @@ EOF
             "intelfpga::memory, " \
             "intelfpga::numbanks(2)" \
         "]] \\\n" \
-        "T cache_" $0-1 "[2][grid_height][Stencil<T, radius>::diameter() - 1]; \\\n" \
+        "T cache_" $0-1 "[2][2*radius + grid_height][Stencil<T, radius>::diameter() - 1]; \\\n" \
         "ExecutionCore<T, radius, grid_width, grid_height, " $0-1 ", Kernel> core_" $0-1 "(cache_" $0-1 ", n_generations, kernel);\n" \
     }'
 

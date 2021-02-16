@@ -22,12 +22,12 @@ ID kernel(Stencil<ID, radius> const &stencil, StencilInfo const &info)
     UIndex center_row = info.center_cell_id.r;
 
     bool is_valid = true;
-    for (Index c = -radius; c <= radius; c++)
+    for (Index c = -Index(radius); c <= Index(radius); c++)
     {
-        for (Index r = -radius; r <= radius; r++)
+        for (Index r = -Index(radius); r <= Index(radius); r++)
         {
-            REQUIRE(stencil[ID(c, r)].c == c + center_column);
-            REQUIRE(stencil[ID(c, r)].r == r + center_row);
+            REQUIRE(stencil[ID(c, r)].c == Index(c + center_column));
+            REQUIRE(stencil[ID(c, r)].r == Index(r + center_row));
         }
     }
 
@@ -36,20 +36,22 @@ ID kernel(Stencil<ID, radius> const &stencil, StencilInfo const &info)
 
 TEST_CASE("ExecutionCore works correctly", "[ExecutionCore]")
 {
-    ID cache[2][grid_height][Stencil<ID, radius>::diameter() - 1];
+    ID cache[2][2*radius + grid_height][Stencil<ID, radius>::diameter() - 1];
 
     ExecutionCore<ID, radius, grid_width, grid_height, decltype(&kernel)> core(cache, 0, 0, 0, &kernel);
 
-    for (Index c = -Index(radius); c < Index(grid_width + radius); c++)
+    for (Index input_c = -Index(radius); input_c < Index(grid_width + radius); input_c++)
     {
-        for (Index r = -Index(radius); r < Index(grid_height + radius); r++)
+        for (Index input_r = -Index(radius); input_r < Index(grid_height + radius); input_r++)
         {
-            std::optional<ID> output = core.step(ID(c, r));
-            if (c >= 0 && c < Index(grid_width) && r >= 0 && r < Index(grid_height))
+            Index output_c = input_c - radius;
+            Index output_r = input_r - radius;
+            std::optional<ID> output = core.step(ID(input_c, input_r));
+            if (output_c >= 0 && output_c < Index(grid_width) && output_r >= 0 && output_r < Index(grid_height))
             {
                 REQUIRE(output.has_value());
-                REQUIRE((*output).c == c);
-                REQUIRE((*output).r == r); 
+                REQUIRE((*output).c == output_c);
+                REQUIRE((*output).r == output_r); 
             }
             else
             {

@@ -24,6 +24,9 @@ OBJECTS = src/ExecutionCore.o src/main.o src/Stencil.o
 test: $(OBJECTS) Makefile
 	$(CC) $(ARGS) $(OBJECTS) -o test
 
+src/main.o: src/main.cpp Makefile
+	$(CC) $(ARGS) -c $< -o $@
+
 src/%.o: src/%.cpp src/*.hpp ../stencil/* Makefile
 	$(CC) $(ARGS) -c $< -o $@
 
