@@ -24,7 +24,6 @@ ID kernel(Stencil<ID, radius> const &stencil, StencilInfo const &info)
     UIndex center_column = info.center_cell_id.c;
     UIndex center_row = info.center_cell_id.r;
 
-    bool is_valid = true;
     for (Index c = -Index(radius); c <= Index(radius); c++)
     {
         for (Index r = -Index(radius); r <= Index(radius); r++)
