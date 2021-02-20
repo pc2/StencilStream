@@ -9,8 +9,11 @@
  */
 #include "catch.hpp"
 #include <ExecutionCore.hpp>
+#include <ExecutionPipeline.hpp>
+#include <deque>
 
 using namespace stencil;
+using namespace std;
 
 const UIndex radius = 2;
 const UIndex grid_width = 10;
@@ -36,9 +39,7 @@ ID kernel(Stencil<ID, radius> const &stencil, StencilInfo const &info)
 
 TEST_CASE("ExecutionCore works correctly", "[ExecutionCore]")
 {
-    ID cache[2][2*radius + grid_height][Stencil<ID, radius>::diameter() - 1];
-
-    ExecutionCore<ID, radius, grid_width, grid_height, decltype(&kernel)> core(cache, 0, 0, 0, &kernel);
+    ExecutionCore<ID, radius, grid_width, grid_height, decltype(&kernel)> core(0, 0, 0, &kernel);
 
     for (Index input_c = -Index(radius); input_c < Index(grid_width + radius); input_c++)
     {
@@ -46,12 +47,12 @@ TEST_CASE("ExecutionCore works correctly", "[ExecutionCore]")
         {
             Index output_c = input_c - radius;
             Index output_r = input_r - radius;
-            std::optional<ID> output = core.step(ID(input_c, input_r));
+            optional<ID> output = core.step(ID(input_c, input_r));
             if (output_c >= 0 && output_c < Index(grid_width) && output_r >= 0 && output_r < Index(grid_height))
             {
                 REQUIRE(output.has_value());
                 REQUIRE((*output).c == output_c);
-                REQUIRE((*output).r == output_r); 
+                REQUIRE((*output).r == output_r);
             }
             else
             {
@@ -60,3 +61,34 @@ TEST_CASE("ExecutionCore works correctly", "[ExecutionCore]")
         }
     }
 };
+
+TEST_CASE("ExecutionPipeline works correctly", "[ExecutionPipeline]")
+{
+    ExecutionPipeline<ID, radius, grid_width, grid_height, decltype(&kernel)> pipeline(0, 0, 0, &kernel);
+
+    UIndex input_grid_width = grid_width + 2 * pipeline_length * radius;
+    UIndex input_grid_height = grid_height + 2 * pipeline_length * radius;
+    deque<ID> outputs;
+
+    for (Index c = -Index(pipeline_length * radius); c < Index(grid_width + pipeline_length * radius); c++)
+    {
+        for (Index r = -Index(pipeline_length * radius); r < Index(grid_height + pipeline_length * radius); r++)
+        {
+            optional<ID> output = pipeline.step(ID(c, r));
+            if (output.has_value())
+            {
+                outputs.push_back(*output);
+            }
+        }
+    }
+
+    for (Index c = 0; c < grid_width; c++)
+    {
+        for (Index r = 0; r < grid_height; r++)
+        {
+            REQUIRE(outputs.front().c == c);
+            REQUIRE(outputs.front().r == r);
+            outputs.pop_front();
+        }
+    }
+}

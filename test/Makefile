@@ -19,7 +19,7 @@ ifndef PIPELINE_LEN
 endif
 ARGS += -DSTENCIL_PIPELINE_LEN=$(PIPELINE_LEN)
 
-OBJECTS = src/ExecutionCore.o src/main.o src/Stencil.o
+OBJECTS = src/ExecutionCorePipeline.o src/main.o src/Stencil.o
 
 test: $(OBJECTS) Makefile
 	$(CC) $(ARGS) $(OBJECTS) -o test

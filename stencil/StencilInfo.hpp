@@ -30,7 +30,7 @@ struct StencilInfo
      * 
      * This number +1 is the generation of the cell the stencil kernel calculates.
      */
-    Index cell_generation = 0;
+    UIndex cell_generation = 0;
 };
 
 } // namespace stencil

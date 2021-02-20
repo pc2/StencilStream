@@ -12,7 +12,6 @@
 #include "Index.hpp"
 #include "Stencil.hpp"
 #include "StencilInfo.hpp"
-#include "pipeline_length.hpp"
 #include <optional>
 
 namespace stencil
@@ -25,14 +24,14 @@ namespace stencil
  * 
  * The columns that are covered by the stencil are stored in a cache and are used again when the iteration reaches a new coloum.
  */
-template <typename T, UIndex halo_radius, UIndex output_grid_width, UIndex output_grid_height, typename Kernel>
+template <typename T, UIndex kernel_radius, UIndex output_grid_width, UIndex output_grid_height, typename Kernel>
 class ExecutionCore
 {
 public:
     static_assert(
-        std::is_invocable_r<T, Kernel, Stencil<T, halo_radius> const &, StencilInfo const &>::
+        std::is_invocable_r<T, Kernel, Stencil<T, kernel_radius> const &, StencilInfo const &>::
             value);
-    static_assert(halo_radius >= 1);
+    static_assert(kernel_radius >= 1);
 
     /**
      * Create a new execution core.
@@ -41,15 +40,14 @@ public:
      * class. Instead, it has to be defined as a variable and be passed as a reference into the core object.
      */
     ExecutionCore(
-        T (&cache)[2][2*halo_radius + output_grid_height][Stencil<T, halo_radius>::diameter() - 1],
         UIndex cell_generation,
-        UIndex output_column_offset,
-        UIndex output_row_offset,
+        Index output_column_offset,
+        Index output_row_offset,
         Kernel kernel) : input_column(0),
                          input_row(0),
                          output_column_offset(output_column_offset),
                          output_row_offset(output_row_offset),
-                         cache(cache),
+                         cache(),
                          active_cache(0),
                          kernel(kernel),
                          info()
@@ -60,8 +58,12 @@ public:
     /**
      * Process the next input cell, execute the stencil kernel and return the result.
      */
-    std::optional<T> step(T input)
+    std::optional<T> step(std::optional<T> input)
     {
+        if (!input.has_value()) {
+            return input;
+        }
+
         /**
          * Shift up every value in the stencil.
          * This operation does not touch the values in the bottom row, which will be filled
@@ -84,7 +86,7 @@ public:
             T new_value;
             if (cache_c == stencil.diameter() - 1)
             {
-                new_value = input;
+                new_value = *input;
             }
             else
             {
@@ -114,11 +116,11 @@ public:
         }
 
         // Increase column and row counters.
-        if (input_row == 2*halo_radius + output_grid_height - 1)
+        if (input_row == 2 * kernel_radius + output_grid_height - 1)
         {
             active_cache = passive_cache();
             input_row = 0;
-            if (input_column == 2*halo_radius + output_grid_width - 1)
+            if (input_column == 2 * kernel_radius + output_grid_width - 1)
             {
                 input_column = 0;
             }
@@ -143,15 +145,14 @@ private:
 
     UIndex input_column;
     UIndex input_row;
-    UIndex output_column_offset;
-    UIndex output_row_offset;
+    Index output_column_offset;
+    Index output_row_offset;
 
-    T(&cache)
-    [2][2*halo_radius + output_grid_height][Stencil<T, halo_radius>::diameter() - 1];
+    [[intelfpga::memory, intelfpga::numbanks(2)]] T cache[2][2 * kernel_radius + output_grid_height][Stencil<T, kernel_radius>::diameter() - 1];
     UIndex active_cache;
 
     Kernel kernel;
-    Stencil<T, halo_radius> stencil;
+    Stencil<T, kernel_radius> stencil;
     StencilInfo info;
 };
 

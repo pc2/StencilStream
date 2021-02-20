@@ -8,7 +8,8 @@
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "Index.hpp"
+#include "ExecutionCore.hpp"
+#include "ExecutionPipeline_pregen.hpp"
 
 namespace stencil
 {
@@ -27,4 +28,26 @@ namespace stencil
  */
 const UIndex pipeline_length = STENCIL_PIPELINE_LEN;
 
-}
+template <typename T, UIndex kernel_radius, UIndex output_grid_width, UIndex output_grid_height, typename Kernel>
+class ExecutionPipeline
+{
+public:
+    static_assert(
+        std::is_invocable_r<T, Kernel, Stencil<T, kernel_radius> const &, StencilInfo const &>::
+            value);
+    static_assert(kernel_radius >= 1);
+
+    ExecutionPipeline(UIndex cell_generation, UIndex output_column_offset, UIndex output_row_offset, Kernel kernel) : STENCIL_INITIALIZE_CORES(STENCIL_PIPELINE_LEN) {}
+
+    std::optional<T> step(T input)
+    {
+        std::optional<T> value(input);
+        STENCIL_STEP_CORES(STENCIL_PIPELINE_LEN)
+        return value;
+    }
+
+private:
+    STENCIL_DEFINE_CORES(STENCIL_PIPELINE_LEN);
+};
+
+} // namespace stencil
