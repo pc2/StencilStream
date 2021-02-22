@@ -148,7 +148,7 @@ private:
     Index output_column_offset;
     Index output_row_offset;
 
-    [[intelfpga::memory, intelfpga::numbanks(2)]] T cache[2][2 * kernel_radius + output_grid_height][Stencil<T, kernel_radius>::diameter() - 1];
+    [[intel::fpga_memory, intel::numbanks(2)]] T cache[2][2 * kernel_radius + output_grid_height][Stencil<T, kernel_radius>::diameter() - 1];
     UIndex active_cache;
 
     Kernel kernel;
