@@ -39,8 +39,8 @@ EOF
     seq 1 $1 | awk '{print "#define STENCIL_DEFINE_CORES_" $0 " " \
         "STENCIL_DEFINE_CORES_" $0-1 " \\\n" \
         "[[" \
-            "intelfpga::memory, " \
-            "intelfpga::numbanks(2)" \
+            "intel::fpga_memory, " \
+            "intel::numbanks(2)" \
         "]] \\\n" \
         "T cache_" $0-1 "[2][grid_height][B_SIZE(radius, 1) - 1]; \\\n" \
         "ExecutionCore<T, radius, grid_width, grid_height, " $0-1 ", Kernel> core_" $0-1 "(cache_" $0-1 ", n_generations, kernel);\n" \

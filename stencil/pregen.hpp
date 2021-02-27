@@ -18,5122 +18,5122 @@
 #define STENCIL_DEFINE_CORES(n) BOOST_PP_CAT(STENCIL_DEFINE_CORES_, n)
 #define STENCIL_DEFINE_CORES_0
 #define STENCIL_DEFINE_CORES_1 STENCIL_DEFINE_CORES_0 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_0[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 0, Kernel> core_0(cache_0, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_2 STENCIL_DEFINE_CORES_1 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1, Kernel> core_1(cache_1, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_3 STENCIL_DEFINE_CORES_2 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_2[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 2, Kernel> core_2(cache_2, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_4 STENCIL_DEFINE_CORES_3 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_3[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 3, Kernel> core_3(cache_3, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_5 STENCIL_DEFINE_CORES_4 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_4[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 4, Kernel> core_4(cache_4, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_6 STENCIL_DEFINE_CORES_5 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_5[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 5, Kernel> core_5(cache_5, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_7 STENCIL_DEFINE_CORES_6 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_6[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 6, Kernel> core_6(cache_6, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_8 STENCIL_DEFINE_CORES_7 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_7[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 7, Kernel> core_7(cache_7, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_9 STENCIL_DEFINE_CORES_8 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_8[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 8, Kernel> core_8(cache_8, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_10 STENCIL_DEFINE_CORES_9 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_9[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 9, Kernel> core_9(cache_9, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_11 STENCIL_DEFINE_CORES_10 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_10[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 10, Kernel> core_10(cache_10, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_12 STENCIL_DEFINE_CORES_11 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_11[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 11, Kernel> core_11(cache_11, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_13 STENCIL_DEFINE_CORES_12 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_12[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 12, Kernel> core_12(cache_12, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_14 STENCIL_DEFINE_CORES_13 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_13[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 13, Kernel> core_13(cache_13, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_15 STENCIL_DEFINE_CORES_14 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_14[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 14, Kernel> core_14(cache_14, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_16 STENCIL_DEFINE_CORES_15 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_15[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 15, Kernel> core_15(cache_15, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_17 STENCIL_DEFINE_CORES_16 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_16[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 16, Kernel> core_16(cache_16, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_18 STENCIL_DEFINE_CORES_17 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_17[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 17, Kernel> core_17(cache_17, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_19 STENCIL_DEFINE_CORES_18 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_18[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 18, Kernel> core_18(cache_18, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_20 STENCIL_DEFINE_CORES_19 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_19[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 19, Kernel> core_19(cache_19, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_21 STENCIL_DEFINE_CORES_20 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_20[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 20, Kernel> core_20(cache_20, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_22 STENCIL_DEFINE_CORES_21 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_21[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 21, Kernel> core_21(cache_21, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_23 STENCIL_DEFINE_CORES_22 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_22[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 22, Kernel> core_22(cache_22, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_24 STENCIL_DEFINE_CORES_23 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_23[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 23, Kernel> core_23(cache_23, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_25 STENCIL_DEFINE_CORES_24 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_24[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 24, Kernel> core_24(cache_24, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_26 STENCIL_DEFINE_CORES_25 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_25[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 25, Kernel> core_25(cache_25, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_27 STENCIL_DEFINE_CORES_26 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_26[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 26, Kernel> core_26(cache_26, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_28 STENCIL_DEFINE_CORES_27 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_27[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 27, Kernel> core_27(cache_27, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_29 STENCIL_DEFINE_CORES_28 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_28[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 28, Kernel> core_28(cache_28, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_30 STENCIL_DEFINE_CORES_29 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_29[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 29, Kernel> core_29(cache_29, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_31 STENCIL_DEFINE_CORES_30 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_30[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 30, Kernel> core_30(cache_30, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_32 STENCIL_DEFINE_CORES_31 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_31[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 31, Kernel> core_31(cache_31, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_33 STENCIL_DEFINE_CORES_32 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_32[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 32, Kernel> core_32(cache_32, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_34 STENCIL_DEFINE_CORES_33 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_33[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 33, Kernel> core_33(cache_33, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_35 STENCIL_DEFINE_CORES_34 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_34[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 34, Kernel> core_34(cache_34, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_36 STENCIL_DEFINE_CORES_35 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_35[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 35, Kernel> core_35(cache_35, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_37 STENCIL_DEFINE_CORES_36 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_36[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 36, Kernel> core_36(cache_36, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_38 STENCIL_DEFINE_CORES_37 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_37[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 37, Kernel> core_37(cache_37, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_39 STENCIL_DEFINE_CORES_38 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_38[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 38, Kernel> core_38(cache_38, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_40 STENCIL_DEFINE_CORES_39 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_39[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 39, Kernel> core_39(cache_39, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_41 STENCIL_DEFINE_CORES_40 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_40[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 40, Kernel> core_40(cache_40, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_42 STENCIL_DEFINE_CORES_41 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_41[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 41, Kernel> core_41(cache_41, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_43 STENCIL_DEFINE_CORES_42 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_42[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 42, Kernel> core_42(cache_42, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_44 STENCIL_DEFINE_CORES_43 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_43[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 43, Kernel> core_43(cache_43, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_45 STENCIL_DEFINE_CORES_44 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_44[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 44, Kernel> core_44(cache_44, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_46 STENCIL_DEFINE_CORES_45 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_45[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 45, Kernel> core_45(cache_45, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_47 STENCIL_DEFINE_CORES_46 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_46[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 46, Kernel> core_46(cache_46, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_48 STENCIL_DEFINE_CORES_47 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_47[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 47, Kernel> core_47(cache_47, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_49 STENCIL_DEFINE_CORES_48 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_48[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 48, Kernel> core_48(cache_48, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_50 STENCIL_DEFINE_CORES_49 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_49[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 49, Kernel> core_49(cache_49, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_51 STENCIL_DEFINE_CORES_50 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_50[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 50, Kernel> core_50(cache_50, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_52 STENCIL_DEFINE_CORES_51 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_51[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 51, Kernel> core_51(cache_51, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_53 STENCIL_DEFINE_CORES_52 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_52[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 52, Kernel> core_52(cache_52, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_54 STENCIL_DEFINE_CORES_53 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_53[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 53, Kernel> core_53(cache_53, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_55 STENCIL_DEFINE_CORES_54 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_54[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 54, Kernel> core_54(cache_54, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_56 STENCIL_DEFINE_CORES_55 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_55[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 55, Kernel> core_55(cache_55, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_57 STENCIL_DEFINE_CORES_56 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_56[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 56, Kernel> core_56(cache_56, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_58 STENCIL_DEFINE_CORES_57 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_57[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 57, Kernel> core_57(cache_57, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_59 STENCIL_DEFINE_CORES_58 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_58[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 58, Kernel> core_58(cache_58, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_60 STENCIL_DEFINE_CORES_59 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_59[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 59, Kernel> core_59(cache_59, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_61 STENCIL_DEFINE_CORES_60 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_60[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 60, Kernel> core_60(cache_60, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_62 STENCIL_DEFINE_CORES_61 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_61[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 61, Kernel> core_61(cache_61, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_63 STENCIL_DEFINE_CORES_62 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_62[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 62, Kernel> core_62(cache_62, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_64 STENCIL_DEFINE_CORES_63 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_63[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 63, Kernel> core_63(cache_63, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_65 STENCIL_DEFINE_CORES_64 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_64[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 64, Kernel> core_64(cache_64, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_66 STENCIL_DEFINE_CORES_65 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_65[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 65, Kernel> core_65(cache_65, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_67 STENCIL_DEFINE_CORES_66 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_66[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 66, Kernel> core_66(cache_66, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_68 STENCIL_DEFINE_CORES_67 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_67[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 67, Kernel> core_67(cache_67, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_69 STENCIL_DEFINE_CORES_68 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_68[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 68, Kernel> core_68(cache_68, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_70 STENCIL_DEFINE_CORES_69 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_69[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 69, Kernel> core_69(cache_69, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_71 STENCIL_DEFINE_CORES_70 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_70[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 70, Kernel> core_70(cache_70, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_72 STENCIL_DEFINE_CORES_71 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_71[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 71, Kernel> core_71(cache_71, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_73 STENCIL_DEFINE_CORES_72 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_72[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 72, Kernel> core_72(cache_72, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_74 STENCIL_DEFINE_CORES_73 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_73[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 73, Kernel> core_73(cache_73, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_75 STENCIL_DEFINE_CORES_74 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_74[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 74, Kernel> core_74(cache_74, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_76 STENCIL_DEFINE_CORES_75 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_75[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 75, Kernel> core_75(cache_75, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_77 STENCIL_DEFINE_CORES_76 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_76[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 76, Kernel> core_76(cache_76, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_78 STENCIL_DEFINE_CORES_77 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_77[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 77, Kernel> core_77(cache_77, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_79 STENCIL_DEFINE_CORES_78 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_78[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 78, Kernel> core_78(cache_78, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_80 STENCIL_DEFINE_CORES_79 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_79[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 79, Kernel> core_79(cache_79, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_81 STENCIL_DEFINE_CORES_80 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_80[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 80, Kernel> core_80(cache_80, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_82 STENCIL_DEFINE_CORES_81 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_81[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 81, Kernel> core_81(cache_81, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_83 STENCIL_DEFINE_CORES_82 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_82[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 82, Kernel> core_82(cache_82, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_84 STENCIL_DEFINE_CORES_83 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_83[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 83, Kernel> core_83(cache_83, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_85 STENCIL_DEFINE_CORES_84 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_84[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 84, Kernel> core_84(cache_84, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_86 STENCIL_DEFINE_CORES_85 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_85[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 85, Kernel> core_85(cache_85, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_87 STENCIL_DEFINE_CORES_86 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_86[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 86, Kernel> core_86(cache_86, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_88 STENCIL_DEFINE_CORES_87 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_87[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 87, Kernel> core_87(cache_87, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_89 STENCIL_DEFINE_CORES_88 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_88[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 88, Kernel> core_88(cache_88, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_90 STENCIL_DEFINE_CORES_89 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_89[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 89, Kernel> core_89(cache_89, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_91 STENCIL_DEFINE_CORES_90 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_90[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 90, Kernel> core_90(cache_90, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_92 STENCIL_DEFINE_CORES_91 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_91[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 91, Kernel> core_91(cache_91, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_93 STENCIL_DEFINE_CORES_92 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_92[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 92, Kernel> core_92(cache_92, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_94 STENCIL_DEFINE_CORES_93 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_93[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 93, Kernel> core_93(cache_93, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_95 STENCIL_DEFINE_CORES_94 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_94[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 94, Kernel> core_94(cache_94, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_96 STENCIL_DEFINE_CORES_95 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_95[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 95, Kernel> core_95(cache_95, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_97 STENCIL_DEFINE_CORES_96 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_96[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 96, Kernel> core_96(cache_96, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_98 STENCIL_DEFINE_CORES_97 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_97[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 97, Kernel> core_97(cache_97, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_99 STENCIL_DEFINE_CORES_98 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_98[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 98, Kernel> core_98(cache_98, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_100 STENCIL_DEFINE_CORES_99 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_99[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 99, Kernel> core_99(cache_99, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_101 STENCIL_DEFINE_CORES_100 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_100[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 100, Kernel> core_100(cache_100, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_102 STENCIL_DEFINE_CORES_101 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_101[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 101, Kernel> core_101(cache_101, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_103 STENCIL_DEFINE_CORES_102 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_102[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 102, Kernel> core_102(cache_102, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_104 STENCIL_DEFINE_CORES_103 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_103[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 103, Kernel> core_103(cache_103, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_105 STENCIL_DEFINE_CORES_104 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_104[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 104, Kernel> core_104(cache_104, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_106 STENCIL_DEFINE_CORES_105 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_105[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 105, Kernel> core_105(cache_105, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_107 STENCIL_DEFINE_CORES_106 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_106[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 106, Kernel> core_106(cache_106, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_108 STENCIL_DEFINE_CORES_107 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_107[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 107, Kernel> core_107(cache_107, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_109 STENCIL_DEFINE_CORES_108 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_108[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 108, Kernel> core_108(cache_108, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_110 STENCIL_DEFINE_CORES_109 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_109[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 109, Kernel> core_109(cache_109, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_111 STENCIL_DEFINE_CORES_110 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_110[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 110, Kernel> core_110(cache_110, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_112 STENCIL_DEFINE_CORES_111 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_111[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 111, Kernel> core_111(cache_111, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_113 STENCIL_DEFINE_CORES_112 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_112[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 112, Kernel> core_112(cache_112, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_114 STENCIL_DEFINE_CORES_113 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_113[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 113, Kernel> core_113(cache_113, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_115 STENCIL_DEFINE_CORES_114 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_114[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 114, Kernel> core_114(cache_114, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_116 STENCIL_DEFINE_CORES_115 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_115[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 115, Kernel> core_115(cache_115, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_117 STENCIL_DEFINE_CORES_116 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_116[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 116, Kernel> core_116(cache_116, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_118 STENCIL_DEFINE_CORES_117 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_117[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 117, Kernel> core_117(cache_117, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_119 STENCIL_DEFINE_CORES_118 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_118[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 118, Kernel> core_118(cache_118, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_120 STENCIL_DEFINE_CORES_119 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_119[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 119, Kernel> core_119(cache_119, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_121 STENCIL_DEFINE_CORES_120 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_120[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 120, Kernel> core_120(cache_120, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_122 STENCIL_DEFINE_CORES_121 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_121[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 121, Kernel> core_121(cache_121, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_123 STENCIL_DEFINE_CORES_122 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_122[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 122, Kernel> core_122(cache_122, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_124 STENCIL_DEFINE_CORES_123 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_123[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 123, Kernel> core_123(cache_123, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_125 STENCIL_DEFINE_CORES_124 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_124[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 124, Kernel> core_124(cache_124, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_126 STENCIL_DEFINE_CORES_125 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_125[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 125, Kernel> core_125(cache_125, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_127 STENCIL_DEFINE_CORES_126 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_126[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 126, Kernel> core_126(cache_126, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_128 STENCIL_DEFINE_CORES_127 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_127[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 127, Kernel> core_127(cache_127, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_129 STENCIL_DEFINE_CORES_128 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_128[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 128, Kernel> core_128(cache_128, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_130 STENCIL_DEFINE_CORES_129 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_129[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 129, Kernel> core_129(cache_129, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_131 STENCIL_DEFINE_CORES_130 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_130[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 130, Kernel> core_130(cache_130, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_132 STENCIL_DEFINE_CORES_131 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_131[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 131, Kernel> core_131(cache_131, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_133 STENCIL_DEFINE_CORES_132 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_132[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 132, Kernel> core_132(cache_132, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_134 STENCIL_DEFINE_CORES_133 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_133[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 133, Kernel> core_133(cache_133, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_135 STENCIL_DEFINE_CORES_134 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_134[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 134, Kernel> core_134(cache_134, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_136 STENCIL_DEFINE_CORES_135 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_135[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 135, Kernel> core_135(cache_135, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_137 STENCIL_DEFINE_CORES_136 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_136[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 136, Kernel> core_136(cache_136, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_138 STENCIL_DEFINE_CORES_137 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_137[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 137, Kernel> core_137(cache_137, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_139 STENCIL_DEFINE_CORES_138 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_138[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 138, Kernel> core_138(cache_138, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_140 STENCIL_DEFINE_CORES_139 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_139[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 139, Kernel> core_139(cache_139, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_141 STENCIL_DEFINE_CORES_140 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_140[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 140, Kernel> core_140(cache_140, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_142 STENCIL_DEFINE_CORES_141 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_141[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 141, Kernel> core_141(cache_141, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_143 STENCIL_DEFINE_CORES_142 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_142[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 142, Kernel> core_142(cache_142, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_144 STENCIL_DEFINE_CORES_143 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_143[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 143, Kernel> core_143(cache_143, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_145 STENCIL_DEFINE_CORES_144 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_144[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 144, Kernel> core_144(cache_144, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_146 STENCIL_DEFINE_CORES_145 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_145[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 145, Kernel> core_145(cache_145, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_147 STENCIL_DEFINE_CORES_146 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_146[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 146, Kernel> core_146(cache_146, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_148 STENCIL_DEFINE_CORES_147 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_147[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 147, Kernel> core_147(cache_147, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_149 STENCIL_DEFINE_CORES_148 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_148[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 148, Kernel> core_148(cache_148, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_150 STENCIL_DEFINE_CORES_149 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_149[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 149, Kernel> core_149(cache_149, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_151 STENCIL_DEFINE_CORES_150 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_150[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 150, Kernel> core_150(cache_150, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_152 STENCIL_DEFINE_CORES_151 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_151[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 151, Kernel> core_151(cache_151, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_153 STENCIL_DEFINE_CORES_152 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_152[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 152, Kernel> core_152(cache_152, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_154 STENCIL_DEFINE_CORES_153 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_153[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 153, Kernel> core_153(cache_153, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_155 STENCIL_DEFINE_CORES_154 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_154[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 154, Kernel> core_154(cache_154, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_156 STENCIL_DEFINE_CORES_155 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_155[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 155, Kernel> core_155(cache_155, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_157 STENCIL_DEFINE_CORES_156 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_156[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 156, Kernel> core_156(cache_156, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_158 STENCIL_DEFINE_CORES_157 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_157[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 157, Kernel> core_157(cache_157, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_159 STENCIL_DEFINE_CORES_158 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_158[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 158, Kernel> core_158(cache_158, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_160 STENCIL_DEFINE_CORES_159 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_159[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 159, Kernel> core_159(cache_159, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_161 STENCIL_DEFINE_CORES_160 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_160[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 160, Kernel> core_160(cache_160, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_162 STENCIL_DEFINE_CORES_161 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_161[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 161, Kernel> core_161(cache_161, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_163 STENCIL_DEFINE_CORES_162 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_162[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 162, Kernel> core_162(cache_162, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_164 STENCIL_DEFINE_CORES_163 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_163[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 163, Kernel> core_163(cache_163, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_165 STENCIL_DEFINE_CORES_164 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_164[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 164, Kernel> core_164(cache_164, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_166 STENCIL_DEFINE_CORES_165 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_165[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 165, Kernel> core_165(cache_165, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_167 STENCIL_DEFINE_CORES_166 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_166[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 166, Kernel> core_166(cache_166, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_168 STENCIL_DEFINE_CORES_167 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_167[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 167, Kernel> core_167(cache_167, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_169 STENCIL_DEFINE_CORES_168 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_168[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 168, Kernel> core_168(cache_168, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_170 STENCIL_DEFINE_CORES_169 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_169[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 169, Kernel> core_169(cache_169, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_171 STENCIL_DEFINE_CORES_170 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_170[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 170, Kernel> core_170(cache_170, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_172 STENCIL_DEFINE_CORES_171 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_171[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 171, Kernel> core_171(cache_171, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_173 STENCIL_DEFINE_CORES_172 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_172[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 172, Kernel> core_172(cache_172, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_174 STENCIL_DEFINE_CORES_173 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_173[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 173, Kernel> core_173(cache_173, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_175 STENCIL_DEFINE_CORES_174 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_174[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 174, Kernel> core_174(cache_174, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_176 STENCIL_DEFINE_CORES_175 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_175[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 175, Kernel> core_175(cache_175, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_177 STENCIL_DEFINE_CORES_176 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_176[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 176, Kernel> core_176(cache_176, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_178 STENCIL_DEFINE_CORES_177 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_177[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 177, Kernel> core_177(cache_177, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_179 STENCIL_DEFINE_CORES_178 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_178[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 178, Kernel> core_178(cache_178, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_180 STENCIL_DEFINE_CORES_179 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_179[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 179, Kernel> core_179(cache_179, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_181 STENCIL_DEFINE_CORES_180 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_180[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 180, Kernel> core_180(cache_180, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_182 STENCIL_DEFINE_CORES_181 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_181[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 181, Kernel> core_181(cache_181, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_183 STENCIL_DEFINE_CORES_182 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_182[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 182, Kernel> core_182(cache_182, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_184 STENCIL_DEFINE_CORES_183 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_183[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 183, Kernel> core_183(cache_183, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_185 STENCIL_DEFINE_CORES_184 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_184[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 184, Kernel> core_184(cache_184, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_186 STENCIL_DEFINE_CORES_185 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_185[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 185, Kernel> core_185(cache_185, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_187 STENCIL_DEFINE_CORES_186 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_186[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 186, Kernel> core_186(cache_186, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_188 STENCIL_DEFINE_CORES_187 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_187[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 187, Kernel> core_187(cache_187, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_189 STENCIL_DEFINE_CORES_188 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_188[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 188, Kernel> core_188(cache_188, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_190 STENCIL_DEFINE_CORES_189 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_189[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 189, Kernel> core_189(cache_189, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_191 STENCIL_DEFINE_CORES_190 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_190[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 190, Kernel> core_190(cache_190, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_192 STENCIL_DEFINE_CORES_191 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_191[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 191, Kernel> core_191(cache_191, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_193 STENCIL_DEFINE_CORES_192 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_192[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 192, Kernel> core_192(cache_192, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_194 STENCIL_DEFINE_CORES_193 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_193[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 193, Kernel> core_193(cache_193, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_195 STENCIL_DEFINE_CORES_194 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_194[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 194, Kernel> core_194(cache_194, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_196 STENCIL_DEFINE_CORES_195 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_195[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 195, Kernel> core_195(cache_195, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_197 STENCIL_DEFINE_CORES_196 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_196[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 196, Kernel> core_196(cache_196, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_198 STENCIL_DEFINE_CORES_197 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_197[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 197, Kernel> core_197(cache_197, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_199 STENCIL_DEFINE_CORES_198 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_198[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 198, Kernel> core_198(cache_198, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_200 STENCIL_DEFINE_CORES_199 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_199[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 199, Kernel> core_199(cache_199, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_201 STENCIL_DEFINE_CORES_200 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_200[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 200, Kernel> core_200(cache_200, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_202 STENCIL_DEFINE_CORES_201 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_201[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 201, Kernel> core_201(cache_201, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_203 STENCIL_DEFINE_CORES_202 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_202[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 202, Kernel> core_202(cache_202, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_204 STENCIL_DEFINE_CORES_203 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_203[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 203, Kernel> core_203(cache_203, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_205 STENCIL_DEFINE_CORES_204 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_204[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 204, Kernel> core_204(cache_204, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_206 STENCIL_DEFINE_CORES_205 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_205[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 205, Kernel> core_205(cache_205, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_207 STENCIL_DEFINE_CORES_206 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_206[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 206, Kernel> core_206(cache_206, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_208 STENCIL_DEFINE_CORES_207 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_207[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 207, Kernel> core_207(cache_207, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_209 STENCIL_DEFINE_CORES_208 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_208[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 208, Kernel> core_208(cache_208, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_210 STENCIL_DEFINE_CORES_209 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_209[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 209, Kernel> core_209(cache_209, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_211 STENCIL_DEFINE_CORES_210 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_210[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 210, Kernel> core_210(cache_210, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_212 STENCIL_DEFINE_CORES_211 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_211[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 211, Kernel> core_211(cache_211, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_213 STENCIL_DEFINE_CORES_212 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_212[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 212, Kernel> core_212(cache_212, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_214 STENCIL_DEFINE_CORES_213 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_213[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 213, Kernel> core_213(cache_213, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_215 STENCIL_DEFINE_CORES_214 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_214[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 214, Kernel> core_214(cache_214, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_216 STENCIL_DEFINE_CORES_215 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_215[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 215, Kernel> core_215(cache_215, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_217 STENCIL_DEFINE_CORES_216 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_216[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 216, Kernel> core_216(cache_216, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_218 STENCIL_DEFINE_CORES_217 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_217[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 217, Kernel> core_217(cache_217, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_219 STENCIL_DEFINE_CORES_218 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_218[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 218, Kernel> core_218(cache_218, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_220 STENCIL_DEFINE_CORES_219 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_219[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 219, Kernel> core_219(cache_219, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_221 STENCIL_DEFINE_CORES_220 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_220[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 220, Kernel> core_220(cache_220, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_222 STENCIL_DEFINE_CORES_221 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_221[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 221, Kernel> core_221(cache_221, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_223 STENCIL_DEFINE_CORES_222 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_222[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 222, Kernel> core_222(cache_222, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_224 STENCIL_DEFINE_CORES_223 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_223[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 223, Kernel> core_223(cache_223, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_225 STENCIL_DEFINE_CORES_224 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_224[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 224, Kernel> core_224(cache_224, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_226 STENCIL_DEFINE_CORES_225 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_225[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 225, Kernel> core_225(cache_225, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_227 STENCIL_DEFINE_CORES_226 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_226[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 226, Kernel> core_226(cache_226, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_228 STENCIL_DEFINE_CORES_227 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_227[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 227, Kernel> core_227(cache_227, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_229 STENCIL_DEFINE_CORES_228 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_228[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 228, Kernel> core_228(cache_228, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_230 STENCIL_DEFINE_CORES_229 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_229[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 229, Kernel> core_229(cache_229, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_231 STENCIL_DEFINE_CORES_230 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_230[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 230, Kernel> core_230(cache_230, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_232 STENCIL_DEFINE_CORES_231 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_231[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 231, Kernel> core_231(cache_231, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_233 STENCIL_DEFINE_CORES_232 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_232[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 232, Kernel> core_232(cache_232, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_234 STENCIL_DEFINE_CORES_233 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_233[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 233, Kernel> core_233(cache_233, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_235 STENCIL_DEFINE_CORES_234 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_234[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 234, Kernel> core_234(cache_234, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_236 STENCIL_DEFINE_CORES_235 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_235[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 235, Kernel> core_235(cache_235, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_237 STENCIL_DEFINE_CORES_236 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_236[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 236, Kernel> core_236(cache_236, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_238 STENCIL_DEFINE_CORES_237 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_237[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 237, Kernel> core_237(cache_237, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_239 STENCIL_DEFINE_CORES_238 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_238[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 238, Kernel> core_238(cache_238, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_240 STENCIL_DEFINE_CORES_239 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_239[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 239, Kernel> core_239(cache_239, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_241 STENCIL_DEFINE_CORES_240 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_240[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 240, Kernel> core_240(cache_240, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_242 STENCIL_DEFINE_CORES_241 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_241[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 241, Kernel> core_241(cache_241, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_243 STENCIL_DEFINE_CORES_242 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_242[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 242, Kernel> core_242(cache_242, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_244 STENCIL_DEFINE_CORES_243 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_243[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 243, Kernel> core_243(cache_243, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_245 STENCIL_DEFINE_CORES_244 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_244[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 244, Kernel> core_244(cache_244, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_246 STENCIL_DEFINE_CORES_245 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_245[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 245, Kernel> core_245(cache_245, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_247 STENCIL_DEFINE_CORES_246 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_246[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 246, Kernel> core_246(cache_246, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_248 STENCIL_DEFINE_CORES_247 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_247[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 247, Kernel> core_247(cache_247, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_249 STENCIL_DEFINE_CORES_248 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_248[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 248, Kernel> core_248(cache_248, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_250 STENCIL_DEFINE_CORES_249 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_249[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 249, Kernel> core_249(cache_249, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_251 STENCIL_DEFINE_CORES_250 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_250[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 250, Kernel> core_250(cache_250, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_252 STENCIL_DEFINE_CORES_251 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_251[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 251, Kernel> core_251(cache_251, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_253 STENCIL_DEFINE_CORES_252 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_252[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 252, Kernel> core_252(cache_252, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_254 STENCIL_DEFINE_CORES_253 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_253[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 253, Kernel> core_253(cache_253, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_255 STENCIL_DEFINE_CORES_254 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_254[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 254, Kernel> core_254(cache_254, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_256 STENCIL_DEFINE_CORES_255 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_255[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 255, Kernel> core_255(cache_255, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_257 STENCIL_DEFINE_CORES_256 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_256[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 256, Kernel> core_256(cache_256, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_258 STENCIL_DEFINE_CORES_257 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_257[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 257, Kernel> core_257(cache_257, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_259 STENCIL_DEFINE_CORES_258 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_258[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 258, Kernel> core_258(cache_258, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_260 STENCIL_DEFINE_CORES_259 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_259[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 259, Kernel> core_259(cache_259, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_261 STENCIL_DEFINE_CORES_260 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_260[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 260, Kernel> core_260(cache_260, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_262 STENCIL_DEFINE_CORES_261 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_261[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 261, Kernel> core_261(cache_261, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_263 STENCIL_DEFINE_CORES_262 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_262[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 262, Kernel> core_262(cache_262, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_264 STENCIL_DEFINE_CORES_263 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_263[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 263, Kernel> core_263(cache_263, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_265 STENCIL_DEFINE_CORES_264 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_264[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 264, Kernel> core_264(cache_264, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_266 STENCIL_DEFINE_CORES_265 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_265[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 265, Kernel> core_265(cache_265, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_267 STENCIL_DEFINE_CORES_266 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_266[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 266, Kernel> core_266(cache_266, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_268 STENCIL_DEFINE_CORES_267 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_267[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 267, Kernel> core_267(cache_267, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_269 STENCIL_DEFINE_CORES_268 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_268[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 268, Kernel> core_268(cache_268, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_270 STENCIL_DEFINE_CORES_269 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_269[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 269, Kernel> core_269(cache_269, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_271 STENCIL_DEFINE_CORES_270 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_270[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 270, Kernel> core_270(cache_270, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_272 STENCIL_DEFINE_CORES_271 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_271[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 271, Kernel> core_271(cache_271, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_273 STENCIL_DEFINE_CORES_272 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_272[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 272, Kernel> core_272(cache_272, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_274 STENCIL_DEFINE_CORES_273 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_273[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 273, Kernel> core_273(cache_273, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_275 STENCIL_DEFINE_CORES_274 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_274[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 274, Kernel> core_274(cache_274, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_276 STENCIL_DEFINE_CORES_275 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_275[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 275, Kernel> core_275(cache_275, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_277 STENCIL_DEFINE_CORES_276 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_276[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 276, Kernel> core_276(cache_276, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_278 STENCIL_DEFINE_CORES_277 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_277[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 277, Kernel> core_277(cache_277, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_279 STENCIL_DEFINE_CORES_278 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_278[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 278, Kernel> core_278(cache_278, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_280 STENCIL_DEFINE_CORES_279 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_279[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 279, Kernel> core_279(cache_279, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_281 STENCIL_DEFINE_CORES_280 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_280[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 280, Kernel> core_280(cache_280, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_282 STENCIL_DEFINE_CORES_281 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_281[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 281, Kernel> core_281(cache_281, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_283 STENCIL_DEFINE_CORES_282 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_282[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 282, Kernel> core_282(cache_282, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_284 STENCIL_DEFINE_CORES_283 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_283[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 283, Kernel> core_283(cache_283, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_285 STENCIL_DEFINE_CORES_284 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_284[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 284, Kernel> core_284(cache_284, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_286 STENCIL_DEFINE_CORES_285 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_285[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 285, Kernel> core_285(cache_285, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_287 STENCIL_DEFINE_CORES_286 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_286[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 286, Kernel> core_286(cache_286, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_288 STENCIL_DEFINE_CORES_287 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_287[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 287, Kernel> core_287(cache_287, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_289 STENCIL_DEFINE_CORES_288 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_288[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 288, Kernel> core_288(cache_288, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_290 STENCIL_DEFINE_CORES_289 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_289[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 289, Kernel> core_289(cache_289, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_291 STENCIL_DEFINE_CORES_290 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_290[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 290, Kernel> core_290(cache_290, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_292 STENCIL_DEFINE_CORES_291 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_291[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 291, Kernel> core_291(cache_291, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_293 STENCIL_DEFINE_CORES_292 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_292[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 292, Kernel> core_292(cache_292, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_294 STENCIL_DEFINE_CORES_293 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_293[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 293, Kernel> core_293(cache_293, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_295 STENCIL_DEFINE_CORES_294 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_294[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 294, Kernel> core_294(cache_294, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_296 STENCIL_DEFINE_CORES_295 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_295[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 295, Kernel> core_295(cache_295, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_297 STENCIL_DEFINE_CORES_296 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_296[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 296, Kernel> core_296(cache_296, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_298 STENCIL_DEFINE_CORES_297 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_297[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 297, Kernel> core_297(cache_297, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_299 STENCIL_DEFINE_CORES_298 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_298[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 298, Kernel> core_298(cache_298, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_300 STENCIL_DEFINE_CORES_299 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_299[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 299, Kernel> core_299(cache_299, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_301 STENCIL_DEFINE_CORES_300 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_300[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 300, Kernel> core_300(cache_300, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_302 STENCIL_DEFINE_CORES_301 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_301[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 301, Kernel> core_301(cache_301, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_303 STENCIL_DEFINE_CORES_302 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_302[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 302, Kernel> core_302(cache_302, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_304 STENCIL_DEFINE_CORES_303 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_303[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 303, Kernel> core_303(cache_303, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_305 STENCIL_DEFINE_CORES_304 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_304[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 304, Kernel> core_304(cache_304, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_306 STENCIL_DEFINE_CORES_305 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_305[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 305, Kernel> core_305(cache_305, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_307 STENCIL_DEFINE_CORES_306 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_306[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 306, Kernel> core_306(cache_306, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_308 STENCIL_DEFINE_CORES_307 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_307[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 307, Kernel> core_307(cache_307, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_309 STENCIL_DEFINE_CORES_308 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_308[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 308, Kernel> core_308(cache_308, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_310 STENCIL_DEFINE_CORES_309 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_309[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 309, Kernel> core_309(cache_309, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_311 STENCIL_DEFINE_CORES_310 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_310[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 310, Kernel> core_310(cache_310, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_312 STENCIL_DEFINE_CORES_311 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_311[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 311, Kernel> core_311(cache_311, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_313 STENCIL_DEFINE_CORES_312 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_312[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 312, Kernel> core_312(cache_312, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_314 STENCIL_DEFINE_CORES_313 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_313[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 313, Kernel> core_313(cache_313, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_315 STENCIL_DEFINE_CORES_314 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_314[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 314, Kernel> core_314(cache_314, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_316 STENCIL_DEFINE_CORES_315 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_315[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 315, Kernel> core_315(cache_315, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_317 STENCIL_DEFINE_CORES_316 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_316[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 316, Kernel> core_316(cache_316, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_318 STENCIL_DEFINE_CORES_317 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_317[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 317, Kernel> core_317(cache_317, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_319 STENCIL_DEFINE_CORES_318 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_318[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 318, Kernel> core_318(cache_318, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_320 STENCIL_DEFINE_CORES_319 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_319[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 319, Kernel> core_319(cache_319, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_321 STENCIL_DEFINE_CORES_320 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_320[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 320, Kernel> core_320(cache_320, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_322 STENCIL_DEFINE_CORES_321 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_321[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 321, Kernel> core_321(cache_321, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_323 STENCIL_DEFINE_CORES_322 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_322[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 322, Kernel> core_322(cache_322, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_324 STENCIL_DEFINE_CORES_323 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_323[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 323, Kernel> core_323(cache_323, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_325 STENCIL_DEFINE_CORES_324 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_324[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 324, Kernel> core_324(cache_324, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_326 STENCIL_DEFINE_CORES_325 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_325[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 325, Kernel> core_325(cache_325, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_327 STENCIL_DEFINE_CORES_326 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_326[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 326, Kernel> core_326(cache_326, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_328 STENCIL_DEFINE_CORES_327 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_327[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 327, Kernel> core_327(cache_327, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_329 STENCIL_DEFINE_CORES_328 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_328[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 328, Kernel> core_328(cache_328, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_330 STENCIL_DEFINE_CORES_329 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_329[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 329, Kernel> core_329(cache_329, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_331 STENCIL_DEFINE_CORES_330 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_330[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 330, Kernel> core_330(cache_330, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_332 STENCIL_DEFINE_CORES_331 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_331[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 331, Kernel> core_331(cache_331, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_333 STENCIL_DEFINE_CORES_332 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_332[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 332, Kernel> core_332(cache_332, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_334 STENCIL_DEFINE_CORES_333 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_333[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 333, Kernel> core_333(cache_333, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_335 STENCIL_DEFINE_CORES_334 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_334[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 334, Kernel> core_334(cache_334, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_336 STENCIL_DEFINE_CORES_335 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_335[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 335, Kernel> core_335(cache_335, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_337 STENCIL_DEFINE_CORES_336 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_336[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 336, Kernel> core_336(cache_336, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_338 STENCIL_DEFINE_CORES_337 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_337[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 337, Kernel> core_337(cache_337, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_339 STENCIL_DEFINE_CORES_338 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_338[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 338, Kernel> core_338(cache_338, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_340 STENCIL_DEFINE_CORES_339 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_339[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 339, Kernel> core_339(cache_339, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_341 STENCIL_DEFINE_CORES_340 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_340[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 340, Kernel> core_340(cache_340, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_342 STENCIL_DEFINE_CORES_341 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_341[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 341, Kernel> core_341(cache_341, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_343 STENCIL_DEFINE_CORES_342 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_342[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 342, Kernel> core_342(cache_342, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_344 STENCIL_DEFINE_CORES_343 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_343[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 343, Kernel> core_343(cache_343, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_345 STENCIL_DEFINE_CORES_344 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_344[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 344, Kernel> core_344(cache_344, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_346 STENCIL_DEFINE_CORES_345 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_345[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 345, Kernel> core_345(cache_345, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_347 STENCIL_DEFINE_CORES_346 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_346[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 346, Kernel> core_346(cache_346, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_348 STENCIL_DEFINE_CORES_347 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_347[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 347, Kernel> core_347(cache_347, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_349 STENCIL_DEFINE_CORES_348 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_348[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 348, Kernel> core_348(cache_348, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_350 STENCIL_DEFINE_CORES_349 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_349[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 349, Kernel> core_349(cache_349, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_351 STENCIL_DEFINE_CORES_350 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_350[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 350, Kernel> core_350(cache_350, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_352 STENCIL_DEFINE_CORES_351 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_351[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 351, Kernel> core_351(cache_351, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_353 STENCIL_DEFINE_CORES_352 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_352[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 352, Kernel> core_352(cache_352, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_354 STENCIL_DEFINE_CORES_353 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_353[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 353, Kernel> core_353(cache_353, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_355 STENCIL_DEFINE_CORES_354 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_354[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 354, Kernel> core_354(cache_354, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_356 STENCIL_DEFINE_CORES_355 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_355[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 355, Kernel> core_355(cache_355, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_357 STENCIL_DEFINE_CORES_356 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_356[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 356, Kernel> core_356(cache_356, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_358 STENCIL_DEFINE_CORES_357 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_357[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 357, Kernel> core_357(cache_357, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_359 STENCIL_DEFINE_CORES_358 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_358[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 358, Kernel> core_358(cache_358, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_360 STENCIL_DEFINE_CORES_359 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_359[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 359, Kernel> core_359(cache_359, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_361 STENCIL_DEFINE_CORES_360 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_360[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 360, Kernel> core_360(cache_360, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_362 STENCIL_DEFINE_CORES_361 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_361[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 361, Kernel> core_361(cache_361, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_363 STENCIL_DEFINE_CORES_362 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_362[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 362, Kernel> core_362(cache_362, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_364 STENCIL_DEFINE_CORES_363 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_363[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 363, Kernel> core_363(cache_363, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_365 STENCIL_DEFINE_CORES_364 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_364[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 364, Kernel> core_364(cache_364, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_366 STENCIL_DEFINE_CORES_365 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_365[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 365, Kernel> core_365(cache_365, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_367 STENCIL_DEFINE_CORES_366 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_366[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 366, Kernel> core_366(cache_366, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_368 STENCIL_DEFINE_CORES_367 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_367[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 367, Kernel> core_367(cache_367, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_369 STENCIL_DEFINE_CORES_368 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_368[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 368, Kernel> core_368(cache_368, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_370 STENCIL_DEFINE_CORES_369 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_369[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 369, Kernel> core_369(cache_369, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_371 STENCIL_DEFINE_CORES_370 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_370[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 370, Kernel> core_370(cache_370, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_372 STENCIL_DEFINE_CORES_371 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_371[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 371, Kernel> core_371(cache_371, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_373 STENCIL_DEFINE_CORES_372 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_372[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 372, Kernel> core_372(cache_372, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_374 STENCIL_DEFINE_CORES_373 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_373[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 373, Kernel> core_373(cache_373, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_375 STENCIL_DEFINE_CORES_374 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_374[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 374, Kernel> core_374(cache_374, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_376 STENCIL_DEFINE_CORES_375 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_375[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 375, Kernel> core_375(cache_375, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_377 STENCIL_DEFINE_CORES_376 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_376[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 376, Kernel> core_376(cache_376, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_378 STENCIL_DEFINE_CORES_377 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_377[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 377, Kernel> core_377(cache_377, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_379 STENCIL_DEFINE_CORES_378 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_378[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 378, Kernel> core_378(cache_378, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_380 STENCIL_DEFINE_CORES_379 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_379[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 379, Kernel> core_379(cache_379, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_381 STENCIL_DEFINE_CORES_380 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_380[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 380, Kernel> core_380(cache_380, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_382 STENCIL_DEFINE_CORES_381 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_381[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 381, Kernel> core_381(cache_381, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_383 STENCIL_DEFINE_CORES_382 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_382[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 382, Kernel> core_382(cache_382, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_384 STENCIL_DEFINE_CORES_383 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_383[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 383, Kernel> core_383(cache_383, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_385 STENCIL_DEFINE_CORES_384 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_384[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 384, Kernel> core_384(cache_384, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_386 STENCIL_DEFINE_CORES_385 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_385[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 385, Kernel> core_385(cache_385, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_387 STENCIL_DEFINE_CORES_386 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_386[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 386, Kernel> core_386(cache_386, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_388 STENCIL_DEFINE_CORES_387 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_387[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 387, Kernel> core_387(cache_387, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_389 STENCIL_DEFINE_CORES_388 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_388[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 388, Kernel> core_388(cache_388, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_390 STENCIL_DEFINE_CORES_389 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_389[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 389, Kernel> core_389(cache_389, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_391 STENCIL_DEFINE_CORES_390 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_390[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 390, Kernel> core_390(cache_390, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_392 STENCIL_DEFINE_CORES_391 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_391[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 391, Kernel> core_391(cache_391, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_393 STENCIL_DEFINE_CORES_392 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_392[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 392, Kernel> core_392(cache_392, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_394 STENCIL_DEFINE_CORES_393 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_393[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 393, Kernel> core_393(cache_393, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_395 STENCIL_DEFINE_CORES_394 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_394[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 394, Kernel> core_394(cache_394, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_396 STENCIL_DEFINE_CORES_395 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_395[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 395, Kernel> core_395(cache_395, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_397 STENCIL_DEFINE_CORES_396 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_396[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 396, Kernel> core_396(cache_396, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_398 STENCIL_DEFINE_CORES_397 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_397[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 397, Kernel> core_397(cache_397, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_399 STENCIL_DEFINE_CORES_398 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_398[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 398, Kernel> core_398(cache_398, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_400 STENCIL_DEFINE_CORES_399 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_399[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 399, Kernel> core_399(cache_399, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_401 STENCIL_DEFINE_CORES_400 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_400[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 400, Kernel> core_400(cache_400, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_402 STENCIL_DEFINE_CORES_401 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_401[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 401, Kernel> core_401(cache_401, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_403 STENCIL_DEFINE_CORES_402 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_402[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 402, Kernel> core_402(cache_402, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_404 STENCIL_DEFINE_CORES_403 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_403[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 403, Kernel> core_403(cache_403, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_405 STENCIL_DEFINE_CORES_404 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_404[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 404, Kernel> core_404(cache_404, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_406 STENCIL_DEFINE_CORES_405 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_405[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 405, Kernel> core_405(cache_405, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_407 STENCIL_DEFINE_CORES_406 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_406[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 406, Kernel> core_406(cache_406, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_408 STENCIL_DEFINE_CORES_407 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_407[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 407, Kernel> core_407(cache_407, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_409 STENCIL_DEFINE_CORES_408 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_408[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 408, Kernel> core_408(cache_408, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_410 STENCIL_DEFINE_CORES_409 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_409[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 409, Kernel> core_409(cache_409, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_411 STENCIL_DEFINE_CORES_410 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_410[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 410, Kernel> core_410(cache_410, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_412 STENCIL_DEFINE_CORES_411 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_411[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 411, Kernel> core_411(cache_411, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_413 STENCIL_DEFINE_CORES_412 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_412[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 412, Kernel> core_412(cache_412, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_414 STENCIL_DEFINE_CORES_413 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_413[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 413, Kernel> core_413(cache_413, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_415 STENCIL_DEFINE_CORES_414 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_414[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 414, Kernel> core_414(cache_414, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_416 STENCIL_DEFINE_CORES_415 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_415[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 415, Kernel> core_415(cache_415, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_417 STENCIL_DEFINE_CORES_416 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_416[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 416, Kernel> core_416(cache_416, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_418 STENCIL_DEFINE_CORES_417 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_417[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 417, Kernel> core_417(cache_417, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_419 STENCIL_DEFINE_CORES_418 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_418[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 418, Kernel> core_418(cache_418, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_420 STENCIL_DEFINE_CORES_419 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_419[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 419, Kernel> core_419(cache_419, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_421 STENCIL_DEFINE_CORES_420 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_420[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 420, Kernel> core_420(cache_420, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_422 STENCIL_DEFINE_CORES_421 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_421[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 421, Kernel> core_421(cache_421, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_423 STENCIL_DEFINE_CORES_422 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_422[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 422, Kernel> core_422(cache_422, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_424 STENCIL_DEFINE_CORES_423 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_423[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 423, Kernel> core_423(cache_423, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_425 STENCIL_DEFINE_CORES_424 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_424[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 424, Kernel> core_424(cache_424, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_426 STENCIL_DEFINE_CORES_425 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_425[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 425, Kernel> core_425(cache_425, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_427 STENCIL_DEFINE_CORES_426 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_426[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 426, Kernel> core_426(cache_426, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_428 STENCIL_DEFINE_CORES_427 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_427[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 427, Kernel> core_427(cache_427, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_429 STENCIL_DEFINE_CORES_428 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_428[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 428, Kernel> core_428(cache_428, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_430 STENCIL_DEFINE_CORES_429 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_429[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 429, Kernel> core_429(cache_429, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_431 STENCIL_DEFINE_CORES_430 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_430[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 430, Kernel> core_430(cache_430, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_432 STENCIL_DEFINE_CORES_431 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_431[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 431, Kernel> core_431(cache_431, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_433 STENCIL_DEFINE_CORES_432 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_432[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 432, Kernel> core_432(cache_432, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_434 STENCIL_DEFINE_CORES_433 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_433[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 433, Kernel> core_433(cache_433, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_435 STENCIL_DEFINE_CORES_434 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_434[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 434, Kernel> core_434(cache_434, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_436 STENCIL_DEFINE_CORES_435 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_435[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 435, Kernel> core_435(cache_435, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_437 STENCIL_DEFINE_CORES_436 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_436[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 436, Kernel> core_436(cache_436, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_438 STENCIL_DEFINE_CORES_437 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_437[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 437, Kernel> core_437(cache_437, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_439 STENCIL_DEFINE_CORES_438 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_438[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 438, Kernel> core_438(cache_438, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_440 STENCIL_DEFINE_CORES_439 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_439[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 439, Kernel> core_439(cache_439, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_441 STENCIL_DEFINE_CORES_440 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_440[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 440, Kernel> core_440(cache_440, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_442 STENCIL_DEFINE_CORES_441 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_441[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 441, Kernel> core_441(cache_441, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_443 STENCIL_DEFINE_CORES_442 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_442[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 442, Kernel> core_442(cache_442, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_444 STENCIL_DEFINE_CORES_443 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_443[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 443, Kernel> core_443(cache_443, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_445 STENCIL_DEFINE_CORES_444 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_444[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 444, Kernel> core_444(cache_444, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_446 STENCIL_DEFINE_CORES_445 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_445[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 445, Kernel> core_445(cache_445, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_447 STENCIL_DEFINE_CORES_446 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_446[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 446, Kernel> core_446(cache_446, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_448 STENCIL_DEFINE_CORES_447 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_447[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 447, Kernel> core_447(cache_447, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_449 STENCIL_DEFINE_CORES_448 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_448[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 448, Kernel> core_448(cache_448, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_450 STENCIL_DEFINE_CORES_449 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_449[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 449, Kernel> core_449(cache_449, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_451 STENCIL_DEFINE_CORES_450 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_450[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 450, Kernel> core_450(cache_450, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_452 STENCIL_DEFINE_CORES_451 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_451[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 451, Kernel> core_451(cache_451, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_453 STENCIL_DEFINE_CORES_452 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_452[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 452, Kernel> core_452(cache_452, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_454 STENCIL_DEFINE_CORES_453 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_453[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 453, Kernel> core_453(cache_453, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_455 STENCIL_DEFINE_CORES_454 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_454[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 454, Kernel> core_454(cache_454, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_456 STENCIL_DEFINE_CORES_455 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_455[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 455, Kernel> core_455(cache_455, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_457 STENCIL_DEFINE_CORES_456 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_456[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 456, Kernel> core_456(cache_456, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_458 STENCIL_DEFINE_CORES_457 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_457[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 457, Kernel> core_457(cache_457, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_459 STENCIL_DEFINE_CORES_458 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_458[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 458, Kernel> core_458(cache_458, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_460 STENCIL_DEFINE_CORES_459 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_459[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 459, Kernel> core_459(cache_459, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_461 STENCIL_DEFINE_CORES_460 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_460[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 460, Kernel> core_460(cache_460, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_462 STENCIL_DEFINE_CORES_461 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_461[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 461, Kernel> core_461(cache_461, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_463 STENCIL_DEFINE_CORES_462 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_462[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 462, Kernel> core_462(cache_462, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_464 STENCIL_DEFINE_CORES_463 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_463[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 463, Kernel> core_463(cache_463, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_465 STENCIL_DEFINE_CORES_464 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_464[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 464, Kernel> core_464(cache_464, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_466 STENCIL_DEFINE_CORES_465 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_465[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 465, Kernel> core_465(cache_465, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_467 STENCIL_DEFINE_CORES_466 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_466[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 466, Kernel> core_466(cache_466, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_468 STENCIL_DEFINE_CORES_467 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_467[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 467, Kernel> core_467(cache_467, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_469 STENCIL_DEFINE_CORES_468 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_468[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 468, Kernel> core_468(cache_468, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_470 STENCIL_DEFINE_CORES_469 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_469[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 469, Kernel> core_469(cache_469, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_471 STENCIL_DEFINE_CORES_470 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_470[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 470, Kernel> core_470(cache_470, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_472 STENCIL_DEFINE_CORES_471 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_471[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 471, Kernel> core_471(cache_471, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_473 STENCIL_DEFINE_CORES_472 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_472[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 472, Kernel> core_472(cache_472, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_474 STENCIL_DEFINE_CORES_473 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_473[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 473, Kernel> core_473(cache_473, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_475 STENCIL_DEFINE_CORES_474 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_474[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 474, Kernel> core_474(cache_474, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_476 STENCIL_DEFINE_CORES_475 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_475[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 475, Kernel> core_475(cache_475, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_477 STENCIL_DEFINE_CORES_476 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_476[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 476, Kernel> core_476(cache_476, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_478 STENCIL_DEFINE_CORES_477 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_477[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 477, Kernel> core_477(cache_477, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_479 STENCIL_DEFINE_CORES_478 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_478[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 478, Kernel> core_478(cache_478, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_480 STENCIL_DEFINE_CORES_479 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_479[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 479, Kernel> core_479(cache_479, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_481 STENCIL_DEFINE_CORES_480 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_480[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 480, Kernel> core_480(cache_480, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_482 STENCIL_DEFINE_CORES_481 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_481[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 481, Kernel> core_481(cache_481, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_483 STENCIL_DEFINE_CORES_482 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_482[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 482, Kernel> core_482(cache_482, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_484 STENCIL_DEFINE_CORES_483 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_483[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 483, Kernel> core_483(cache_483, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_485 STENCIL_DEFINE_CORES_484 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_484[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 484, Kernel> core_484(cache_484, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_486 STENCIL_DEFINE_CORES_485 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_485[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 485, Kernel> core_485(cache_485, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_487 STENCIL_DEFINE_CORES_486 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_486[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 486, Kernel> core_486(cache_486, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_488 STENCIL_DEFINE_CORES_487 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_487[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 487, Kernel> core_487(cache_487, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_489 STENCIL_DEFINE_CORES_488 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_488[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 488, Kernel> core_488(cache_488, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_490 STENCIL_DEFINE_CORES_489 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_489[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 489, Kernel> core_489(cache_489, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_491 STENCIL_DEFINE_CORES_490 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_490[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 490, Kernel> core_490(cache_490, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_492 STENCIL_DEFINE_CORES_491 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_491[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 491, Kernel> core_491(cache_491, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_493 STENCIL_DEFINE_CORES_492 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_492[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 492, Kernel> core_492(cache_492, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_494 STENCIL_DEFINE_CORES_493 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_493[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 493, Kernel> core_493(cache_493, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_495 STENCIL_DEFINE_CORES_494 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_494[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 494, Kernel> core_494(cache_494, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_496 STENCIL_DEFINE_CORES_495 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_495[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 495, Kernel> core_495(cache_495, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_497 STENCIL_DEFINE_CORES_496 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_496[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 496, Kernel> core_496(cache_496, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_498 STENCIL_DEFINE_CORES_497 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_497[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 497, Kernel> core_497(cache_497, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_499 STENCIL_DEFINE_CORES_498 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_498[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 498, Kernel> core_498(cache_498, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_500 STENCIL_DEFINE_CORES_499 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_499[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 499, Kernel> core_499(cache_499, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_501 STENCIL_DEFINE_CORES_500 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_500[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 500, Kernel> core_500(cache_500, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_502 STENCIL_DEFINE_CORES_501 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_501[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 501, Kernel> core_501(cache_501, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_503 STENCIL_DEFINE_CORES_502 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_502[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 502, Kernel> core_502(cache_502, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_504 STENCIL_DEFINE_CORES_503 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_503[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 503, Kernel> core_503(cache_503, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_505 STENCIL_DEFINE_CORES_504 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_504[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 504, Kernel> core_504(cache_504, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_506 STENCIL_DEFINE_CORES_505 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_505[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 505, Kernel> core_505(cache_505, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_507 STENCIL_DEFINE_CORES_506 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_506[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 506, Kernel> core_506(cache_506, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_508 STENCIL_DEFINE_CORES_507 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_507[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 507, Kernel> core_507(cache_507, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_509 STENCIL_DEFINE_CORES_508 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_508[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 508, Kernel> core_508(cache_508, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_510 STENCIL_DEFINE_CORES_509 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_509[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 509, Kernel> core_509(cache_509, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_511 STENCIL_DEFINE_CORES_510 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_510[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 510, Kernel> core_510(cache_510, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_512 STENCIL_DEFINE_CORES_511 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_511[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 511, Kernel> core_511(cache_511, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_513 STENCIL_DEFINE_CORES_512 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_512[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 512, Kernel> core_512(cache_512, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_514 STENCIL_DEFINE_CORES_513 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_513[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 513, Kernel> core_513(cache_513, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_515 STENCIL_DEFINE_CORES_514 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_514[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 514, Kernel> core_514(cache_514, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_516 STENCIL_DEFINE_CORES_515 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_515[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 515, Kernel> core_515(cache_515, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_517 STENCIL_DEFINE_CORES_516 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_516[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 516, Kernel> core_516(cache_516, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_518 STENCIL_DEFINE_CORES_517 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_517[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 517, Kernel> core_517(cache_517, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_519 STENCIL_DEFINE_CORES_518 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_518[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 518, Kernel> core_518(cache_518, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_520 STENCIL_DEFINE_CORES_519 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_519[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 519, Kernel> core_519(cache_519, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_521 STENCIL_DEFINE_CORES_520 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_520[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 520, Kernel> core_520(cache_520, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_522 STENCIL_DEFINE_CORES_521 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_521[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 521, Kernel> core_521(cache_521, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_523 STENCIL_DEFINE_CORES_522 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_522[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 522, Kernel> core_522(cache_522, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_524 STENCIL_DEFINE_CORES_523 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_523[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 523, Kernel> core_523(cache_523, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_525 STENCIL_DEFINE_CORES_524 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_524[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 524, Kernel> core_524(cache_524, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_526 STENCIL_DEFINE_CORES_525 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_525[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 525, Kernel> core_525(cache_525, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_527 STENCIL_DEFINE_CORES_526 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_526[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 526, Kernel> core_526(cache_526, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_528 STENCIL_DEFINE_CORES_527 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_527[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 527, Kernel> core_527(cache_527, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_529 STENCIL_DEFINE_CORES_528 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_528[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 528, Kernel> core_528(cache_528, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_530 STENCIL_DEFINE_CORES_529 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_529[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 529, Kernel> core_529(cache_529, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_531 STENCIL_DEFINE_CORES_530 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_530[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 530, Kernel> core_530(cache_530, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_532 STENCIL_DEFINE_CORES_531 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_531[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 531, Kernel> core_531(cache_531, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_533 STENCIL_DEFINE_CORES_532 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_532[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 532, Kernel> core_532(cache_532, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_534 STENCIL_DEFINE_CORES_533 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_533[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 533, Kernel> core_533(cache_533, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_535 STENCIL_DEFINE_CORES_534 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_534[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 534, Kernel> core_534(cache_534, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_536 STENCIL_DEFINE_CORES_535 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_535[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 535, Kernel> core_535(cache_535, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_537 STENCIL_DEFINE_CORES_536 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_536[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 536, Kernel> core_536(cache_536, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_538 STENCIL_DEFINE_CORES_537 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_537[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 537, Kernel> core_537(cache_537, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_539 STENCIL_DEFINE_CORES_538 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_538[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 538, Kernel> core_538(cache_538, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_540 STENCIL_DEFINE_CORES_539 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_539[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 539, Kernel> core_539(cache_539, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_541 STENCIL_DEFINE_CORES_540 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_540[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 540, Kernel> core_540(cache_540, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_542 STENCIL_DEFINE_CORES_541 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_541[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 541, Kernel> core_541(cache_541, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_543 STENCIL_DEFINE_CORES_542 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_542[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 542, Kernel> core_542(cache_542, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_544 STENCIL_DEFINE_CORES_543 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_543[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 543, Kernel> core_543(cache_543, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_545 STENCIL_DEFINE_CORES_544 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_544[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 544, Kernel> core_544(cache_544, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_546 STENCIL_DEFINE_CORES_545 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_545[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 545, Kernel> core_545(cache_545, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_547 STENCIL_DEFINE_CORES_546 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_546[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 546, Kernel> core_546(cache_546, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_548 STENCIL_DEFINE_CORES_547 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_547[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 547, Kernel> core_547(cache_547, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_549 STENCIL_DEFINE_CORES_548 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_548[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 548, Kernel> core_548(cache_548, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_550 STENCIL_DEFINE_CORES_549 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_549[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 549, Kernel> core_549(cache_549, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_551 STENCIL_DEFINE_CORES_550 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_550[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 550, Kernel> core_550(cache_550, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_552 STENCIL_DEFINE_CORES_551 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_551[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 551, Kernel> core_551(cache_551, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_553 STENCIL_DEFINE_CORES_552 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_552[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 552, Kernel> core_552(cache_552, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_554 STENCIL_DEFINE_CORES_553 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_553[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 553, Kernel> core_553(cache_553, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_555 STENCIL_DEFINE_CORES_554 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_554[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 554, Kernel> core_554(cache_554, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_556 STENCIL_DEFINE_CORES_555 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_555[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 555, Kernel> core_555(cache_555, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_557 STENCIL_DEFINE_CORES_556 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_556[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 556, Kernel> core_556(cache_556, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_558 STENCIL_DEFINE_CORES_557 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_557[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 557, Kernel> core_557(cache_557, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_559 STENCIL_DEFINE_CORES_558 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_558[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 558, Kernel> core_558(cache_558, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_560 STENCIL_DEFINE_CORES_559 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_559[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 559, Kernel> core_559(cache_559, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_561 STENCIL_DEFINE_CORES_560 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_560[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 560, Kernel> core_560(cache_560, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_562 STENCIL_DEFINE_CORES_561 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_561[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 561, Kernel> core_561(cache_561, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_563 STENCIL_DEFINE_CORES_562 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_562[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 562, Kernel> core_562(cache_562, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_564 STENCIL_DEFINE_CORES_563 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_563[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 563, Kernel> core_563(cache_563, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_565 STENCIL_DEFINE_CORES_564 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_564[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 564, Kernel> core_564(cache_564, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_566 STENCIL_DEFINE_CORES_565 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_565[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 565, Kernel> core_565(cache_565, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_567 STENCIL_DEFINE_CORES_566 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_566[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 566, Kernel> core_566(cache_566, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_568 STENCIL_DEFINE_CORES_567 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_567[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 567, Kernel> core_567(cache_567, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_569 STENCIL_DEFINE_CORES_568 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_568[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 568, Kernel> core_568(cache_568, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_570 STENCIL_DEFINE_CORES_569 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_569[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 569, Kernel> core_569(cache_569, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_571 STENCIL_DEFINE_CORES_570 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_570[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 570, Kernel> core_570(cache_570, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_572 STENCIL_DEFINE_CORES_571 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_571[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 571, Kernel> core_571(cache_571, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_573 STENCIL_DEFINE_CORES_572 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_572[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 572, Kernel> core_572(cache_572, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_574 STENCIL_DEFINE_CORES_573 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_573[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 573, Kernel> core_573(cache_573, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_575 STENCIL_DEFINE_CORES_574 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_574[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 574, Kernel> core_574(cache_574, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_576 STENCIL_DEFINE_CORES_575 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_575[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 575, Kernel> core_575(cache_575, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_577 STENCIL_DEFINE_CORES_576 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_576[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 576, Kernel> core_576(cache_576, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_578 STENCIL_DEFINE_CORES_577 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_577[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 577, Kernel> core_577(cache_577, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_579 STENCIL_DEFINE_CORES_578 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_578[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 578, Kernel> core_578(cache_578, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_580 STENCIL_DEFINE_CORES_579 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_579[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 579, Kernel> core_579(cache_579, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_581 STENCIL_DEFINE_CORES_580 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_580[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 580, Kernel> core_580(cache_580, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_582 STENCIL_DEFINE_CORES_581 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_581[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 581, Kernel> core_581(cache_581, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_583 STENCIL_DEFINE_CORES_582 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_582[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 582, Kernel> core_582(cache_582, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_584 STENCIL_DEFINE_CORES_583 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_583[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 583, Kernel> core_583(cache_583, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_585 STENCIL_DEFINE_CORES_584 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_584[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 584, Kernel> core_584(cache_584, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_586 STENCIL_DEFINE_CORES_585 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_585[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 585, Kernel> core_585(cache_585, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_587 STENCIL_DEFINE_CORES_586 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_586[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 586, Kernel> core_586(cache_586, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_588 STENCIL_DEFINE_CORES_587 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_587[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 587, Kernel> core_587(cache_587, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_589 STENCIL_DEFINE_CORES_588 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_588[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 588, Kernel> core_588(cache_588, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_590 STENCIL_DEFINE_CORES_589 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_589[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 589, Kernel> core_589(cache_589, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_591 STENCIL_DEFINE_CORES_590 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_590[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 590, Kernel> core_590(cache_590, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_592 STENCIL_DEFINE_CORES_591 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_591[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 591, Kernel> core_591(cache_591, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_593 STENCIL_DEFINE_CORES_592 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_592[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 592, Kernel> core_592(cache_592, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_594 STENCIL_DEFINE_CORES_593 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_593[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 593, Kernel> core_593(cache_593, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_595 STENCIL_DEFINE_CORES_594 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_594[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 594, Kernel> core_594(cache_594, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_596 STENCIL_DEFINE_CORES_595 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_595[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 595, Kernel> core_595(cache_595, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_597 STENCIL_DEFINE_CORES_596 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_596[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 596, Kernel> core_596(cache_596, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_598 STENCIL_DEFINE_CORES_597 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_597[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 597, Kernel> core_597(cache_597, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_599 STENCIL_DEFINE_CORES_598 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_598[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 598, Kernel> core_598(cache_598, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_600 STENCIL_DEFINE_CORES_599 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_599[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 599, Kernel> core_599(cache_599, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_601 STENCIL_DEFINE_CORES_600 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_600[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 600, Kernel> core_600(cache_600, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_602 STENCIL_DEFINE_CORES_601 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_601[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 601, Kernel> core_601(cache_601, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_603 STENCIL_DEFINE_CORES_602 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_602[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 602, Kernel> core_602(cache_602, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_604 STENCIL_DEFINE_CORES_603 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_603[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 603, Kernel> core_603(cache_603, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_605 STENCIL_DEFINE_CORES_604 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_604[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 604, Kernel> core_604(cache_604, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_606 STENCIL_DEFINE_CORES_605 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_605[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 605, Kernel> core_605(cache_605, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_607 STENCIL_DEFINE_CORES_606 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_606[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 606, Kernel> core_606(cache_606, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_608 STENCIL_DEFINE_CORES_607 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_607[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 607, Kernel> core_607(cache_607, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_609 STENCIL_DEFINE_CORES_608 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_608[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 608, Kernel> core_608(cache_608, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_610 STENCIL_DEFINE_CORES_609 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_609[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 609, Kernel> core_609(cache_609, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_611 STENCIL_DEFINE_CORES_610 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_610[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 610, Kernel> core_610(cache_610, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_612 STENCIL_DEFINE_CORES_611 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_611[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 611, Kernel> core_611(cache_611, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_613 STENCIL_DEFINE_CORES_612 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_612[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 612, Kernel> core_612(cache_612, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_614 STENCIL_DEFINE_CORES_613 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_613[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 613, Kernel> core_613(cache_613, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_615 STENCIL_DEFINE_CORES_614 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_614[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 614, Kernel> core_614(cache_614, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_616 STENCIL_DEFINE_CORES_615 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_615[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 615, Kernel> core_615(cache_615, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_617 STENCIL_DEFINE_CORES_616 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_616[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 616, Kernel> core_616(cache_616, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_618 STENCIL_DEFINE_CORES_617 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_617[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 617, Kernel> core_617(cache_617, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_619 STENCIL_DEFINE_CORES_618 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_618[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 618, Kernel> core_618(cache_618, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_620 STENCIL_DEFINE_CORES_619 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_619[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 619, Kernel> core_619(cache_619, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_621 STENCIL_DEFINE_CORES_620 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_620[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 620, Kernel> core_620(cache_620, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_622 STENCIL_DEFINE_CORES_621 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_621[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 621, Kernel> core_621(cache_621, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_623 STENCIL_DEFINE_CORES_622 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_622[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 622, Kernel> core_622(cache_622, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_624 STENCIL_DEFINE_CORES_623 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_623[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 623, Kernel> core_623(cache_623, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_625 STENCIL_DEFINE_CORES_624 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_624[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 624, Kernel> core_624(cache_624, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_626 STENCIL_DEFINE_CORES_625 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_625[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 625, Kernel> core_625(cache_625, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_627 STENCIL_DEFINE_CORES_626 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_626[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 626, Kernel> core_626(cache_626, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_628 STENCIL_DEFINE_CORES_627 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_627[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 627, Kernel> core_627(cache_627, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_629 STENCIL_DEFINE_CORES_628 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_628[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 628, Kernel> core_628(cache_628, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_630 STENCIL_DEFINE_CORES_629 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_629[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 629, Kernel> core_629(cache_629, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_631 STENCIL_DEFINE_CORES_630 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_630[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 630, Kernel> core_630(cache_630, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_632 STENCIL_DEFINE_CORES_631 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_631[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 631, Kernel> core_631(cache_631, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_633 STENCIL_DEFINE_CORES_632 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_632[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 632, Kernel> core_632(cache_632, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_634 STENCIL_DEFINE_CORES_633 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_633[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 633, Kernel> core_633(cache_633, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_635 STENCIL_DEFINE_CORES_634 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_634[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 634, Kernel> core_634(cache_634, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_636 STENCIL_DEFINE_CORES_635 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_635[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 635, Kernel> core_635(cache_635, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_637 STENCIL_DEFINE_CORES_636 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_636[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 636, Kernel> core_636(cache_636, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_638 STENCIL_DEFINE_CORES_637 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_637[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 637, Kernel> core_637(cache_637, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_639 STENCIL_DEFINE_CORES_638 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_638[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 638, Kernel> core_638(cache_638, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_640 STENCIL_DEFINE_CORES_639 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_639[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 639, Kernel> core_639(cache_639, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_641 STENCIL_DEFINE_CORES_640 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_640[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 640, Kernel> core_640(cache_640, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_642 STENCIL_DEFINE_CORES_641 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_641[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 641, Kernel> core_641(cache_641, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_643 STENCIL_DEFINE_CORES_642 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_642[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 642, Kernel> core_642(cache_642, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_644 STENCIL_DEFINE_CORES_643 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_643[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 643, Kernel> core_643(cache_643, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_645 STENCIL_DEFINE_CORES_644 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_644[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 644, Kernel> core_644(cache_644, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_646 STENCIL_DEFINE_CORES_645 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_645[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 645, Kernel> core_645(cache_645, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_647 STENCIL_DEFINE_CORES_646 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_646[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 646, Kernel> core_646(cache_646, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_648 STENCIL_DEFINE_CORES_647 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_647[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 647, Kernel> core_647(cache_647, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_649 STENCIL_DEFINE_CORES_648 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_648[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 648, Kernel> core_648(cache_648, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_650 STENCIL_DEFINE_CORES_649 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_649[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 649, Kernel> core_649(cache_649, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_651 STENCIL_DEFINE_CORES_650 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_650[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 650, Kernel> core_650(cache_650, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_652 STENCIL_DEFINE_CORES_651 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_651[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 651, Kernel> core_651(cache_651, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_653 STENCIL_DEFINE_CORES_652 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_652[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 652, Kernel> core_652(cache_652, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_654 STENCIL_DEFINE_CORES_653 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_653[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 653, Kernel> core_653(cache_653, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_655 STENCIL_DEFINE_CORES_654 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_654[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 654, Kernel> core_654(cache_654, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_656 STENCIL_DEFINE_CORES_655 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_655[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 655, Kernel> core_655(cache_655, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_657 STENCIL_DEFINE_CORES_656 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_656[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 656, Kernel> core_656(cache_656, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_658 STENCIL_DEFINE_CORES_657 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_657[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 657, Kernel> core_657(cache_657, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_659 STENCIL_DEFINE_CORES_658 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_658[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 658, Kernel> core_658(cache_658, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_660 STENCIL_DEFINE_CORES_659 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_659[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 659, Kernel> core_659(cache_659, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_661 STENCIL_DEFINE_CORES_660 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_660[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 660, Kernel> core_660(cache_660, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_662 STENCIL_DEFINE_CORES_661 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_661[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 661, Kernel> core_661(cache_661, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_663 STENCIL_DEFINE_CORES_662 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_662[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 662, Kernel> core_662(cache_662, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_664 STENCIL_DEFINE_CORES_663 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_663[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 663, Kernel> core_663(cache_663, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_665 STENCIL_DEFINE_CORES_664 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_664[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 664, Kernel> core_664(cache_664, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_666 STENCIL_DEFINE_CORES_665 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_665[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 665, Kernel> core_665(cache_665, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_667 STENCIL_DEFINE_CORES_666 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_666[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 666, Kernel> core_666(cache_666, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_668 STENCIL_DEFINE_CORES_667 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_667[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 667, Kernel> core_667(cache_667, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_669 STENCIL_DEFINE_CORES_668 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_668[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 668, Kernel> core_668(cache_668, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_670 STENCIL_DEFINE_CORES_669 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_669[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 669, Kernel> core_669(cache_669, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_671 STENCIL_DEFINE_CORES_670 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_670[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 670, Kernel> core_670(cache_670, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_672 STENCIL_DEFINE_CORES_671 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_671[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 671, Kernel> core_671(cache_671, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_673 STENCIL_DEFINE_CORES_672 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_672[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 672, Kernel> core_672(cache_672, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_674 STENCIL_DEFINE_CORES_673 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_673[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 673, Kernel> core_673(cache_673, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_675 STENCIL_DEFINE_CORES_674 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_674[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 674, Kernel> core_674(cache_674, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_676 STENCIL_DEFINE_CORES_675 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_675[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 675, Kernel> core_675(cache_675, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_677 STENCIL_DEFINE_CORES_676 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_676[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 676, Kernel> core_676(cache_676, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_678 STENCIL_DEFINE_CORES_677 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_677[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 677, Kernel> core_677(cache_677, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_679 STENCIL_DEFINE_CORES_678 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_678[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 678, Kernel> core_678(cache_678, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_680 STENCIL_DEFINE_CORES_679 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_679[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 679, Kernel> core_679(cache_679, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_681 STENCIL_DEFINE_CORES_680 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_680[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 680, Kernel> core_680(cache_680, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_682 STENCIL_DEFINE_CORES_681 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_681[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 681, Kernel> core_681(cache_681, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_683 STENCIL_DEFINE_CORES_682 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_682[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 682, Kernel> core_682(cache_682, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_684 STENCIL_DEFINE_CORES_683 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_683[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 683, Kernel> core_683(cache_683, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_685 STENCIL_DEFINE_CORES_684 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_684[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 684, Kernel> core_684(cache_684, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_686 STENCIL_DEFINE_CORES_685 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_685[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 685, Kernel> core_685(cache_685, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_687 STENCIL_DEFINE_CORES_686 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_686[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 686, Kernel> core_686(cache_686, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_688 STENCIL_DEFINE_CORES_687 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_687[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 687, Kernel> core_687(cache_687, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_689 STENCIL_DEFINE_CORES_688 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_688[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 688, Kernel> core_688(cache_688, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_690 STENCIL_DEFINE_CORES_689 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_689[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 689, Kernel> core_689(cache_689, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_691 STENCIL_DEFINE_CORES_690 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_690[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 690, Kernel> core_690(cache_690, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_692 STENCIL_DEFINE_CORES_691 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_691[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 691, Kernel> core_691(cache_691, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_693 STENCIL_DEFINE_CORES_692 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_692[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 692, Kernel> core_692(cache_692, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_694 STENCIL_DEFINE_CORES_693 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_693[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 693, Kernel> core_693(cache_693, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_695 STENCIL_DEFINE_CORES_694 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_694[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 694, Kernel> core_694(cache_694, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_696 STENCIL_DEFINE_CORES_695 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_695[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 695, Kernel> core_695(cache_695, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_697 STENCIL_DEFINE_CORES_696 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_696[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 696, Kernel> core_696(cache_696, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_698 STENCIL_DEFINE_CORES_697 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_697[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 697, Kernel> core_697(cache_697, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_699 STENCIL_DEFINE_CORES_698 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_698[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 698, Kernel> core_698(cache_698, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_700 STENCIL_DEFINE_CORES_699 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_699[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 699, Kernel> core_699(cache_699, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_701 STENCIL_DEFINE_CORES_700 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_700[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 700, Kernel> core_700(cache_700, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_702 STENCIL_DEFINE_CORES_701 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_701[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 701, Kernel> core_701(cache_701, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_703 STENCIL_DEFINE_CORES_702 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_702[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 702, Kernel> core_702(cache_702, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_704 STENCIL_DEFINE_CORES_703 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_703[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 703, Kernel> core_703(cache_703, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_705 STENCIL_DEFINE_CORES_704 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_704[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 704, Kernel> core_704(cache_704, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_706 STENCIL_DEFINE_CORES_705 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_705[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 705, Kernel> core_705(cache_705, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_707 STENCIL_DEFINE_CORES_706 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_706[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 706, Kernel> core_706(cache_706, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_708 STENCIL_DEFINE_CORES_707 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_707[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 707, Kernel> core_707(cache_707, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_709 STENCIL_DEFINE_CORES_708 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_708[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 708, Kernel> core_708(cache_708, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_710 STENCIL_DEFINE_CORES_709 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_709[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 709, Kernel> core_709(cache_709, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_711 STENCIL_DEFINE_CORES_710 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_710[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 710, Kernel> core_710(cache_710, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_712 STENCIL_DEFINE_CORES_711 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_711[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 711, Kernel> core_711(cache_711, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_713 STENCIL_DEFINE_CORES_712 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_712[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 712, Kernel> core_712(cache_712, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_714 STENCIL_DEFINE_CORES_713 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_713[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 713, Kernel> core_713(cache_713, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_715 STENCIL_DEFINE_CORES_714 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_714[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 714, Kernel> core_714(cache_714, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_716 STENCIL_DEFINE_CORES_715 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_715[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 715, Kernel> core_715(cache_715, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_717 STENCIL_DEFINE_CORES_716 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_716[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 716, Kernel> core_716(cache_716, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_718 STENCIL_DEFINE_CORES_717 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_717[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 717, Kernel> core_717(cache_717, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_719 STENCIL_DEFINE_CORES_718 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_718[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 718, Kernel> core_718(cache_718, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_720 STENCIL_DEFINE_CORES_719 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_719[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 719, Kernel> core_719(cache_719, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_721 STENCIL_DEFINE_CORES_720 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_720[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 720, Kernel> core_720(cache_720, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_722 STENCIL_DEFINE_CORES_721 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_721[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 721, Kernel> core_721(cache_721, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_723 STENCIL_DEFINE_CORES_722 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_722[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 722, Kernel> core_722(cache_722, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_724 STENCIL_DEFINE_CORES_723 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_723[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 723, Kernel> core_723(cache_723, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_725 STENCIL_DEFINE_CORES_724 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_724[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 724, Kernel> core_724(cache_724, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_726 STENCIL_DEFINE_CORES_725 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_725[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 725, Kernel> core_725(cache_725, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_727 STENCIL_DEFINE_CORES_726 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_726[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 726, Kernel> core_726(cache_726, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_728 STENCIL_DEFINE_CORES_727 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_727[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 727, Kernel> core_727(cache_727, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_729 STENCIL_DEFINE_CORES_728 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_728[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 728, Kernel> core_728(cache_728, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_730 STENCIL_DEFINE_CORES_729 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_729[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 729, Kernel> core_729(cache_729, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_731 STENCIL_DEFINE_CORES_730 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_730[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 730, Kernel> core_730(cache_730, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_732 STENCIL_DEFINE_CORES_731 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_731[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 731, Kernel> core_731(cache_731, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_733 STENCIL_DEFINE_CORES_732 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_732[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 732, Kernel> core_732(cache_732, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_734 STENCIL_DEFINE_CORES_733 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_733[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 733, Kernel> core_733(cache_733, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_735 STENCIL_DEFINE_CORES_734 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_734[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 734, Kernel> core_734(cache_734, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_736 STENCIL_DEFINE_CORES_735 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_735[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 735, Kernel> core_735(cache_735, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_737 STENCIL_DEFINE_CORES_736 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_736[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 736, Kernel> core_736(cache_736, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_738 STENCIL_DEFINE_CORES_737 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_737[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 737, Kernel> core_737(cache_737, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_739 STENCIL_DEFINE_CORES_738 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_738[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 738, Kernel> core_738(cache_738, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_740 STENCIL_DEFINE_CORES_739 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_739[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 739, Kernel> core_739(cache_739, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_741 STENCIL_DEFINE_CORES_740 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_740[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 740, Kernel> core_740(cache_740, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_742 STENCIL_DEFINE_CORES_741 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_741[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 741, Kernel> core_741(cache_741, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_743 STENCIL_DEFINE_CORES_742 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_742[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 742, Kernel> core_742(cache_742, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_744 STENCIL_DEFINE_CORES_743 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_743[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 743, Kernel> core_743(cache_743, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_745 STENCIL_DEFINE_CORES_744 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_744[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 744, Kernel> core_744(cache_744, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_746 STENCIL_DEFINE_CORES_745 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_745[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 745, Kernel> core_745(cache_745, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_747 STENCIL_DEFINE_CORES_746 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_746[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 746, Kernel> core_746(cache_746, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_748 STENCIL_DEFINE_CORES_747 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_747[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 747, Kernel> core_747(cache_747, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_749 STENCIL_DEFINE_CORES_748 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_748[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 748, Kernel> core_748(cache_748, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_750 STENCIL_DEFINE_CORES_749 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_749[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 749, Kernel> core_749(cache_749, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_751 STENCIL_DEFINE_CORES_750 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_750[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 750, Kernel> core_750(cache_750, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_752 STENCIL_DEFINE_CORES_751 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_751[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 751, Kernel> core_751(cache_751, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_753 STENCIL_DEFINE_CORES_752 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_752[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 752, Kernel> core_752(cache_752, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_754 STENCIL_DEFINE_CORES_753 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_753[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 753, Kernel> core_753(cache_753, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_755 STENCIL_DEFINE_CORES_754 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_754[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 754, Kernel> core_754(cache_754, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_756 STENCIL_DEFINE_CORES_755 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_755[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 755, Kernel> core_755(cache_755, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_757 STENCIL_DEFINE_CORES_756 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_756[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 756, Kernel> core_756(cache_756, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_758 STENCIL_DEFINE_CORES_757 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_757[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 757, Kernel> core_757(cache_757, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_759 STENCIL_DEFINE_CORES_758 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_758[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 758, Kernel> core_758(cache_758, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_760 STENCIL_DEFINE_CORES_759 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_759[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 759, Kernel> core_759(cache_759, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_761 STENCIL_DEFINE_CORES_760 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_760[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 760, Kernel> core_760(cache_760, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_762 STENCIL_DEFINE_CORES_761 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_761[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 761, Kernel> core_761(cache_761, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_763 STENCIL_DEFINE_CORES_762 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_762[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 762, Kernel> core_762(cache_762, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_764 STENCIL_DEFINE_CORES_763 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_763[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 763, Kernel> core_763(cache_763, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_765 STENCIL_DEFINE_CORES_764 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_764[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 764, Kernel> core_764(cache_764, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_766 STENCIL_DEFINE_CORES_765 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_765[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 765, Kernel> core_765(cache_765, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_767 STENCIL_DEFINE_CORES_766 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_766[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 766, Kernel> core_766(cache_766, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_768 STENCIL_DEFINE_CORES_767 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_767[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 767, Kernel> core_767(cache_767, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_769 STENCIL_DEFINE_CORES_768 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_768[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 768, Kernel> core_768(cache_768, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_770 STENCIL_DEFINE_CORES_769 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_769[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 769, Kernel> core_769(cache_769, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_771 STENCIL_DEFINE_CORES_770 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_770[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 770, Kernel> core_770(cache_770, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_772 STENCIL_DEFINE_CORES_771 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_771[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 771, Kernel> core_771(cache_771, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_773 STENCIL_DEFINE_CORES_772 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_772[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 772, Kernel> core_772(cache_772, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_774 STENCIL_DEFINE_CORES_773 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_773[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 773, Kernel> core_773(cache_773, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_775 STENCIL_DEFINE_CORES_774 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_774[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 774, Kernel> core_774(cache_774, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_776 STENCIL_DEFINE_CORES_775 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_775[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 775, Kernel> core_775(cache_775, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_777 STENCIL_DEFINE_CORES_776 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_776[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 776, Kernel> core_776(cache_776, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_778 STENCIL_DEFINE_CORES_777 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_777[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 777, Kernel> core_777(cache_777, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_779 STENCIL_DEFINE_CORES_778 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_778[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 778, Kernel> core_778(cache_778, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_780 STENCIL_DEFINE_CORES_779 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_779[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 779, Kernel> core_779(cache_779, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_781 STENCIL_DEFINE_CORES_780 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_780[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 780, Kernel> core_780(cache_780, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_782 STENCIL_DEFINE_CORES_781 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_781[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 781, Kernel> core_781(cache_781, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_783 STENCIL_DEFINE_CORES_782 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_782[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 782, Kernel> core_782(cache_782, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_784 STENCIL_DEFINE_CORES_783 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_783[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 783, Kernel> core_783(cache_783, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_785 STENCIL_DEFINE_CORES_784 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_784[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 784, Kernel> core_784(cache_784, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_786 STENCIL_DEFINE_CORES_785 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_785[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 785, Kernel> core_785(cache_785, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_787 STENCIL_DEFINE_CORES_786 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_786[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 786, Kernel> core_786(cache_786, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_788 STENCIL_DEFINE_CORES_787 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_787[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 787, Kernel> core_787(cache_787, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_789 STENCIL_DEFINE_CORES_788 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_788[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 788, Kernel> core_788(cache_788, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_790 STENCIL_DEFINE_CORES_789 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_789[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 789, Kernel> core_789(cache_789, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_791 STENCIL_DEFINE_CORES_790 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_790[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 790, Kernel> core_790(cache_790, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_792 STENCIL_DEFINE_CORES_791 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_791[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 791, Kernel> core_791(cache_791, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_793 STENCIL_DEFINE_CORES_792 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_792[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 792, Kernel> core_792(cache_792, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_794 STENCIL_DEFINE_CORES_793 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_793[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 793, Kernel> core_793(cache_793, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_795 STENCIL_DEFINE_CORES_794 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_794[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 794, Kernel> core_794(cache_794, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_796 STENCIL_DEFINE_CORES_795 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_795[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 795, Kernel> core_795(cache_795, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_797 STENCIL_DEFINE_CORES_796 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_796[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 796, Kernel> core_796(cache_796, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_798 STENCIL_DEFINE_CORES_797 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_797[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 797, Kernel> core_797(cache_797, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_799 STENCIL_DEFINE_CORES_798 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_798[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 798, Kernel> core_798(cache_798, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_800 STENCIL_DEFINE_CORES_799 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_799[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 799, Kernel> core_799(cache_799, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_801 STENCIL_DEFINE_CORES_800 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_800[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 800, Kernel> core_800(cache_800, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_802 STENCIL_DEFINE_CORES_801 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_801[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 801, Kernel> core_801(cache_801, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_803 STENCIL_DEFINE_CORES_802 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_802[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 802, Kernel> core_802(cache_802, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_804 STENCIL_DEFINE_CORES_803 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_803[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 803, Kernel> core_803(cache_803, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_805 STENCIL_DEFINE_CORES_804 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_804[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 804, Kernel> core_804(cache_804, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_806 STENCIL_DEFINE_CORES_805 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_805[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 805, Kernel> core_805(cache_805, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_807 STENCIL_DEFINE_CORES_806 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_806[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 806, Kernel> core_806(cache_806, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_808 STENCIL_DEFINE_CORES_807 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_807[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 807, Kernel> core_807(cache_807, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_809 STENCIL_DEFINE_CORES_808 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_808[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 808, Kernel> core_808(cache_808, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_810 STENCIL_DEFINE_CORES_809 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_809[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 809, Kernel> core_809(cache_809, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_811 STENCIL_DEFINE_CORES_810 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_810[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 810, Kernel> core_810(cache_810, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_812 STENCIL_DEFINE_CORES_811 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_811[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 811, Kernel> core_811(cache_811, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_813 STENCIL_DEFINE_CORES_812 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_812[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 812, Kernel> core_812(cache_812, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_814 STENCIL_DEFINE_CORES_813 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_813[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 813, Kernel> core_813(cache_813, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_815 STENCIL_DEFINE_CORES_814 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_814[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 814, Kernel> core_814(cache_814, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_816 STENCIL_DEFINE_CORES_815 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_815[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 815, Kernel> core_815(cache_815, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_817 STENCIL_DEFINE_CORES_816 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_816[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 816, Kernel> core_816(cache_816, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_818 STENCIL_DEFINE_CORES_817 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_817[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 817, Kernel> core_817(cache_817, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_819 STENCIL_DEFINE_CORES_818 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_818[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 818, Kernel> core_818(cache_818, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_820 STENCIL_DEFINE_CORES_819 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_819[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 819, Kernel> core_819(cache_819, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_821 STENCIL_DEFINE_CORES_820 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_820[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 820, Kernel> core_820(cache_820, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_822 STENCIL_DEFINE_CORES_821 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_821[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 821, Kernel> core_821(cache_821, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_823 STENCIL_DEFINE_CORES_822 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_822[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 822, Kernel> core_822(cache_822, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_824 STENCIL_DEFINE_CORES_823 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_823[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 823, Kernel> core_823(cache_823, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_825 STENCIL_DEFINE_CORES_824 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_824[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 824, Kernel> core_824(cache_824, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_826 STENCIL_DEFINE_CORES_825 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_825[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 825, Kernel> core_825(cache_825, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_827 STENCIL_DEFINE_CORES_826 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_826[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 826, Kernel> core_826(cache_826, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_828 STENCIL_DEFINE_CORES_827 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_827[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 827, Kernel> core_827(cache_827, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_829 STENCIL_DEFINE_CORES_828 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_828[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 828, Kernel> core_828(cache_828, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_830 STENCIL_DEFINE_CORES_829 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_829[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 829, Kernel> core_829(cache_829, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_831 STENCIL_DEFINE_CORES_830 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_830[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 830, Kernel> core_830(cache_830, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_832 STENCIL_DEFINE_CORES_831 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_831[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 831, Kernel> core_831(cache_831, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_833 STENCIL_DEFINE_CORES_832 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_832[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 832, Kernel> core_832(cache_832, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_834 STENCIL_DEFINE_CORES_833 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_833[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 833, Kernel> core_833(cache_833, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_835 STENCIL_DEFINE_CORES_834 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_834[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 834, Kernel> core_834(cache_834, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_836 STENCIL_DEFINE_CORES_835 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_835[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 835, Kernel> core_835(cache_835, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_837 STENCIL_DEFINE_CORES_836 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_836[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 836, Kernel> core_836(cache_836, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_838 STENCIL_DEFINE_CORES_837 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_837[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 837, Kernel> core_837(cache_837, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_839 STENCIL_DEFINE_CORES_838 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_838[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 838, Kernel> core_838(cache_838, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_840 STENCIL_DEFINE_CORES_839 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_839[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 839, Kernel> core_839(cache_839, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_841 STENCIL_DEFINE_CORES_840 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_840[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 840, Kernel> core_840(cache_840, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_842 STENCIL_DEFINE_CORES_841 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_841[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 841, Kernel> core_841(cache_841, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_843 STENCIL_DEFINE_CORES_842 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_842[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 842, Kernel> core_842(cache_842, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_844 STENCIL_DEFINE_CORES_843 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_843[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 843, Kernel> core_843(cache_843, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_845 STENCIL_DEFINE_CORES_844 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_844[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 844, Kernel> core_844(cache_844, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_846 STENCIL_DEFINE_CORES_845 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_845[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 845, Kernel> core_845(cache_845, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_847 STENCIL_DEFINE_CORES_846 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_846[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 846, Kernel> core_846(cache_846, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_848 STENCIL_DEFINE_CORES_847 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_847[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 847, Kernel> core_847(cache_847, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_849 STENCIL_DEFINE_CORES_848 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_848[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 848, Kernel> core_848(cache_848, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_850 STENCIL_DEFINE_CORES_849 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_849[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 849, Kernel> core_849(cache_849, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_851 STENCIL_DEFINE_CORES_850 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_850[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 850, Kernel> core_850(cache_850, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_852 STENCIL_DEFINE_CORES_851 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_851[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 851, Kernel> core_851(cache_851, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_853 STENCIL_DEFINE_CORES_852 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_852[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 852, Kernel> core_852(cache_852, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_854 STENCIL_DEFINE_CORES_853 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_853[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 853, Kernel> core_853(cache_853, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_855 STENCIL_DEFINE_CORES_854 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_854[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 854, Kernel> core_854(cache_854, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_856 STENCIL_DEFINE_CORES_855 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_855[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 855, Kernel> core_855(cache_855, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_857 STENCIL_DEFINE_CORES_856 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_856[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 856, Kernel> core_856(cache_856, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_858 STENCIL_DEFINE_CORES_857 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_857[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 857, Kernel> core_857(cache_857, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_859 STENCIL_DEFINE_CORES_858 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_858[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 858, Kernel> core_858(cache_858, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_860 STENCIL_DEFINE_CORES_859 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_859[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 859, Kernel> core_859(cache_859, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_861 STENCIL_DEFINE_CORES_860 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_860[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 860, Kernel> core_860(cache_860, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_862 STENCIL_DEFINE_CORES_861 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_861[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 861, Kernel> core_861(cache_861, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_863 STENCIL_DEFINE_CORES_862 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_862[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 862, Kernel> core_862(cache_862, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_864 STENCIL_DEFINE_CORES_863 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_863[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 863, Kernel> core_863(cache_863, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_865 STENCIL_DEFINE_CORES_864 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_864[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 864, Kernel> core_864(cache_864, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_866 STENCIL_DEFINE_CORES_865 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_865[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 865, Kernel> core_865(cache_865, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_867 STENCIL_DEFINE_CORES_866 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_866[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 866, Kernel> core_866(cache_866, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_868 STENCIL_DEFINE_CORES_867 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_867[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 867, Kernel> core_867(cache_867, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_869 STENCIL_DEFINE_CORES_868 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_868[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 868, Kernel> core_868(cache_868, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_870 STENCIL_DEFINE_CORES_869 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_869[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 869, Kernel> core_869(cache_869, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_871 STENCIL_DEFINE_CORES_870 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_870[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 870, Kernel> core_870(cache_870, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_872 STENCIL_DEFINE_CORES_871 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_871[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 871, Kernel> core_871(cache_871, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_873 STENCIL_DEFINE_CORES_872 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_872[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 872, Kernel> core_872(cache_872, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_874 STENCIL_DEFINE_CORES_873 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_873[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 873, Kernel> core_873(cache_873, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_875 STENCIL_DEFINE_CORES_874 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_874[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 874, Kernel> core_874(cache_874, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_876 STENCIL_DEFINE_CORES_875 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_875[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 875, Kernel> core_875(cache_875, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_877 STENCIL_DEFINE_CORES_876 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_876[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 876, Kernel> core_876(cache_876, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_878 STENCIL_DEFINE_CORES_877 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_877[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 877, Kernel> core_877(cache_877, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_879 STENCIL_DEFINE_CORES_878 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_878[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 878, Kernel> core_878(cache_878, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_880 STENCIL_DEFINE_CORES_879 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_879[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 879, Kernel> core_879(cache_879, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_881 STENCIL_DEFINE_CORES_880 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_880[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 880, Kernel> core_880(cache_880, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_882 STENCIL_DEFINE_CORES_881 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_881[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 881, Kernel> core_881(cache_881, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_883 STENCIL_DEFINE_CORES_882 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_882[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 882, Kernel> core_882(cache_882, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_884 STENCIL_DEFINE_CORES_883 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_883[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 883, Kernel> core_883(cache_883, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_885 STENCIL_DEFINE_CORES_884 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_884[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 884, Kernel> core_884(cache_884, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_886 STENCIL_DEFINE_CORES_885 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_885[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 885, Kernel> core_885(cache_885, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_887 STENCIL_DEFINE_CORES_886 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_886[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 886, Kernel> core_886(cache_886, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_888 STENCIL_DEFINE_CORES_887 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_887[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 887, Kernel> core_887(cache_887, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_889 STENCIL_DEFINE_CORES_888 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_888[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 888, Kernel> core_888(cache_888, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_890 STENCIL_DEFINE_CORES_889 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_889[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 889, Kernel> core_889(cache_889, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_891 STENCIL_DEFINE_CORES_890 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_890[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 890, Kernel> core_890(cache_890, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_892 STENCIL_DEFINE_CORES_891 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_891[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 891, Kernel> core_891(cache_891, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_893 STENCIL_DEFINE_CORES_892 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_892[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 892, Kernel> core_892(cache_892, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_894 STENCIL_DEFINE_CORES_893 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_893[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 893, Kernel> core_893(cache_893, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_895 STENCIL_DEFINE_CORES_894 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_894[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 894, Kernel> core_894(cache_894, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_896 STENCIL_DEFINE_CORES_895 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_895[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 895, Kernel> core_895(cache_895, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_897 STENCIL_DEFINE_CORES_896 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_896[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 896, Kernel> core_896(cache_896, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_898 STENCIL_DEFINE_CORES_897 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_897[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 897, Kernel> core_897(cache_897, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_899 STENCIL_DEFINE_CORES_898 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_898[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 898, Kernel> core_898(cache_898, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_900 STENCIL_DEFINE_CORES_899 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_899[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 899, Kernel> core_899(cache_899, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_901 STENCIL_DEFINE_CORES_900 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_900[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 900, Kernel> core_900(cache_900, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_902 STENCIL_DEFINE_CORES_901 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_901[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 901, Kernel> core_901(cache_901, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_903 STENCIL_DEFINE_CORES_902 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_902[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 902, Kernel> core_902(cache_902, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_904 STENCIL_DEFINE_CORES_903 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_903[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 903, Kernel> core_903(cache_903, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_905 STENCIL_DEFINE_CORES_904 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_904[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 904, Kernel> core_904(cache_904, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_906 STENCIL_DEFINE_CORES_905 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_905[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 905, Kernel> core_905(cache_905, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_907 STENCIL_DEFINE_CORES_906 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_906[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 906, Kernel> core_906(cache_906, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_908 STENCIL_DEFINE_CORES_907 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_907[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 907, Kernel> core_907(cache_907, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_909 STENCIL_DEFINE_CORES_908 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_908[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 908, Kernel> core_908(cache_908, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_910 STENCIL_DEFINE_CORES_909 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_909[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 909, Kernel> core_909(cache_909, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_911 STENCIL_DEFINE_CORES_910 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_910[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 910, Kernel> core_910(cache_910, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_912 STENCIL_DEFINE_CORES_911 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_911[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 911, Kernel> core_911(cache_911, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_913 STENCIL_DEFINE_CORES_912 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_912[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 912, Kernel> core_912(cache_912, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_914 STENCIL_DEFINE_CORES_913 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_913[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 913, Kernel> core_913(cache_913, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_915 STENCIL_DEFINE_CORES_914 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_914[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 914, Kernel> core_914(cache_914, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_916 STENCIL_DEFINE_CORES_915 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_915[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 915, Kernel> core_915(cache_915, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_917 STENCIL_DEFINE_CORES_916 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_916[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 916, Kernel> core_916(cache_916, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_918 STENCIL_DEFINE_CORES_917 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_917[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 917, Kernel> core_917(cache_917, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_919 STENCIL_DEFINE_CORES_918 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_918[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 918, Kernel> core_918(cache_918, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_920 STENCIL_DEFINE_CORES_919 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_919[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 919, Kernel> core_919(cache_919, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_921 STENCIL_DEFINE_CORES_920 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_920[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 920, Kernel> core_920(cache_920, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_922 STENCIL_DEFINE_CORES_921 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_921[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 921, Kernel> core_921(cache_921, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_923 STENCIL_DEFINE_CORES_922 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_922[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 922, Kernel> core_922(cache_922, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_924 STENCIL_DEFINE_CORES_923 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_923[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 923, Kernel> core_923(cache_923, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_925 STENCIL_DEFINE_CORES_924 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_924[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 924, Kernel> core_924(cache_924, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_926 STENCIL_DEFINE_CORES_925 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_925[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 925, Kernel> core_925(cache_925, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_927 STENCIL_DEFINE_CORES_926 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_926[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 926, Kernel> core_926(cache_926, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_928 STENCIL_DEFINE_CORES_927 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_927[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 927, Kernel> core_927(cache_927, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_929 STENCIL_DEFINE_CORES_928 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_928[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 928, Kernel> core_928(cache_928, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_930 STENCIL_DEFINE_CORES_929 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_929[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 929, Kernel> core_929(cache_929, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_931 STENCIL_DEFINE_CORES_930 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_930[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 930, Kernel> core_930(cache_930, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_932 STENCIL_DEFINE_CORES_931 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_931[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 931, Kernel> core_931(cache_931, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_933 STENCIL_DEFINE_CORES_932 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_932[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 932, Kernel> core_932(cache_932, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_934 STENCIL_DEFINE_CORES_933 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_933[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 933, Kernel> core_933(cache_933, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_935 STENCIL_DEFINE_CORES_934 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_934[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 934, Kernel> core_934(cache_934, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_936 STENCIL_DEFINE_CORES_935 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_935[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 935, Kernel> core_935(cache_935, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_937 STENCIL_DEFINE_CORES_936 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_936[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 936, Kernel> core_936(cache_936, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_938 STENCIL_DEFINE_CORES_937 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_937[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 937, Kernel> core_937(cache_937, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_939 STENCIL_DEFINE_CORES_938 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_938[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 938, Kernel> core_938(cache_938, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_940 STENCIL_DEFINE_CORES_939 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_939[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 939, Kernel> core_939(cache_939, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_941 STENCIL_DEFINE_CORES_940 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_940[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 940, Kernel> core_940(cache_940, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_942 STENCIL_DEFINE_CORES_941 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_941[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 941, Kernel> core_941(cache_941, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_943 STENCIL_DEFINE_CORES_942 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_942[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 942, Kernel> core_942(cache_942, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_944 STENCIL_DEFINE_CORES_943 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_943[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 943, Kernel> core_943(cache_943, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_945 STENCIL_DEFINE_CORES_944 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_944[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 944, Kernel> core_944(cache_944, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_946 STENCIL_DEFINE_CORES_945 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_945[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 945, Kernel> core_945(cache_945, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_947 STENCIL_DEFINE_CORES_946 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_946[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 946, Kernel> core_946(cache_946, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_948 STENCIL_DEFINE_CORES_947 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_947[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 947, Kernel> core_947(cache_947, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_949 STENCIL_DEFINE_CORES_948 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_948[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 948, Kernel> core_948(cache_948, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_950 STENCIL_DEFINE_CORES_949 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_949[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 949, Kernel> core_949(cache_949, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_951 STENCIL_DEFINE_CORES_950 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_950[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 950, Kernel> core_950(cache_950, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_952 STENCIL_DEFINE_CORES_951 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_951[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 951, Kernel> core_951(cache_951, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_953 STENCIL_DEFINE_CORES_952 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_952[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 952, Kernel> core_952(cache_952, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_954 STENCIL_DEFINE_CORES_953 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_953[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 953, Kernel> core_953(cache_953, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_955 STENCIL_DEFINE_CORES_954 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_954[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 954, Kernel> core_954(cache_954, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_956 STENCIL_DEFINE_CORES_955 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_955[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 955, Kernel> core_955(cache_955, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_957 STENCIL_DEFINE_CORES_956 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_956[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 956, Kernel> core_956(cache_956, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_958 STENCIL_DEFINE_CORES_957 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_957[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 957, Kernel> core_957(cache_957, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_959 STENCIL_DEFINE_CORES_958 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_958[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 958, Kernel> core_958(cache_958, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_960 STENCIL_DEFINE_CORES_959 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_959[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 959, Kernel> core_959(cache_959, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_961 STENCIL_DEFINE_CORES_960 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_960[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 960, Kernel> core_960(cache_960, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_962 STENCIL_DEFINE_CORES_961 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_961[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 961, Kernel> core_961(cache_961, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_963 STENCIL_DEFINE_CORES_962 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_962[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 962, Kernel> core_962(cache_962, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_964 STENCIL_DEFINE_CORES_963 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_963[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 963, Kernel> core_963(cache_963, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_965 STENCIL_DEFINE_CORES_964 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_964[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 964, Kernel> core_964(cache_964, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_966 STENCIL_DEFINE_CORES_965 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_965[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 965, Kernel> core_965(cache_965, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_967 STENCIL_DEFINE_CORES_966 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_966[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 966, Kernel> core_966(cache_966, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_968 STENCIL_DEFINE_CORES_967 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_967[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 967, Kernel> core_967(cache_967, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_969 STENCIL_DEFINE_CORES_968 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_968[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 968, Kernel> core_968(cache_968, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_970 STENCIL_DEFINE_CORES_969 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_969[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 969, Kernel> core_969(cache_969, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_971 STENCIL_DEFINE_CORES_970 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_970[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 970, Kernel> core_970(cache_970, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_972 STENCIL_DEFINE_CORES_971 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_971[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 971, Kernel> core_971(cache_971, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_973 STENCIL_DEFINE_CORES_972 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_972[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 972, Kernel> core_972(cache_972, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_974 STENCIL_DEFINE_CORES_973 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_973[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 973, Kernel> core_973(cache_973, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_975 STENCIL_DEFINE_CORES_974 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_974[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 974, Kernel> core_974(cache_974, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_976 STENCIL_DEFINE_CORES_975 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_975[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 975, Kernel> core_975(cache_975, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_977 STENCIL_DEFINE_CORES_976 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_976[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 976, Kernel> core_976(cache_976, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_978 STENCIL_DEFINE_CORES_977 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_977[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 977, Kernel> core_977(cache_977, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_979 STENCIL_DEFINE_CORES_978 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_978[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 978, Kernel> core_978(cache_978, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_980 STENCIL_DEFINE_CORES_979 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_979[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 979, Kernel> core_979(cache_979, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_981 STENCIL_DEFINE_CORES_980 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_980[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 980, Kernel> core_980(cache_980, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_982 STENCIL_DEFINE_CORES_981 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_981[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 981, Kernel> core_981(cache_981, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_983 STENCIL_DEFINE_CORES_982 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_982[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 982, Kernel> core_982(cache_982, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_984 STENCIL_DEFINE_CORES_983 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_983[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 983, Kernel> core_983(cache_983, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_985 STENCIL_DEFINE_CORES_984 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_984[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 984, Kernel> core_984(cache_984, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_986 STENCIL_DEFINE_CORES_985 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_985[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 985, Kernel> core_985(cache_985, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_987 STENCIL_DEFINE_CORES_986 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_986[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 986, Kernel> core_986(cache_986, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_988 STENCIL_DEFINE_CORES_987 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_987[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 987, Kernel> core_987(cache_987, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_989 STENCIL_DEFINE_CORES_988 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_988[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 988, Kernel> core_988(cache_988, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_990 STENCIL_DEFINE_CORES_989 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_989[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 989, Kernel> core_989(cache_989, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_991 STENCIL_DEFINE_CORES_990 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_990[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 990, Kernel> core_990(cache_990, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_992 STENCIL_DEFINE_CORES_991 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_991[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 991, Kernel> core_991(cache_991, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_993 STENCIL_DEFINE_CORES_992 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_992[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 992, Kernel> core_992(cache_992, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_994 STENCIL_DEFINE_CORES_993 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_993[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 993, Kernel> core_993(cache_993, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_995 STENCIL_DEFINE_CORES_994 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_994[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 994, Kernel> core_994(cache_994, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_996 STENCIL_DEFINE_CORES_995 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_995[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 995, Kernel> core_995(cache_995, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_997 STENCIL_DEFINE_CORES_996 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_996[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 996, Kernel> core_996(cache_996, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_998 STENCIL_DEFINE_CORES_997 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_997[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 997, Kernel> core_997(cache_997, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_999 STENCIL_DEFINE_CORES_998 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_998[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 998, Kernel> core_998(cache_998, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1000 STENCIL_DEFINE_CORES_999 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_999[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 999, Kernel> core_999(cache_999, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1001 STENCIL_DEFINE_CORES_1000 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1000[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1000, Kernel> core_1000(cache_1000, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1002 STENCIL_DEFINE_CORES_1001 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1001[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1001, Kernel> core_1001(cache_1001, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1003 STENCIL_DEFINE_CORES_1002 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1002[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1002, Kernel> core_1002(cache_1002, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1004 STENCIL_DEFINE_CORES_1003 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1003[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1003, Kernel> core_1003(cache_1003, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1005 STENCIL_DEFINE_CORES_1004 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1004[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1004, Kernel> core_1004(cache_1004, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1006 STENCIL_DEFINE_CORES_1005 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1005[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1005, Kernel> core_1005(cache_1005, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1007 STENCIL_DEFINE_CORES_1006 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1006[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1006, Kernel> core_1006(cache_1006, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1008 STENCIL_DEFINE_CORES_1007 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1007[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1007, Kernel> core_1007(cache_1007, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1009 STENCIL_DEFINE_CORES_1008 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1008[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1008, Kernel> core_1008(cache_1008, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1010 STENCIL_DEFINE_CORES_1009 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1009[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1009, Kernel> core_1009(cache_1009, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1011 STENCIL_DEFINE_CORES_1010 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1010[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1010, Kernel> core_1010(cache_1010, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1012 STENCIL_DEFINE_CORES_1011 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1011[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1011, Kernel> core_1011(cache_1011, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1013 STENCIL_DEFINE_CORES_1012 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1012[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1012, Kernel> core_1012(cache_1012, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1014 STENCIL_DEFINE_CORES_1013 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1013[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1013, Kernel> core_1013(cache_1013, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1015 STENCIL_DEFINE_CORES_1014 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1014[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1014, Kernel> core_1014(cache_1014, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1016 STENCIL_DEFINE_CORES_1015 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1015[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1015, Kernel> core_1015(cache_1015, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1017 STENCIL_DEFINE_CORES_1016 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1016[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1016, Kernel> core_1016(cache_1016, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1018 STENCIL_DEFINE_CORES_1017 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1017[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1017, Kernel> core_1017(cache_1017, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1019 STENCIL_DEFINE_CORES_1018 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1018[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1018, Kernel> core_1018(cache_1018, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1020 STENCIL_DEFINE_CORES_1019 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1019[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1019, Kernel> core_1019(cache_1019, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1021 STENCIL_DEFINE_CORES_1020 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1020[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1020, Kernel> core_1020(cache_1020, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1022 STENCIL_DEFINE_CORES_1021 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1021[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1021, Kernel> core_1021(cache_1021, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1023 STENCIL_DEFINE_CORES_1022 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1022[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1022, Kernel> core_1022(cache_1022, n_generations, kernel);
 
 #define STENCIL_DEFINE_CORES_1024 STENCIL_DEFINE_CORES_1023 \
-[[intelfpga::memory, intelfpga::numbanks(2)]] \
+[[intel::fpga_memory, intel::numbanks(2)]] \
 T cache_1023[2][grid_height][B_SIZE(radius, 1) - 1]; \
 ExecutionCore<T, radius, grid_width, grid_height, 1023, Kernel> core_1023(cache_1023, n_generations, kernel);
 

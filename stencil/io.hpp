@@ -40,7 +40,7 @@ class IOKernel
     }
 
 public:
-    void operator()()
+    void operator()() const
     {
         for (uindex_t block_i = 0; block_i < n_blocks; block_i++)
         {

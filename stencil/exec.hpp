@@ -223,7 +223,7 @@ public:
     ExecutionKernel(uindex_t n_generations, uindex_t n_passes, Kernel kernel)
         : n_generations(n_generations), n_passes(n_passes), kernel(kernel) {}
 
-    void operator()()
+    void operator()() const
     {
         STENCIL_DEFINE_CORES(STENCIL_PIPELINE_LEN)
 
