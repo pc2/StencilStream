@@ -17,6 +17,7 @@ using namespace stencil;
 const UIndex radius = 2;
 const UIndex width = 1024;
 const UIndex height = 1024;
+const UIndex pipeline_length = 1;
 
 int main()
 {
@@ -28,17 +29,6 @@ int main()
 #endif
     queue fpga_queue(device_selector);
 
-    buffer<ID, 2> in_buffer(range<2>(width + 2 * radius * pipeline_length, height + 2 * radius * pipeline_length));
-    {
-        auto ac = in_buffer.get_access<access::mode::write>();
-        for (UIndex c = 0; c < width + 2 * radius * pipeline_length; c++)
-        {
-            for (Index r = 0; r < height + 2 * radius * pipeline_length; r++)
-            {
-                ac[c][r] = ID(c - radius * pipeline_length, r - radius * pipeline_length);
-            }
-        }
-    }
     buffer<ID, 2> out_buffer(range<2>(width, height));
 
     auto kernel = [](Stencil<ID, radius> const &stencil, StencilInfo const &info) {
@@ -68,39 +58,44 @@ int main()
     };
 
     fpga_queue.submit([&](handler &cgh) {
-        auto in_buffer_ac = in_buffer.get_access<access::mode::read>(cgh);
         auto out_buffer_ac = out_buffer.get_access<access::mode::discard_write>(cgh);
 
         cgh.single_task([=]() {
-            ExecutionPipeline<ID, radius, width, height, decltype(kernel)> pipeline(0, 0, 0, kernel);
+            ExecutionPipeline<ID, radius, pipeline_length, width, height, decltype(kernel)> pipeline(0, 0, 0, kernel);
+            //ExecutionCore<ID, radius, 2*radius + height> pipeline(0,width,height,0,0);
 
-            Index out_c, out_r;
+            Index in_c, in_r, out_c, out_r;
+            in_c = in_r = -(radius * pipeline_length);
             out_c = out_r = 0;
+            UIndex n_input_cells = (width + 2 * radius * pipeline_length) * (height + 2 * radius * pipeline_length);
 
-            for (UIndex in_c = 0; in_c < width + 2 * radius * pipeline_length; in_c++)
+            for (UIndex i_cell = 0; i_cell < n_input_cells; i_cell++)
             {
-                for (UIndex in_r = 0; in_r < height + 2 * radius * pipeline_length; in_r++)
+                ID input(in_c, in_r);
+                if (in_r == height + radius * pipeline_length - 1)
                 {
-                    std::optional<ID> next_output = pipeline.step(in_buffer_ac[in_c][in_r]);
-                    if (next_output.has_value())
+                    in_r = -(radius * pipeline_length);
+                    in_c++;
+                }
+                else
+                {
+                    in_r++;
+                }
+
+                std::optional<ID> next_output = pipeline.step(input);
+                //std::optional<ID> next_output = pipeline.template step<decltype(kernel)>(input, kernel);
+
+                if (next_output.has_value())
+                {
+                    out_buffer_ac[out_c][out_r] = *next_output;
+                    if (out_r == height - 1)
                     {
-                        out_buffer_ac[out_c][out_r] = *next_output;
-                        if (out_r == height - 1)
-                        {
-                            out_r = 0;
-                            if (out_c == width - 1)
-                            {
-                                out_c = 0;
-                            }
-                            else
-                            {
-                                out_c += 1;
-                            }
-                        }
-                        else
-                        {
-                            out_r += 1;
-                        }
+                        out_r = 0;
+                        out_c += 1;
+                    }
+                    else
+                    {
+                        out_r += 1;
                     }
                 }
             }

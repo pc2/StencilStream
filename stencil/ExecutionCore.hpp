@@ -24,14 +24,23 @@ namespace stencil
  * 
  * The columns that are covered by the stencil are stored in a cache and are used again when the iteration reaches a new coloum.
  */
-template <typename T, UIndex kernel_radius, UIndex output_grid_width, UIndex output_grid_height, typename Kernel>
+template <typename T, UIndex kernel_radius, UIndex max_input_grid_height>
 class ExecutionCore
 {
 public:
-    static_assert(
-        std::is_invocable_r<T, Kernel, Stencil<T, kernel_radius> const &, StencilInfo const &>::
-            value);
     static_assert(kernel_radius >= 1);
+
+    ExecutionCore() : input_column(0),
+                      input_row(0),
+                      output_grid_width(0),
+                      output_grid_height(0),
+                      output_column_offset(0),
+                      output_row_offset(0),
+                      cache(),
+                      active_cache(0),
+                      info()
+    {
+    }
 
     /**
      * Create a new execution core.
@@ -41,26 +50,34 @@ public:
      */
     ExecutionCore(
         UIndex cell_generation,
+        UIndex output_grid_width,
+        UIndex output_grid_height,
         Index output_column_offset,
-        Index output_row_offset,
-        Kernel kernel) : input_column(0),
+        Index output_row_offset) : input_column(0),
                          input_row(0),
+                         output_grid_width(output_grid_width),
+                         output_grid_height(output_grid_height),
                          output_column_offset(output_column_offset),
                          output_row_offset(output_row_offset),
                          cache(),
                          active_cache(0),
-                         kernel(kernel),
                          info()
     {
+        assert(max_input_grid_height >= 2 * kernel_radius + output_grid_height);
         info.cell_generation = cell_generation;
     }
 
     /**
      * Process the next input cell, execute the stencil kernel and return the result.
      */
-    std::optional<T> step(std::optional<T> input)
+    template <typename Kernel>
+    std::optional<T> step(std::optional<T> input, Kernel kernel)
     {
-        if (!input.has_value()) {
+        static_assert(
+            std::is_invocable_r<T, Kernel, Stencil<T, kernel_radius> const &, StencilInfo const &>::
+                value);
+        if (!input.has_value())
+        {
             return input;
         }
 
@@ -116,11 +133,11 @@ public:
         }
 
         // Increase column and row counters.
-        if (input_row == 2 * kernel_radius + output_grid_height - 1)
+        if (input_row == input_grid_height() - 1)
         {
             active_cache = passive_cache();
             input_row = 0;
-            if (input_column == 2 * kernel_radius + output_grid_width - 1)
+            if (input_column == input_grid_width() - 1)
             {
                 input_column = 0;
             }
@@ -143,17 +160,28 @@ private:
         return active_cache == 0 ? 1 : 0;
     }
 
-    UIndex input_column;
-    UIndex input_row;
-    Index output_column_offset;
-    Index output_row_offset;
+    UIndex input_grid_height() const
+    {
+        return 2 * kernel_radius + output_grid_height;
+    }
 
-    [[intel::fpga_memory, intel::numbanks(2)]] T cache[2][2 * kernel_radius + output_grid_height][Stencil<T, kernel_radius>::diameter() - 1];
-    UIndex active_cache;
+    UIndex input_grid_width() const
+    {
+        return 2 * kernel_radius + output_grid_width;
+    }
 
-    Kernel kernel;
-    Stencil<T, kernel_radius> stencil;
-    StencilInfo info;
+    [[intel::fpga_register]] UIndex input_column;
+    [[intel::fpga_register]] UIndex input_row;
+    [[intel::fpga_register]] UIndex output_grid_width;
+    [[intel::fpga_register]] UIndex output_grid_height;
+    [[intel::fpga_register]] Index output_column_offset;
+    [[intel::fpga_register]] Index output_row_offset;
+
+    [[intel::fpga_memory, intel::numbanks(2)]] T cache[2][max_input_grid_height][Stencil<T, kernel_radius>::diameter() - 1];
+    [[intel::fpga_register]] UIndex active_cache;
+
+    [[intel::fpga_register]] Stencil<T, kernel_radius> stencil;
+    [[intel::fpga_register]] StencilInfo info;
 };
 
 } // namespace stencil

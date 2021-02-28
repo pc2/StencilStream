@@ -18,6 +18,7 @@ using namespace std;
 const UIndex radius = 2;
 const UIndex grid_width = 10;
 const UIndex grid_height = 5;
+const UIndex pipeline_length = 10;
 
 ID kernel(Stencil<ID, radius> const &stencil, StencilInfo const &info)
 {
@@ -38,7 +39,7 @@ ID kernel(Stencil<ID, radius> const &stencil, StencilInfo const &info)
 
 TEST_CASE("ExecutionCore works correctly", "[ExecutionCore]")
 {
-    ExecutionCore<ID, radius, grid_width, grid_height, decltype(&kernel)> core(0, 0, 0, &kernel);
+    ExecutionCore<ID, radius, 2 * radius + grid_height> core(0, grid_width, grid_height, 0, 0);
 
     for (Index input_c = -Index(radius); input_c < Index(grid_width + radius); input_c++)
     {
@@ -46,7 +47,7 @@ TEST_CASE("ExecutionCore works correctly", "[ExecutionCore]")
         {
             Index output_c = input_c - radius;
             Index output_r = input_r - radius;
-            optional<ID> output = core.step(ID(input_c, input_r));
+            optional<ID> output = core.template step<decltype(&kernel)>(ID(input_c, input_r), &kernel);
             if (output_c >= 0 && output_c < Index(grid_width) && output_r >= 0 && output_r < Index(grid_height))
             {
                 REQUIRE(output.has_value());
@@ -63,7 +64,7 @@ TEST_CASE("ExecutionCore works correctly", "[ExecutionCore]")
 
 TEST_CASE("ExecutionPipeline works correctly", "[ExecutionPipeline]")
 {
-    ExecutionPipeline<ID, radius, grid_width, grid_height, decltype(&kernel)> pipeline(0, 0, 0, &kernel);
+    ExecutionPipeline<ID, radius, pipeline_length, grid_width, grid_height, decltype(&kernel)> pipeline(0, 0, 0, &kernel);
 
     UIndex input_grid_width = grid_width + 2 * pipeline_length * radius;
     UIndex input_grid_height = grid_height + 2 * pipeline_length * radius;

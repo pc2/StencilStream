@@ -9,26 +9,11 @@
  */
 #pragma once
 #include "ExecutionCore.hpp"
-#include "ExecutionPipeline_pregen.hpp"
 
 namespace stencil
 {
 
-#ifndef STENCIL_PIPELINE_LEN
-#define STENCIL_PIPELINE_LEN 1
-#endif
-
-/**
- * The length of the computation pipeline in kernel replications.
- * 
- * This value defines the number of times the stencil kernel is replicated. Bigger pipeline lengths
- * lead to increased paralellity and therefore speed, but also to increased resource use and lower clock frequency.
- * 
- * The default for this value is 1 and is set by the `STENCIL_PIPELINE_LEN` macro.
- */
-const UIndex pipeline_length = STENCIL_PIPELINE_LEN;
-
-template <typename T, UIndex kernel_radius, UIndex output_grid_width, UIndex output_grid_height, typename Kernel>
+template <typename T, UIndex kernel_radius, UIndex pipeline_length, UIndex output_grid_width, UIndex output_grid_height, typename Kernel>
 class ExecutionPipeline
 {
 public:
@@ -37,17 +22,45 @@ public:
             value);
     static_assert(kernel_radius >= 1);
 
-    ExecutionPipeline(UIndex cell_generation, UIndex output_column_offset, UIndex output_row_offset, Kernel kernel) : STENCIL_INITIALIZE_CORES(STENCIL_PIPELINE_LEN) {}
+    using ExecutionCore = ExecutionCore<T, kernel_radius, 2 * kernel_radius * pipeline_length + output_grid_height>;
+
+    ExecutionPipeline(UIndex cell_generation, Index output_column_offset, Index output_row_offset, Kernel kernel) : cores(), kernel(kernel)
+    {
+#pragma unroll
+        for (UIndex gen = 0; gen < pipeline_length; gen++)
+        {
+            UIndex intermediate_grid_height = 2 * (pipeline_length - gen - 1) * kernel_radius + output_grid_height;
+            UIndex intermediate_grid_width = 2 * (pipeline_length - gen - 1) * kernel_radius + output_grid_width;
+            Index intermediate_column_offset = output_column_offset - kernel_radius * (pipeline_length - gen - 1);
+            Index intermediate_row_offset = output_row_offset - kernel_radius * (pipeline_length - gen - 1);
+
+            cores[gen] = ExecutionCore(
+                cell_generation,
+                intermediate_grid_width,
+                intermediate_grid_height,
+                intermediate_column_offset,
+                intermediate_row_offset);
+        }
+    }
 
     std::optional<T> step(T input)
     {
         std::optional<T> value(input);
-        STENCIL_STEP_CORES(STENCIL_PIPELINE_LEN)
+#pragma unroll
+        for (UIndex gen = 0; gen < pipeline_length; gen++)
+        {
+            value = cores[gen].template step<Kernel>(value, kernel);
+            if (!value.has_value())
+            {
+                break;
+            }
+        }
         return value;
     }
 
 private:
-    STENCIL_DEFINE_CORES(STENCIL_PIPELINE_LEN);
+    [[intel::fpga_register]] Kernel kernel;
+    ExecutionCore cores[pipeline_length];
 };
 
 } // namespace stencil
