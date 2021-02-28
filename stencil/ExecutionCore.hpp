@@ -54,14 +54,14 @@ public:
         UIndex output_grid_height,
         Index output_column_offset,
         Index output_row_offset) : input_column(0),
-                         input_row(0),
-                         output_grid_width(output_grid_width),
-                         output_grid_height(output_grid_height),
-                         output_column_offset(output_column_offset),
-                         output_row_offset(output_row_offset),
-                         cache(),
-                         active_cache(0),
-                         info()
+                                   input_row(0),
+                                   output_grid_width(output_grid_width),
+                                   output_grid_height(output_grid_height),
+                                   output_column_offset(output_column_offset),
+                                   output_row_offset(output_row_offset),
+                                   cache(),
+                                   active_cache(0),
+                                   info()
     {
         assert(max_input_grid_height >= 2 * kernel_radius + output_grid_height);
         info.cell_generation = cell_generation;

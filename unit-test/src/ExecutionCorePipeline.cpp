@@ -8,9 +8,10 @@
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "catch.hpp"
-#include <ExecutionCore.hpp>
-#include <ExecutionPipeline.hpp>
+#include "res/DebugKernel.hpp"
 #include <deque>
+#include <stencil/ExecutionCore.hpp>
+#include <stencil/ExecutionPipeline.hpp>
 
 using namespace stencil;
 using namespace std;
@@ -20,26 +21,10 @@ const UIndex grid_width = 10;
 const UIndex grid_height = 5;
 const UIndex pipeline_length = 10;
 
-ID kernel(Stencil<ID, radius> const &stencil, StencilInfo const &info)
-{
-    UIndex center_column = info.center_cell_id.c;
-    UIndex center_row = info.center_cell_id.r;
-
-    for (Index c = -Index(radius); c <= Index(radius); c++)
-    {
-        for (Index r = -Index(radius); r <= Index(radius); r++)
-        {
-            REQUIRE(stencil[ID(c, r)].c == Index(c + center_column));
-            REQUIRE(stencil[ID(c, r)].r == Index(r + center_row));
-        }
-    }
-
-    return stencil[ID(0, 0)];
-}
-
 TEST_CASE("ExecutionCore works correctly", "[ExecutionCore]")
 {
-    ExecutionCore<ID, radius, 2 * radius + grid_height> core(0, grid_width, grid_height, 0, 0);
+    ExecutionCore<DebugKernel::Cell, radius, 2 * radius + grid_height> core(0, grid_width, grid_height, 0, 0);
+    DebugKernel kernel;
 
     for (Index input_c = -Index(radius); input_c < Index(grid_width + radius); input_c++)
     {
@@ -47,12 +32,15 @@ TEST_CASE("ExecutionCore works correctly", "[ExecutionCore]")
         {
             Index output_c = input_c - radius;
             Index output_r = input_r - radius;
-            optional<ID> output = core.template step<decltype(&kernel)>(ID(input_c, input_r), &kernel);
+            DebugKernel::Cell cell(ID(input_c, input_r), 0);
+
+            optional<DebugKernel::Cell> output = core.template step<DebugKernel>(cell, kernel);
             if (output_c >= 0 && output_c < Index(grid_width) && output_r >= 0 && output_r < Index(grid_height))
             {
                 REQUIRE(output.has_value());
-                REQUIRE((*output).c == output_c);
-                REQUIRE((*output).r == output_r);
+                REQUIRE((*output).cell_id.c == output_c);
+                REQUIRE((*output).cell_id.r == output_r);
+                REQUIRE((*output).generation == 1);
             }
             else
             {
@@ -64,17 +52,19 @@ TEST_CASE("ExecutionCore works correctly", "[ExecutionCore]")
 
 TEST_CASE("ExecutionPipeline works correctly", "[ExecutionPipeline]")
 {
-    ExecutionPipeline<ID, radius, pipeline_length, grid_width, grid_height, decltype(&kernel)> pipeline(0, 0, 0, &kernel);
+    ExecutionPipeline<DebugKernel::Cell, radius, pipeline_length, grid_width, grid_height, DebugKernel> pipeline(0, 0, 0, DebugKernel());
 
     UIndex input_grid_width = grid_width + 2 * pipeline_length * radius;
     UIndex input_grid_height = grid_height + 2 * pipeline_length * radius;
-    deque<ID> outputs;
+    deque<DebugKernel::Cell> outputs;
 
     for (Index c = -Index(pipeline_length * radius); c < Index(grid_width + pipeline_length * radius); c++)
     {
         for (Index r = -Index(pipeline_length * radius); r < Index(grid_height + pipeline_length * radius); r++)
         {
-            optional<ID> output = pipeline.step(ID(c, r));
+            DebugKernel::Cell cell(ID(c, r), 0);
+
+            optional<DebugKernel::Cell> output = pipeline.step(cell);
             if (output.has_value())
             {
                 outputs.push_back(*output);
@@ -86,8 +76,9 @@ TEST_CASE("ExecutionPipeline works correctly", "[ExecutionPipeline]")
     {
         for (Index r = 0; r < grid_height; r++)
         {
-            REQUIRE(outputs.front().c == c);
-            REQUIRE(outputs.front().r == r);
+            REQUIRE(outputs.front().cell_id.c == c);
+            REQUIRE(outputs.front().cell_id.r == r);
+            REQUIRE(outputs.front().generation == pipeline_length);
             outputs.pop_front();
         }
     }

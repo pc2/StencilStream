@@ -6,7 +6,7 @@
 # 
 # THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 CC = dpcpp
-STENCIL_PATH = ../stencil
+STENCIL_PATH = ../
 
 ARGS = -std=c++17 -g -I$(STENCIL_PATH) 
 
@@ -19,7 +19,7 @@ ifndef PIPELINE_LEN
 endif
 ARGS += -DSTENCIL_PIPELINE_LEN=$(PIPELINE_LEN)
 
-OBJECTS = src/ExecutionCorePipeline.o src/main.o src/Stencil.o
+OBJECTS = src/ExecutionCorePipeline.o src/main.o src/Stencil.o src/res/DebugKernel.o
 
 test: $(OBJECTS) Makefile
 	$(CC) $(ARGS) $(OBJECTS) -o test
@@ -27,7 +27,7 @@ test: $(OBJECTS) Makefile
 src/main.o: src/main.cpp Makefile
 	$(CC) $(ARGS) -c $< -o $@
 
-src/%.o: src/%.cpp src/*.hpp ../stencil/* Makefile
+src/%.o: src/%.cpp src/*.hpp src/res/*.hpp ../stencil/* Makefile
 	$(CC) $(ARGS) -c $< -o $@
 
 clean:

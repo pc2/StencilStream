@@ -35,7 +35,7 @@ public:
             Index intermediate_row_offset = output_row_offset - kernel_radius * (pipeline_length - gen - 1);
 
             cores[gen] = ExecutionCore(
-                cell_generation,
+                cell_generation + gen,
                 intermediate_grid_width,
                 intermediate_grid_height,
                 intermediate_column_offset,

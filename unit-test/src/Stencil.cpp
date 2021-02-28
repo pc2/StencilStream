@@ -8,20 +8,22 @@
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "catch.hpp"
-#include <Stencil.hpp>
+#include <stencil/Stencil.hpp>
 
 using namespace stencil;
 
 const Index radius = 2;
 
-TEST_CASE("The diameter is correct", "[Stencil]") {
+TEST_CASE("The diameter is correct", "[Stencil]")
+{
     Stencil<Index, 2> stencil;
 
     REQUIRE(stencil.diameter() == Stencil<Index, 2>::diameter());
-    REQUIRE(stencil.diameter() == 2*radius + 1);
+    REQUIRE(stencil.diameter() == 2 * radius + 1);
 };
 
-TEST_CASE("Signed writing and unsigned reading are correct", "[Stencil]") {
+TEST_CASE("Signed writing and unsigned reading are correct", "[Stencil]")
+{
     Stencil<Index, 2> stencil;
 
     for (Index c = -radius; c <= radius; c++)
@@ -36,12 +38,13 @@ TEST_CASE("Signed writing and unsigned reading are correct", "[Stencil]") {
     {
         for (UIndex r = 0; r < stencil.diameter(); r++)
         {
-            REQUIRE(stencil[UID(c, r)] == Index(c) + Index(r) - 2*radius);
+            REQUIRE(stencil[UID(c, r)] == Index(c) + Index(r) - 2 * radius);
         }
     }
 };
 
-TEST_CASE("Unsigned writing and signed reading are correct", "[Stencil]") {
+TEST_CASE("Unsigned writing and signed reading are correct", "[Stencil]")
+{
     Stencil<Index, 2> stencil;
 
     for (UIndex c = 0; c < stencil.diameter(); c++)
@@ -56,7 +59,7 @@ TEST_CASE("Unsigned writing and signed reading are correct", "[Stencil]") {
     {
         for (Index r = -radius; r <= radius; r++)
         {
-            REQUIRE(stencil[ID(c, r)] == Index(c) + Index(r) + 2*radius);
+            REQUIRE(stencil[ID(c, r)] == Index(c) + Index(r) + 2 * radius);
         }
     }
 };
