@@ -29,4 +29,4 @@ namespace stencil_stream
  */
 typedef BOOST_PP_CAT(BOOST_PP_CAT(uint, STENCIL_INDEX_WIDTH), _t) UIndex;
 typedef BOOST_PP_CAT(BOOST_PP_CAT(int, STENCIL_INDEX_WIDTH), _t) Index;
-};
+}

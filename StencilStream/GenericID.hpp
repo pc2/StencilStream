@@ -42,4 +42,4 @@ typedef GenericID<Index> ID;
  */
 typedef GenericID<UIndex> UID;
 
-} // namespace stencil
+}

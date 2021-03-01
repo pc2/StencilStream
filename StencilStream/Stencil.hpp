@@ -50,4 +50,4 @@ private:
     T internal[diameter()][diameter()];
 };
 
-} // namespace stencil
+}

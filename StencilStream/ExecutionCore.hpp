@@ -184,4 +184,4 @@ private:
     [[intel::fpga_register]] StencilInfo info;
 };
 
-} // namespace stencil
+}

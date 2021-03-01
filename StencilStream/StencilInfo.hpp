@@ -33,4 +33,4 @@ struct StencilInfo
     UIndex cell_generation = 0;
 };
 
-} // namespace stencil
+}

@@ -63,4 +63,4 @@ private:
     ExecutionCore cores[pipeline_length];
 };
 
-} // namespace stencil
+}
