@@ -10,7 +10,7 @@
 #pragma once
 #include "ExecutionCore.hpp"
 
-namespace stencil
+namespace stencil_stream
 {
 
 template <typename T, UIndex kernel_radius, UIndex pipeline_length, UIndex output_grid_width, UIndex output_grid_height, typename Kernel>

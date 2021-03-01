@@ -14,7 +14,7 @@
 #include "StencilInfo.hpp"
 #include <optional>
 
-namespace stencil
+namespace stencil_stream
 {
 
 /**

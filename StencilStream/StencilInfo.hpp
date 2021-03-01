@@ -11,7 +11,7 @@
 #include "GenericID.hpp"
 #include "Index.hpp"
 
-namespace stencil
+namespace stencil_stream
 {
 
 /**

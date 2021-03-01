@@ -10,10 +10,10 @@
 #include "DebugKernel.hpp"
 #include "../catch.hpp"
 
-using namespace stencil;
+using namespace stencil_stream;
 using Cell = DebugKernel::Cell;
 
-Cell DebugKernel::operator()(stencil::Stencil<Cell, radius> const &stencil, stencil::StencilInfo const &info)
+Cell DebugKernel::operator()(Stencil<Cell, radius> const &stencil, StencilInfo const &info)
 {
     UIndex center_column = info.center_cell_id.c;
     UIndex center_row = info.center_cell_id.r;

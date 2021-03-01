@@ -9,10 +9,10 @@
  */
 #include "catch.hpp"
 #include "res/DebugKernel.hpp"
+#include <StencilStream/ExecutionPipeline.hpp>
 #include <deque>
-#include <stencil/ExecutionPipeline.hpp>
 
-using namespace stencil;
+using namespace stencil_stream;
 using namespace std;
 
 const UIndex radius = 2;

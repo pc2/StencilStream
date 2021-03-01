@@ -8,10 +8,10 @@
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include <stencil/GenericID.hpp>
-#include <stencil/Index.hpp>
-#include <stencil/Stencil.hpp>
-#include <stencil/StencilInfo.hpp>
+#include <StencilStream/GenericID.hpp>
+#include <StencilStream/Index.hpp>
+#include <StencilStream/Stencil.hpp>
+#include <StencilStream/StencilInfo.hpp>
 
 class DebugKernel
 {
@@ -20,7 +20,7 @@ public:
     {
         Cell() : cell_id(0, 0), generation(0) {}
 
-        Cell(stencil::ID cell_id, stencil::UIndex generation) : cell_id(cell_id), generation(generation) {}
+        Cell(stencil_stream::ID cell_id, stencil_stream::UIndex generation) : cell_id(cell_id), generation(generation) {}
 
         Cell(Cell const &other_cell) : cell_id(other_cell.cell_id), generation(other_cell.generation) {}
 
@@ -31,11 +31,11 @@ public:
             return *this;
         }
 
-        stencil::ID cell_id;
-        stencil::UIndex generation;
+        stencil_stream::ID cell_id;
+        stencil_stream::UIndex generation;
     };
 
-    const static stencil::UIndex radius = 2;
+    const static stencil_stream::UIndex radius = 2;
 
-    Cell operator()(stencil::Stencil<Cell, radius> const &stencil, stencil::StencilInfo const &info);
+    Cell operator()(stencil_stream::Stencil<Cell, radius> const &stencil, stencil_stream::StencilInfo const &info);
 };

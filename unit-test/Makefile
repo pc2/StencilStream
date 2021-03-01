@@ -22,7 +22,7 @@ test: $(OBJECTS) Makefile
 src/main.o: src/main.cpp Makefile
 	$(CC) $(ARGS) -c $< -o $@
 
-src/%.o: src/%.cpp src/*.hpp src/res/*.hpp ../stencil/* Makefile
+src/%.o: src/%.cpp src/*.hpp src/res/*.hpp ../StencilStream/* Makefile
 	$(CC) $(ARGS) -c $< -o $@
 
 clean:

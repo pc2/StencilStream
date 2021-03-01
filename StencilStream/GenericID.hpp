@@ -8,25 +8,38 @@
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include <boost/preprocessor/cat.hpp>
-#include <cstdint>
+#include "Index.hpp"
+#include <CL/sycl/id.hpp>
 
-namespace stencil
+namespace stencil_stream
 {
-#ifndef STENCIL_INDEX_WIDTH
-#define STENCIL_INDEX_WIDTH 64
-#endif
 
 /**
- * Integer types for indexing.
- * 
- * There is always a signed version, `index_t`, and an unsigned version, `uindex_t`. Their width is
- * defined by the `STENCIL_INDEX_WIDTH` macro. The default is 64 and can be increased to allow
- * bigger buffers or decreased to reduce the complexity and resource requirements.
- * 
- * Static asserts throughout the library ensure that the index type is wide enough. Therefore, you
- * can decrease the until you get compilation errors.
+ * A generic, two-dimensional index.
  */
-typedef BOOST_PP_CAT(BOOST_PP_CAT(uint, STENCIL_INDEX_WIDTH), _t) UIndex;
-typedef BOOST_PP_CAT(BOOST_PP_CAT(int, STENCIL_INDEX_WIDTH), _t) Index;
+template <typename T>
+class GenericID
+{
+public:
+    GenericID() : c(), r() {}
+
+    GenericID(T column, T row) : c(column), r(row) {}
+
+    GenericID(cl::sycl::id<2> sycl_id) : c(sycl_id[0]), r(sycl_id[1]) {}
+
+    GenericID(cl::sycl::range<2> sycl_range) : c(sycl_range[0]), r(sycl_range[1]) {}
+
+    T c, r;
 };
+
+/**
+ * A signed, two-dimensional index.
+ */
+typedef GenericID<Index> ID;
+
+/**
+ * An unsigned, two-dimensional index.
+ */
+typedef GenericID<UIndex> UID;
+
+} // namespace stencil
