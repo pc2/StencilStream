@@ -10,7 +10,6 @@
 #include "catch.hpp"
 #include "res/DebugKernel.hpp"
 #include <deque>
-#include <stencil/ExecutionCore.hpp>
 #include <stencil/ExecutionPipeline.hpp>
 
 using namespace stencil;
@@ -20,35 +19,6 @@ const UIndex radius = 2;
 const UIndex grid_width = 10;
 const UIndex grid_height = 5;
 const UIndex pipeline_length = 10;
-
-TEST_CASE("ExecutionCore works correctly", "[ExecutionCore]")
-{
-    ExecutionCore<DebugKernel::Cell, radius, 2 * radius + grid_height> core(0, grid_width, grid_height, 0, 0);
-    DebugKernel kernel;
-
-    for (Index input_c = -Index(radius); input_c < Index(grid_width + radius); input_c++)
-    {
-        for (Index input_r = -Index(radius); input_r < Index(grid_height + radius); input_r++)
-        {
-            Index output_c = input_c - radius;
-            Index output_r = input_r - radius;
-            DebugKernel::Cell cell(ID(input_c, input_r), 0);
-
-            optional<DebugKernel::Cell> output = core.template step<DebugKernel>(cell, kernel);
-            if (output_c >= 0 && output_c < Index(grid_width) && output_r >= 0 && output_r < Index(grid_height))
-            {
-                REQUIRE(output.has_value());
-                REQUIRE((*output).cell_id.c == output_c);
-                REQUIRE((*output).cell_id.r == output_r);
-                REQUIRE((*output).generation == 1);
-            }
-            else
-            {
-                REQUIRE(!output.has_value());
-            }
-        }
-    }
-};
 
 TEST_CASE("ExecutionPipeline works correctly", "[ExecutionPipeline]")
 {
