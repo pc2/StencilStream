@@ -14,12 +14,12 @@ ifdef EBROOTGCC
 	ARGS += --gcc-toolchain=$(EBROOTGCC)
 endif
 
-OBJECTS = src/BufferedIO.o src/ExecutionCore.o src/ExecutionPipeline.o src/main.o src/Stencil.o src/res/DebugKernel.o
+OBJECTS = src/BufferedIO.o src/ExecutionCore.o src/ExecutionPipeline.o src/main.o src/Stencil.o
 
 test: $(OBJECTS) Makefile
 	$(CC) $(ARGS) $(OBJECTS) -o test
 
-src/main.o: src/main.cpp Makefile
+src/main.o: src/main.cpp Makefile src/catch.hpp
 	$(CC) $(ARGS) -c $< -o $@
 
 src/%.o: src/%.cpp src/*.hpp src/res/*.hpp ../StencilStream/* Makefile

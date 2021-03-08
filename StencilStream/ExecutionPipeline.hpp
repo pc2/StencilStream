@@ -22,22 +22,21 @@ public:
             value);
     static_assert(kernel_radius >= 1);
 
-    using ExecutionCore = ExecutionCore<T, kernel_radius, 2 * kernel_radius * pipeline_length + output_grid_height>;
+    const static UIndex input_grid_width = 2 * kernel_radius * pipeline_length + output_grid_width;
+    const static UIndex input_grid_height = 2 * kernel_radius * pipeline_length + output_grid_height;
 
-    ExecutionPipeline(UIndex cell_generation, Index output_column_offset, Index output_row_offset, Kernel kernel) : cores(), kernel(kernel)
+    using ExecutionCore = ExecutionCore<T, kernel_radius, input_grid_width, input_grid_height>;
+
+    ExecutionPipeline(UIndex cell_generation, Index output_column_offset, Index output_row_offset, Kernel kernel) : cores(), kernel(kernel), output_column_offset(output_column_offset), output_row_offset(output_row_offset)
     {
 #pragma unroll
         for (UIndex gen = 0; gen < pipeline_length; gen++)
         {
-            UIndex intermediate_grid_height = 2 * (pipeline_length - gen - 1) * kernel_radius + output_grid_height;
-            UIndex intermediate_grid_width = 2 * (pipeline_length - gen - 1) * kernel_radius + output_grid_width;
-            Index intermediate_column_offset = output_column_offset - kernel_radius * (pipeline_length - gen - 1);
-            Index intermediate_row_offset = output_row_offset - kernel_radius * (pipeline_length - gen - 1);
+            Index intermediate_column_offset = output_column_offset - (kernel_radius * pipeline_length) - gen * kernel_radius;
+            Index intermediate_row_offset = output_row_offset - (kernel_radius * pipeline_length) - gen * kernel_radius;
 
             cores[gen] = ExecutionCore(
                 cell_generation + gen,
-                intermediate_grid_width,
-                intermediate_grid_height,
                 intermediate_column_offset,
                 intermediate_row_offset);
         }
@@ -45,22 +44,41 @@ public:
 
     std::optional<T> step(T input)
     {
-        std::optional<T> value(input);
+        UIndex output_column = cores[pipeline_length - 1].get_output_column();
+        UIndex output_row = cores[pipeline_length - 1].get_output_row();
+
+        T value = input;
 #pragma unroll
         for (UIndex gen = 0; gen < pipeline_length; gen++)
         {
             value = cores[gen].template step<Kernel>(value, kernel);
-            if (!value.has_value())
-            {
-                break;
-            }
         }
-        return value;
+
+        bool is_valid_output = output_column >= output_column_offset;
+        is_valid_output &= output_row >= output_row_offset;
+        is_valid_output &= output_column < output_column_offset + output_grid_width;
+        is_valid_output &= output_row < output_row_offset + output_grid_height;
+
+        if (is_valid_output)
+        {
+            return value;
+        }
+        else
+        {
+            return std::nullopt;
+        }
+    }
+
+    UIndex get_total_radius() const
+    {
+        return kernel_radius * pipeline_length;
     }
 
 private:
     [[intel::fpga_register]] Kernel kernel;
     ExecutionCore cores[pipeline_length];
+    Index output_column_offset;
+    Index output_row_offset;
 };
 
-}
+} // namespace stencil_stream

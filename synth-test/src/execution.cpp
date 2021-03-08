@@ -9,10 +9,10 @@
  */
 #include <CL/sycl.hpp>
 #include <CL/sycl/INTEL/fpga_extensions.hpp>
-#include <ExecutionPipeline.hpp>
+#include <StencilStream/ExecutionPipeline.hpp>
 
 using namespace cl::sycl;
-using namespace stencil;
+using namespace stencil_stream;
 
 const UIndex radius = 2;
 const UIndex width = 1024;

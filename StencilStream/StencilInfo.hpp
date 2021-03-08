@@ -24,7 +24,7 @@ struct StencilInfo
      * 
      * This is the position of the cell the stencil kernel has to calculate and the position of the central cell of the stencil buffer.
      */
-    UID center_cell_id = UID(0, 0);
+    ID center_cell_id = ID(0, 0);
     /**
      * The present generation of the central cell of the stencil buffer.
      * 

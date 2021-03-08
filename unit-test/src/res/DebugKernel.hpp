@@ -13,6 +13,7 @@
 #include <StencilStream/Stencil.hpp>
 #include <StencilStream/StencilInfo.hpp>
 
+template <stencil_stream::UIndex radius>
 class DebugKernel
 {
 public:
@@ -35,7 +36,32 @@ public:
         stencil_stream::UIndex generation;
     };
 
-    const static stencil_stream::UIndex radius = 2;
+    DebugKernel(stencil_stream::UIndex pipeline_length) : pipeline_length(pipeline_length) {}
 
-    Cell operator()(stencil_stream::Stencil<Cell, radius> const &stencil, stencil_stream::StencilInfo const &info);
+    Cell operator()(stencil_stream::Stencil<Cell, radius> const &stencil, stencil_stream::StencilInfo const &info)
+    {
+        stencil_stream::Index center_column = info.center_cell_id.c;
+        stencil_stream::Index center_row = info.center_cell_id.r;
+        stencil_stream::Index corner_id = -radius * (pipeline_length - info.cell_generation - 1);
+
+        if (center_column >= corner_id && center_row >= corner_id)
+        {
+            for (stencil_stream::Index c = -stencil_stream::Index(radius); c <= stencil_stream::Index(radius); c++)
+            {
+                for (stencil_stream::Index r = -stencil_stream::Index(radius); r <= stencil_stream::Index(radius); r++)
+                {
+                    REQUIRE(stencil[stencil_stream::ID(c, r)].cell_id.c == stencil_stream::Index(c + center_column));
+                    REQUIRE(stencil[stencil_stream::ID(c, r)].cell_id.r == stencil_stream::Index(r + center_row));
+                }
+            }
+            REQUIRE(stencil[stencil_stream::ID(0, 0)].generation == info.cell_generation);
+        }
+
+        Cell new_cell = stencil[stencil_stream::ID(0, 0)];
+        new_cell.generation += 1;
+        return new_cell;
+    }
+
+private:
+    stencil_stream::UIndex pipeline_length;
 };

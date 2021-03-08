@@ -17,32 +17,27 @@ using namespace std;
 const UIndex radius = 2;
 const UIndex grid_width = 10;
 const UIndex grid_height = 5;
-const UIndex pipeline_length = 10;
+
+using Kernel = DebugKernel<radius>;
 
 TEST_CASE("ExecutionCore works correctly", "[ExecutionCore]")
 {
-    ExecutionCore<DebugKernel::Cell, radius, 2 * radius + grid_height> core(0, grid_width, grid_height, 0, 0);
-    DebugKernel kernel;
+    ExecutionCore<Kernel::Cell, radius, 2 * radius + grid_width, 2 * radius + grid_height> core(0, -radius, -radius);
+    Kernel kernel(1);
 
     for (Index input_c = -Index(radius); input_c < Index(grid_width + radius); input_c++)
     {
         for (Index input_r = -Index(radius); input_r < Index(grid_height + radius); input_r++)
         {
-            Index output_c = input_c - radius;
-            Index output_r = input_r - radius;
-            DebugKernel::Cell cell(ID(input_c, input_r), 0);
+            Kernel::Cell cell(ID(input_c, input_r), 0);
 
-            optional<DebugKernel::Cell> output = core.template step<DebugKernel>(cell, kernel);
-            if (output_c >= 0 && output_c < Index(grid_width) && output_r >= 0 && output_r < Index(grid_height))
+            Kernel::Cell output = core.template step<Kernel>(cell, kernel);
+
+            if (input_c >= Index(2 * radius + 1) && input_r >= Index(2 * radius + 1))
             {
-                REQUIRE(output.has_value());
-                REQUIRE((*output).cell_id.c == output_c);
-                REQUIRE((*output).cell_id.r == output_r);
-                REQUIRE((*output).generation == 1);
-            }
-            else
-            {
-                REQUIRE(!output.has_value());
+                REQUIRE(output.cell_id.c == input_c - radius);
+                REQUIRE(output.cell_id.r == input_r - radius);
+                REQUIRE(output.generation == 1);
             }
         }
     }

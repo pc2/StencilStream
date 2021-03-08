@@ -20,27 +20,31 @@ const UIndex grid_width = 10;
 const UIndex grid_height = 5;
 const UIndex pipeline_length = 10;
 
+using Kernel = DebugKernel<radius>;
+
 TEST_CASE("ExecutionPipeline works correctly", "[ExecutionPipeline]")
 {
-    ExecutionPipeline<DebugKernel::Cell, radius, pipeline_length, grid_width, grid_height, DebugKernel> pipeline(0, 0, 0, DebugKernel());
+    ExecutionPipeline<Kernel::Cell, radius, pipeline_length, grid_width, grid_height, Kernel> pipeline(0, 0, 0, Kernel(pipeline_length));
 
     UIndex input_grid_width = grid_width + 2 * pipeline_length * radius;
     UIndex input_grid_height = grid_height + 2 * pipeline_length * radius;
-    deque<DebugKernel::Cell> outputs;
+    deque<Kernel::Cell> outputs;
 
     for (Index c = -Index(pipeline_length * radius); c < Index(grid_width + pipeline_length * radius); c++)
     {
         for (Index r = -Index(pipeline_length * radius); r < Index(grid_height + pipeline_length * radius); r++)
         {
-            DebugKernel::Cell cell(ID(c, r), 0);
+            Kernel::Cell cell(ID(c, r), 0);
 
-            optional<DebugKernel::Cell> output = pipeline.step(cell);
+            optional<Kernel::Cell> output = pipeline.step(cell);
             if (output.has_value())
             {
                 outputs.push_back(*output);
             }
         }
     }
+
+    REQUIRE(outputs.size() == grid_width * grid_height);
 
     for (Index c = 0; c < grid_width; c++)
     {
