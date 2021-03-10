@@ -14,9 +14,9 @@
 using namespace cl::sycl;
 using namespace stencil_stream;
 
-const UIndex radius = 2;
-const UIndex width = 1024;
-const UIndex height = 1024;
+const UIndex radius = 1;
+const UIndex width = 10;
+const UIndex height = 10;
 const UIndex pipeline_length = 1;
 
 int main()
@@ -62,7 +62,6 @@ int main()
 
         cgh.single_task([=]() {
             ExecutionPipeline<ID, radius, pipeline_length, width, height, decltype(kernel)> pipeline(0, 0, 0, kernel);
-            //ExecutionCore<ID, radius, 2*radius + height> pipeline(0,width,height,0,0);
 
             Index in_c, in_r, out_c, out_r;
             in_c = in_r = -(radius * pipeline_length);
@@ -83,7 +82,6 @@ int main()
                 }
 
                 std::optional<ID> next_output = pipeline.step(input);
-                //std::optional<ID> next_output = pipeline.template step<decltype(kernel)>(input, kernel);
 
                 if (next_output.has_value())
                 {
