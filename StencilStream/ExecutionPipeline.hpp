@@ -13,27 +13,27 @@
 namespace stencil_stream
 {
 
-template <typename T, UIndex kernel_radius, UIndex pipeline_length, UIndex output_grid_width, UIndex output_grid_height, typename Kernel>
+template <typename T, UIndex stencil_radius, UIndex pipeline_length, UIndex output_grid_width, UIndex output_grid_height, typename TransFunc>
 class ExecutionPipeline
 {
 public:
     static_assert(
-        std::is_invocable_r<T, Kernel, Stencil<T, kernel_radius> const &, StencilInfo const &>::
+        std::is_invocable_r<T, TransFunc, Stencil<T, stencil_radius> const &, StencilInfo const &>::
             value);
-    static_assert(kernel_radius >= 1);
+    static_assert(stencil_radius >= 1);
 
-    const static UIndex input_grid_width = 2 * kernel_radius * pipeline_length + output_grid_width;
-    const static UIndex input_grid_height = 2 * kernel_radius * pipeline_length + output_grid_height;
+    const static UIndex input_grid_width = 2 * stencil_radius * pipeline_length + output_grid_width;
+    const static UIndex input_grid_height = 2 * stencil_radius * pipeline_length + output_grid_height;
 
-    using ExecutionCore = ExecutionCore<T, kernel_radius, input_grid_width, input_grid_height>;
+    using ExecutionCore = ExecutionCore<T, stencil_radius, input_grid_width, input_grid_height>;
 
-    ExecutionPipeline(UIndex cell_generation, Index output_column_offset, Index output_row_offset, Kernel kernel) : cores(), kernel(kernel), output_column_offset(output_column_offset), output_row_offset(output_row_offset)
+    ExecutionPipeline(UIndex cell_generation, Index output_column_offset, Index output_row_offset, TransFunc trans_func) : cores(), trans_func(trans_func), output_column_offset(output_column_offset), output_row_offset(output_row_offset)
     {
 #pragma unroll
         for (UIndex gen = 0; gen < pipeline_length; gen++)
         {
-            Index intermediate_column_offset = output_column_offset - (kernel_radius * pipeline_length) - gen * kernel_radius;
-            Index intermediate_row_offset = output_row_offset - (kernel_radius * pipeline_length) - gen * kernel_radius;
+            Index intermediate_column_offset = output_column_offset - (stencil_radius * pipeline_length) - gen * stencil_radius;
+            Index intermediate_row_offset = output_row_offset - (stencil_radius * pipeline_length) - gen * stencil_radius;
 
             cores[gen] = ExecutionCore(
                 cell_generation + gen,
@@ -51,7 +51,7 @@ public:
 #pragma unroll
         for (UIndex gen = 0; gen < pipeline_length; gen++)
         {
-            value = cores[gen].template step<Kernel>(value, kernel);
+            value = cores[gen].template step<TransFunc>(value, trans_func);
         }
 
         bool is_valid_output = output_column >= output_column_offset;
@@ -71,11 +71,11 @@ public:
 
     UIndex get_total_radius() const
     {
-        return kernel_radius * pipeline_length;
+        return stencil_radius * pipeline_length;
     }
 
 private:
-    [[intel::fpga_register]] Kernel kernel;
+    [[intel::fpga_register]] TransFunc trans_func;
     ExecutionCore cores[pipeline_length];
     Index output_column_offset;
     Index output_row_offset;

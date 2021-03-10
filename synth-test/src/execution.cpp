@@ -31,7 +31,7 @@ int main()
 
     buffer<ID, 2> out_buffer(range<2>(width, height));
 
-    auto kernel = [](Stencil<ID, radius> const &stencil, StencilInfo const &info) {
+    auto trans_func = [](Stencil<ID, radius> const &stencil, StencilInfo const &info) {
         UIndex center_column = info.center_cell_id.c;
         UIndex center_row = info.center_cell_id.r;
 
@@ -61,7 +61,7 @@ int main()
         auto out_buffer_ac = out_buffer.get_access<access::mode::discard_write>(cgh);
 
         cgh.single_task([=]() {
-            ExecutionPipeline<ID, radius, pipeline_length, width, height, decltype(kernel)> pipeline(0, 0, 0, kernel);
+            ExecutionPipeline<ID, radius, pipeline_length, width, height, decltype(trans_func)> pipeline(0, 0, 0, trans_func);
 
             Index in_c, in_r, out_c, out_r;
             in_c = in_r = -(radius * pipeline_length);

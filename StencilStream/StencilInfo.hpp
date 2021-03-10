@@ -15,20 +15,20 @@ namespace stencil_stream
 {
 
 /**
- * All parameters for the stencil kernel.
+ * All parameters for the transition.
  */
 struct StencilInfo
 {
     /**
      * The position of the central cell in the global grid. 
      * 
-     * This is the position of the cell the stencil kernel has to calculate and the position of the central cell of the stencil buffer.
+     * This is the position of the cell the transition has to calculate and the position of the central cell of the stencil buffer.
      */
     ID center_cell_id = ID(0, 0);
     /**
      * The present generation of the central cell of the stencil buffer.
      * 
-     * This number +1 is the generation of the cell the stencil kernel calculates.
+     * This number +1 is the generation of the cell the transition function calculates.
      */
     UIndex cell_generation = 0;
 };

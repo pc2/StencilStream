@@ -17,7 +17,7 @@ namespace stencil_stream
 /**
  * The stencil buffer.
  * 
- * The stencil buffer contains a small chunk of the grid buffer and is used by the stencil kernel to
+ * The stencil buffer contains a small chunk of the grid buffer and is used by the transition function to
  * calculate the next-generation cell value.
  * 
  * This implementation provides two ways to index the stencil: With an `ID` and a `UID`. Since `ID` is signed, the column and row axies are within the range of [-radius : radius].

@@ -18,17 +18,17 @@ namespace stencil_stream
 {
 
 /**
- * A core that executes a stencil kernel on a grid.
+ * A core that executes a stencil transition function on a grid.
  * 
  * This core iterates over the rows first and over the columns second due to the way the cells are fed to it by the IO kernels.
  * 
  * The columns that are covered by the stencil are stored in a cache and are used again when the iteration reaches a new coloum.
  */
-template <typename T, UIndex kernel_radius, UIndex input_grid_width, UIndex input_grid_height>
+template <typename T, UIndex stencil_radius, UIndex input_grid_width, UIndex input_grid_height>
 class ExecutionCore
 {
 public:
-    static_assert(kernel_radius >= 1);
+    static_assert(stencil_radius >= 1);
 
     ExecutionCore() : input_column(0),
                       input_row(0),
@@ -61,13 +61,13 @@ public:
     }
 
     /**
-     * Process the next input cell, execute the stencil kernel and return the result.
+     * Process the next input cell, execute the transition function and return the result.
      */
-    template <typename Kernel>
-    T step(T input, Kernel kernel)
+    template <typename TransFunc>
+    T step(T input, TransFunc trans_func)
     {
         static_assert(
-            std::is_invocable_r<T, Kernel, Stencil<T, kernel_radius> const &, StencilInfo const &>::
+            std::is_invocable_r<T, TransFunc, Stencil<T, stencil_radius> const &, StencilInfo const &>::
                 value);
 
         /**
@@ -110,7 +110,7 @@ public:
         Index output_row = get_output_row();
         info.center_cell_id = ID(output_column, output_row);
 
-        T output = kernel(stencil, info);
+        T output = trans_func(stencil, info);
 
         // Increase column and row counters.
         if (input_row == input_grid_height - 1)
@@ -146,12 +146,12 @@ public:
 
     Index get_output_column() const
     {
-        return input_column - kernel_radius + output_column_offset;
+        return input_column - stencil_radius + output_column_offset;
     }
 
     Index get_output_row() const
     {
-        return input_row - kernel_radius + output_row_offset;
+        return input_row - stencil_radius + output_row_offset;
     }
 
 private:
@@ -165,10 +165,10 @@ private:
     [[intel::fpga_register]] Index output_column_offset;
     [[intel::fpga_register]] Index output_row_offset;
 
-    [[intel::fpga_memory, intel::numbanks(2)]] T cache[2][input_grid_height][Stencil<T, kernel_radius>::diameter() - 1];
+    [[intel::fpga_memory, intel::numbanks(2)]] T cache[2][input_grid_height][Stencil<T, stencil_radius>::diameter() - 1];
     [[intel::fpga_register]] UIndex active_cache;
 
-    [[intel::fpga_register]] Stencil<T, kernel_radius> stencil;
+    [[intel::fpga_register]] Stencil<T, stencil_radius> stencil;
     [[intel::fpga_register]] StencilInfo info;
 };
 
