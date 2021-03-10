@@ -15,13 +15,13 @@
 namespace stencil_stream
 {
 template <typename T, UIndex halo_height, UIndex core_height, UIndex flush_length, cl::sycl::access::mode access_mode, cl::sycl::access::target access_target>
-class IOGroupAccessor
+class IOGroup
 {
     using Buffer = BufferedIO<T, flush_length, access_mode, access_target>;
     using Accessor = typename Buffer::Accessor;
 
 public:
-    IOGroupAccessor(
+    IOGroup(
         Accessor upper_northern_halo,
         Accessor lower_northern_halo,
         Accessor core,
@@ -36,7 +36,7 @@ public:
         static_assert(access_mode == cl::sycl::access::mode::read || access_mode == cl::sycl::access::mode::read_write);
     }
 
-    IOGroupAccessor(
+    IOGroup(
         Accessor northern_halo,
         Accessor core,
         Accessor southern_halo) : upper_northern_halo(std::nullopt),
@@ -74,7 +74,14 @@ public:
             new_value = lower_southern_halo->read();
         }
 
-        step_index();
+        if (i_row == 4 * halo_height + core_height - 1)
+        {
+            i_row = 0;
+        }
+        else
+        {
+            i_row++;
+        }
 
         return new_value;
     }
@@ -85,7 +92,7 @@ public:
         {
             lower_northern_halo.write(new_value);
         }
-        else if (i_row < 2 * halo_height)
+        else if (i_row < halo_height + core_height)
         {
             core.write(new_value);
         }
@@ -94,7 +101,14 @@ public:
             upper_southern_halo.write(new_value);
         }
 
-        step_index();
+        if (i_row == 2 * halo_height + core_height - 1)
+        {
+            i_row = 0;
+        }
+        else
+        {
+            i_row++;
+        }
     }
 
     void flush()
@@ -105,18 +119,6 @@ public:
     }
 
 private:
-    void step_index()
-    {
-        if (i_row == 4 * halo_height + core_height - 1)
-        {
-            i_row = 0;
-        }
-        else
-        {
-            i_row++;
-        }
-    }
-
     std::optional<Buffer> upper_northern_halo;
     Buffer lower_northern_halo, core, upper_southern_halo;
     std::optional<Buffer> lower_southern_halo;

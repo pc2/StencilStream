@@ -14,7 +14,7 @@ ifdef EBROOTGCC
 	ARGS += --gcc-toolchain=$(EBROOTGCC)
 endif
 
-OBJECTS = src/BufferedIO.o src/ExecutionCore.o src/ExecutionPipeline.o src/IOGroupAccessor.o src/main.o src/Stencil.o
+OBJECTS = src/BufferedIO.o src/ExecutionCore.o src/ExecutionPipeline.o src/IOGroup.o src/main.o src/Stencil.o
 
 test: $(OBJECTS) Makefile
 	$(CC) $(ARGS) $(OBJECTS) -o test
