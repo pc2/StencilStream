@@ -13,38 +13,14 @@
 
 namespace stencil_stream
 {
-
-/**
- * A generic, two-dimensional index.
- */
-template <typename T>
-class GenericID
+cl::sycl::range<2> flushblocked_buffer_range(UIndex width, UIndex height, UIndex flush_length)
 {
-public:
-    GenericID() : c(), r() {}
-
-    GenericID(T column, T row) : c(column), r(row) {}
-
-    GenericID(cl::sycl::id<2> sycl_id) : c(sycl_id[0]), r(sycl_id[1]) {}
-
-    GenericID(cl::sycl::range<2> sycl_range) : c(sycl_range[0]), r(sycl_range[1]) {}
-
-    bool operator==(GenericID const &other) const
+    UIndex nCells = width * height;
+    cl::sycl::range<2> range(nCells / flush_length, flush_length);
+    if (nCells % flush_length != 0)
     {
-        return this->c == other.c && this->r == other.r;
+        range[0] += 1;
     }
-
-    T c, r;
-};
-
-/**
- * A signed, two-dimensional index.
- */
-typedef GenericID<Index> ID;
-
-/**
- * An unsigned, two-dimensional index.
- */
-typedef GenericID<UIndex> UID;
-
+    return range;
+}
 } // namespace stencil_stream
