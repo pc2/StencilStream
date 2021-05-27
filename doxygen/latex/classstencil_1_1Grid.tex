@@ -1,0 +1,49 @@
+\hypertarget{classstencil_1_1Grid}{}\doxysection{stencil\+::Grid$<$ T, tile\+\_\+width, tile\+\_\+height, halo\+\_\+radius, burst\+\_\+length $>$ Class Template Reference}
+\label{classstencil_1_1Grid}\index{stencil::Grid$<$ T, tile\_width, tile\_height, halo\_radius, burst\_length $>$@{stencil::Grid$<$ T, tile\_width, tile\_height, halo\_radius, burst\_length $>$}}
+\doxysubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classstencil_1_1Grid_ae8cc8ea67bcad1593a150fa9e88a4def}\label{classstencil_1_1Grid_ae8cc8ea67bcad1593a150fa9e88a4def}} 
+using {\bfseries Tile} = Tile$<$ T, tile\+\_\+width, tile\+\_\+height, halo\+\_\+radius, burst\+\_\+length $>$
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classstencil_1_1Grid_ad2307a0b5f6d30c7b4b4a61d9ea7f045}\label{classstencil_1_1Grid_ad2307a0b5f6d30c7b4b4a61d9ea7f045}} 
+{\bfseries Grid} (uindex\+\_\+t width, uindex\+\_\+t height, T default\+\_\+value)
+\item 
+\mbox{\Hypertarget{classstencil_1_1Grid_aa4acaa658018257e9b2698d3f89623e3}\label{classstencil_1_1Grid_aa4acaa658018257e9b2698d3f89623e3}} 
+{\bfseries Grid} (cl\+::sycl\+::buffer$<$ T, 2 $>$ in\+\_\+buffer, T default\+\_\+value)
+\item 
+\mbox{\Hypertarget{classstencil_1_1Grid_a6d229b90f3f9d1f966c84c0e85e15733}\label{classstencil_1_1Grid_a6d229b90f3f9d1f966c84c0e85e15733}} 
+void {\bfseries copy\+\_\+to} (cl\+::sycl\+::buffer$<$ T, 2 $>$ \&out\+\_\+buffer)
+\item 
+\mbox{\Hypertarget{classstencil_1_1Grid_a185b1b8d02edfe870a457a8e4e3cf8e7}\label{classstencil_1_1Grid_a185b1b8d02edfe870a457a8e4e3cf8e7}} 
+\mbox{\hyperlink{classstencil_1_1Grid}{Grid}} {\bfseries make\+\_\+output\+\_\+grid} () const
+\item 
+\mbox{\Hypertarget{classstencil_1_1Grid_a0f83821a1af16c54a3f4f5a3ebb247d6}\label{classstencil_1_1Grid_a0f83821a1af16c54a3f4f5a3ebb247d6}} 
+\mbox{\hyperlink{classstencil_1_1GenericID}{U\+ID}} {\bfseries get\+\_\+tile\+\_\+range} () const
+\item 
+\mbox{\Hypertarget{classstencil_1_1Grid_af7c08f7871b06df253abc63b90ac99f5}\label{classstencil_1_1Grid_af7c08f7871b06df253abc63b90ac99f5}} 
+Tile \& {\bfseries get\+\_\+tile} (\mbox{\hyperlink{classstencil_1_1GenericID}{U\+ID}} tile\+\_\+id)
+\item 
+\mbox{\Hypertarget{classstencil_1_1Grid_a19f8aa3dd8f5290594764a1ec92444a1}\label{classstencil_1_1Grid_a19f8aa3dd8f5290594764a1ec92444a1}} 
+{\footnotesize template$<$typename in\+\_\+pipe $>$ }\\void {\bfseries submit\+\_\+tile\+\_\+input} (cl\+::sycl\+::queue fpga\+\_\+queue, \mbox{\hyperlink{classstencil_1_1GenericID}{U\+ID}} tile\+\_\+id)
+\item 
+\mbox{\Hypertarget{classstencil_1_1Grid_a7fb1cd9c831fe0aa59199a031d94f0cb}\label{classstencil_1_1Grid_a7fb1cd9c831fe0aa59199a031d94f0cb}} 
+{\footnotesize template$<$typename out\+\_\+pipe $>$ }\\void {\bfseries submit\+\_\+tile\+\_\+output} (cl\+::sycl\+::queue fpga\+\_\+queue, \mbox{\hyperlink{classstencil_1_1GenericID}{U\+ID}} tile\+\_\+id)
+\end{DoxyCompactItemize}
+\doxysubsection*{Static Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classstencil_1_1Grid_a9d5a8ca1ff230a6a10160ae0ab187ab4}\label{classstencil_1_1Grid_a9d5a8ca1ff230a6a10160ae0ab187ab4}} 
+static constexpr uindex\+\_\+t {\bfseries core\+\_\+height} = tile\+\_\+height -\/ 2 $\ast$ halo\+\_\+radius
+\item 
+\mbox{\Hypertarget{classstencil_1_1Grid_aca0bc98afaa33f217a60155a1ece2871}\label{classstencil_1_1Grid_aca0bc98afaa33f217a60155a1ece2871}} 
+static constexpr uindex\+\_\+t {\bfseries core\+\_\+width} = tile\+\_\+width -\/ 2 $\ast$ halo\+\_\+radius
+\end{DoxyCompactItemize}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Stencil\+Stream/Grid.\+hpp\end{DoxyCompactItemize}

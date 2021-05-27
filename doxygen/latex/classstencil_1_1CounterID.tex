@@ -1,0 +1,80 @@
+\hypertarget{classstencil_1_1CounterID}{}\doxysection{stencil\+::Counter\+ID$<$ T $>$ Class Template Reference}
+\label{classstencil_1_1CounterID}\index{stencil::CounterID$<$ T $>$@{stencil::CounterID$<$ T $>$}}
+
+
+A subclass of the {\ttfamily \mbox{\hyperlink{classstencil_1_1GenericID}{Generic\+ID}}$<$T$>$} with two-\/dimensional index counting.  
+
+
+
+
+{\ttfamily \#include $<$Counter\+I\+D.\+hpp$>$}
+
+
+
+Inheritance diagram for stencil\+::Counter\+ID$<$ T $>$\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=212pt]{classstencil_1_1CounterID__inherit__graph}
+\end{center}
+\end{figure}
+
+
+Collaboration diagram for stencil\+::Counter\+ID$<$ T $>$\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=212pt]{classstencil_1_1CounterID__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classstencil_1_1CounterID_a70d3ee8130418cf23a7ab54791cc5c83}{Counter\+ID}} (T column\+\_\+bound, T row\+\_\+bound)
+\begin{DoxyCompactList}\small\item\em Create a new counter with uninitialized column and row counters. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classstencil_1_1CounterID_acc20732033a3142d65877048602ae9eb}\label{classstencil_1_1CounterID_acc20732033a3142d65877048602ae9eb}} 
+\mbox{\hyperlink{classstencil_1_1CounterID_acc20732033a3142d65877048602ae9eb}{Counter\+ID}} (T column, T row, T column\+\_\+bound, T row\+\_\+bound)
+\begin{DoxyCompactList}\small\item\em Create a new counter with the given column/row counters and bounds. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classstencil_1_1CounterID_a0c5626e12ad28c04e82fb70f32c3dbf4}\label{classstencil_1_1CounterID_a0c5626e12ad28c04e82fb70f32c3dbf4}} 
+\mbox{\hyperlink{classstencil_1_1CounterID_a0c5626e12ad28c04e82fb70f32c3dbf4}{Counter\+ID}} (cl\+::sycl\+::id$<$ 2 $>$ sycl\+\_\+id, T column\+\_\+bound, T row\+\_\+bound)
+\begin{DoxyCompactList}\small\item\em Create a new counter from the given S\+Y\+CL id and bounds. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classstencil_1_1CounterID_ae7ea98dd397e1a435d672dc9ec4c14d3}\label{classstencil_1_1CounterID_ae7ea98dd397e1a435d672dc9ec4c14d3}} 
+\mbox{\hyperlink{classstencil_1_1CounterID}{Counter\+ID}} \& \mbox{\hyperlink{classstencil_1_1CounterID_ae7ea98dd397e1a435d672dc9ec4c14d3}{operator++}} ()
+\begin{DoxyCompactList}\small\item\em Increase the counters. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classstencil_1_1CounterID_a904bb4df7e45a9417953abe47f69910e}\label{classstencil_1_1CounterID_a904bb4df7e45a9417953abe47f69910e}} 
+\mbox{\hyperlink{classstencil_1_1CounterID}{Counter\+ID}} \& \mbox{\hyperlink{classstencil_1_1CounterID_a904bb4df7e45a9417953abe47f69910e}{operator-\/-\/}} ()
+\begin{DoxyCompactList}\small\item\em Decrease the counters. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classstencil_1_1CounterID_a6bb749bfb250c4d9d3e979d0419f6c0a}\label{classstencil_1_1CounterID_a6bb749bfb250c4d9d3e979d0419f6c0a}} 
+\mbox{\hyperlink{classstencil_1_1CounterID}{Counter\+ID}} \mbox{\hyperlink{classstencil_1_1CounterID_a6bb749bfb250c4d9d3e979d0419f6c0a}{operator++}} (int)
+\begin{DoxyCompactList}\small\item\em Increase the counters. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classstencil_1_1CounterID_a50e0a4c3ed457a07161005e36b63380d}\label{classstencil_1_1CounterID_a50e0a4c3ed457a07161005e36b63380d}} 
+\mbox{\hyperlink{classstencil_1_1CounterID}{Counter\+ID}} \mbox{\hyperlink{classstencil_1_1CounterID_a50e0a4c3ed457a07161005e36b63380d}{operator-\/-\/}} (int)
+\begin{DoxyCompactList}\small\item\em Decrease the counters. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Additional Inherited Members}
+
+
+\doxysubsection{Detailed Description}
+\subsubsection*{template$<$typename T$>$\newline
+class stencil\+::\+Counter\+I\+D$<$ T $>$}
+
+A subclass of the {\ttfamily \mbox{\hyperlink{classstencil_1_1GenericID}{Generic\+ID}}$<$T$>$} with two-\/dimensional index counting. 
+
+It additionally requires bounds for the column and row counters and provides increment and decrement operators. The row counter is always the fastest\+: For example, the increment operators first increase the row counter and when it reaches the row bound, it is reset to zero and the column counter is increased. When the column counter reaches it\textquotesingle{}s bound, it is also reset to zero. One can therefore use this counter to safely iterate over a two-\/dimensional grid even with multiple passes. 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classstencil_1_1CounterID_a70d3ee8130418cf23a7ab54791cc5c83}\label{classstencil_1_1CounterID_a70d3ee8130418cf23a7ab54791cc5c83}} 
+\index{stencil::CounterID$<$ T $>$@{stencil::CounterID$<$ T $>$}!CounterID@{CounterID}}
+\index{CounterID@{CounterID}!stencil::CounterID$<$ T $>$@{stencil::CounterID$<$ T $>$}}
+\doxysubsubsection{\texorpdfstring{CounterID()}{CounterID()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+\mbox{\hyperlink{classstencil_1_1CounterID}{stencil\+::\+Counter\+ID}}$<$ T $>$\+::\mbox{\hyperlink{classstencil_1_1CounterID}{Counter\+ID}} (\begin{DoxyParamCaption}\item[{T}]{column\+\_\+bound,  }\item[{T}]{row\+\_\+bound }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Create a new counter with uninitialized column and row counters. 
+
+The column and row bounds may not be uninitialized and are therefore required. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+Stencil\+Stream/Counter\+I\+D.\+hpp\end{DoxyCompactItemize}
