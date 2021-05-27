@@ -1,4 +1,4 @@
-# Workflow that builds the doxygen page and publishes it to Github Pages.
+# Workflow that builds the doxygen documentation.
 
 name: Doxygen
 
@@ -21,9 +21,9 @@ jobs:
       - name: Doxygen Build
         uses: mattnotmitt/doxygen-action@v1.3.1
 
-      - name: Deploy to Github Pages
-        uses: crazy-max/ghaction-import-gpg@v3
-        if: success()
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v2.2.3
         with:
-          target_branch: gh-pages
-          build_dir: doxygen/html/
+          name: documentation
+          path: doxygen/html
+
