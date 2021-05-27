@@ -1,0 +1,29 @@
+# Workflow that builds the doxygen page and publishes it to Github Pages.
+
+name: Doxygen
+
+on:
+  push:
+    branches: [ v2.0.0 ] # master, after merge into master
+  pull_request:
+    # branches: [ master ], after merge into master
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Doxygen Build
+        uses: mattnotmitt/doxygen-action@v1.3.1
+
+      - name: Deploy to Github Pages
+        uses: crazy-max/ghaction-import-gpg@v3
+        if: success()
+        with:
+          target_branch: gh-pages
+          build_dir: doxygen/html/
