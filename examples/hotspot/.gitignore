@@ -1,11 +1,12 @@
-hotspot
-build
-output.*
-hotspot.*
-1
-*.json
-benchmark.py
-verify_benchmark.py
-__pycache__
+# executables
+hotspot_emu
+hotspot_hw
+hotspot_rodinia
 
-!hotspot.cpp
+# build directories
+rodinia_3.1
+
+# Output
+out
+profile.*
+1

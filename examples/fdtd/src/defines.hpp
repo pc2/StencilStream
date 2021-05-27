@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn University
+ * Copyright © 2020-2021 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn University
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  * 
@@ -9,9 +9,9 @@
  */
 #pragma once
 #include <CL/sycl/INTEL/fpga_extensions.hpp>
+#include <StencilStream/Index.hpp>
 #include <fstream>
 #include <iostream>
-#include <stencil/stencil.hpp>
 #include <unistd.h>
 
 using namespace std;
@@ -53,28 +53,20 @@ constexpr uindex_t vector_len = 8;
 typedef cl::sycl::vec<float, vector_len> float_vec;
 
 /* stencil parameters */
-constexpr uindex_t n_logical_rows = 4096;
-constexpr uindex_t n_buffer_rows = n_logical_rows / vector_len;
-constexpr uindex_t n_logical_columns = 4096;
-constexpr uindex_t n_buffer_columns = n_logical_columns;
-constexpr stencil::index_t stencil_radius = 1;
+constexpr uindex_t tile_height = 512;
+constexpr uindex_t tile_width = 512;
+constexpr uindex_t stencil_radius = 1;
 
-// Number of samples in a frame block.
-constexpr uindex_t frame_block_size = FDTD_BURST_SIZE / sizeof(float_vec);
-static_assert(n_buffer_rows * n_buffer_columns % frame_block_size == 0);
-constexpr uindex_t blocks_per_frame = n_buffer_rows * n_buffer_columns / frame_block_size;
+#ifdef HARDWARE
+constexpr uindex_t pipeline_length = 32;
+#else
+constexpr uindex_t pipeline_length = 16;
+#endif
 
 // Default radius of the cavity in dx.
 constexpr float default_radius = 80.0;
 constexpr float default_tau = 100e-15;
 constexpr float default_frequency = 121.5e12;
-
-// Coordinates of the cavity center in dx.
-constexpr uindex_t mid_y = n_logical_columns / 2;
-constexpr uindex_t mid_x = n_logical_rows / 2;
-
-// Collection time for a single frame in dx.
-constexpr uindex_t dt_collection = STENCIL_PIPELINE_LEN;
 
 struct FDTDCell
 {
@@ -83,10 +75,10 @@ struct FDTDCell
 
 struct Parameters
 {
-    Parameters(int argc, char **argv) : n_frames(10), n_sample_steps(pipeline_length), disk_radius(default_radius), benchmark_mode(false)
+    Parameters(int argc, char **argv) : n_frames(10), n_sample_steps(pipeline_length), disk_radius(default_radius)
     {
         int c;
-        while ((c = getopt(argc, argv, "hf:c:r:b")) != -1)
+        while ((c = getopt(argc, argv, "hf:c:r:")) != -1)
         {
             switch (c)
             {
@@ -95,20 +87,17 @@ struct Parameters
                 break;
             case 'c':
                 n_sample_steps = stol(optarg);
-            case 'r':
-                disk_radius = stod(optarg);
                 break;
-            case 'b':
-                benchmark_mode = true;
+            case 'r':
+                disk_radius = stod(optarg) * nm / dx;
                 break;
             case 'h':
             case '?':
             default:
                 cerr << "Options:" << std::endl;
                 cerr << "-f <steps>: Number of frames to calculate (default " << 10 << ")" << std::endl;
-                cerr << "-c <steps>: Number of time steps to collect for a frame (default " << pipeline_length << ")" << std::endl;
-                cerr << "-r <radius>: Radius of the cavity in cell widths (default " << default_radius << ")" << std::endl;
-                cerr << "-b: Run the application in benchmark mode. This will run the simulation several times and analyze the performance of the design" << std::endl;
+                cerr << "-c <steps>: Number of time steps to collect for a frame (default " << 1 << ")" << std::endl;
+                cerr << "-r <radius>: Radius of the cavity in nanometers (default " << default_radius / dx << ")" << std::endl;
                 exit(1);
             }
         }
@@ -159,6 +148,4 @@ struct Parameters
     {
         return 7.0 * tau();
     }
-
-    bool benchmark_mode;
 };

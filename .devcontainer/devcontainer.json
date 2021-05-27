@@ -10,7 +10,7 @@
 	},
 
 	// Add the IDs of extensions you want installed when the container is created.
-	"extensions": ["ms-vscode.cpptools", "austin.code-gnu-global", "ms-python.python"],
+	"extensions": ["ms-vscode.cpptools", "gitlab.gitlab-workflow", "tomoki1207.pdf"],
 
 	// For ptrace-based debuggers like C++, Go, and Rust.
 	"runArgs": [ "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined" ],

@@ -8,42 +8,25 @@
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "defines.hpp"
-#include <fstream>
-#include <sstream>
-#include <thread>
-#include <vector>
+#include <boost/preprocessor/cat.hpp>
+#include <cstdint>
 
-class SampleCollector
+namespace stencil
 {
-    uindex_t frame_index;
-    cl::sycl::buffer<FDTDCell, 2> frame_buffer;
+#ifndef STENCIL_INDEX_WIDTH
+#define STENCIL_INDEX_WIDTH 64
+#endif
 
-public:
-    SampleCollector(uindex_t frame_index, cl::sycl::buffer<FDTDCell, 2> frame_buffer) : frame_index(frame_index), frame_buffer(frame_buffer)
-    {
-    }
-
-    void operator()()
-    {
-        auto samples = frame_buffer.get_access<access::mode::read>();
-
-        ostringstream frame_path;
-        frame_path << "frame." << frame_index << ".csv";
-
-        std::ofstream out(frame_path.str());
-
-        for (uindex_t b = 0; b < samples.get_range()[0]; b++)
-        {
-            for (uindex_t i = 0; i < samples.get_range()[1]; i++)
-            {
-                for (uindex_t j = 0; j < vector_len; j++)
-                {
-                    out << samples[b][i].hz_sum[j] << std::endl;
-                }
-            }
-        }
-
-        cout << "Written frame " << frame_index << std::endl;
-    }
-};
+/**
+ * Integer types for indexing.
+ * 
+ * There is always a signed version, `index_t`, and an unsigned version, `uindex_t`. Their width is
+ * defined by the `STENCIL_INDEX_WIDTH` macro. The default is 64 and can be increased to allow
+ * bigger buffers or decreased to reduce the complexity and resource requirements.
+ * 
+ * Static asserts throughout the library ensure that the index type is wide enough. Therefore, you
+ * can decrease the until you get compilation errors.
+ */
+typedef BOOST_PP_CAT(BOOST_PP_CAT(uint, STENCIL_INDEX_WIDTH), _t) uindex_t;
+typedef BOOST_PP_CAT(BOOST_PP_CAT(int, STENCIL_INDEX_WIDTH), _t) index_t;
+}

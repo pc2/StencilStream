@@ -7,43 +7,43 @@
  * 
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
-#include "defines.hpp"
-#include <fstream>
-#include <sstream>
-#include <thread>
-#include <vector>
+#include "../res/catch.hpp"
+#include "../res/constants.hpp"
+#include <StencilStream/CounterID.hpp>
 
-class SampleCollector
+using namespace std;
+using namespace stencil;
+
+using CID = CounterID<uindex_t>;
+
+TEST_CASE("CounterID::operator++", "[CounterID]")
 {
-    uindex_t frame_index;
-    cl::sycl::buffer<FDTDCell, 2> frame_buffer;
-
-public:
-    SampleCollector(uindex_t frame_index, cl::sycl::buffer<FDTDCell, 2> frame_buffer) : frame_index(frame_index), frame_buffer(frame_buffer)
+    CID counter(0, 0, tile_width, tile_height);
+    for (uindex_t c = 0; c < tile_width; c++)
     {
-    }
-
-    void operator()()
-    {
-        auto samples = frame_buffer.get_access<access::mode::read>();
-
-        ostringstream frame_path;
-        frame_path << "frame." << frame_index << ".csv";
-
-        std::ofstream out(frame_path.str());
-
-        for (uindex_t b = 0; b < samples.get_range()[0]; b++)
+        for (uindex_t r = 0; r < tile_height; r++)
         {
-            for (uindex_t i = 0; i < samples.get_range()[1]; i++)
-            {
-                for (uindex_t j = 0; j < vector_len; j++)
-                {
-                    out << samples[b][i].hz_sum[j] << std::endl;
-                }
-            }
+            REQUIRE(counter.c == c);
+            REQUIRE(counter.r == r);
+            counter++;
         }
-
-        cout << "Written frame " << frame_index << std::endl;
     }
-};
+    REQUIRE(counter.c == 0);
+    REQUIRE(counter.r == 0);
+}
+
+TEST_CASE("CounterID::operator--", "[CounterID]")
+{
+    CID counter(tile_width - 1, tile_height - 1, tile_width, tile_height);
+    for (index_t c = tile_width - 1; c >= 0; c--)
+    {
+        for (index_t r = tile_height - 1; r >= 0; r--)
+        {
+            REQUIRE(counter.c == c);
+            REQUIRE(counter.r == r);
+            counter--;
+        }
+    }
+    REQUIRE(counter.c == tile_width - 1);
+    REQUIRE(counter.r == tile_height - 1);
+}

@@ -1,9 +1,9 @@
-fdtd
-output.*
-fdtd.*
-1
-*.json
+# executables
+fdtd_emu
+fdtd_hw
+
+# Output
 *.csv
 *.gz
-
-!fdtd.cpp
+profile.*
+1

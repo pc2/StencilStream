@@ -8,42 +8,23 @@
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "defines.hpp"
-#include <fstream>
-#include <sstream>
-#include <thread>
-#include <vector>
+#include <StencilStream/Helpers.hpp>
+#include <StencilStream/Index.hpp>
 
-class SampleCollector
-{
-    uindex_t frame_index;
-    cl::sycl::buffer<FDTDCell, 2> frame_buffer;
+const stencil::uindex_t tile_width = 64;
+const stencil::uindex_t tile_height = 32;
 
-public:
-    SampleCollector(uindex_t frame_index, cl::sycl::buffer<FDTDCell, 2> frame_buffer) : frame_index(frame_index), frame_buffer(frame_buffer)
-    {
-    }
+const stencil::uindex_t pipeline_length = 2;
+const stencil::uindex_t stencil_radius = 2;
+const stencil::uindex_t halo_radius = pipeline_length * stencil_radius;
+const stencil::uindex_t core_width = tile_width - 2 * halo_radius;
+const stencil::uindex_t core_height = tile_height - 2 * halo_radius;
 
-    void operator()()
-    {
-        auto samples = frame_buffer.get_access<access::mode::read>();
+const stencil::uindex_t burst_length = 32;
+const stencil::uindex_t corner_bursts = stencil::burst_partitioned_range(halo_radius, halo_radius, burst_length)[0];
+const stencil::uindex_t horizontal_border_bursts = stencil::burst_partitioned_range(core_width, halo_radius, burst_length)[0];
+const stencil::uindex_t vertical_border_bursts = stencil::burst_partitioned_range(halo_radius, core_height, burst_length)[0];
+const stencil::uindex_t core_bursts = stencil::burst_partitioned_range(core_width, core_height, burst_length)[0];
 
-        ostringstream frame_path;
-        frame_path << "frame." << frame_index << ".csv";
-
-        std::ofstream out(frame_path.str());
-
-        for (uindex_t b = 0; b < samples.get_range()[0]; b++)
-        {
-            for (uindex_t i = 0; i < samples.get_range()[1]; i++)
-            {
-                for (uindex_t j = 0; j < vector_len; j++)
-                {
-                    out << samples[b][i].hz_sum[j] << std::endl;
-                }
-            }
-        }
-
-        cout << "Written frame " << frame_index << std::endl;
-    }
-};
+const stencil::uindex_t grid_width = 128;
+const stencil::uindex_t grid_height = 64;

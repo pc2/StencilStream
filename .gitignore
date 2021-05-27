@@ -17,10 +17,10 @@
 **/*.prj
 **/*.tmp
 **/*.txt
-**/*.tar.gz
-**/*.tar.xz
+**/*.tar.*
 **/*.out
 **/*.gif
 **/*.mp4
 **/*.png
 **/*.gch
+doxygen

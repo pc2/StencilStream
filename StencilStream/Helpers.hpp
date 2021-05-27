@@ -8,42 +8,34 @@
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "defines.hpp"
-#include <fstream>
-#include <sstream>
-#include <thread>
-#include <vector>
+#include "Index.hpp"
+#include <CL/sycl/access/access.hpp>
+#include <CL/sycl/id.hpp>
 
-class SampleCollector
+namespace stencil
 {
-    uindex_t frame_index;
-    cl::sycl::buffer<FDTDCell, 2> frame_buffer;
-
-public:
-    SampleCollector(uindex_t frame_index, cl::sycl::buffer<FDTDCell, 2> frame_buffer) : frame_index(frame_index), frame_buffer(frame_buffer)
+inline cl::sycl::range<2> burst_partitioned_range(uindex_t width, uindex_t height, uindex_t burst_length)
+{
+    uindex_t nCells = width * height;
+    cl::sycl::range<2> range(nCells / burst_length, burst_length);
+    if (nCells % burst_length != 0)
     {
+        range[0] += 1;
     }
+    return range;
+}
 
-    void operator()()
-    {
-        auto samples = frame_buffer.get_access<access::mode::read>();
+inline constexpr bool is_mode_readable(cl::sycl::access::mode access_mode)
+{
+    return access_mode == cl::sycl::access::mode::read ||
+           access_mode == cl::sycl::access::mode::read_write;
+}
 
-        ostringstream frame_path;
-        frame_path << "frame." << frame_index << ".csv";
-
-        std::ofstream out(frame_path.str());
-
-        for (uindex_t b = 0; b < samples.get_range()[0]; b++)
-        {
-            for (uindex_t i = 0; i < samples.get_range()[1]; i++)
-            {
-                for (uindex_t j = 0; j < vector_len; j++)
-                {
-                    out << samples[b][i].hz_sum[j] << std::endl;
-                }
-            }
-        }
-
-        cout << "Written frame " << frame_index << std::endl;
-    }
-};
+inline constexpr bool is_mode_writable(cl::sycl::access::mode access_mode)
+{
+    return access_mode == cl::sycl::access::mode::write ||
+           access_mode == cl::sycl::access::mode::read_write ||
+           access_mode == cl::sycl::access::mode::discard_write ||
+           access_mode == cl::sycl::access::mode::discard_read_write;
+}
+} // namespace stencil

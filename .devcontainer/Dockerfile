@@ -25,13 +25,12 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get update -y \
     && apt-get upgrade -y \
     && apt-get -y install --no-install-recommends \
-    libboost-all-dev \
     build-essential \
     pkg-config \
-    cmake \
     ca-certificates \
     gnupg \
-    intel-basekit
-
-COPY bashrc /
-RUN cat bashrc >> /home/vscode/.bashrc
+    intel-basekit \
+    libboost-iostreams-dev \
+    libboost-dev \
+    cmake \
+    valgrind

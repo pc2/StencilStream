@@ -8,42 +8,68 @@
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "defines.hpp"
-#include <fstream>
-#include <sstream>
-#include <thread>
-#include <vector>
+#include <StencilStream/Index.hpp>
+#include <deque>
+#include <stdexcept>
 
-class SampleCollector
+template <typename id, typename T>
+class HostPipe
 {
-    uindex_t frame_index;
-    cl::sycl::buffer<FDTDCell, 2> frame_buffer;
-
 public:
-    SampleCollector(uindex_t frame_index, cl::sycl::buffer<FDTDCell, 2> frame_buffer) : frame_index(frame_index), frame_buffer(frame_buffer)
+    static T read()
     {
+        return HostPipeImpl::instance().read();
     }
 
-    void operator()()
+    static void write(T new_value)
     {
-        auto samples = frame_buffer.get_access<access::mode::read>();
+        HostPipeImpl::instance().write(new_value);
+    }
 
-        ostringstream frame_path;
-        frame_path << "frame." << frame_index << ".csv";
+    static bool empty()
+    {
+        return HostPipeImpl::instance().empty();
+    }
 
-        std::ofstream out(frame_path.str());
-
-        for (uindex_t b = 0; b < samples.get_range()[0]; b++)
+private:
+    class HostPipeImpl
+    {
+    public:
+        static HostPipeImpl &instance()
         {
-            for (uindex_t i = 0; i < samples.get_range()[1]; i++)
+            static HostPipeImpl _instance;
+            return _instance;
+        }
+
+        T read()
+        {
+            if (queue.empty())
             {
-                for (uindex_t j = 0; j < vector_len; j++)
-                {
-                    out << samples[b][i].hz_sum[j] << std::endl;
-                }
+                throw std::runtime_error("Try to read from empty pipe (blocking is not implemented).");
+            }
+            else
+            {
+                T new_value = queue.back();
+                queue.pop_back();
+                return new_value;
             }
         }
 
-        cout << "Written frame " << frame_index << std::endl;
-    }
+        void write(T new_value)
+        {
+            queue.push_front(new_value);
+        }
+
+        bool empty()
+        {
+            return queue.empty();
+        }
+
+    private:
+        HostPipeImpl() : queue() {}
+        HostPipeImpl(const HostPipeImpl &);
+        HostPipeImpl &operator=(const HostPipeImpl &);
+
+        std::deque<T> queue;
+    };
 };

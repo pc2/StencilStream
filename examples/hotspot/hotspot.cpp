@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn University
+ * Copyright © 2020-2021Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn University
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  * 
@@ -9,8 +9,8 @@
  */
 #include <CL/sycl.hpp>
 #include <CL/sycl/INTEL/fpga_extensions.hpp>
+#include <StencilStream/StencilExecutor.hpp>
 #include <fstream>
-#include <stencil/stencil.hpp>
 
 using namespace std;
 using namespace cl::sycl;
@@ -36,9 +36,11 @@ const FLOAT chip_width = 0.016;
 const FLOAT amb_temp = 80.0;
 
 /* stencil parameters */
-const stencil::uindex_t stencil_radius = 1;
-const stencil::uindex_t max_width = 1024;
-const stencil::uindex_t max_height = 1024;
+const uindex_t stencil_radius = 1;
+const uindex_t pipeline_length = 128;
+const uindex_t tile_width = 1024;
+const uindex_t tile_height = 1024;
+const uindex_t burst_size = 1024;
 
 /* Number of simulations to run in benchmark mode */
 const uindex_t n_simulations = 10;
@@ -104,16 +106,14 @@ read_input(string temp_file, string power_file, range<2> buffer_range)
 
 void usage(int argc, char **argv)
 {
-    std::cerr << "Usage: " << argv[0] << "  <grid_rows> <grid_cols> <sim_time> <temp_file> <power_file> <output_file> [<benchmark_mode>]" << std::endl;
+    std::cerr << "Usage: " << argv[0] << "  <grid_rows> <grid_cols> <sim_time> <temp_file> <power_file> <output_file>" << std::endl;
     std::cerr << "    <grid_rows>      - number of rows in the grid (positive integer)" << std::endl;
     std::cerr << "    <grid_cols>      - number of columns in the grid (positive integer)" << std::endl;
     std::cerr << "    <sim_time>       - number of iterations (positive integer)" << std::endl;
     std::cerr << "    <temp_file>      - name of the file containing the initial temperature values of each cell" << std::endl;
     std::cerr << "    <power_file>     - name of the file containing the dissipated power values of each cell" << std::endl;
     std::cerr << "    <output_file>    - name of the output file" << std::endl;
-    std::cerr << "    <benchmark_mode> - Either 'true' or 'false', default 'false'. Run simulation multiple times and analyze the performance" << std::endl;
     std::cerr << "                       " << n_simulations << " simulations with i*<sim_time> generations will be executed in total, where i is the index of the simulation." << std::endl;
-    std::cerr << "This build supports grids with up to " << max_height << " rows." << std::endl;
     exit(1);
 }
 
@@ -133,7 +133,7 @@ auto exception_handler = [](cl::sycl::exception_list exceptions) {
     }
 };
 
-event run_simulation(cl::sycl::queue working_queue, buffer<vec<FLOAT, 2>, 2> temp, uindex_t sim_time)
+double run_simulation(cl::sycl::queue working_queue, buffer<vec<FLOAT, 2>, 2> temp, uindex_t sim_time)
 {
     uindex_t n_columns = temp.get_range()[0];
     uindex_t n_rows = temp.get_range()[1];
@@ -155,72 +155,42 @@ event run_simulation(cl::sycl::queue working_queue, buffer<vec<FLOAT, 2>, 2> tem
     FLOAT Cap_1 = step / Cap;
 
     auto kernel =
-        [=](
-            stencil::Stencil2D<vec<FLOAT, 2>, stencil_radius> const &temp,
-            stencil::Stencil2DInfo const &parameter) {
-            auto idx = parameter.center_cell_id;
-
-            FLOAT power = temp[ID(0, 0)][1];
-            FLOAT old = temp[ID(0, 0)][0];
-            FLOAT left = temp[ID(-1, 0)][0];
-            FLOAT right = temp[ID(1, 0)][0];
-            FLOAT top = temp[ID(0, -1)][0];
-            FLOAT bottom = temp[ID(0, 1)][0];
-
+        [=](Stencil<vec<FLOAT, 2>, stencil_radius> const &temp, StencilInfo const &parameter) {
+            ID idx = parameter.center_cell_id;
             index_t c = idx.c;
             index_t r = idx.r;
 
-            FLOAT horizontal_sum;
-            if (c == 0)
+            if (c < 0 || r < 0 || c > n_columns || r > n_rows)
             {
-                horizontal_sum = right - old;
-            }
-            else if (c == n_columns - 1)
-            {
-                horizontal_sum = left - old;
+                // Halo values always have to be zero.
+                return vec<FLOAT, 2>(0.0, 0.0);
             }
             else
             {
-                horizontal_sum = right + left - 2.f * old;
-            }
-            horizontal_sum *= Rx_1;
+                FLOAT power = temp[ID(0, 0)][1];
+                FLOAT old = temp[ID(0, 0)][0];
+                FLOAT left = temp[ID(-1, 0)][0];
+                FLOAT right = temp[ID(1, 0)][0];
+                FLOAT top = temp[ID(0, -1)][0];
+                FLOAT bottom = temp[ID(0, 1)][0];
 
-            FLOAT vertical_sum;
-            bool full_vertical = false;
-            if (r == 0)
-            {
-                vertical_sum = bottom - old;
-            }
-            else if (r == n_rows - 1)
-            {
-                vertical_sum = top - old;
-            }
-            else
-            {
-                vertical_sum = bottom + top - 2.f * old;
-                full_vertical = true;
-            }
-            vertical_sum *= Ry_1;
+                // As in the OpenCL version of the rodinia "hotspot" benchmark.
+                FLOAT new_temp = old + Cap_1 * (power + (bottom + top - 2.f * old) * Ry_1 + (right + left - 2.f * old) * Rx_1 + (amb_temp - old) * Rz_1);
 
-            FLOAT ambient = (amb_temp - old) * Rz_1;
-
-            FLOAT sum;
-            if (full_vertical)
-            {
-                sum = power + vertical_sum + horizontal_sum + ambient;
+                return vec(new_temp, power);
             }
-            else
-            {
-                sum = power + horizontal_sum + vertical_sum + ambient;
-            }
-
-            return vec(old + Cap_1 * sum, power);
         };
 
-    StencilExecutor<vec<FLOAT, 2>, stencil_radius, max_width, max_height> executor(working_queue);
-    executor.set_buffer(temp);
-    executor.set_generations(sim_time);
-    return executor.run(kernel);
+    StencilExecutor<vec<FLOAT, 2>, stencil_radius, decltype(kernel), pipeline_length, tile_width, tile_height, burst_size> executor(temp, vec<FLOAT, 2>(0.0, 0.0), kernel);
+#ifdef HARDWARE
+    executor.select_fpga(true);
+#else
+    executor.select_emulator(true);
+#endif
+
+    executor.run(sim_time);
+
+    return executor.get_runtime_sample().value().get_total_runtime();
 }
 
 int main(int argc, char **argv)
@@ -237,7 +207,7 @@ int main(int argc, char **argv)
     cl::sycl::queue working_queue(device_selector, exception_handler, {property::queue::enable_profiling{}});
 
     /* check validity of inputs	*/
-    if (argc < 7 || argc > 8)
+    if (argc != 7)
         usage(argc, argv);
     if ((n_rows = atoi(argv[1])) <= 0)
         usage(argc, argv);
@@ -251,73 +221,14 @@ int main(int argc, char **argv)
     pfile = argv[5];
     ofile = argv[6];
     buffer<vec<FLOAT, 2>, 2> temp = read_input(string(tfile), string(pfile), range<2>(n_columns, n_rows));
-    if (argc == 8 && std::string(argv[7]) == std::string("true"))
-    {
-        benchmark_mode = true;
-    }
 
-    if (benchmark_mode)
-    {
-        std::cout << "Starting benchmark" << std::endl;
+    printf("Start computing the transient temperature\n");
 
-        double clock_frequency;
-        std::cout << "Clock frequency: ";
-        std::cin >> clock_frequency;
-        std::cout << std::endl;
+    double runtime = run_simulation(working_queue, temp, sim_time);
 
-        double runtimes[n_simulations];
-        for (uindex_t i = 0; i < n_simulations; i++)
-        {
-            event comp_event = run_simulation(working_queue, temp, (i + 1) * sim_time);
-
-            unsigned long event_start = comp_event.get_profiling_info<info::event_profiling::command_start>();
-            unsigned long event_end = comp_event.get_profiling_info<info::event_profiling::command_end>();
-            runtimes[i] = double(event_end - event_start) / 1000000000.0;
-            std::cout << "Run " << i << " with " << (i + 1) * sim_time << " passes took " << runtimes[i] << " seconds" << std::endl;
-        }
-
-        // Actually the mean delta seconds per pass.
-        double delta_seconds_per_pass = 0.0;
-        for (uindex_t i = 0; i < n_simulations - 1; i++)
-        {
-            delta_seconds_per_pass += abs(double(runtimes[i + 1]) - double(runtimes[i]));
-        }
-        delta_seconds_per_pass = (delta_seconds_per_pass / (n_simulations - 1)) * (pipeline_length / sim_time);
-
-        std::cout << "Time per buffer pass: " << delta_seconds_per_pass << "s" << std::endl;
-
-        double loops_per_pass = max_width * max_height;
-        double seconds_per_loop = delta_seconds_per_pass / loops_per_pass;
-        double cycles_per_loop = seconds_per_loop * clock_frequency;
-
-        std::cout << "Cycles per Loop, aka II.: " << cycles_per_loop << std::endl;
-
-        double fo_per_core = 15;
-        double fo_per_loop = fo_per_core * pipeline_length;
-        double fo_per_pass = fo_per_loop * loops_per_pass;
-        double fo_per_second = fo_per_pass / delta_seconds_per_pass;
-
-        std::cout << "Raw Performance: " << fo_per_second / 1000000000.0 << " GFLOPS" << std::endl;
-
-        double generations_per_pass = pipeline_length;
-        double generations_per_second = generations_per_pass / delta_seconds_per_pass;
-
-        std::cout << "Performance: " << generations_per_second << " Generations/s" << std::endl;
-    }
-    else
-    {
-        printf("Start computing the transient temperature\n");
-
-        event comp_event = run_simulation(working_queue, temp, sim_time);
-
-        printf("Ending simulation\n");
-
-        unsigned long event_start = comp_event.get_profiling_info<info::event_profiling::command_start>();
-        unsigned long event_end = comp_event.get_profiling_info<info::event_profiling::command_end>();
-        std::cout << "Total time: " << (event_end - event_start) / 1000000000.0 << " s" << std::endl;
-
-        write_output(temp, string(ofile));
-    }
+    printf("Ending simulation\n");
+    std::cout << "Total time: " << runtime << " s" << std::endl;
+    write_output(temp, string(ofile));
 
     return 0;
 }
