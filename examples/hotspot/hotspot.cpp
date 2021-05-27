@@ -160,25 +160,17 @@ double run_simulation(cl::sycl::queue working_queue, buffer<vec<FLOAT, 2>, 2> te
             index_t c = idx.c;
             index_t r = idx.r;
 
-            if (c < 0 || r < 0 || c > n_columns || r > n_rows)
-            {
-                // Halo values always have to be zero.
-                return vec<FLOAT, 2>(0.0, 0.0);
-            }
-            else
-            {
-                FLOAT power = temp[ID(0, 0)][1];
-                FLOAT old = temp[ID(0, 0)][0];
-                FLOAT left = temp[ID(-1, 0)][0];
-                FLOAT right = temp[ID(1, 0)][0];
-                FLOAT top = temp[ID(0, -1)][0];
-                FLOAT bottom = temp[ID(0, 1)][0];
+            FLOAT power = temp[ID(0, 0)][1];
+            FLOAT old = temp[ID(0, 0)][0];
+            FLOAT left = temp[ID(-1, 0)][0];
+            FLOAT right = temp[ID(1, 0)][0];
+            FLOAT top = temp[ID(0, -1)][0];
+            FLOAT bottom = temp[ID(0, 1)][0];
 
-                // As in the OpenCL version of the rodinia "hotspot" benchmark.
-                FLOAT new_temp = old + Cap_1 * (power + (bottom + top - 2.f * old) * Ry_1 + (right + left - 2.f * old) * Rx_1 + (amb_temp - old) * Rz_1);
+            // As in the OpenCL version of the rodinia "hotspot" benchmark.
+            FLOAT new_temp = old + Cap_1 * (power + (bottom + top - 2.f * old) * Ry_1 + (right + left - 2.f * old) * Rx_1 + (amb_temp - old) * Rz_1);
 
-                return vec(new_temp, power);
-            }
+            return vec(new_temp, power);
         };
 
     StencilExecutor<vec<FLOAT, 2>, stencil_radius, decltype(kernel), pipeline_length, tile_width, tile_height, burst_size> executor(temp, vec<FLOAT, 2>(0.0, 0.0), kernel);

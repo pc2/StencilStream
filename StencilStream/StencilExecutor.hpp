@@ -56,6 +56,10 @@ public:
             runtime_sample = RuntimeSample(n_passes, input_grid.get_tile_range().c, input_grid.get_tile_range().r);
         }
 
+        uindex_t grid_width = input_grid.get_grid_range().c;
+        uindex_t grid_height = input_grid.get_grid_range().r;
+        T default_value = input_grid.get_default_value();
+
         for (uindex_t i = 0; i < n_passes; i++)
         {
             Grid output_grid = input_grid.make_output_grid();
@@ -72,7 +76,15 @@ public:
                     input_grid.template submit_tile_input<in_pipe>(queue, UID(c, r));
 
                     cl::sycl::event computation_event = queue.submit([&](cl::sycl::handler &cgh) {
-                        cgh.single_task(ExecutionKernelImpl(trans_func, i_generation, n_generations_per_pass, c * tile_width, r * tile_height));
+                        cgh.single_task(ExecutionKernelImpl(
+                            trans_func,
+                            i_generation,
+                            n_generations_per_pass,
+                            c * tile_width,
+                            r * tile_height,
+                            grid_width,
+                            grid_height,
+                            default_value));
                     });
 
                     if (runtime_analysis_enabled)

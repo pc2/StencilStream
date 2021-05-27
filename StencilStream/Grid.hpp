@@ -68,6 +68,16 @@ public:
         return UID(tiles.size() - 2, tiles[0].size() - 2);
     }
 
+    UID get_grid_range() const
+    {
+        return grid_range;
+    }
+
+    T get_default_value() const
+    {
+        return default_value;
+    }
+
     Tile &get_tile(UID tile_id) 
     {
         if (tile_id.c > get_tile_range().c || tile_id.r > get_tile_range().r)

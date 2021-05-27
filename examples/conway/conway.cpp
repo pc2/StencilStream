@@ -17,6 +17,33 @@ using namespace cl::sycl;
 using Cell = bool;
 const uindex_t stencil_radius = 1;
 
+auto conway = [](Stencil<Cell, stencil_radius> const &stencil, StencilInfo const &info) {
+    ID idx = info.center_cell_id;
+
+    uint8_t alive_neighbours = 0;
+#pragma unroll
+    for (index_t c = -stencil_radius; c <= index_t(stencil_radius); c++)
+    {
+#pragma unroll
+        for (index_t r = -stencil_radius; r <= index_t(stencil_radius); r++)
+        {
+            if (stencil[ID(c, r)] && !(c == 0 && r == 0))
+            {
+                alive_neighbours += 1;
+            }
+        }
+    }
+
+    if (stencil[ID(0, 0)])
+    {
+        return alive_neighbours == 2 || alive_neighbours == 3;
+    }
+    else
+    {
+        return alive_neighbours == 3;
+    }
+};
+
 buffer<Cell, 2> read(uindex_t width, uindex_t height)
 {
     buffer<Cell, 2> input_buffer(range<2>(width, height));
@@ -72,43 +99,7 @@ int main(int argc, char **argv)
     uindex_t height = std::stoi(argv[2]);
     uindex_t n_generations = std::stoi(argv[3]);
 
-    const auto conway = [=](Stencil<Cell, stencil_radius> const &stencil, StencilInfo const &info) {
-        ID idx = info.center_cell_id;
-
-        if (idx.c < 0 || idx.r < 0 || idx.c >= width || idx.r >= height)
-        {
-            // Edge handling, cells in the halo always have to be dead.
-            return false;
-        }
-        else
-        {
-            uint8_t alive_neighbours = 0;
-#pragma unroll
-            for (index_t c = -stencil_radius; c <= index_t(stencil_radius); c++)
-            {
-#pragma unroll
-                for (index_t r = -stencil_radius; r <= index_t(stencil_radius); r++)
-                {
-                    if (stencil[ID(c, r)] && !(c == 0 && r == 0))
-                    {
-                        alive_neighbours += 1;
-                    }
-                }
-            }
-
-            if (stencil[ID(0,0)])
-            {
-                return alive_neighbours == 2 || alive_neighbours == 3;
-            }
-            else
-            {
-                return alive_neighbours == 3;
-            }
-        }
-    };
-
     buffer<Cell, 2> grid_buffer = read(width, height);
-
 
     using Executor = StencilExecutor<Cell, stencil_radius, decltype(conway)>;
     Executor executor(grid_buffer, false, conway);

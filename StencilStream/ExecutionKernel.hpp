@@ -40,14 +40,20 @@ public:
 
     ExecutionKernel(
         TransFunc trans_func,
-        index_t i_generation,
-        index_t n_generations,
-        index_t output_grid_c_offset,
-        index_t output_grid_r_offset) : trans_func(trans_func),
+        uindex_t i_generation,
+        uindex_t n_generations,
+        uindex_t grid_c_offset,
+        uindex_t grid_r_offset,
+        uindex_t grid_width,
+        uindex_t grid_height,
+        T halo_value) : trans_func(trans_func),
                                       i_generation(i_generation),
                                       n_generations(n_generations),
-                                      output_grid_c_offset(output_grid_c_offset),
-                                      output_grid_r_offset(output_grid_r_offset)
+                                      grid_c_offset(grid_c_offset),
+                                      grid_r_offset(grid_r_offset),
+                                      grid_width(grid_width),
+                                      grid_height(grid_height),
+                                      halo_value(halo_value)
     {
     }
 
@@ -103,17 +109,25 @@ public:
                     }
                 }
 
-                index_t output_grid_c = output_grid_c_offset + index_t(input_tile_c) - (stencil_diameter - 1) - (pipeline_length + stage - 1) * stencil_radius;
-                index_t output_grid_r = output_grid_r_offset + index_t(input_tile_r) - (stencil_diameter - 1) - (pipeline_length + stage - 1) * stencil_radius;
+                index_t grid_c = grid_c_offset + index_t(input_tile_c) - (stencil_diameter - 1) - (pipeline_length + stage - 1) * stencil_radius;
+                index_t grid_r = grid_r_offset + index_t(input_tile_r) - (stencil_diameter - 1) - (pipeline_length + stage - 1) * stencil_radius;
                 StencilInfo info{
-                    ID(output_grid_c, output_grid_r),
+                    ID(grid_c, grid_r),
                     i_generation + stage,
                 };
 
-                if (stage < n_generations)
+                if (grid_c < 0 || grid_r < 0 || grid_c >= grid_width || grid_r >= grid_height)
+                {
+                    value = halo_value;
+                }
+                else if (stage < n_generations)
+                {
                     value = trans_func(Stencil<T, stencil_radius>(stencil[stage]), info);
+                }
                 else
+                {
                     value = stencil[stage][stencil_radius][stencil_radius];
+                }
             }
 
             bool is_valid_output = input_tile_c >= (stencil_diameter - 1) * pipeline_length;
@@ -148,8 +162,11 @@ private:
     TransFunc trans_func;
     uindex_t i_generation;
     uindex_t n_generations;
-    index_t output_grid_c_offset;
-    index_t output_grid_r_offset;
+    uindex_t grid_c_offset;
+    uindex_t grid_r_offset;
+    uindex_t grid_width;
+    uindex_t grid_height;
+    T halo_value;
 };
 
 } // namespace stencil
