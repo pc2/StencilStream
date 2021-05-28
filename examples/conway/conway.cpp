@@ -9,32 +9,29 @@
  */
 #include <CL/sycl/INTEL/fpga_extensions.hpp>
 #include <StencilStream/StencilExecutor.hpp>
-#include <fstream>
-
-using namespace stencil;
-using namespace cl::sycl;
 
 using Cell = bool;
-const uindex_t stencil_radius = 1;
+const Cell halo_value = false;
+const stencil::uindex_t stencil_radius = 1;
 
-auto conway = [](Stencil<Cell, stencil_radius> const &stencil, StencilInfo const &info) {
-    ID idx = info.center_cell_id;
+auto conway = [](stencil::Stencil<Cell, stencil_radius> const &stencil, stencil::StencilInfo const &info) {
+    stencil::ID idx = info.center_cell_id;
 
     uint8_t alive_neighbours = 0;
 #pragma unroll
-    for (index_t c = -stencil_radius; c <= index_t(stencil_radius); c++)
+    for (stencil::index_t c = -stencil_radius; c <= stencil::index_t(stencil_radius); c++)
     {
 #pragma unroll
-        for (index_t r = -stencil_radius; r <= index_t(stencil_radius); r++)
+        for (stencil::index_t r = -stencil_radius; r <= stencil::index_t(stencil_radius); r++)
         {
-            if (stencil[ID(c, r)] && !(c == 0 && r == 0))
+            if (stencil[stencil::ID(c, r)] && !(c == 0 && r == 0))
             {
                 alive_neighbours += 1;
             }
         }
     }
 
-    if (stencil[ID(0, 0)])
+    if (stencil[stencil::ID(0, 0)])
     {
         return alive_neighbours == 2 || alive_neighbours == 3;
     }
@@ -44,14 +41,14 @@ auto conway = [](Stencil<Cell, stencil_radius> const &stencil, StencilInfo const
     }
 };
 
-buffer<Cell, 2> read(uindex_t width, uindex_t height)
+cl::sycl::buffer<Cell, 2> read(stencil::uindex_t width, stencil::uindex_t height)
 {
-    buffer<Cell, 2> input_buffer(range<2>(width, height));
-    auto buffer_ac = input_buffer.get_access<access::mode::write>();
+    cl::sycl::buffer<Cell, 2> input_buffer(cl::sycl::range<2>(width, height));
+    auto buffer_ac = input_buffer.get_access<cl::sycl::access::mode::write>();
 
-    for (uindex_t r = 0; r < height; r++)
+    for (stencil::uindex_t r = 0; r < height; r++)
     {
-        for (uindex_t c = 0; c < width; c++)
+        for (stencil::uindex_t c = 0; c < width; c++)
         {
             char Cell;
             std::cin >> Cell;
@@ -63,16 +60,16 @@ buffer<Cell, 2> read(uindex_t width, uindex_t height)
     return input_buffer;
 }
 
-void write(buffer<Cell, 2> output_buffer)
+void write(cl::sycl::buffer<Cell, 2> output_buffer)
 {
-    auto buffer_ac = output_buffer.get_access<access::mode::read>();
+    auto buffer_ac = output_buffer.get_access<cl::sycl::access::mode::read>();
 
-    uindex_t width = output_buffer.get_range()[0];
-    uindex_t height = output_buffer.get_range()[1];
+    stencil::uindex_t width = output_buffer.get_range()[0];
+    stencil::uindex_t height = output_buffer.get_range()[1];
 
-    for (uindex_t r = 0; r < height; r++)
+    for (stencil::uindex_t r = 0; r < height; r++)
     {
-        for (uindex_t c = 0; c < width; c++)
+        for (stencil::uindex_t c = 0; c < width; c++)
         {
             if (buffer_ac[c][r])
             {
@@ -95,14 +92,14 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    uindex_t width = std::stoi(argv[1]);
-    uindex_t height = std::stoi(argv[2]);
-    uindex_t n_generations = std::stoi(argv[3]);
+    stencil::uindex_t width = std::stoi(argv[1]);
+    stencil::uindex_t height = std::stoi(argv[2]);
+    stencil::uindex_t n_generations = std::stoi(argv[3]);
 
-    buffer<Cell, 2> grid_buffer = read(width, height);
+    cl::sycl::buffer<Cell, 2> grid_buffer = read(width, height);
 
-    using Executor = StencilExecutor<Cell, stencil_radius, decltype(conway)>;
-    Executor executor(grid_buffer, false, conway);
+    using Executor = stencil::StencilExecutor<Cell, stencil_radius, decltype(conway)>;
+    Executor executor(grid_buffer, halo_value, conway);
 
 #ifdef HARDWARE
     executor.select_fpga();
@@ -111,8 +108,8 @@ int main(int argc, char **argv)
 #endif
 
     executor.run(n_generations);
+    
     executor.copy_output(grid_buffer);
-
     write(grid_buffer);
 
     return 0;

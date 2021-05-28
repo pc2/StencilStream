@@ -6,21 +6,7 @@ This project uses Intel's OneAPI to provide a C++ template library that can exec
 
 ## Performance Metrics
 
-Below are performance metrics of some sample applications, as of release [v1.1.1](https://github.com/pc2/StencilStream/releases/tag/v1.1.1). The `conway` application is optimized for readability, not for performance, and is therefore not listed.
-
-### Bittware/Nallatech 520N (Stratix 10 GX 2800)
-
-| Application | Cycles per Loop | Pipeline Depth | Cycle Frequency | Generations per Second | Overall Performance | Logic Usage | Register Usage | RAM Usage | DSP Usage |
-|-------------|-----------------|----------------|-----------------|------------------------|---------------------|-------------|----------------|-----------|-----------|
-| `hotspot`   | 1.07 cycles     | 200 cores      | 206.25 MHz      | 36933 G/s              | 580.91 GFLOPS       | 79.38%      | 49.02%         | 35.35%    | 52.13%    |
-| `fdtd`      | 16.54 cycles    | 35 cores       | 272.50 MHz      | 243.56 G/s             | 136.10 GFLOPS       | 79.93%      | 49.61%         | 47.64%    | 52.66%    |
-
-### Intel PAC D5005 (Stratix 10 SX 2800)
-
-| Application | Cycles per Loop | Pipeline Depth | Cycle Frequency | Generations per Second | Overall Performance | Logic Usage | Register Usage | RAM Usage | DSP Usage |
-|-------------|-----------------|----------------|-----------------|------------------------|---------------------|-------------|----------------|-----------|-----------|
-| `hotspot`   | 0.98 cycles     | 200 cores      | 163.00 MHz      | 31644.4 G/s            | 497.724 GFLOPS      | 83.67%      | 50.16%         | 35.60%    | 52.13%    |
-| `fdtd`      | 6.69 cycles     | 20 cores       | 221.00 MHz      | 157.61 G/s             | 78.01 GFLOPS        | 63.93%      | 35.65%         | 33.45%    | 30.30%    |
+To be done.
 
 ## How to use StencilStream
 
@@ -39,81 +25,53 @@ module load nalla_pcie compiler/GCC
 
 As an example, we are going to implement a simple version of [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life). However, please note that this isn't the most efficient way to do it, just an example.
 
-First, create a new working directory for your project and copy the `stencil` folder into it. We will only need a single source file, so create a `main.cpp` too! We are now going to walk through it:
+First, create a new working directory for your project and copy the `StencilStream` folder into it. We will only need a single source file, so create a `conway.cpp` too! We are now going to walk through it:
 
 ``` C++
-#include "stencil/stencil.hpp"
 #include <CL/sycl/INTEL/fpga_extensions.hpp>
-#include <fstream>
+#include <StencilStream/StencilExecutor.hpp>
 ```
 
-These are some required includes. First, we include StencilStream and some SYCL extensions by Intel. Normally, you would now include the namespaces `cl::sycl` and `stencil`, but here, we don't do that to show which types come from which library.
+First, we include StencilStream and some SYCL extensions by Intel. Normally, you would use the namespaces `cl::sycl` and `stencil`, but here we don't do that to show you which types come from which library.
 
 ``` C++
-using cell = bool;
-const uindex_t radius = 1;
-const uindex_t width = 1024;
-const uindex_t height = 1024;
+using Cell = bool;
+const Cell halo_value = false;
+const stencil::uindex_t stencil_radius = 1;
 ```
 
-Next are some important definitions: The cell type, the radius of the stencil buffer, and the width and height of the cell buffer. The radius defines how many neighbours of a cell we need to calculate the next generation. In our case, we only need the direct neighbours, so we set the radius to 1. This means that the stencil buffer will be 3 by 3 cells big. Lastly, we need to define the maximum size of the cell buffer or grid. This is important since some optimizations of StencilStream need these values to be hard-coded at compile time.
+Next are some important definitions: The cell type, the value of cells in the grid halo, and the radius of the stencil buffer. In our example, a cell is either alive or dead. We express that with a boolean value which is true if the cell is alive and false if it is dead. The cells are arranged in a grid, but in order to update the cells on the borders of the grid, we need cells *outside* of the grid. StencilStream assures that these cells always have a constant halo value. If this halo value and the transition function is well-chosen, we don't have to do any edge handling. Here, we assume that cells outside of the grid to be always dead, so we pick the halo value `false`. The radius of the stencil defines how many neighbours of a cell we need to calculate the next generation. In our case, we only need the direct neighbours, so we set the radius to 1. This means that the stencil buffer will be 3 by 3 cells big.
 
-This is everything we need to define the stencil kernel, so let's do it now:
+This is everything we need to define the transition function, so let's do it now:
 
 ``` C++
-const auto conway = [](stencil::Stencil2D<cell, radius> const &stencil, stencil::Stencil2DInfo const &info) {
-    stencil::UID idx = info.center_cell_id;
+auto conway = [](stencil::Stencil<Cell, stencil_radius> const &stencil, stencil::StencilInfo const &info) {
 ``` 
-As you can see, a stencil kernel simply is an invocable object. In this case, we've chosen a lambda expression, but more complicated applications may define thier stencil kernel as a class with an `operator()` method.
 
-The first argument is the stencil buffer itself and the second argument is a struct with useful information about the current invocation. For now, this struct provides only one useful information: The coordinates of the central cell of the stencil buffer, the cell we are going to replace.
+As you can see, a transition function is just an invocable object. In this case, we have chosen a lambda expression, but more complicated applications may define their transition function as a class with an `operator()` method.
+
+The first argument is the stencil buffer itself and the second argument is a struct with useful information about the current invocation, like the coordinates of the central cell of the stencil buffer. This is the cell we are going to replace.
+
 ``` C++
-    stencil::index_t lower_h_bound, lower_v_bound;
-    lower_h_bound = lower_v_bound = -radius;
-    stencil::index_t upper_h_bound, upper_v_bound;
-    upper_h_bound = upper_v_bound = radius;
+    stencil::ID idx = info.center_cell_id;
 
-    if (idx.c == 0)
-    {
-        lower_h_bound = 0;
-    }
-    else if (idx.c == width - 1)
-    {
-        upper_h_bound = 0;
-    }
-
-    if (idx.r == 0)
-    {
-        lower_v_bound = 0;
-    }
-    else if (idx.r == height - 1)
-    {
-        upper_v_bound = 0;
-    }
-```
-Our first action is to identify the neighbours we are actually allowed to look at. This is a little bit more complicated since StencilStream does not make any promises about the border cells, the cells that are outside of the actual cell buffer. The stencil buffer still contains values for them due to technical reasons, but a user must not use them since any update may break their behavior. In our case, we update our bounds and simply ignore cells outside of the cell buffer.
-``` C++
     uint8_t alive_neighbours = 0;
 #pragma unroll
-    for (stencil::index_t c = -radius; c <= stencil::index_t(radius); c++)
+    for (stencil::index_t c = -stencil_radius; c <= stencil::index_t(stencil_radius); c++)
     {
 #pragma unroll
-        for (stencil::index_t r = -radius; r <= stencil::index_t(radius); r++)
+        for (stencil::index_t r = -stencil_radius; r <= stencil::index_t(stencil_radius); r++)
         {
-            bool is_valid_neighbour = (c != 0 || r != 0) &&
-                                      (c >= lower_h_bound) &&
-                                      (c <= upper_h_bound) &&
-                                      (r >= lower_v_bound) &&
-                                      (r <= upper_v_bound);
-
-            if (is_valid_neighbour && stencil[stencil::ID(c, r)])
+            if (stencil[stencil::ID(c, r)] && !(c == 0 && r == 0))
             {
                 alive_neighbours += 1;
             }
         }
     }
 ```
-Next, we count our living neighbours since their numbers decides the fate of our cell. The `for`-loops for that are completely unrolled, which means that these evaluations will be carried out in parallel.
+
+First, we count the living neighbours since their numbers decides the fate of our cell. The `for`-loops for that are completely unrolled, which means that these evaluations will be carried out in parallel.
+
 ``` C++
     if (stencil[stencil::ID(0, 0)])
     {
@@ -125,85 +83,138 @@ Next, we count our living neighbours since their numbers decides the fate of our
     }
 };
 ```
-Now we know how many of our neighbours are alive and can therefore return the new cell value, according to [the rules of the game](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life#Rules).
 
-The only thing left is to execute the stencil kernel. We do this like this:
+Now we know how many of our neighbours are alive and can therefore return the new cell value according to [the rules of the game](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life#Rules).
+
 ``` C++
-int main(int argc, char** argv)
+cl::sycl::buffer<Cell, 2> read(stencil::uindex_t width, stencil::uindex_t height)
 {
-    if (argc < 2)
+    cl::sycl::buffer<Cell, 2> input_buffer(cl::sycl::range<2>(width, height));
+    auto buffer_ac = input_buffer.get_access<cl::sycl::access::mode::write>();
+
+    for (stencil::uindex_t r = 0; r < height; r++)
     {
-        std::cerr << "Usage: " << argv[0] << " <#Generations>" << std::endl;
+        for (stencil::uindex_t c = 0; c < width; c++)
+        {
+            char Cell;
+            std::cin >> Cell;
+            assert(Cell == 'X' || Cell == '.');
+            buffer_ac[c][r] = Cell == 'X';
+        }
+    }
+
+    return input_buffer;
+}
+
+void write(cl::sycl::buffer<Cell, 2> output_buffer)
+{
+    auto buffer_ac = output_buffer.get_access<cl::sycl::access::mode::read>();
+
+    stencil::uindex_t width = output_buffer.get_range()[0];
+    stencil::uindex_t height = output_buffer.get_range()[1];
+
+    for (stencil::uindex_t r = 0; r < height; r++)
+    {
+        for (stencil::uindex_t c = 0; c < width; c++)
+        {
+            if (buffer_ac[c][r])
+            {
+                std::cout << "X";
+            }
+            else
+            {
+                std::cout << ".";
+            }
+        }
+        std::cout << std::endl;
+    }
+}
+```
+
+The next part is some boilerplate code to read the input from stdin and write the output to stdout. Nothing to spectacular.
+
+The only thing left is to run the calculations. We do this like this:
+
+``` C++
+int main(int argc, char **argv)
+{
+    if (argc != 4)
+    {
+        std::cerr << "Usage: " << argv[0] << " <width> <height> <n_generations>" << std::endl;
         return 1;
     }
 
+    stencil::uindex_t width = std::stoi(argv[1]);
+    stencil::uindex_t height = std::stoi(argv[2]);
+    stencil::uindex_t n_generations = std::stoi(argv[3]);
+
+    cl::sycl::buffer<Cell, 2> grid_buffer = read(width, height);
+
+    using Executor = stencil::StencilExecutor<Cell, stencil_radius, decltype(conway)>;
+    Executor executor(grid_buffer, halo_value, conway);
+```
+
+After checking and parsing the arguments, we read the input data and initialize the executor. This is the central API facade to control the calculations. In it's simplest form, it only requires cell type, the radius of the stencil and the type of the transition function as template arguments. It has more template arguments, but these are performance parameters. We are looking into them later. The actual constructor arguments are only the initial data, the halo value and an instance of the transition function.
+
+``` C++
 #ifdef HARDWARE
-    cl::sycl::INTEL::fpga_selector device_selector;
+    executor.select_fpga();
 #else
-    cl::sycl::INTEL::fpga_emulator_selector device_selector;
+    executor.select_emulator();
 #endif
-    cl::sycl::queue fpga_queue(device_selector);
+```
 
-    cl::sycl::buffer<cell, 2> cell_buffer = read();
+Next, we use the `HARDWARE` flag to either pick the emulator or the FPGA. With OpenCL, this is a daunting task to get right, but here there are only some lines of simple code that also handle all of the errors that might come up.
 
-    stencil::StencilExecutor<cell, radius, width, height> executor(fpga_queue);
-    executor.set_buffer(cell_buffer);
-    executor.set_generations(std::stoi(argv[1]));
-    executor.run(conway);
+``` C++
+    executor.run(n_generations);
 
-    write(cell_buffer);
+    executor.copy_output(grid_buffer);
+    write(grid_buffer);
 
     return 0;
 }
 ```
-After checking the arguments, we use the `HARDWARE` flag to either use the emulation device or the FPGA. With this device, we create a job queue. With OpenCL, this is a daunting task to get right, but here it's only six lines of simple code that also handles all the errors that might come up.
 
-Then, we allocate the cell buffer and write the initial state to it. The actual process isn't important for this example and is therefore left out. The same is true when the results are written back .
+When all of this is done, we just tell the executor to calculate the requested number of generations. After that, we copy the results back to the grid buffer and write them to stdout.
 
-When all of this is done, we create a stencil executor and configure it with the cell type, the radius of the stencil buffer, the width and height of the cell buffer, the cell buffer itself and the number of generations. When configured, we pass the kernel to the executor, which then submits the kernel for execution and waits until it's done. We can find the results in the original cell buffer.
+That's it. This is all of the code you have to write. Everything else, like getting cells to and from the global buffer, caching intermediate values, or resolving loop dependencies is done by StencilStream. You only need to provide the transition function and some info about it, everything else is handled for you.
 
-That's it. This is all of the code you have to write. Everything else, like getting cells to and from the global buffer, caching intermediate values, or resolving loop dependencies is done by StencilStream. You only need to provide the stencil kernel, everything else is handled for you.
-
-One last thing we have to talk about is the build environment. The usual and recommended way to control a StencilStream application is to create a Makefile and set appropriate definitions. You can use the following `Makefile` as an example:
+One last thing we have to talk about is the build environment. The usual and recommended way to build a StencilStream application is to create a Makefile and set appropriate definitions. You can use the following `Makefile` as an example:
 
 ``` Makefile
 CC = dpcpp
-STENCIL_PATH = ./
+STENCIL_STREAM_PATH = ./
 
-ARGS = -fintelfpga -Xsv -Xsfpc -std=c++17 -I$(STENCIL_PATH) 
+ARGS = -fintelfpga -Xsv -std=c++17 -I$(STENCIL_STREAM_PATH) -O3
 
 ifdef EBROOTGCC
 	ARGS += --gcc-toolchain=$(EBROOTGCC)
-endif
-
-ifndef PIPELINE_LEN
-	PIPELINE_LEN=10
-endif
-ARGS += -DSTENCIL_PIPELINE_LEN=$(PIPELINE_LEN)
-
-ifdef HARDWARE
-	ARGS += -DHARDWARE
-	ARGS += -Xshardware
 endif
 
 ifdef AOCL_BOARD_PACKAGE_ROOT
 	ARGS += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
 endif
 
-conway: clean conway.cpp Makefile
-	$(CC) $(ARGS) conway.cpp -o conway
+EMU_ARGS = $(ARGS)
+HW_ARGS = $(ARGS) -DHARDWARE -Xshardware 
 
-conway.report.tar.gz: clean conway.cpp Makefile
-	$(CC) $(ARGS) -fsycl-link -Xshardware conway.cpp -o conway
-	tar -caf conway.report.tar.gz conway.prj/reports
+conway_emu: conway.cpp Makefile
+	$(CC) $(EMU_ARGS) conway.cpp -o conway_emu
+
+conway_hw: conway.cpp Makefile
+	$(CC) $(HW_ARGS) conway.cpp -o conway_hw
+
+conway_hw.report.tar.gz: conway.cpp Makefile
+	rm -f conway_hw
+	$(CC) $(HW_ARGS) -fsycl-link conway.cpp -o conway_hw
+	tar -caf conway_hw.report.tar.gz conway_hw.prj/reports
 
 clean:
 	git clean -dXf
 ```
-If you just do `make conway`, an emulation image will be created that can be executed to verify your code. If you want to synthesize the design for your FPGA, you have to set the environment variable `HARDWARE`. However, this might take a lot of time and therefore, you should first generate a design report to evaluate th performance of the design and estimate the compilation time. You do this by running `make conway.report.tar.gz`.
-
-Another useful and important environment variable is `PIPELINE_LEN`. It controls how often your stencil kernel will be replicated for parallel execution. A higher `PIPELINE_LEN`, leads to higher parallelity and therefore overall speed, but also to higher resource use and therefore longer compilation times and lower clocking frequencies. Tweak this value when you're don with your design and want to get the ultimate performance.
+If you just run `make conway_emu`, an emulation image will be created that can be executed on the CPU to verify your code. If you want to synthesize the design for your FPGA, you have to run `make conway_hw`. However, this might take a lot of time and therefore, you should first generate a design report to evaluate th performance of the design and estimate the compilation time. You do this by running `make conway_hw.report.tar.gz`.
 
 ### Going further
 
-This clearly isn't everything. Especially with the example of Conway's Game of Life, you might want to process multiple cell by one stencil kernel invocation to enhance parallelity even further, or you might want to export intermediate values. In this case, you can take a look at the [FDTD example](examples/fdtd/), which applies some techniques for that.
+TBD

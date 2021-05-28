@@ -8,7 +8,7 @@
 CC = dpcpp
 STENCIL_PATH = ../
 
-ARGS = -std=c++20 -g -I$(STENCIL_PATH) -fintelfpga -DSTENCIL_INDEX_WIDTH=32
+ARGS = -std=c++17 -g -I$(STENCIL_PATH) -fintelfpga -DSTENCIL_INDEX_WIDTH=32
 
 ifdef OPTIMIZE
 	ARGS += -O3

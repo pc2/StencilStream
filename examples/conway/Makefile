@@ -8,16 +8,29 @@
 CC = dpcpp
 STENCIL_STREAM_PATH = ./
 
-ARGS = -fintelfpga -std=c++17 -I$(STENCIL_STREAM_PATH) -O3
+ARGS = -fintelfpga -Xsv -std=c++17 -I$(STENCIL_STREAM_PATH) -O3
 
 ifdef EBROOTGCC
 	ARGS += --gcc-toolchain=$(EBROOTGCC)
 endif
 
-EMU_ARGS = $(ARGS)
+ifdef AOCL_BOARD_PACKAGE_ROOT
+	ARGS += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
+endif
 
-conway: conway.cpp Makefile
-	$(CC) $(EMU_ARGS) conway.cpp -o conway
+EMU_ARGS = $(ARGS)
+HW_ARGS = $(ARGS) -DHARDWARE -Xshardware 
+
+conway_emu: conway.cpp Makefile
+	$(CC) $(EMU_ARGS) conway.cpp -o conway_emu
+
+conway_hw: conway.cpp Makefile
+	$(CC) $(HW_ARGS) conway.cpp -o conway_hw
+
+conway_hw.report.tar.gz: conway.cpp Makefile
+	rm -f conway_hw
+	$(CC) $(HW_ARGS) -fsycl-link conway.cpp -o conway_hw
+	tar -caf conway_hw.report.tar.gz conway_hw.prj/reports
 
 clean:
 	git clean -dXf
