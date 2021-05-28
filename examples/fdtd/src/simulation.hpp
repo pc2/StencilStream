@@ -37,9 +37,10 @@ class FDTDKernel
     float omega;
     float t0;
     float t_cutoff;
+    uindex_t n_sample_steps;
 
 public:
-    FDTDKernel(Parameters const &parameters) : disk_radius(parameters.disk_radius), tau(parameters.tau()), omega(parameters.omega()), t0(parameters.t0()), t_cutoff(parameters.t_cutoff()) {}
+    FDTDKernel(Parameters const &parameters) : disk_radius(parameters.disk_radius), tau(parameters.tau()), omega(parameters.omega()), t0(parameters.t0()), t_cutoff(parameters.t_cutoff()), n_sample_steps(parameters.n_sample_steps) {}
 
     static FDTDCell halo()
     {
@@ -132,6 +133,10 @@ public:
                 cell.hz += cl::sycl::cos(omega * current_time) * cl::sycl::exp(-1 * wave_progress * wave_progress); // 8 + 6 FOs
             }
 
+            if ((info.cell_generation >> 2) % n_sample_steps == 0)
+            {
+                cell.hz_sum = 0;
+            }
             cell.hz_sum += cell.hz * cell.hz; // 2*8 = 16 FOs
         }
         return cell;

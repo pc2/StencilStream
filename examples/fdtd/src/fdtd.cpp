@@ -57,7 +57,7 @@ int main(int argc, char **argv)
 
     for (uindex_t i_frame = 0; i_frame < parameters.n_frames; i_frame++)
     {
-        executor.run(parameters.n_sample_steps);
+        executor.run(2 * parameters.n_sample_steps);
 
         buffer<FDTDCell, 2> out_buffer(range<2>(grid_width, grid_height));
         executor.copy_output(out_buffer);
