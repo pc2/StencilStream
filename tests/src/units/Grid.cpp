@@ -25,7 +25,7 @@ using TestGrid = Grid<ID, tile_width, tile_height, halo_radius, burst_length>;
 
 TEST_CASE("Grid::Grid(uindex_t, uindex_t, T)", "[Grid]")
 {
-    TestGrid grid(add_grid_width, add_grid_height, ID(0, 0));
+    TestGrid grid(add_grid_width, add_grid_height);
 
     UID tile_range = grid.get_tile_range();
     REQUIRE(tile_range.c == add_grid_width / tile_width + 1);
@@ -46,7 +46,7 @@ TEST_CASE("Grid::Grid(cl::sycl::buffer<T, 2>, T)", "[Grid]")
         }
     }
 
-    TestGrid grid(in_buffer, ID(0, 0));
+    TestGrid grid(in_buffer);
 
     UID tile_range = grid.get_tile_range();
     REQUIRE(tile_range.c == add_grid_width / tile_width + 1);
@@ -68,28 +68,11 @@ TEST_CASE("Grid::Grid(cl::sycl::buffer<T, 2>, T)", "[Grid]")
     }
 }
 
-TEST_CASE("Grid::copy_to", "[Grid]")
-{
-    TestGrid grid(add_grid_width, add_grid_height, ID(42, 17));
-    buffer<ID, 2> out_buffer(range<2>(add_grid_width, add_grid_height));
-    grid.copy_to(out_buffer);
-
-    auto out_buffer_ac = out_buffer.get_access<access::mode::read>();
-    for (uindex_t c = 0; c < add_grid_width; c++)
-    {
-        for (uindex_t r = 0; r < add_grid_height; r++)
-        {
-            REQUIRE(out_buffer_ac[c][r].c == 42);
-            REQUIRE(out_buffer_ac[c][r].r == 17);
-        }
-    }
-}
-
 TEST_CASE("Grid::submit_tile_input", "[Grid]")
 {
     using grid_in_pipe = pipe<class grid_in_pipe_id, ID>;
 
-    buffer<ID, 2> in_buffer(range<2>(tile_width, tile_height));
+    buffer<ID, 2> in_buffer(range<2>(3*tile_width, 3*tile_height));
     buffer<ID, 2> out_buffer(range<2>(2 * halo_radius + tile_width, 2 * halo_radius + tile_height));
 
 #ifdef HARDWARE
@@ -101,17 +84,17 @@ TEST_CASE("Grid::submit_tile_input", "[Grid]")
 
     {
         auto in_buffer_ac = in_buffer.get_access<access::mode::discard_write>();
-        for (uindex_t c = 0; c < tile_width; c++)
+        for (uindex_t c = 0; c < 3*tile_width; c++)
         {
-            for (uindex_t r = 0; r < tile_height; r++)
+            for (uindex_t r = 0; r < 3*tile_height; r++)
             {
                 in_buffer_ac[c][r] = ID(c, r);
             }
         }
     }
 
-    TestGrid grid(in_buffer, ID(-1, -1));
-    grid.submit_tile_input<grid_in_pipe>(working_queue, UID(0, 0));
+    TestGrid grid(in_buffer);
+    grid.submit_tile_input<grid_in_pipe>(working_queue, UID(1, 1));
 
     working_queue.submit([&](handler &cgh) {
         auto out_buffer_ac = out_buffer.get_access<access::mode::discard_write>(cgh);
@@ -129,40 +112,12 @@ TEST_CASE("Grid::submit_tile_input", "[Grid]")
 
     auto out_buffer_ac = out_buffer.get_access<access::mode::read>();
 
-    for (uindex_t c = 0; c < halo_radius; c++)
+    for (uindex_t c = 0; c < 2*halo_radius + tile_width; c++)
     {
-        for (uindex_t r = 0; r < 2 * halo_radius + tile_height; r++)
+        for (uindex_t r = 0; r < 2*halo_radius + tile_height; r++)
         {
-            REQUIRE(out_buffer_ac[c][r].c == -1);
-            REQUIRE(out_buffer_ac[c][r].r == -1);
-        }
-    }
-    for (uindex_t c = halo_radius; c < tile_width; c++)
-    {
-        for (uindex_t r = 0; r < halo_radius; r++)
-        {
-            REQUIRE(out_buffer_ac[c][r].c == -1);
-            REQUIRE(out_buffer_ac[c][r].r == -1);
-        }
-
-        for (uindex_t r = halo_radius; r < halo_radius + tile_height; r++)
-        {
-            REQUIRE(out_buffer_ac[c][r].r == r - halo_radius);
-            REQUIRE(out_buffer_ac[c][r].c == c - halo_radius);
-        }
-
-        for (uindex_t r = halo_radius + tile_height; r < 2 * halo_radius + tile_height; r++)
-        {
-            REQUIRE(out_buffer_ac[c][r].c == -1);
-            REQUIRE(out_buffer_ac[c][r].r == -1);
-        }
-    }
-    for (uindex_t c = halo_radius + tile_width; c < 2 * halo_radius + tile_width; c++)
-    {
-        for (uindex_t r = 0; r < 2 * halo_radius + tile_height; r++)
-        {
-            REQUIRE(out_buffer_ac[c][r].c == -1);
-            REQUIRE(out_buffer_ac[c][r].r == -1);
+            REQUIRE(out_buffer_ac[c][r].c == c + tile_width-halo_radius);
+            REQUIRE(out_buffer_ac[c][r].r == r +tile_height-halo_radius);
         }
     }
 }
@@ -171,7 +126,7 @@ TEST_CASE("Grid::submit_tile_output", "[Grid]")
 {
     using grid_out_pipe = pipe<class grid_out_pipe_id, ID>;
 
-    TestGrid grid(tile_width, tile_height, ID(-1, -1));
+    TestGrid grid(tile_width, tile_height);
 
 #ifdef HARDWARE
     INTEL::fpga_selector device_selector;

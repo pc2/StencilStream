@@ -28,14 +28,14 @@ public:
     static constexpr uindex_t core_height = tile_height - 2 * halo_radius;
     static constexpr uindex_t core_width = tile_width - 2 * halo_radius;
 
-    Grid(uindex_t width, uindex_t height, T default_value) : tiles(), grid_range(width, height), default_value(default_value)
+    Grid(uindex_t width, uindex_t height) : tiles(), grid_range(width, height)
     {
-        allocate_tiles(default_value);
+        allocate_tiles();
     }
 
-    Grid(cl::sycl::buffer<T, 2> in_buffer, T default_value) : tiles(), grid_range(in_buffer.get_range()), default_value(default_value)
+    Grid(cl::sycl::buffer<T, 2> in_buffer) : tiles(), grid_range(in_buffer.get_range())
     {
-        copy_from(in_buffer, default_value);
+        copy_from(in_buffer);
     }
 
     void copy_to(cl::sycl::buffer<T, 2> &out_buffer)
@@ -58,7 +58,7 @@ public:
 
     Grid make_output_grid() const
     {
-        Grid output_grid(grid_range[0], grid_range[1], default_value);
+        Grid output_grid(grid_range[0], grid_range[1]);
 
         return output_grid;
     }
@@ -71,11 +71,6 @@ public:
     UID get_grid_range() const
     {
         return grid_range;
-    }
-
-    T get_default_value() const
-    {
-        return default_value;
     }
 
     Tile &get_tile(UID tile_id) 
@@ -241,14 +236,14 @@ private:
         });
     }
 
-    void copy_from(cl::sycl::buffer<T, 2> in_buffer, T default_value)
+    void copy_from(cl::sycl::buffer<T, 2> in_buffer)
     {
         if (in_buffer.get_range() != grid_range)
         {
             throw std::range_error("The target buffer has not the same size as the grid");
         }
 
-        allocate_tiles(default_value);
+        allocate_tiles();
 
         auto in_buffer_ac = in_buffer.template get_access<cl::sycl::access::mode::read_write>();
         for (uindex_t tile_column = 1; tile_column < tiles.size() - 1; tile_column++)
@@ -261,7 +256,7 @@ private:
         }
     }
 
-    void allocate_tiles(T default_value)
+    void allocate_tiles()
     {
         tiles.clear();
 
@@ -283,7 +278,7 @@ private:
             column.reserve(n_tile_rows + 2);
             for (uindex_t i_row = 0; i_row < n_tile_rows + 2; i_row++)
             {
-                column.push_back(default_value);
+                column.push_back(Tile());
             }
             tiles.push_back(column);
         }

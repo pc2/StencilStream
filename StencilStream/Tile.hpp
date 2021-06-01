@@ -23,7 +23,7 @@ class Tile
     static_assert(height > 2 * halo_radius);
 
 public:
-    Tile(T default_value) : part{std::nullopt}, default_value(default_value) {}
+    Tile() : part{std::nullopt} {}
 
     enum class Part
     {
@@ -153,15 +153,6 @@ public:
             auto part_range = burst_partitioned_range(part_width, part_height, burst_length);
             cl::sycl::buffer<T, 2> new_part(part_range);
             part[part_column][part_row] = new_part;
-
-            auto new_part_ac = new_part.template get_access<cl::sycl::access::mode::discard_write>();
-            for (uindex_t i_burst = 0; i_burst < part_range[0]; i_burst++)
-            {
-                for (uindex_t i_cell = 0; i_cell < part_range[1]; i_cell++)
-                {
-                    new_part_ac[i_burst][i_cell] = default_value;
-                }
-            }
         }
         return *part[part_column][part_row];
     }
@@ -240,6 +231,5 @@ private:
     }
 
     std::optional<cl::sycl::buffer<T, 2>> part[3][3];
-    T default_value;
 };
 } // namespace stencil

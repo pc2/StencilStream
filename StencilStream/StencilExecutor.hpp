@@ -24,11 +24,11 @@ public:
     static constexpr uindex_t burst_length = burst_size / sizeof(T);
     static constexpr uindex_t halo_radius = stencil_radius * pipeline_length;
 
-    StencilExecutor(cl::sycl::buffer<T, 2> input_buffer, T halo_value, TransFunc trans_func) : input_grid(input_buffer, halo_value), queue(), trans_func(trans_func), i_generation(0), runtime_analysis_enabled(false)
+    StencilExecutor(cl::sycl::buffer<T, 2> input_buffer, T halo_value, TransFunc trans_func) : input_grid(input_buffer), queue(), trans_func(trans_func), i_generation(0), halo_value(halo_value), runtime_analysis_enabled(false)
     {
     }
 
-    StencilExecutor(uindex_t grid_width, uindex_t grid_height, T halo_value, TransFunc trans_func) : input_grid(grid_width, grid_height, halo_value), queue(), trans_func(trans_func), i_generation(0), runtime_analysis_enabled(false)
+    StencilExecutor(uindex_t grid_width, uindex_t grid_height, T halo_value, TransFunc trans_func) : input_grid(grid_width, grid_height), queue(), trans_func(trans_func), i_generation(0), halo_value(halo_value), runtime_analysis_enabled(false)
     {
     }
 
@@ -58,7 +58,6 @@ public:
 
         uindex_t grid_width = input_grid.get_grid_range().c;
         uindex_t grid_height = input_grid.get_grid_range().r;
-        T default_value = input_grid.get_default_value();
 
         for (uindex_t i = 0; i < n_passes; i++)
         {
@@ -84,7 +83,7 @@ public:
                             r * tile_height,
                             grid_width,
                             grid_height,
-                            default_value));
+                            halo_value));
                     });
 
                     if (runtime_analysis_enabled)
@@ -191,6 +190,8 @@ private:
     std::optional<cl::sycl::queue> queue;
     TransFunc trans_func;
     uindex_t i_generation;
+    T halo_value;
+
     bool runtime_analysis_enabled;
     std::optional<RuntimeSample> runtime_sample;
 };

@@ -21,7 +21,7 @@ using TileImpl = Tile<ID, tile_width, tile_height, halo_radius, burst_length>;
 
 TEST_CASE("Tile::operator[]", "[Tile]")
 {
-    TileImpl tile(ID(-1, -1));
+    TileImpl tile;
 
     for (TileImpl::Part part_type : TileImpl::all_parts)
     {
@@ -51,7 +51,7 @@ void copy_from_test_impl(uindex_t tile_width, uindex_t tile_height)
         }
     }
 
-    TileImpl tile(ID(-1, -1));
+    TileImpl tile;
     tile.copy_from(in_buffer.get_access<access::mode::read_write>(), id<2>(0, 0));
 
     for (TileImpl::Part part : TileImpl::all_parts)
@@ -70,11 +70,6 @@ void copy_from_test_impl(uindex_t tile_width, uindex_t tile_height)
                 {
                     REQUIRE(part_ac[i_burst][i_cell].c == c + content_offset[0]);
                     REQUIRE(part_ac[i_burst][i_cell].r == r + content_offset[1]);
-                }
-                else
-                {
-                    REQUIRE(part_ac[i_burst][i_cell].c == -1);
-                    REQUIRE(part_ac[i_burst][i_cell].r == -1);
                 }
 
                 if (i_cell == burst_length - 1)
@@ -101,7 +96,7 @@ TEST_CASE("Tile::copy_from", "[Tile]")
 
 void copy_to_test_impl(uindex_t tile_width, uindex_t tile_height)
 {
-    TileImpl tile(ID(-1, -1));
+    TileImpl tile;
 
     for (TileImpl::Part part : TileImpl::all_parts)
     {
