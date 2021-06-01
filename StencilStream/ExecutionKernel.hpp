@@ -47,13 +47,13 @@ public:
         uindex_t grid_width,
         uindex_t grid_height,
         T halo_value) : trans_func(trans_func),
-                                      i_generation(i_generation),
-                                      n_generations(n_generations),
-                                      grid_c_offset(grid_c_offset),
-                                      grid_r_offset(grid_r_offset),
-                                      grid_width(grid_width),
-                                      grid_height(grid_height),
-                                      halo_value(halo_value)
+                        i_generation(i_generation),
+                        n_generations(n_generations),
+                        grid_c_offset(grid_c_offset),
+                        grid_r_offset(grid_r_offset),
+                        grid_width(grid_width),
+                        grid_height(grid_height),
+                        halo_value(halo_value)
     {
     }
 

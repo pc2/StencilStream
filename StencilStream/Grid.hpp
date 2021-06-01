@@ -73,7 +73,7 @@ public:
         return grid_range;
     }
 
-    Tile &get_tile(UID tile_id) 
+    Tile &get_tile(UID tile_id)
     {
         if (tile_id.c > get_tile_range().c || tile_id.r > get_tile_range().r)
         {
@@ -197,19 +197,19 @@ private:
             2,
             cl::sycl::access::mode::read>;
 
-        fpga_queue.submit([&](cl::sycl::handler &cgh) {
-            std::array<typename InputKernel::Accessor, 5> accessor{
-                buffer[0].template get_access<cl::sycl::access::mode::read>(cgh),
-                buffer[1].template get_access<cl::sycl::access::mode::read>(cgh),
-                buffer[2].template get_access<cl::sycl::access::mode::read>(cgh),
-                buffer[3].template get_access<cl::sycl::access::mode::read>(cgh),
-                buffer[4].template get_access<cl::sycl::access::mode::read>(cgh),
-            };
+        fpga_queue.submit([&](cl::sycl::handler &cgh)
+                          {
+                              std::array<typename InputKernel::Accessor, 5> accessor{
+                                  buffer[0].template get_access<cl::sycl::access::mode::read>(cgh),
+                                  buffer[1].template get_access<cl::sycl::access::mode::read>(cgh),
+                                  buffer[2].template get_access<cl::sycl::access::mode::read>(cgh),
+                                  buffer[3].template get_access<cl::sycl::access::mode::read>(cgh),
+                                  buffer[4].template get_access<cl::sycl::access::mode::read>(cgh),
+                              };
 
-            cgh.single_task<class InputKernelLambda>([=]() {
-                InputKernel(accessor, buffer_width).read();
-            });
-        });
+                              cgh.single_task<class InputKernelLambda>([=]()
+                                                                       { InputKernel(accessor, buffer_width).read(); });
+                          });
     }
 
     template <typename pipe>
@@ -223,17 +223,17 @@ private:
                                       1,
                                       cl::sycl::access::mode::discard_write>;
 
-        fpga_queue.submit([&](cl::sycl::handler &cgh) {
-            std::array<typename OutputKernel::Accessor, 3> accessor{
-                buffer[0].template get_access<cl::sycl::access::mode::discard_write>(cgh),
-                buffer[1].template get_access<cl::sycl::access::mode::discard_write>(cgh),
-                buffer[2].template get_access<cl::sycl::access::mode::discard_write>(cgh),
-            };
+        fpga_queue.submit([&](cl::sycl::handler &cgh)
+                          {
+                              std::array<typename OutputKernel::Accessor, 3> accessor{
+                                  buffer[0].template get_access<cl::sycl::access::mode::discard_write>(cgh),
+                                  buffer[1].template get_access<cl::sycl::access::mode::discard_write>(cgh),
+                                  buffer[2].template get_access<cl::sycl::access::mode::discard_write>(cgh),
+                              };
 
-            cgh.single_task<class OutputKernelLambda>([=]() {
-                OutputKernel(accessor, buffer_width).write();
-            });
-        });
+                              cgh.single_task<class OutputKernelLambda>([=]()
+                                                                        { OutputKernel(accessor, buffer_width).write(); });
+                          });
     }
 
     void copy_from(cl::sycl::buffer<T, 2> in_buffer)
