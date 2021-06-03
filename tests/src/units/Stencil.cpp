@@ -15,7 +15,7 @@ using namespace stencil;
 
 TEST_CASE("Stencil::diameter", "[Stencil]")
 {
-    Stencil<index_t, 2> stencil(ID(0, 0), 0);
+    Stencil<index_t, 2> stencil(ID(0, 0), 0, 0);
 
     REQUIRE(stencil.diameter() == Stencil<index_t, 2>::diameter());
     REQUIRE(stencil.diameter() == 2 * stencil_radius + 1);
@@ -23,7 +23,7 @@ TEST_CASE("Stencil::diameter", "[Stencil]")
 
 TEST_CASE("Stencil::operator[](ID)", "[Stencil]")
 {
-    Stencil<index_t, 2> stencil(ID(0, 0), 0);
+    Stencil<index_t, 2> stencil(ID(0, 0), 0, 0);
 
     for (index_t c = -stencil_radius; c <= index_t(stencil_radius); c++)
     {
@@ -44,7 +44,7 @@ TEST_CASE("Stencil::operator[](ID)", "[Stencil]")
 
 TEST_CASE("Stencil::operator[](UID)", "[Stencil]")
 {
-    Stencil<index_t, 2> stencil(ID(0, 0), 0);
+    Stencil<index_t, 2> stencil(ID(0, 0), 0, 0);
 
     for (uindex_t c = 0; c < stencil.diameter(); c++)
     {

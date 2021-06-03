@@ -12,7 +12,8 @@
 #include <StencilStream/StencilExecutor.hpp>
 #include <deque>
 
-auto exception_handler = [](cl::sycl::exception_list exceptions) {
+auto exception_handler = [](cl::sycl::exception_list exceptions)
+{
     for (std::exception_ptr const &e : exceptions)
     {
         try
@@ -52,11 +53,13 @@ int main(int argc, char **argv)
 
     std::cout << "Simulation grid size: " << grid_width << "x" << grid_height * vector_len << " cells" << std::endl;
 
-    StencilExecutor<FDTDCell, stencil_radius, FDTDKernel, pipeline_length, tile_width, tile_height, FDTD_BURST_SIZE> executor(grid_width, grid_height, FDTDKernel::halo(), FDTDKernel(parameters));
+    StencilExecutor<FDTDCell, stencil_radius, FDTDKernel, pipeline_length, tile_width, tile_height, FDTD_BURST_SIZE> executor(grid_width, grid_height, FDTDKernel::halo(), FDTDKernel(parameters, 0.0));
     executor.set_queue(fpga_queue, true);
 
     for (uindex_t i_frame = 0; i_frame < parameters.n_frames; i_frame++)
     {
+        executor.set_trans_func(FDTDKernel(parameters, i_frame * parameters.n_sample_steps * dt));
+        executor.set_i_generation(0);
         executor.run(2 * parameters.n_sample_steps);
 
         buffer<FDTDCell, 2> out_buffer(range<2>(grid_width, grid_height));

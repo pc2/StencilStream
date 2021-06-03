@@ -36,9 +36,9 @@ public:
     static_assert(diameter() < std::numeric_limits<uindex_t>::max());
     static_assert(diameter() >= 3);
 
-    Stencil(ID id, uindex_t generation) : id(id), generation(generation), internal() {}
+    Stencil(ID id, uindex_t generation, uindex_t stage) : id(id), generation(generation), stage(stage), internal() {}
 
-    Stencil(ID id, uindex_t generation, T raw[diameter()][diameter()]) : id(id), generation(generation), internal()
+    Stencil(ID id, uindex_t generation, uindex_t stage, T raw[diameter()][diameter()]) : id(id), generation(generation), stage(stage), internal()
     {
 #pragma unroll
         for (uindex_t c = 0; c < diameter(); c++)
@@ -71,6 +71,14 @@ public:
      * This number +1 is the generation of the cell the transition function calculates.
      */
     const uindex_t generation;
+    /**
+     * The index of the pipeline stage that calls the transition function.
+     * 
+     * The stage index is the offset added to the generation index of the input tile to get the generation
+     * index of this stencil. It is hardcoded in the design and under the assumption that the pipeline
+     * was always fully executed, it equals to `generation % pipeline_length`.
+     */
+    const uindex_t stage;
 
 private:
     T internal[diameter()][diameter()];

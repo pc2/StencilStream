@@ -120,7 +120,11 @@ public:
 
                 index_t output_grid_c = input_grid_c - stencil_radius;
                 index_t output_grid_r = input_grid_r - stencil_radius;
-                Stencil<T, stencil_radius> stencil(ID(output_grid_c, output_grid_r), i_generation + stage, stencil_buffer[stage]);
+                Stencil<T, stencil_radius> stencil(
+                    ID(output_grid_c, output_grid_r),
+                    i_generation + stage,
+                    stage,
+                    stencil_buffer[stage]);
 
                 if (stage < n_generations)
                 {

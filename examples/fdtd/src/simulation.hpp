@@ -36,10 +36,10 @@ class FDTDKernel
     float omega;
     float t0;
     float t_cutoff;
-    uindex_t n_sample_steps;
+    float t_passed;
 
 public:
-    FDTDKernel(Parameters const &parameters) : disk_radius(parameters.disk_radius), tau(parameters.tau()), omega(parameters.omega()), t0(parameters.t0()), t_cutoff(parameters.t_cutoff()), n_sample_steps(parameters.n_sample_steps) {}
+    FDTDKernel(Parameters const &parameters, float t_passed) : disk_radius(parameters.disk_radius), tau(parameters.tau()), omega(parameters.omega()), t0(parameters.t0()), t_cutoff(parameters.t_cutoff()), t_passed(t_passed) {}
 
     static FDTDCell halo()
     {
@@ -90,7 +90,7 @@ public:
             }
         }
 
-        if ((stencil.generation & 0b1) == 0)
+        if ((stencil.stage & 0b1) == 0)
         {
             float_vec left_neighbours, top_neighbours;
             left_neighbours = stencil[ID(-1, 0)].hz;
@@ -123,17 +123,13 @@ public:
             cell.hz *= da;                                                                                        // 8 FOs
             cell.hz += db * (bottom_neighbours - stencil[ID(0, 0)].ex + stencil[ID(0, 0)].ey - right_neighbours); // 8*4 = 32 FOs
 
-            float current_time = (stencil.generation >> 1) * dt; // 1 FO
+            float current_time = t_passed + (stencil.generation >> 1) * dt; // 1 FO
             if (current_time < t_cutoff)
             {
                 float wave_progress = (current_time - t0) / tau;                                                    // 3 FOs
                 cell.hz += cl::sycl::cos(omega * current_time) * cl::sycl::exp(-1 * wave_progress * wave_progress); // 8 + 6 FOs
             }
 
-            if ((stencil.generation >> 2) % n_sample_steps == 0)
-            {
-                cell.hz_sum = 0;
-            }
             cell.hz_sum += cell.hz * cell.hz; // 2*8 = 16 FOs
         }
         return cell;
