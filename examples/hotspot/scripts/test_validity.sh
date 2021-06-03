@@ -16,6 +16,8 @@ MAX_GEN=$4
 mkdir -p out
 cd out
 
+echo "ratio correct lines, average deviation, maximal deviation"
+
 for i in $(seq $STEP_SIZE $STEP_SIZE $MAX_GEN)
 do
     $EXECUTABLE 1024 1024 $i $DATA/temp_1024 $DATA/power_1024 out.$i.temp > /dev/null
