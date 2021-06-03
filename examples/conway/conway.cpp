@@ -14,8 +14,8 @@ using Cell = bool;
 const Cell halo_value = false;
 const stencil::uindex_t stencil_radius = 1;
 
-auto conway = [](stencil::Stencil<Cell, stencil_radius> const &stencil, stencil::StencilInfo const &info) {
-    stencil::ID idx = info.center_cell_id;
+auto conway = [](stencil::Stencil<Cell, stencil_radius> const &stencil) {
+    stencil::ID idx = stencil.id;
 
     uint8_t alive_neighbours = 0;
 #pragma unroll

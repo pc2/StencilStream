@@ -36,9 +36,9 @@ public:
     static_assert(diameter() < std::numeric_limits<uindex_t>::max());
     static_assert(diameter() >= 3);
 
-    Stencil() : internal() {}
+    Stencil(ID id, uindex_t generation) : id(id), generation(generation), internal() {}
 
-    Stencil(T raw[diameter()][diameter()]) : internal()
+    Stencil(ID id, uindex_t generation, T raw[diameter()][diameter()]) : id(id), generation(generation), internal()
     {
 #pragma unroll
         for (uindex_t c = 0; c < diameter(); c++)
@@ -58,6 +58,19 @@ public:
     T const &operator[](UID id) const { return internal[id.c][id.r]; }
 
     T &operator[](UID id) { return internal[id.c][id.r]; }
+
+    /**
+     * The position of the central cell in the global grid. 
+     * 
+     * This is the position of the cell the transition has to calculate and the position of the central cell of the stencil buffer.
+     */
+    const ID id;
+    /**
+     * The present generation of the central cell of the stencil buffer.
+     * 
+     * This number +1 is the generation of the cell the transition function calculates.
+     */
+    const uindex_t generation;
 
 private:
     T internal[diameter()][diameter()];

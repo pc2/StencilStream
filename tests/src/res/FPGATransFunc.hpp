@@ -12,7 +12,6 @@
 #include <StencilStream/GenericID.hpp>
 #include <StencilStream/Index.hpp>
 #include <StencilStream/Stencil.hpp>
-#include <StencilStream/StencilInfo.hpp>
 
 template <stencil::uindex_t radius>
 class FPGATransFunc
@@ -26,12 +25,12 @@ public:
 
     static Cell halo() { return Cell(0, 0, 0, 2); }
 
-    Cell operator()(stencil::Stencil<Cell, radius> const &stencil, stencil::StencilInfo const &info) const
+    Cell operator()(stencil::Stencil<Cell, radius> const &stencil) const
     {
         Cell new_cell = stencil[stencil::ID(0, 0)];
 
-        stencil::index_t center_column = info.center_cell_id.c;
-        stencil::index_t center_row = info.center_cell_id.r;
+        stencil::index_t center_column = stencil.id.c;
+        stencil::index_t center_row = stencil.id.r;
 
         bool is_valid = true;
 #pragma unroll
@@ -41,7 +40,7 @@ public:
             for (stencil::index_t r = -stencil::index_t(radius); r <= stencil::index_t(radius); r++)
             {
                 Cell old_cell = stencil[stencil::ID(c, r)];
-                is_valid &= (old_cell[0] == c + center_column && old_cell[1] == r + center_row && old_cell[2] == info.cell_generation) || (old_cell[3] == 2);
+                is_valid &= (old_cell[0] == c + center_column && old_cell[1] == r + center_row && old_cell[2] == stencil.generation) || (old_cell[3] == 2);
             }
         }
 

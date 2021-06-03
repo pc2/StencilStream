@@ -11,7 +11,6 @@
 #include "collection.hpp"
 #include "defines.hpp"
 #include <StencilStream/Stencil.hpp>
-#include <StencilStream/StencilInfo.hpp>
 
 // The coefficients that describe the properties of a material.
 struct Material
@@ -52,13 +51,11 @@ public:
         return new_cell;
     }
 
-    FDTDCell operator()(
-        Stencil<FDTDCell, stencil_radius> const &stencil,
-        StencilInfo const &info) const
+    FDTDCell operator()(Stencil<FDTDCell, stencil_radius> const &stencil) const
     {
         FDTDCell cell = stencil[ID(0, 0)];
 
-        if (info.cell_generation == 0)
+        if (stencil.generation == 0)
         {
             cell.hz_sum = 0;
         }
@@ -67,9 +64,9 @@ public:
 #pragma unroll
         for (uindex_t i = 0; i < vector_len; i++)
         {
-            center_cell_row[i] = vector_len * info.center_cell_id.r + i; // 1 + 8 FOs
+            center_cell_row[i] = vector_len * stencil.id.r + i; // 1 + 8 FOs
         }
-        float_vec center_cell_column = float_vec(info.center_cell_id.c);
+        float_vec center_cell_column = float_vec(stencil.id.c);
 
         float_vec a = center_cell_row - (disk_radius + 1.0);    // 9 FOs
         float_vec b = center_cell_column - (disk_radius + 1.0); // 9 FOs
@@ -93,7 +90,7 @@ public:
             }
         }
 
-        if ((info.cell_generation & 0b1) == 0)
+        if ((stencil.generation & 0b1) == 0)
         {
             float_vec left_neighbours, top_neighbours;
             left_neighbours = stencil[ID(-1, 0)].hz;
@@ -126,14 +123,14 @@ public:
             cell.hz *= da;                                                                                        // 8 FOs
             cell.hz += db * (bottom_neighbours - stencil[ID(0, 0)].ex + stencil[ID(0, 0)].ey - right_neighbours); // 8*4 = 32 FOs
 
-            float current_time = (info.cell_generation >> 1) * dt; // 1 FO
+            float current_time = (stencil.generation >> 1) * dt; // 1 FO
             if (current_time < t_cutoff)
             {
                 float wave_progress = (current_time - t0) / tau;                                                    // 3 FOs
                 cell.hz += cl::sycl::cos(omega * current_time) * cl::sycl::exp(-1 * wave_progress * wave_progress); // 8 + 6 FOs
             }
 
-            if ((info.cell_generation >> 2) % n_sample_steps == 0)
+            if ((stencil.generation >> 2) % n_sample_steps == 0)
             {
                 cell.hz_sum = 0;
             }

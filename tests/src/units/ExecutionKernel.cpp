@@ -89,8 +89,8 @@ TEST_CASE("ExecutionKernel (noop)", "[ExecutionKernel]")
 
 TEST_CASE("Halo values inside the pipeline are handled correctly", "[ExecutionKernel]")
 {
-    auto my_kernel = [=](Stencil<bool, stencil_radius> const &stencil, StencilInfo const &info) {
-        ID idx = info.center_cell_id;
+    auto my_kernel = [=](Stencil<bool, stencil_radius> const &stencil) {
+        ID idx = stencil.id;
         bool is_valid = true;
         if (idx.c == 0)
         {

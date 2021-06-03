@@ -155,8 +155,8 @@ double run_simulation(cl::sycl::queue working_queue, buffer<vec<FLOAT, 2>, 2> te
     FLOAT Cap_1 = step / Cap;
 
     auto kernel =
-        [=](Stencil<vec<FLOAT, 2>, stencil_radius> const &temp, StencilInfo const &parameter) {
-            ID idx = parameter.center_cell_id;
+        [=](Stencil<vec<FLOAT, 2>, stencil_radius> const &temp) {
+            ID idx = temp.id;
             index_t c = idx.c;
             index_t r = idx.r;
 

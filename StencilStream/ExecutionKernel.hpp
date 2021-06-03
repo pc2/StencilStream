@@ -11,7 +11,6 @@
 #include "GenericID.hpp"
 #include "Index.hpp"
 #include "Stencil.hpp"
-#include "StencilInfo.hpp"
 #include <optional>
 
 namespace stencil
@@ -29,7 +28,7 @@ class ExecutionKernel
 {
 public:
     static_assert(
-        std::is_invocable_r<T, TransFunc const, Stencil<T, stencil_radius> const &, StencilInfo const &>::
+        std::is_invocable_r<T, TransFunc const, Stencil<T, stencil_radius> const &>::
             value);
     static_assert(stencil_radius >= 1);
 
@@ -64,7 +63,7 @@ public:
 
         [[intel::fpga_memory, intel::numbanks(2 * pipeline_length)]] T cache[2][input_tile_height][pipeline_length][stencil_diameter - 1];
         uindex_t active_cache = 0;
-        [[intel::fpga_register]] T stencil[pipeline_length][stencil_diameter][stencil_diameter];
+        [[intel::fpga_register]] T stencil_buffer[pipeline_length][stencil_diameter][stencil_diameter];
 
         for (uindex_t i = 0; i < n_input_cells; i++)
         {
@@ -74,7 +73,7 @@ public:
             for (uindex_t stage = 0; stage < pipeline_length; stage++)
             {
                 /**
-                 * Shift up every value in the stencil.
+                 * Shift up every value in the stencil_buffer.
                  * This operation does not touch the values in the bottom row, which will be filled
                  * from the cache and the new input value later.
                  */
@@ -84,7 +83,7 @@ public:
 #pragma unroll
                     for (uindex_t c = 0; c < stencil_diameter; c++)
                     {
-                        stencil[stage][c][r] = stencil[stage][c][r + 1];
+                        stencil_buffer[stage][c][r] = stencil_buffer[stage][c][r + 1];
                     }
                 }
 
@@ -112,7 +111,7 @@ public:
                         new_value = cache[active_cache][input_tile_r][stage][cache_c];
                     }
 
-                    stencil[stage][cache_c][stencil_diameter - 1] = new_value;
+                    stencil_buffer[stage][cache_c][stencil_diameter - 1] = new_value;
                     if (cache_c > 0)
                     {
                         cache[active_cache == 0 ? 1 : 0][input_tile_r][stage][cache_c - 1] = new_value;
@@ -121,18 +120,15 @@ public:
 
                 index_t output_grid_c = input_grid_c - stencil_radius;
                 index_t output_grid_r = input_grid_r - stencil_radius;
-                StencilInfo info{
-                    ID(output_grid_c, output_grid_r),
-                    i_generation + stage,
-                };
+                Stencil<T, stencil_radius> stencil(ID(output_grid_c, output_grid_r), i_generation + stage, stencil_buffer[stage]);
 
                 if (stage < n_generations)
                 {
-                    value = trans_func(Stencil<T, stencil_radius>(stencil[stage]), info);
+                    value = trans_func(stencil);
                 }
                 else
                 {
-                    value = stencil[stage][stencil_radius][stencil_radius];
+                    value = stencil_buffer[stage][stencil_radius][stencil_radius];
                 }
             }
 
