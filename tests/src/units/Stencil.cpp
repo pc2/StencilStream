@@ -17,8 +17,8 @@ TEST_CASE("Stencil::diameter", "[Stencil]")
 {
     Stencil<index_t, 2> stencil(ID(0, 0), 0, 0);
 
-    REQUIRE(stencil.diameter() == Stencil<index_t, 2>::diameter());
-    REQUIRE(stencil.diameter() == 2 * stencil_radius + 1);
+    REQUIRE(stencil.diameter == Stencil<index_t, 2>::diameter);
+    REQUIRE(stencil.diameter == 2 * stencil_radius + 1);
 };
 
 TEST_CASE("Stencil::operator[](ID)", "[Stencil]")
@@ -33,9 +33,9 @@ TEST_CASE("Stencil::operator[](ID)", "[Stencil]")
         }
     }
 
-    for (uindex_t c = 0; c < stencil.diameter(); c++)
+    for (uindex_t c = 0; c < stencil.diameter; c++)
     {
-        for (uindex_t r = 0; r < stencil.diameter(); r++)
+        for (uindex_t r = 0; r < stencil.diameter; r++)
         {
             REQUIRE(stencil[UID(c, r)] == index_t(c) + index_t(r) - 2 * stencil_radius);
         }
@@ -46,9 +46,9 @@ TEST_CASE("Stencil::operator[](UID)", "[Stencil]")
 {
     Stencil<index_t, 2> stencil(ID(0, 0), 0, 0);
 
-    for (uindex_t c = 0; c < stencil.diameter(); c++)
+    for (uindex_t c = 0; c < stencil.diameter; c++)
     {
-        for (uindex_t r = 0; r < stencil.diameter(); r++)
+        for (uindex_t r = 0; r < stencil.diameter; r++)
         {
             stencil[UID(c, r)] = c + r;
         }

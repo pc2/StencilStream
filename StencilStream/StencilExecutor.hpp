@@ -16,6 +16,35 @@
 
 namespace stencil
 {
+/**
+ * \brief Execution coordinator.
+ * 
+ * The `StencilExecutor` binds the different parts of StencilStream together and provides a unified
+ * interface for applications. Users create a stencil executor, configure it and then use it to run
+ * the payload computations. It has multiple logical attributes that can be configured:
+ * 
+ * ### Grid 
+ * 
+ * The grid is the logical array of cells. It can be initialized either from a given height and
+ * width or from a SYCL buffer. A stencil executor does not work in place and a buffer used to
+ * initialize the grid can be used for other tasks afterwards. The \ref StencilExecutor.run method alters the state of
+ * the grid and the grid can be copied back to a given buffer using \ref StencilExecutor.copy_output.
+ * 
+ * ### SYCL queue
+ * 
+ * The queue provides the OpenCL platform, device, context and queue to execute the kernels. A stencil
+ * executor does not have a queue when constructed and \ref StencilExecutor.run tries to select the
+ * FPGA emulation device if no queue has been configured yet. \ref StencilExecutor.set_queue is used
+ * to directly set the queue, but \ref StencilExecutor.select_emulator and
+ * \ref StencilExecutor.select_fpga can be used to automatically configure the FPGA emulator or the
+ * FPGA, respectively.
+ * 
+ * ### Transition Function
+ * 
+ * A stencil executor stores an instance of the transition function since it may require some
+ * configuration and runtime-dynamic parameters too. An instance is required for the initialization,
+ * but it may be replaced at any time with \ref StencilExecutor.set_trans_func.
+ */
 template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipeline_length = 1, uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024>
 class StencilExecutor
 {
@@ -24,6 +53,13 @@ public:
     static constexpr uindex_t burst_length = burst_size / sizeof(T);
     static constexpr uindex_t halo_radius = stencil_radius * pipeline_length;
 
+    /**
+     * \brief Create a new stencil executor.
+     * 
+     * \param input_buffer The initial state of the grid.
+     * \param halo_value The value of cells in the grid halo.
+     * \param trans_func An instance of the transition function type.
+     */
     StencilExecutor(cl::sycl::buffer<T, 2> input_buffer, T halo_value, TransFunc trans_func) : input_grid(input_buffer), queue(), trans_func(trans_func), i_generation(0), halo_value(halo_value), runtime_analysis_enabled(false)
     {
     }
@@ -32,6 +68,9 @@ public:
     {
     }
 
+    /**
+     * \brief Compute the next generations.
+     */
     void run(uindex_t n_generations)
     {
         using in_pipe = cl::sycl::pipe<class in_pipe_id, T>;
@@ -104,6 +143,9 @@ public:
         this->input_grid = GridImpl(input_buffer, halo_value);
     }
 
+    /**
+     * \brief Copy the current state of the grid to the buffer.
+     */
     void copy_output(cl::sycl::buffer<T, 2> output_buffer)
     {
         input_grid.copy_to(output_buffer);

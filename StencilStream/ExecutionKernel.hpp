@@ -32,7 +32,7 @@ public:
             value);
     static_assert(stencil_radius >= 1);
 
-    const static uindex_t stencil_diameter = Stencil<T, stencil_radius>::diameter();
+    const static uindex_t stencil_diameter = Stencil<T, stencil_radius>::diameter;
     const static uindex_t n_input_cells = (2 * stencil_radius * pipeline_length + output_tile_width) * (2 * stencil_radius * pipeline_length + output_tile_height);
     const static uindex_t input_tile_width = 2 * stencil_radius * pipeline_length + output_tile_width;
     const static uindex_t input_tile_height = 2 * stencil_radius * pipeline_length + output_tile_height;

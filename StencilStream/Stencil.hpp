@@ -15,73 +15,116 @@ namespace stencil
 {
 
 /**
- * The stencil buffer.
+ * \brief The stencil buffer.
  * 
- * The stencil buffer contains a small chunk of the grid buffer and is used by the transition function to
- * calculate the next-generation cell value.
+ * The stencil buffer contains the extended moore neighbourhood of a central cell and is used by the transition function to
+ * calculate the next generation of the central cell.
  * 
  * This implementation provides two ways to index the stencil: With an `ID` and a `UID`. Since `ID` is signed, the column and row axies are within the range of [-radius : radius].
- * Therefore, (0,0) points to the middle of the stencil. This is the value that is going to be replaced. 
- * `UID` is unsigned and the column and row axies are within the range of [0 : 2*radius + 1). Therefore, (0,0) points to the upper-left corner of the stencil.
+ * Therefore, (0,0) points to the central cell. `UID` is unsigned and the column and row axies are within the range of [0 : 2*radius + 1). Therefore, (0,0) points to the north-western corner of the stencil.
  */
 template <typename T, uindex_t radius>
 class Stencil
 {
 public:
-    static constexpr uindex_t diameter()
-    {
-        return 2 * radius + 1;
-    }
+    /**
+     * \brief The diameter (aka width and height) of the stencil buffer.
+     */
+    static constexpr uindex_t diameter = 2 * radius + 1;
 
-    static_assert(diameter() < std::numeric_limits<uindex_t>::max());
-    static_assert(diameter() >= 3);
+    static_assert(diameter < std::numeric_limits<uindex_t>::max());
+    static_assert(diameter >= 3);
 
+    /**
+     * \brief Create a new stencil with an uninitialized buffer.
+     * 
+     * \param id The position of the central cell in the global grid.
+     * \param generation The present generation index of the central cell.
+     * \param stage The index of the pipeline stage that calls the transition function.
+     */
     Stencil(ID id, uindex_t generation, uindex_t stage) : id(id), generation(generation), stage(stage), internal() {}
 
-    Stencil(ID id, uindex_t generation, uindex_t stage, T raw[diameter()][diameter()]) : id(id), generation(generation), stage(stage), internal()
+    /**
+     * \brief Create a new stencil from the raw buffer.
+     * 
+     * \param id The position of the central cell in the global grid.
+     * \param generation The present generation index of the central cell.
+     * \param stage The index of the pipeline stage that calls the transition function.
+     * \param raw A raw array containing cells.
+     */
+    Stencil(ID id, uindex_t generation, uindex_t stage, T raw[diameter][diameter]) : id(id), generation(generation), stage(stage), internal()
     {
 #pragma unroll
-        for (uindex_t c = 0; c < diameter(); c++)
+        for (uindex_t c = 0; c < diameter; c++)
         {
 #pragma unroll
-            for (uindex_t r = 0; r < diameter(); r++)
+            for (uindex_t r = 0; r < diameter; r++)
             {
                 internal[c][r] = raw[c][r];
             }
         }
     }
 
+    /**
+     * \brief Access a cell in the stencil.
+     * 
+     * Since the indices in `id` are signed, the origin of this index operator is the central cell.
+     */
     T const &operator[](ID id) const { return internal[id.c + radius][id.r + radius]; }
 
+    /**
+     * \brief Access a cell in the stencil.
+     * 
+     * Since the indices in `id` are signed, the origin of this index operator is the central cell.
+     */
     T &operator[](ID id) { return internal[id.c + radius][id.r + radius]; }
 
+    /**
+     * \brief Access a cell in the stencil.
+     * 
+     * Since the indices in `id` are unsigned, the origin of this index operator is the north-western corner.
+     */
     T const &operator[](UID id) const { return internal[id.c][id.r]; }
 
+    /**
+     * \brief Access a cell in the stencil.
+     * 
+     * Since the indices in `id` are unsigned, the origin of this index operator is the north-western corner.
+     */
     T &operator[](UID id) { return internal[id.c][id.r]; }
 
     /**
-     * The position of the central cell in the global grid. 
-     * 
-     * This is the position of the cell the transition has to calculate and the position of the central cell of the stencil buffer.
+     * \brief The position of the central cell in the global grid.
      */
     const ID id;
     /**
-     * The present generation of the central cell of the stencil buffer.
-     * 
-     * This number +1 is the generation of the cell the transition function calculates.
+     * \brief The present generation index of the central cell.
      */
     const uindex_t generation;
     /**
-     * The index of the pipeline stage that calls the transition function.
+     * \brief The index of the pipeline stage that calls the transition function.
      * 
-     * The stage index is the offset added to the generation index of the input tile to get the generation
-     * index of this stencil. It is hardcoded in the design and under the assumption that the pipeline
-     * was always fully executed, it equals to `generation % pipeline_length`.
+     * The stage index is added to the generation index of the input tile to get the generation
+     * index of this stencil. Under the assumption that the pipeline was always fully executed, it
+     * equals to `generation % pipeline_length`. Since it is hardcoded in the final design, it can
+     * be used to alternate between two different datapaths: When you write something like this
+     * ```
+     * if (stencil.stage & 0b1 == 0)
+     * {
+     *   return foo(stencil);
+     * }
+     * else
+     * {
+     *   return bar(stencil);
+     * }
+     * ```
+     * `foo` will only be synthesized for even pipeline stages, and `bar` will only be synthesized for
+     * odd pipeline stages.
      */
     const uindex_t stage;
 
 private:
-    T internal[diameter()][diameter()];
+    T internal[diameter][diameter];
 };
 
 } // namespace stencil
