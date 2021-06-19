@@ -46,7 +46,7 @@ constexpr float dx = 10 * nm;
 constexpr float sqrt_2 = 1.4142135623730951;
 
 // distance between generations in s
-constexpr double dt = (double(dx) / double(c0 * sqrt_2)) * 0.99;
+constexpr float dt = (float(dx) / float(c0 * sqrt_2)) * 0.99;
 
 // Number of values in a vector cell.
 constexpr uindex_t vector_len = 8;
@@ -66,7 +66,7 @@ constexpr uindex_t pipeline_length = 16;
 // Default radius of the cavity in dx.
 constexpr float default_radius = 80.0;
 constexpr double default_tau = 100e-15;
-constexpr double default_frequency = 121.5e12;
+constexpr float default_frequency = 121.5e12;
 
 struct FDTDCell
 {
@@ -122,29 +122,29 @@ struct Parameters
     // Timescale (?) for the source wave in s.
     double tau() const
     {
-        return default_tau * (disk_radius / default_radius);
+        return default_tau * double(disk_radius / default_radius);
     }
 
     // The frequency of the source wave in Hz.
-    double frequency() const
+    float frequency() const
     {
         return default_frequency * (default_radius / disk_radius);
     }
 
     // Omega (?) in Hz.
-    double omega() const
+    float omega() const
     {
         return 2.0 * M_PI * frequency();
     }
 
     // The point in time when the simulation starts in s.
-    double t0() const
+    float t0() const
     {
         return 3.0 * tau();
     }
 
     // The point in time to cut off the source wave in s.
-    double t_cutoff() const
+    float t_cutoff() const
     {
         return 7.0 * tau();
     }
