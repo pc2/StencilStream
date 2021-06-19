@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 
     for (uindex_t i_frame = 0; i_frame < parameters.n_frames; i_frame++)
     {
-        executor.set_trans_func(FDTDKernel(parameters, i_frame * parameters.n_sample_steps * dt));
+        executor.set_trans_func(FDTDKernel(parameters, dt * double(i_frame) * double(parameters.n_sample_steps)));
         executor.set_i_generation(0);
         executor.run(2 * parameters.n_sample_steps);
 
