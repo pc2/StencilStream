@@ -6,7 +6,7 @@
 #SBATCH --mem=120000MB
 #SBATCH --time=48:00:00
 
-source /cm/shared/opt/intel_oneapi/2021.2/setvars.sh
+source /cm/shared/opt/intel_oneapi/2021.1.1/setvars.sh
 ml compiler/GCC nalla_pcie/19.4.0
 
 make fdtd_hw
