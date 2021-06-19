@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['iokernel_8',['IOKernel',['../classstencil_1_1IOKernel.html',1,'stencil']]]
+  ['executionkernel_4',['ExecutionKernel',['../classstencil_1_1ExecutionKernel.html',1,'stencil']]]
 ];
