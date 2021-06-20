@@ -69,18 +69,18 @@ $(function() {
 <div class="contents">
 <div class="textblock"><p><a class="anchor" id="md_README"></a> Generic Stencil Simulation Library for FPGAs.</p>
 <p>This project uses Intel's OneAPI to provide a C++ template library that can execute arbitrary Moore-like stencil kernels on arbitrary cell types in arbitrary buffers, using FPGAs.</p>
-<h1><a class="anchor" id="autotoc_md4"></a>
+<h1><a class="anchor" id="autotoc_md5"></a>
 Performance Metrics</h1>
 <p>To be done.</p>
-<h1><a class="anchor" id="autotoc_md5"></a>
+<h1><a class="anchor" id="autotoc_md6"></a>
 How to use StencilStream</h1>
-<h2><a class="anchor" id="autotoc_md6"></a>
+<h2><a class="anchor" id="autotoc_md7"></a>
 Required Software</h2>
 <p>This library requires the "Intel® oneAPI Base Toolkit for Linux" as well as the "Intel® FPGA Add-On for oneAPI Base Toolkit", which you can download <a href="https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit/download.html#operatingsystem=Linux&amp;#distributions=Web%20and%20Local%20Install&amp;#options=Online">here</a>. You also need to have a GCC toolchain with support for C++17 features installed and loaded. If your FPGA accelerator card isn't an Intel® PAC, you also need the board support package of your card.</p>
 <p>If you're working with <a href="https://pc2.uni-paderborn.de/hpc-services/available-systems/noctua/">the Noctua super-computer by the Paderborn Center for Parallel Computing</a> and the Nallatech/Bittware 520N Board, you can easily load all required components by executing the following commands:</p>
 <div class="fragment"><div class="line">source /cm/shared/opt/intel_oneapi/{latest-version}/setvars.sh</div>
 <div class="line">module load nalla_pcie compiler/GCC</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md7"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md8"></a>
 A basic stencil kernel</h2>
 <p>As an example, we are going to implement a simple version of <a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">Conway's Game of Life</a>. However, please note that this isn't the most efficient way to do it, just an example.</p>
 <p>First, create a new working directory for your project and copy the <code>StencilStream</code> folder into it. We will only need a single source file, so create a <code>conway.cpp</code> too! We are now going to walk through it:</p>
@@ -228,7 +228,7 @@ A basic stencil kernel</h2>
 <div class="line">clean:</div>
 <div class="line">    git clean -dXf</div>
 </div><!-- fragment --><p> If you just run <code>make conway_emu</code>, an emulation image will be created that can be executed on the CPU to verify your code. If you want to synthesize the design for your FPGA, you have to run <code>make conway_hw</code>. However, this might take a lot of time and therefore, you should first generate a design report to evaluate th performance of the design and estimate the compilation time. You do this by running <code>make conway_hw.report.tar.gz</code>.</p>
-<h2><a class="anchor" id="autotoc_md8"></a>
+<h2><a class="anchor" id="autotoc_md9"></a>
 Going further</h2>
 <p>TBD </p>
 </div></div><!-- PageDoc -->
