@@ -286,7 +286,6 @@ private:
 
     std::vector<std::vector<Tile>> tiles;
     cl::sycl::range<2> grid_range;
-    T default_value;
 };
 
 } // namespace stencil
