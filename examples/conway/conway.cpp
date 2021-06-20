@@ -14,7 +14,8 @@ using Cell = bool;
 const Cell halo_value = false;
 const stencil::uindex_t stencil_radius = 1;
 
-auto conway = [](stencil::Stencil<Cell, stencil_radius> const &stencil) {
+auto conway = [](stencil::Stencil<Cell, stencil_radius> const &stencil)
+{
     stencil::ID idx = stencil.id;
 
     uint8_t alive_neighbours = 0;
@@ -99,7 +100,8 @@ int main(int argc, char **argv)
     cl::sycl::buffer<Cell, 2> grid_buffer = read(width, height);
 
     using Executor = stencil::StencilExecutor<Cell, stencil_radius, decltype(conway)>;
-    Executor executor(grid_buffer, halo_value, conway);
+    Executor executor(halo_value, conway);
+    executor.set_input(grid_buffer);
 
 #ifdef HARDWARE
     executor.select_fpga();
@@ -108,7 +110,7 @@ int main(int argc, char **argv)
 #endif
 
     executor.run(n_generations);
-    
+
     executor.copy_output(grid_buffer);
     write(grid_buffer);
 

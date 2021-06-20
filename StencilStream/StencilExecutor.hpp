@@ -25,10 +25,10 @@ namespace stencil
  * 
  * ### Grid 
  * 
- * The grid is the logical array of cells. It can be initialized either from a given height and
- * width or from a SYCL buffer. A stencil executor does not work in place and a buffer used to
- * initialize the grid can be used for other tasks afterwards. The \ref StencilExecutor.run method alters the state of
- * the grid and the grid can be copied back to a given buffer using \ref StencilExecutor.copy_output.
+ * The grid is the logical array of cells, set with \ref StencilExecutor.set_input A stencil
+ * executor does not work in place and a buffer used to initialize the grid can be used for other
+ * tasks afterwards. The \ref StencilExecutor.run method alters the state of the grid and the grid
+ * can be copied back to a given buffer using \ref StencilExecutor.copy_output.
  * 
  * ### SYCL queue
  * 
@@ -68,11 +68,10 @@ public:
     /**
      * \brief Create a new stencil executor.
      * 
-     * \param input_buffer The initial state of the grid.
      * \param halo_value The value of cells in the grid halo.
      * \param trans_func An instance of the transition function type.
      */
-    StencilExecutor(cl::sycl::buffer<T, 2> input_buffer, T halo_value, TransFunc trans_func) : input_grid(input_buffer), queue(), trans_func(trans_func), i_generation(0), halo_value(halo_value), runtime_analysis_enabled(false)
+    StencilExecutor(T halo_value, TransFunc trans_func) : input_grid(cl::sycl::buffer<T, 2>(cl::sycl::range<2>(0, 0))), queue(), trans_func(trans_func), i_generation(0), halo_value(halo_value), runtime_analysis_enabled(false)
     {
     }
 

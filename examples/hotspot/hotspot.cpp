@@ -117,7 +117,8 @@ void usage(int argc, char **argv)
     exit(1);
 }
 
-auto exception_handler = [](cl::sycl::exception_list exceptions) {
+auto exception_handler = [](cl::sycl::exception_list exceptions)
+{
     for (std::exception_ptr const &e : exceptions)
     {
         try
@@ -155,25 +156,28 @@ double run_simulation(cl::sycl::queue working_queue, buffer<vec<FLOAT, 2>, 2> te
     FLOAT Cap_1 = step / Cap;
 
     auto kernel =
-        [=](Stencil<vec<FLOAT, 2>, stencil_radius> const &temp) {
-            ID idx = temp.id;
-            index_t c = idx.c;
-            index_t r = idx.r;
+        [=](Stencil<vec<FLOAT, 2>, stencil_radius> const &temp)
+    {
+        ID idx = temp.id;
+        index_t c = idx.c;
+        index_t r = idx.r;
 
-            FLOAT power = temp[ID(0, 0)][1];
-            FLOAT old = temp[ID(0, 0)][0];
-            FLOAT left = temp[ID(-1, 0)][0];
-            FLOAT right = temp[ID(1, 0)][0];
-            FLOAT top = temp[ID(0, -1)][0];
-            FLOAT bottom = temp[ID(0, 1)][0];
+        FLOAT power = temp[ID(0, 0)][1];
+        FLOAT old = temp[ID(0, 0)][0];
+        FLOAT left = temp[ID(-1, 0)][0];
+        FLOAT right = temp[ID(1, 0)][0];
+        FLOAT top = temp[ID(0, -1)][0];
+        FLOAT bottom = temp[ID(0, 1)][0];
 
-            // As in the OpenCL version of the rodinia "hotspot" benchmark.
-            FLOAT new_temp = old + Cap_1 * (power + (bottom + top - 2.f * old) * Ry_1 + (right + left - 2.f * old) * Rx_1 + (amb_temp - old) * Rz_1);
+        // As in the OpenCL version of the rodinia "hotspot" benchmark.
+        FLOAT new_temp = old + Cap_1 * (power + (bottom + top - 2.f * old) * Ry_1 + (right + left - 2.f * old) * Rx_1 + (amb_temp - old) * Rz_1);
 
-            return vec(new_temp, power);
-        };
+        return vec(new_temp, power);
+    };
 
-    StencilExecutor<vec<FLOAT, 2>, stencil_radius, decltype(kernel), pipeline_length, tile_width, tile_height, burst_size> executor(temp, vec<FLOAT, 2>(0.0, 0.0), kernel);
+    StencilExecutor<vec<FLOAT, 2>, stencil_radius, decltype(kernel), pipeline_length, tile_width, tile_height, burst_size> executor(vec<FLOAT, 2>(0.0, 0.0), kernel);
+    executor.set_input(temp);
+
 #ifdef HARDWARE
     executor.select_fpga(true);
 #else

@@ -34,7 +34,8 @@ TEST_CASE("StencilExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[StencilExecu
         }
     }
 
-    StencilExecutor<Cell, stencil_radius, TransFunc> executor(in_buffer, TransFunc::halo(), TransFunc());
+    StencilExecutor<Cell, stencil_radius, TransFunc> executor(TransFunc::halo(), TransFunc());
+    executor.set_input(in_buffer);
 
     buffer<Cell, 2> out_buffer(range<2>(grid_width, grid_height));
     executor.copy_output(out_buffer);
@@ -70,8 +71,12 @@ TEST_CASE("StencilExecutor::run(uindex_t)", "[StencilExecutor]")
         }
     }
 
-    StencilExecutor<Cell, stencil_radius, TransFunc, pipeline_length> executor(in_buffer, TransFunc::halo(), TransFunc());
+    StencilExecutor<Cell, stencil_radius, TransFunc, pipeline_length> executor(TransFunc::halo(), TransFunc());
     REQUIRE(executor.get_i_generation() == 0);
+
+    executor.set_input(in_buffer);
+    REQUIRE(executor.get_grid_range().c == grid_width);
+    REQUIRE(executor.get_grid_range().r == grid_height);
 
     executor.run(n_generations);
     REQUIRE(executor.get_i_generation() == n_generations);

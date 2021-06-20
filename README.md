@@ -12,7 +12,7 @@ To be done.
 
 ### Required Software
 
-This library requires the "Intel® oneAPI Base Toolkit for Linux" as well as the "Intel® FPGA Add-On for oneAPI Base Toolkit", which you can download [here](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit/download.html#operatingsystem=Linux&#distributions=Web%20and%20Local%20Install&#options=Online). You also need to have a GCC toolchain with support for C++17 features installed and loaded. If your FPGA accelerator card isn't an Intel® PAC, you also need the board support package of your card.
+This library requires the "Intel® oneAPI Base Toolkit for Linux" as well as the "Intel® FPGA Add-On for oneAPI Base Toolkit", which you can download [here](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit/download.html#operatingsystem=Linux&#distributions=Web%20and%20Local%20Install&#options=Online). You also need to have a GCC toolchain with support for C++17 features installed and loaded as well the [boost libraries](https://www.boost.org), version 1.26.0 or newer. If your FPGA accelerator card isn't an Intel® PAC, you also need the board support package of your card.
 
 If you're working with [the Noctua super-computer by the Paderborn Center for Parallel Computing](https://pc2.uni-paderborn.de/hpc-services/available-systems/noctua/) and the Nallatech/Bittware 520N Board, you can easily load all required components by executing the following commands:
 
@@ -45,7 +45,8 @@ Next are some important definitions: The cell type, the value of cells in the gr
 This is everything we need to define the transition function, so let's do it now:
 
 ``` C++
-auto conway = [](stencil::Stencil<Cell, stencil_radius> const &stencil, stencil::StencilInfo const &info) {
+auto conway = [](stencil::Stencil<Cell, stencil_radius> const &stencil, stencil::StencilInfo const &info)
+{
 ``` 
 
 As you can see, a transition function is just an invocable object. In this case, we have chosen a lambda expression, but more complicated applications may define their transition function as a class with an `operator()` method.
@@ -151,7 +152,8 @@ int main(int argc, char **argv)
     cl::sycl::buffer<Cell, 2> grid_buffer = read(width, height);
 
     using Executor = stencil::StencilExecutor<Cell, stencil_radius, decltype(conway)>;
-    Executor executor(grid_buffer, halo_value, conway);
+    Executor executor(halo_value, conway);
+    executor.set_input(grid_buffer);
 ```
 
 After checking and parsing the arguments, we read the input data and initialize the executor. This is the central API facade to control the calculations. In it's simplest form, it only requires cell type, the radius of the stencil and the type of the transition function as template arguments. It has more template arguments, but these are performance parameters. We are looking into them later. The actual constructor arguments are only the initial data, the halo value and an instance of the transition function.

@@ -20,8 +20,8 @@ const uindex_t stencil_radius = 1;
 const uindex_t pipeline_length = 32;
 const uindex_t tile_width = 1024;
 const uindex_t tile_height = 1024;
-const uindex_t grid_width = 2*tile_width;
-const uindex_t grid_height = 2*tile_height;
+const uindex_t grid_width = 2 * tile_width;
+const uindex_t grid_height = 2 * tile_height;
 const uindex_t burst_size = 1024;
 
 using TransFunc = FPGATransFunc<stencil_radius>;
@@ -69,10 +69,11 @@ int main()
 
     std::cout << "Input loaded" << std::endl;
 
-    Executor executor(in_buffer, TransFunc::halo(), TransFunc());
+    Executor executor(TransFunc::halo(), TransFunc());
+    executor.set_input(in_buffer);
     executor.set_queue(working_queue, false);
 
-    executor.run(2*pipeline_length);
+    executor.run(2 * pipeline_length);
 
     buffer<Cell, 2> out_buffer(range<2>(grid_width, grid_height));
     executor.copy_output(out_buffer);
@@ -88,7 +89,7 @@ int main()
             {
                 assert(out_buffer_ac[c][r][0] == c);
                 assert(out_buffer_ac[c][r][1] == r);
-                assert(out_buffer_ac[c][r][2] == 2*pipeline_length);
+                assert(out_buffer_ac[c][r][2] == 2 * pipeline_length);
                 assert(out_buffer_ac[c][r][3] == 0);
             }
         }

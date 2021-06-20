@@ -53,7 +53,20 @@ int main(int argc, char **argv)
 
     std::cout << "Simulation grid size: " << grid_width << "x" << grid_height * vector_len << " cells" << std::endl;
 
-    StencilExecutor<FDTDCell, stencil_radius, FDTDKernel, pipeline_length, tile_width, tile_height, FDTD_BURST_SIZE> executor(grid_width, grid_height, FDTDKernel::halo(), FDTDKernel(parameters, 0.0));
+    cl::sycl::buffer<FDTDCell, 2> initial_state(cl::sycl::range<2>(grid_width, grid_height));
+    {
+        auto init_ac = initial_state.get_access<cl::sycl::access::mode::discard_write>();
+        for (uindex_t c = 0; c < grid_width; c++)
+        {
+            for (uindex_t r = 0; r < grid_height; r++)
+            {
+                init_ac[c][r] = FDTDCell{float_vec(0.0f), float_vec(0.0f), float_vec(0.0f), float_vec(0.0f)};
+            }
+        }
+    }
+
+    StencilExecutor<FDTDCell, stencil_radius, FDTDKernel, pipeline_length, tile_width, tile_height, FDTD_BURST_SIZE> executor(FDTDKernel::halo(), FDTDKernel(parameters, 0.0));
+    executor.set_input(initial_state);
     executor.set_queue(fpga_queue, true);
 
     for (uindex_t i_frame = 0; i_frame < parameters.n_frames; i_frame++)
