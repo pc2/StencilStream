@@ -76,7 +76,7 @@ Performance Metrics</h1>
 How to use StencilStream</h1>
 <h2><a class="anchor" id="autotoc_md7"></a>
 Required Software</h2>
-<p>This library requires the "Intel® oneAPI Base Toolkit for Linux" as well as the "Intel® FPGA Add-On for oneAPI Base Toolkit", which you can download <a href="https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit/download.html#operatingsystem=Linux&amp;#distributions=Web%20and%20Local%20Install&amp;#options=Online">here</a>. You also need to have a GCC toolchain with support for C++17 features installed and loaded. If your FPGA accelerator card isn't an Intel® PAC, you also need the board support package of your card.</p>
+<p>This library requires the "Intel® oneAPI Base Toolkit for Linux" as well as the "Intel® FPGA Add-On for oneAPI Base Toolkit", which you can download <a href="https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit/download.html#operatingsystem=Linux&amp;#distributions=Web%20and%20Local%20Install&amp;#options=Online">here</a>. You also need to have a GCC toolchain with support for C++17 features installed and loaded as well the <a href="https://www.boost.org">boost libraries</a>, version 1.26.0 or newer. If your FPGA accelerator card isn't an Intel® PAC, you also need the board support package of your card.</p>
 <p>If you're working with <a href="https://pc2.uni-paderborn.de/hpc-services/available-systems/noctua/">the Noctua super-computer by the Paderborn Center for Parallel Computing</a> and the Nallatech/Bittware 520N Board, you can easily load all required components by executing the following commands:</p>
 <div class="fragment"><div class="line">source /cm/shared/opt/intel_oneapi/{latest-version}/setvars.sh</div>
 <div class="line">module load nalla_pcie compiler/GCC</div>
@@ -92,7 +92,8 @@ A basic stencil kernel</h2>
 <div class="line">const stencil::uindex_t stencil_radius = 1;</div>
 </div><!-- fragment --><p>Next are some important definitions: The cell type, the value of cells in the grid halo, and the radius of the stencil buffer. In our example, a cell is either alive or dead. We express that with a boolean value which is true if the cell is alive and false if it is dead. The cells are arranged in a grid, but in order to update the cells on the borders of the grid, we need cells <em>outside</em> of the grid. StencilStream assures that these cells always have a constant halo value. If this halo value and the transition function is well-chosen, we don't have to do any edge handling. Here, we assume that cells outside of the grid to be always dead, so we pick the halo value <code>false</code>. The radius of the stencil defines how many neighbours of a cell we need to calculate the next generation. In our case, we only need the direct neighbours, so we set the radius to 1. This means that the stencil buffer will be 3 by 3 cells big.</p>
 <p>This is everything we need to define the transition function, so let's do it now:</p>
-<div class="fragment"><div class="line">auto conway = [](stencil::Stencil&lt;Cell, stencil_radius&gt; const &amp;stencil, stencil::StencilInfo const &amp;info) {</div>
+<div class="fragment"><div class="line">auto conway = [](stencil::Stencil&lt;Cell, stencil_radius&gt; const &amp;stencil, stencil::StencilInfo const &amp;info)</div>
+<div class="line">{</div>
 </div><!-- fragment --><p>As you can see, a transition function is just an invocable object. In this case, we have chosen a lambda expression, but more complicated applications may define their transition function as a class with an <code>operator()</code> method.</p>
 <p>The first argument is the stencil buffer itself and the second argument is a struct with useful information about the current invocation, like the coordinates of the central cell of the stencil buffer. This is the cell we are going to replace.</p>
 <div class="fragment"><div class="line">    stencil::ID idx = info.center_cell_id;</div>
@@ -180,7 +181,8 @@ A basic stencil kernel</h2>
 <div class="line">    cl::sycl::buffer&lt;Cell, 2&gt; grid_buffer = read(width, height);</div>
 <div class="line"> </div>
 <div class="line">    using Executor = stencil::StencilExecutor&lt;Cell, stencil_radius, decltype(conway)&gt;;</div>
-<div class="line">    Executor executor(grid_buffer, halo_value, conway);</div>
+<div class="line">    Executor executor(halo_value, conway);</div>
+<div class="line">    executor.set_input(grid_buffer);</div>
 </div><!-- fragment --><p>After checking and parsing the arguments, we read the input data and initialize the executor. This is the central API facade to control the calculations. In it's simplest form, it only requires cell type, the radius of the stencil and the type of the transition function as template arguments. It has more template arguments, but these are performance parameters. We are looking into them later. The actual constructor arguments are only the initial data, the halo value and an instance of the transition function.</p>
 <div class="fragment"><div class="line">#ifdef HARDWARE</div>
 <div class="line">    executor.select_fpga();</div>

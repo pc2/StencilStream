@@ -83,9 +83,9 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ae7139dae38e657c3056d65dc02cc0877"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#ae7139dae38e657c3056d65dc02cc0877">StencilExecutor</a> (cl::sycl::buffer&lt; T, 2 &gt; input_buffer, T halo_value, TransFunc trans_func)</td></tr>
-<tr class="memdesc:ae7139dae38e657c3056d65dc02cc0877"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new stencil executor.  <a href="classstencil_1_1StencilExecutor.html#ae7139dae38e657c3056d65dc02cc0877">More...</a><br /></td></tr>
-<tr class="separator:ae7139dae38e657c3056d65dc02cc0877"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af38d8ec6180eddc4ac26320f657d07c8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#af38d8ec6180eddc4ac26320f657d07c8">StencilExecutor</a> (T halo_value, TransFunc trans_func)</td></tr>
+<tr class="memdesc:af38d8ec6180eddc4ac26320f657d07c8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new stencil executor.  <a href="classstencil_1_1StencilExecutor.html#af38d8ec6180eddc4ac26320f657d07c8">More...</a><br /></td></tr>
+<tr class="separator:af38d8ec6180eddc4ac26320f657d07c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab8c99a16a4307919216b9ee4028c89ce"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#ab8c99a16a4307919216b9ee4028c89ce">run</a> (uindex_t n_generations)</td></tr>
 <tr class="memdesc:ab8c99a16a4307919216b9ee4028c89ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the next generations.  <a href="classstencil_1_1StencilExecutor.html#ab8c99a16a4307919216b9ee4028c89ce">More...</a><br /></td></tr>
 <tr class="separator:ab8c99a16a4307919216b9ee4028c89ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -149,7 +149,7 @@ class stencil::StencilExecutor&lt; T, stencil_radius, TransFunc, pipeline_length
 <p>The <code><a class="el" href="classstencil_1_1StencilExecutor.html" title="Execution coordinator.">StencilExecutor</a></code> binds the different parts of StencilStream together and provides a unified interface for applications. Users create a stencil executor, configure it and then use it to run the payload computations. It has multiple logical attributes that can be configured:</p>
 <h3><a class="anchor" id="autotoc_md0"></a>
 Grid</h3>
-<p>The grid is the logical array of cells. It can be initialized either from a given height and width or from a SYCL buffer. A stencil executor does not work in place and a buffer used to initialize the grid can be used for other tasks afterwards. The <a class="el" href="classstencil_1_1StencilExecutor.html#ab8c99a16a4307919216b9ee4028c89ce">StencilExecutor::run</a> method alters the state of the grid and the grid can be copied back to a given buffer using <a class="el" href="classstencil_1_1StencilExecutor.html#ac4e10c3b67e1fd823d9804911818ee13">StencilExecutor::copy_output</a>.</p>
+<p>The grid is the logical array of cells, set with <a class="el" href="classstencil_1_1StencilExecutor.html#ab638594920f9668b7a88c66eb5a4d2e9">StencilExecutor::set_input</a> A stencil executor does not work in place and a buffer used to initialize the grid can be used for other tasks afterwards. The <a class="el" href="classstencil_1_1StencilExecutor.html#ab8c99a16a4307919216b9ee4028c89ce">StencilExecutor::run</a> method alters the state of the grid and the grid can be copied back to a given buffer using <a class="el" href="classstencil_1_1StencilExecutor.html#ac4e10c3b67e1fd823d9804911818ee13">StencilExecutor::copy_output</a>.</p>
 <h3><a class="anchor" id="autotoc_md1"></a>
 SYCL queue</h3>
 <p>The queue provides the OpenCL platform, device, context and queue to execute the kernels. A stencil executor does not have a queue when constructed and <a class="el" href="classstencil_1_1StencilExecutor.html#ab8c99a16a4307919216b9ee4028c89ce">StencilExecutor::run</a> tries to select the FPGA emulation device if no queue has been configured yet. <a class="el" href="classstencil_1_1StencilExecutor.html#af05b86f6ccc20951892e6418a853f5e2">StencilExecutor::set_queue</a> is used to directly set the queue, but <a class="el" href="classstencil_1_1StencilExecutor.html#aa8b6eac01acd82f121b21cdb1de1abc3">StencilExecutor::select_emulator</a> and <a class="el" href="classstencil_1_1StencilExecutor.html#ac74791f7624f9505826bb92a86268d6c">StencilExecutor::select_fpga</a> can be used to automatically configure the FPGA emulator or the FPGA, respectively.</p>
@@ -172,8 +172,8 @@ Generation Index</h3>
   </dd>
 </dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ae7139dae38e657c3056d65dc02cc0877"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae7139dae38e657c3056d65dc02cc0877">&#9670;&nbsp;</a></span>StencilExecutor()</h2>
+<a id="af38d8ec6180eddc4ac26320f657d07c8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af38d8ec6180eddc4ac26320f657d07c8">&#9670;&nbsp;</a></span>StencilExecutor()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -186,12 +186,6 @@ template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t 
         <tr>
           <td class="memname"><a class="el" href="classstencil_1_1StencilExecutor.html">stencil::StencilExecutor</a>&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;::<a class="el" href="classstencil_1_1StencilExecutor.html">StencilExecutor</a> </td>
           <td>(</td>
-          <td class="paramtype">cl::sycl::buffer&lt; T, 2 &gt;&#160;</td>
-          <td class="paramname"><em>input_buffer</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">T&#160;</td>
           <td class="paramname"><em>halo_value</em>, </td>
         </tr>
@@ -217,7 +211,6 @@ template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t 
 <p>Create a new stencil executor. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">input_buffer</td><td>The initial state of the grid. </td></tr>
     <tr><td class="paramname">halo_value</td><td>The value of cells in the grid halo. </td></tr>
     <tr><td class="paramname">trans_func</td><td>An instance of the transition function type. </td></tr>
   </table>
