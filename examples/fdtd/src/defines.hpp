@@ -66,7 +66,7 @@ constexpr uindex_t pipeline_length = 16;
 // Default radius of the cavity in dx.
 constexpr float default_radius = 80.0;
 constexpr double default_tau = 100e-15;
-constexpr float default_frequency = 121.5e12;
+constexpr double default_frequency = 121.5e12;
 
 struct FDTDCell
 {
@@ -126,25 +126,25 @@ struct Parameters
     }
 
     // The frequency of the source wave in Hz.
-    float frequency() const
+    double frequency() const
     {
         return default_frequency * (default_radius / disk_radius);
     }
 
     // Omega (?) in Hz.
-    float omega() const
+    double omega() const
     {
         return 2.0 * M_PI * frequency();
     }
 
     // The point in time when the simulation starts in s.
-    float t0() const
+    double t0() const
     {
         return 3.0 * tau();
     }
 
     // The point in time to cut off the source wave in s.
-    float t_cutoff() const
+    double t_cutoff() const
     {
         return 7.0 * tau();
     }
