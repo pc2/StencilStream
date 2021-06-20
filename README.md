@@ -12,7 +12,7 @@ To be done.
 
 ### Required Software
 
-This library requires the "Intel® oneAPI Base Toolkit for Linux" as well as the "Intel® FPGA Add-On for oneAPI Base Toolkit", which you can download [here](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit/download.html#operatingsystem=Linux&#distributions=Web%20and%20Local%20Install&#options=Online). You also need to have a GCC toolchain with support for C++17 features installed and loaded as well the [boost libraries](https://www.boost.org), version 1.26.0 or newer. If your FPGA accelerator card isn't an Intel® PAC, you also need the board support package of your card.
+This library requires the "Intel® oneAPI Base Toolkit for Linux" as well as the "Intel® FPGA Add-On for oneAPI Base Toolkit", which you can download [here](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit/download.html#operatingsystem=Linux&#distributions=Web%20and%20Local%20Install&#options=Online). You also need to have a GCC toolchain with support for C++17 features installed and loaded as well the [boost libraries](https://www.boost.org), version 1.29.0 or newer. If your FPGA accelerator card isn't an Intel® PAC, you also need the board support package of your card.
 
 If you're working with [the Noctua super-computer by the Paderborn Center for Parallel Computing](https://pc2.uni-paderborn.de/hpc-services/available-systems/noctua/) and the Nallatech/Bittware 520N Board, you can easily load all required components by executing the following commands:
 
