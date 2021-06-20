@@ -125,17 +125,16 @@ public:
                 {
                     input_grid.template submit_tile_input<in_pipe>(queue, UID(c, r));
 
-                    cl::sycl::event computation_event = queue.submit([&](cl::sycl::handler &cgh) {
-                        cgh.single_task(ExecutionKernelImpl(
-                            trans_func,
-                            i_generation,
-                            n_generations_per_pass,
-                            c * tile_width,
-                            r * tile_height,
-                            grid_width,
-                            grid_height,
-                            halo_value));
-                    });
+                    cl::sycl::event computation_event = queue.submit([&](cl::sycl::handler &cgh)
+                                                                     { cgh.single_task(ExecutionKernelImpl(
+                                                                           trans_func,
+                                                                           i_generation,
+                                                                           n_generations_per_pass,
+                                                                           c * tile_width,
+                                                                           r * tile_height,
+                                                                           grid_width,
+                                                                           grid_height,
+                                                                           halo_value)); });
 
                     if (runtime_analysis_enabled)
                     {
@@ -179,7 +178,7 @@ public:
      */
     UID get_grid_range() const
     {
-        return grid.get_grid_range();
+        return input_grid.get_grid_range();
     }
 
     /**
