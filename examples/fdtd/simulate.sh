@@ -11,4 +11,4 @@ ml compiler/GCC nalla_pcie
 
 mkdir -p output
 cd output
-../fdtd_hw -c 8192 -f 560
+../fdtd_hw -c 512 -f 9000
