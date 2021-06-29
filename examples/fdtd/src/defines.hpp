@@ -96,7 +96,7 @@ struct Parameters
             default:
                 cerr << "Options:" << std::endl;
                 cerr << "-f <steps>: Number of frames to calculate (default " << 10 << ")" << std::endl;
-                cerr << "-c <steps>: Number of time steps to collect for a frame (default " << 1 << ")" << std::endl;
+                cerr << "-c <steps>: Number of time steps to collect for a frame (default " << pipeline_length << ")" << std::endl;
                 cerr << "-r <radius>: Radius of the cavity in nanometers (default " << default_radius / dx << ")" << std::endl;
                 exit(1);
             }
