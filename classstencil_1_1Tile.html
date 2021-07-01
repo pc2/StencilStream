@@ -266,7 +266,7 @@ template&lt;typename T , uindex_t width, uindex_t height, uindex_t halo_radius, 
 </div><div class="memdoc">
 
 <p>Copy the contents of the tile to a buffer. </p>
-<p>This will take the tile section <code>[0 : min(tile_width, grid_width - offset[0])) x [0 : min(tile_height, grid_height - offset[1]))</code> and copy it to the buffer section <code>[offset[0] : min(grid_width, offset[0] + tile_width)) x [offset[1] : min(grid_height, offset[1] + tile_height))</code>. This means that if the tile plus the offset is wider or higher than the grid, those superflous cells are ignored.</p>
+<p>This will take the tile section <code>[0 : min(tile_width, grid_width - offset[0])) x [0 : min(tile_height, grid_height - offset[1]))</code> and copy it to the buffer section <code>[offset[0] : min(grid_width, offset[0] + tile_width)) x [offset[1] : min(grid_height, offset[1] + tile_height))</code>. This means that if the tile plus the offset is wider or higher than the grid, those superfluous cells are ignored.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">buffer</td><td>The buffer to copy the data to. </td></tr>
@@ -306,7 +306,7 @@ template&lt;typename T , uindex_t width, uindex_t height, uindex_t halo_radius, 
 <p>Calculate the index offset of a given part relative to the north-western corner of the tile. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">part</td><td>The part to calcute the offset for. </td></tr>
+    <tr><td class="paramname">part</td><td>The part to calculate the offset for. </td></tr>
   </table>
   </dd>
 </dl>

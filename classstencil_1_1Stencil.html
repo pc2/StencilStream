@@ -138,8 +138,8 @@ static constexpr uindex_t&#160;</td><td class="memItemRight" valign="bottom"><a 
 class stencil::Stencil&lt; T, radius &gt;</h3>
 
 <p>The stencil buffer. </p>
-<p>The stencil buffer contains the extended moore neighbourhood of a central cell and is used by the transition function to calculate the next generation of the central cell.</p>
-<p>This implementation provides two ways to index the stencil: With an <code>ID</code> and a <code>UID</code>. Since <code>ID</code> is signed, the column and row axies are within the range of [-radius : radius]. Therefore, (0,0) points to the central cell. <code>UID</code> is unsigned and the column and row axies are within the range of [0 : 2*radius + 1). Therefore, (0,0) points to the north-western corner of the stencil. </p>
+<p>The stencil buffer contains the extended Moore neighborhood of a central cell and is used by the transition function to calculate the next generation of the central cell.</p>
+<p>This implementation provides two ways to index the stencil: With an <code>ID</code> and a <code>UID</code>. Since <code>ID</code> is signed, the column and row axes are within the range of [-radius : radius]. Therefore, (0,0) points to the central cell. <code>UID</code> is unsigned and the column and row axes are within the range of [0 : 2*radius + 1). Therefore, (0,0) points to the north-western corner of the stencil. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="adb8fb5b247646115c2e32ebffec1941a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adb8fb5b247646115c2e32ebffec1941a">&#9670;&nbsp;</a></span>Stencil() <span class="overload">[1/2]</span></h2>
@@ -397,7 +397,7 @@ template&lt;typename T , uindex_t radius&gt; </div>
 </div><div class="memdoc">
 
 <p>The index of the pipeline stage that calls the transition function. </p>
-<p>The stage index is added to the generation index of the input tile to get the generation index of this stencil. Under the assumption that the pipeline was always fully executed, it equals to <code>generation % pipeline_length</code>. Since it is hardcoded in the final design, it can be used to alternate between two different datapaths: When you write something like this </p><div class="fragment"><div class="line"><span class="keywordflow">if</span> (stencil.stage &amp; 0b1 == 0)</div>
+<p>The stage index is added to the generation index of the input tile to get the generation index of this stencil. Under the assumption that the pipeline was always fully executed, it equals to <code>generation % pipeline_length</code>. Since it is hard coded in the final design, it can be used to alternate between two different data paths: When you write something like this </p><div class="fragment"><div class="line"><span class="keywordflow">if</span> (stencil.stage &amp; 0b1 == 0)</div>
 <div class="line">{</div>
 <div class="line">  <span class="keywordflow">return</span> foo(stencil);</div>
 <div class="line">}</div>

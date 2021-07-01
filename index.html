@@ -90,7 +90,7 @@ A basic stencil kernel</h2>
 <div class="fragment"><div class="line">using Cell = bool;</div>
 <div class="line">const Cell halo_value = false;</div>
 <div class="line">const stencil::uindex_t stencil_radius = 1;</div>
-</div><!-- fragment --><p>Next are some important definitions: The cell type, the value of cells in the grid halo, and the radius of the stencil buffer. In our example, a cell is either alive or dead. We express that with a boolean value which is true if the cell is alive and false if it is dead. The cells are arranged in a grid, but in order to update the cells on the borders of the grid, we need cells <em>outside</em> of the grid. StencilStream assures that these cells always have a constant halo value. If this halo value and the transition function is well-chosen, we don't have to do any edge handling. Here, we assume that cells outside of the grid to be always dead, so we pick the halo value <code>false</code>. The radius of the stencil defines how many neighbours of a cell we need to calculate the next generation. In our case, we only need the direct neighbours, so we set the radius to 1. This means that the stencil buffer will be 3 by 3 cells big.</p>
+</div><!-- fragment --><p>Next are some important definitions: The cell type, the value of cells in the grid halo, and the radius of the stencil buffer. In our example, a cell is either alive or dead. We express that with a boolean value which is true if the cell is alive and false if it is dead. The cells are arranged in a grid, but in order to update the cells on the borders of the grid, we need cells <em>outside</em> of the grid. StencilStream assures that these cells always have a constant halo value. If this halo value and the transition function is well-chosen, we don't have to do any edge handling. Here, we assume that cells outside of the grid to be always dead, so we pick the halo value <code>false</code>. The radius of the stencil defines how many neighbors of a cell we need to calculate the next generation. In our case, we only need the direct neighbors, so we set the radius to 1. This means that the stencil buffer will be 3 by 3 cells big.</p>
 <p>This is everything we need to define the transition function, so let's do it now:</p>
 <div class="fragment"><div class="line">auto conway = [](stencil::Stencil&lt;Cell, stencil_radius&gt; const &amp;stencil, stencil::StencilInfo const &amp;info)</div>
 <div class="line">{</div>
@@ -111,7 +111,7 @@ A basic stencil kernel</h2>
 <div class="line">            }</div>
 <div class="line">        }</div>
 <div class="line">    }</div>
-</div><!-- fragment --><p>First, we count the living neighbours since their numbers decides the fate of our cell. The <code>for</code>-loops for that are completely unrolled, which means that these evaluations will be carried out in parallel.</p>
+</div><!-- fragment --><p>First, we count the living neighbors since their numbers decides the fate of our cell. The <code>for</code>-loops for that are completely unrolled, which means that these evaluations will be carried out in parallel.</p>
 <div class="fragment"><div class="line">    if (stencil[stencil::ID(0, 0)])</div>
 <div class="line">    {</div>
 <div class="line">        return alive_neighbours == 2 || alive_neighbours == 3;</div>
@@ -121,7 +121,7 @@ A basic stencil kernel</h2>
 <div class="line">        return alive_neighbours == 3;</div>
 <div class="line">    }</div>
 <div class="line">};</div>
-</div><!-- fragment --><p>Now we know how many of our neighbours are alive and can therefore return the new cell value according to <a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life#Rules">the rules of the game</a>.</p>
+</div><!-- fragment --><p>Now we know how many of our neighbors are alive and can therefore return the new cell value according to <a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life#Rules">the rules of the game</a>.</p>
 <div class="fragment"><div class="line">cl::sycl::buffer&lt;Cell, 2&gt; read(stencil::uindex_t width, stencil::uindex_t height)</div>
 <div class="line">{</div>
 <div class="line">    cl::sycl::buffer&lt;Cell, 2&gt; input_buffer(cl::sycl::range&lt;2&gt;(width, height));</div>
@@ -229,7 +229,7 @@ A basic stencil kernel</h2>
 <div class="line"> </div>
 <div class="line">clean:</div>
 <div class="line">    git clean -dXf</div>
-</div><!-- fragment --><p> If you just run <code>make conway_emu</code>, an emulation image will be created that can be executed on the CPU to verify your code. If you want to synthesize the design for your FPGA, you have to run <code>make conway_hw</code>. However, this might take a lot of time and therefore, you should first generate a design report to evaluate th performance of the design and estimate the compilation time. You do this by running <code>make conway_hw.report.tar.gz</code>.</p>
+</div><!-- fragment --><p> If you just run <code>make conway_emu</code>, an emulation image will be created that can be executed on the CPU to verify your code. If you want to synthesize the design for your FPGA, you have to run <code>make conway_hw</code>. However, this might take a lot of time and therefore, you should first generate a design report to evaluate the performance of the design and estimate the compilation time. You do this by running <code>make conway_hw.report.tar.gz</code>.</p>
 <h2><a class="anchor" id="autotoc_md9"></a>
 Going further</h2>
 <p>TBD </p>

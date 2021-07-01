@@ -114,10 +114,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:ac74791f7624f9505826bb92a86268d6c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set up a SYCL queue with an FPGA device.  <a href="classstencil_1_1StencilExecutor.html#ac74791f7624f9505826bb92a86268d6c">More...</a><br /></td></tr>
 <tr class="separator:ac74791f7624f9505826bb92a86268d6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a80d8d48f05a6bb71724a1e2593081ad4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#a80d8d48f05a6bb71724a1e2593081ad4">select_emulator</a> (bool runtime_analysis)</td></tr>
-<tr class="memdesc:a80d8d48f05a6bb71724a1e2593081ad4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set up a SYCL queue with the FPGA emulator device and optional runtime analyis.  <a href="classstencil_1_1StencilExecutor.html#a80d8d48f05a6bb71724a1e2593081ad4">More...</a><br /></td></tr>
+<tr class="memdesc:a80d8d48f05a6bb71724a1e2593081ad4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set up a SYCL queue with the FPGA emulator device and optional runtime analysis.  <a href="classstencil_1_1StencilExecutor.html#a80d8d48f05a6bb71724a1e2593081ad4">More...</a><br /></td></tr>
 <tr class="separator:a80d8d48f05a6bb71724a1e2593081ad4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1e46c6ad7dbf9ff1bef8f0b4e6a52f95"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#a1e46c6ad7dbf9ff1bef8f0b4e6a52f95">select_fpga</a> (bool runtime_analysis)</td></tr>
-<tr class="memdesc:a1e46c6ad7dbf9ff1bef8f0b4e6a52f95"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set up a SYCL queue with an FPGA device and optional runtime analyis.  <a href="classstencil_1_1StencilExecutor.html#a1e46c6ad7dbf9ff1bef8f0b4e6a52f95">More...</a><br /></td></tr>
+<tr class="memdesc:a1e46c6ad7dbf9ff1bef8f0b4e6a52f95"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set up a SYCL queue with an FPGA device and optional runtime analysis.  <a href="classstencil_1_1StencilExecutor.html#a1e46c6ad7dbf9ff1bef8f0b4e6a52f95">More...</a><br /></td></tr>
 <tr class="separator:a1e46c6ad7dbf9ff1bef8f0b4e6a52f95"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:accb792ce008ce7bd7651e59ffaba82b8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#accb792ce008ce7bd7651e59ffaba82b8">set_trans_func</a> (TransFunc trans_func)</td></tr>
 <tr class="memdesc:accb792ce008ce7bd7651e59ffaba82b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the transition function instance.  <a href="classstencil_1_1StencilExecutor.html#accb792ce008ce7bd7651e59ffaba82b8">More...</a><br /></td></tr>
@@ -470,7 +470,7 @@ template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t 
 </table>
 </div><div class="memdoc">
 
-<p>Set up a SYCL queue with the FPGA emulator device and optional runtime analyis. </p>
+<p>Set up a SYCL queue with the FPGA emulator device and optional runtime analysis. </p>
 <p>Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will lead to exceptions.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -537,7 +537,7 @@ template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t 
 </table>
 </div><div class="memdoc">
 
-<p>Set up a SYCL queue with an FPGA device and optional runtime analyis. </p>
+<p>Set up a SYCL queue with an FPGA device and optional runtime analysis. </p>
 <p>Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will lead to exceptions.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -693,7 +693,7 @@ template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t 
 </div><div class="memdoc">
 
 <p>Manually set the SYCL queue to use for execution. </p>
-<p>Note that as of OneAPI Version 2021.1.1, device code is usuallly built either for CPU/GPU, for the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will lead to exceptions.</p>
+<p>Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will lead to exceptions.</p>
 <p>In order to use runtime analysis features, the queue has to be configured with the <code>cl::sycl::property::queue::enable_profiling</code> property.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
