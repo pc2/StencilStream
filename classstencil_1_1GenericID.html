@@ -76,39 +76,52 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
+<p>A generic, two-dimensional index.  
+ <a href="classstencil_1_1GenericID.html#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="GenericID_8hpp_source.html">GenericID.hpp</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for stencil::GenericID&lt; T &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classstencil_1_1GenericID__inherit__graph.png" border="0" usemap="#astencil_1_1GenericID_3_01T_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="astencil_1_1GenericID_3_01T_01_4_inherit__map" id="astencil_1_1GenericID_3_01T_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="5,5,160,32"/>
+<area shape="rect" title="A generic, two&#45;dimensional index." alt="" coords="5,5,160,32"/>
 <area shape="rect" href="classstencil_1_1CounterID.html" title="A subclass of the GenericID&lt;T&gt; with two&#45;dimensional index counting." alt="" coords="5,80,160,107"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a0ffbe515d7927ba1f9c64a96921fa4a8"><td class="memItemLeft" align="right" valign="top"><a id="a0ffbe515d7927ba1f9c64a96921fa4a8"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1GenericID.html#a0ffbe515d7927ba1f9c64a96921fa4a8">GenericID</a> ()</td></tr>
+<tr class="memdesc:a0ffbe515d7927ba1f9c64a96921fa4a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new index with undefined contents. <br /></td></tr>
+<tr class="separator:a0ffbe515d7927ba1f9c64a96921fa4a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4fd0af5f4c28c820de4b165395e9abbe"><td class="memItemLeft" align="right" valign="top"><a id="a4fd0af5f4c28c820de4b165395e9abbe"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>GenericID</b> (T column, T row)</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1GenericID.html#a4fd0af5f4c28c820de4b165395e9abbe">GenericID</a> (T column, T row)</td></tr>
+<tr class="memdesc:a4fd0af5f4c28c820de4b165395e9abbe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new index with the given column and row indices. <br /></td></tr>
 <tr class="separator:a4fd0af5f4c28c820de4b165395e9abbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4befc138487162a5523e56ca5bd222d7"><td class="memItemLeft" align="right" valign="top"><a id="a4befc138487162a5523e56ca5bd222d7"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>GenericID</b> (cl::sycl::id&lt; 2 &gt; sycl_id)</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1GenericID.html#a4befc138487162a5523e56ca5bd222d7">GenericID</a> (cl::sycl::id&lt; 2 &gt; sycl_id)</td></tr>
+<tr class="memdesc:a4befc138487162a5523e56ca5bd222d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert the SYCL ID. <br /></td></tr>
 <tr class="separator:a4befc138487162a5523e56ca5bd222d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06a63c01a20233e816222ec2c62ba713"><td class="memItemLeft" align="right" valign="top"><a id="a06a63c01a20233e816222ec2c62ba713"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>GenericID</b> (cl::sycl::range&lt; 2 &gt; sycl_range)</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1GenericID.html#a06a63c01a20233e816222ec2c62ba713">GenericID</a> (cl::sycl::range&lt; 2 &gt; sycl_range)</td></tr>
+<tr class="memdesc:a06a63c01a20233e816222ec2c62ba713"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert the SYCl range. <br /></td></tr>
 <tr class="separator:a06a63c01a20233e816222ec2c62ba713"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a56f29c35be0f87a5eb18cd55d4d35873"><td class="memItemLeft" align="right" valign="top"><a id="a56f29c35be0f87a5eb18cd55d4d35873"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>operator==</b> (<a class="el" href="classstencil_1_1GenericID.html">GenericID</a> const &amp;other) const</td></tr>
+bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1GenericID.html#a56f29c35be0f87a5eb18cd55d4d35873">operator==</a> (<a class="el" href="classstencil_1_1GenericID.html">GenericID</a> const &amp;other) const</td></tr>
+<tr class="memdesc:a56f29c35be0f87a5eb18cd55d4d35873"><td class="mdescLeft">&#160;</td><td class="mdescRight">Test if the other generic ID has equivalent coordinates to this ID. <br /></td></tr>
 <tr class="separator:a56f29c35be0f87a5eb18cd55d4d35873"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a3bfb826d3051950dac5ae91e9871b0d2"><td class="memItemLeft" align="right" valign="top"><a id="a3bfb826d3051950dac5ae91e9871b0d2"></a>
-T&#160;</td><td class="memItemRight" valign="bottom"><b>c</b></td></tr>
+T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1GenericID.html#a3bfb826d3051950dac5ae91e9871b0d2">c</a></td></tr>
+<tr class="memdesc:a3bfb826d3051950dac5ae91e9871b0d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">The column index. <br /></td></tr>
 <tr class="separator:a3bfb826d3051950dac5ae91e9871b0d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aec43f7ef1ae03330b4cd5c6d09138e60"><td class="memItemLeft" align="right" valign="top"><a id="aec43f7ef1ae03330b4cd5c6d09138e60"></a>
-T&#160;</td><td class="memItemRight" valign="bottom"><b>r</b></td></tr>
+T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1GenericID.html#aec43f7ef1ae03330b4cd5c6d09138e60">r</a></td></tr>
+<tr class="memdesc:aec43f7ef1ae03330b4cd5c6d09138e60"><td class="mdescLeft">&#160;</td><td class="mdescRight">The row index. <br /></td></tr>
 <tr class="separator:aec43f7ef1ae03330b4cd5c6d09138e60"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -116,6 +129,12 @@ T&#160;</td><td class="memItemRight" valign="bottom"><b>r</b></td></tr>
 class stencil::GenericID&lt; T &gt;</h3>
 
 <p>A generic, two-dimensional index. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">The</td><td>index type. It can be anything as long as it can be constructed from a dimension of <code>cl::sycl::id</code> and tested for equality. </td></tr>
+  </table>
+  </dd>
+</dl>
 </div><hr/>The documentation for this class was generated from the following file:<ul>
 <li>StencilStream/<a class="el" href="GenericID_8hpp_source.html">GenericID.hpp</a></li>
 </ul>

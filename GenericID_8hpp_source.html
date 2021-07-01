@@ -87,32 +87,41 @@ $(function() {
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">namespace </span>stencil</div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;{</div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00021"></a><span class="lineno"><a class="line" href="classstencil_1_1GenericID.html">   21</a></span>&#160;<span class="keyword">class </span><a class="code" href="classstencil_1_1GenericID.html">GenericID</a></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;{</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <a class="code" href="classstencil_1_1GenericID.html">GenericID</a>() : c(), r() {}</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <a class="code" href="classstencil_1_1GenericID.html">GenericID</a>(T column, T row) : c(column), r(row) {}</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <a class="code" href="classstencil_1_1GenericID.html">GenericID</a>(cl::sycl::id&lt;2&gt; sycl_id) : c(sycl_id[0]), r(sycl_id[1]) {}</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <a class="code" href="classstencil_1_1GenericID.html">GenericID</a>(cl::sycl::range&lt;2&gt; sycl_range) : c(sycl_range[0]), r(sycl_range[1]) {}</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keywordtype">bool</span> operator==(<a class="code" href="classstencil_1_1GenericID.html">GenericID</a> <span class="keyword">const</span> &amp;other)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <span class="keywordflow">return</span> this-&gt;c == other.c &amp;&amp; this-&gt;r == other.r;</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    }</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    T c, r;</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;};</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="keyword">typedef</span> <a class="code" href="classstencil_1_1GenericID.html">GenericID&lt;index_t&gt;</a> <a class="code" href="classstencil_1_1GenericID.html">ID</a>;</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="keyword">typedef</span> <a class="code" href="classstencil_1_1GenericID.html">GenericID&lt;uindex_t&gt;</a> <a class="code" href="classstencil_1_1GenericID.html">UID</a>;</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;} <span class="comment">// namespace stencil</span></div>
-<div class="ttc" id="aclassstencil_1_1GenericID_html"><div class="ttname"><a href="classstencil_1_1GenericID.html">stencil::GenericID</a></div><div class="ttdef"><b>Definition:</b> GenericID.hpp:22</div></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00023"></a><span class="lineno"><a class="line" href="classstencil_1_1GenericID.html">   23</a></span>&#160;<span class="keyword">class </span><a class="code" href="classstencil_1_1GenericID.html">GenericID</a></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;{</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00029"></a><span class="lineno"><a class="line" href="classstencil_1_1GenericID.html#a0ffbe515d7927ba1f9c64a96921fa4a8">   29</a></span>&#160;    <a class="code" href="classstencil_1_1GenericID.html#a0ffbe515d7927ba1f9c64a96921fa4a8">GenericID</a>() : <a class="code" href="classstencil_1_1GenericID.html#a3bfb826d3051950dac5ae91e9871b0d2">c</a>(), <a class="code" href="classstencil_1_1GenericID.html#aec43f7ef1ae03330b4cd5c6d09138e60">r</a>() {}</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="classstencil_1_1GenericID.html#a4fd0af5f4c28c820de4b165395e9abbe">   34</a></span>&#160;    <a class="code" href="classstencil_1_1GenericID.html#a4fd0af5f4c28c820de4b165395e9abbe">GenericID</a>(T column, T row) : <a class="code" href="classstencil_1_1GenericID.html#a3bfb826d3051950dac5ae91e9871b0d2">c</a>(column), <a class="code" href="classstencil_1_1GenericID.html#aec43f7ef1ae03330b4cd5c6d09138e60">r</a>(row) {}</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
+<div class="line"><a name="l00039"></a><span class="lineno"><a class="line" href="classstencil_1_1GenericID.html#a4befc138487162a5523e56ca5bd222d7">   39</a></span>&#160;    <a class="code" href="classstencil_1_1GenericID.html#a4befc138487162a5523e56ca5bd222d7">GenericID</a>(cl::sycl::id&lt;2&gt; sycl_id) : <a class="code" href="classstencil_1_1GenericID.html#a3bfb826d3051950dac5ae91e9871b0d2">c</a>(sycl_id[0]), <a class="code" href="classstencil_1_1GenericID.html#aec43f7ef1ae03330b4cd5c6d09138e60">r</a>(sycl_id[1]) {}</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
+<div class="line"><a name="l00044"></a><span class="lineno"><a class="line" href="classstencil_1_1GenericID.html#a06a63c01a20233e816222ec2c62ba713">   44</a></span>&#160;    <a class="code" href="classstencil_1_1GenericID.html#a06a63c01a20233e816222ec2c62ba713">GenericID</a>(cl::sycl::range&lt;2&gt; sycl_range) : <a class="code" href="classstencil_1_1GenericID.html#a3bfb826d3051950dac5ae91e9871b0d2">c</a>(sycl_range[0]), <a class="code" href="classstencil_1_1GenericID.html#aec43f7ef1ae03330b4cd5c6d09138e60">r</a>(sycl_range[1]) {}</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
+<div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="classstencil_1_1GenericID.html#a56f29c35be0f87a5eb18cd55d4d35873">   49</a></span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classstencil_1_1GenericID.html#a56f29c35be0f87a5eb18cd55d4d35873">operator==</a>(<a class="code" href="classstencil_1_1GenericID.html">GenericID</a> <span class="keyword">const</span> &amp;other)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <span class="keywordflow">return</span> this-&gt;<a class="code" href="classstencil_1_1GenericID.html#a3bfb826d3051950dac5ae91e9871b0d2">c</a> == other.<a class="code" href="classstencil_1_1GenericID.html#a3bfb826d3051950dac5ae91e9871b0d2">c</a> &amp;&amp; this-&gt;<a class="code" href="classstencil_1_1GenericID.html#aec43f7ef1ae03330b4cd5c6d09138e60">r</a> == other.<a class="code" href="classstencil_1_1GenericID.html#aec43f7ef1ae03330b4cd5c6d09138e60">r</a>;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    }</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00057"></a><span class="lineno"><a class="line" href="classstencil_1_1GenericID.html#a3bfb826d3051950dac5ae91e9871b0d2">   57</a></span>&#160;    T <a class="code" href="classstencil_1_1GenericID.html#a3bfb826d3051950dac5ae91e9871b0d2">c</a>;</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
+<div class="line"><a name="l00062"></a><span class="lineno"><a class="line" href="classstencil_1_1GenericID.html#aec43f7ef1ae03330b4cd5c6d09138e60">   62</a></span>&#160;    T <a class="code" href="classstencil_1_1GenericID.html#aec43f7ef1ae03330b4cd5c6d09138e60">r</a>;</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;};</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="keyword">typedef</span> <a class="code" href="classstencil_1_1GenericID.html">GenericID&lt;index_t&gt;</a> <a class="code" href="classstencil_1_1GenericID.html">ID</a>;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="keyword">typedef</span> <a class="code" href="classstencil_1_1GenericID.html">GenericID&lt;uindex_t&gt;</a> <a class="code" href="classstencil_1_1GenericID.html">UID</a>;</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;} <span class="comment">// namespace stencil</span></div>
+<div class="ttc" id="aclassstencil_1_1GenericID_html"><div class="ttname"><a href="classstencil_1_1GenericID.html">stencil::GenericID</a></div><div class="ttdoc">A generic, two-dimensional index.</div><div class="ttdef"><b>Definition:</b> GenericID.hpp:24</div></div>
+<div class="ttc" id="aclassstencil_1_1GenericID_html_a06a63c01a20233e816222ec2c62ba713"><div class="ttname"><a href="classstencil_1_1GenericID.html#a06a63c01a20233e816222ec2c62ba713">stencil::GenericID::GenericID</a></div><div class="ttdeci">GenericID(cl::sycl::range&lt; 2 &gt; sycl_range)</div><div class="ttdoc">Convert the SYCl range.</div><div class="ttdef"><b>Definition:</b> GenericID.hpp:44</div></div>
+<div class="ttc" id="aclassstencil_1_1GenericID_html_a0ffbe515d7927ba1f9c64a96921fa4a8"><div class="ttname"><a href="classstencil_1_1GenericID.html#a0ffbe515d7927ba1f9c64a96921fa4a8">stencil::GenericID::GenericID</a></div><div class="ttdeci">GenericID()</div><div class="ttdoc">Create a new index with undefined contents.</div><div class="ttdef"><b>Definition:</b> GenericID.hpp:29</div></div>
+<div class="ttc" id="aclassstencil_1_1GenericID_html_a3bfb826d3051950dac5ae91e9871b0d2"><div class="ttname"><a href="classstencil_1_1GenericID.html#a3bfb826d3051950dac5ae91e9871b0d2">stencil::GenericID::c</a></div><div class="ttdeci">T c</div><div class="ttdoc">The column index.</div><div class="ttdef"><b>Definition:</b> GenericID.hpp:57</div></div>
+<div class="ttc" id="aclassstencil_1_1GenericID_html_a4befc138487162a5523e56ca5bd222d7"><div class="ttname"><a href="classstencil_1_1GenericID.html#a4befc138487162a5523e56ca5bd222d7">stencil::GenericID::GenericID</a></div><div class="ttdeci">GenericID(cl::sycl::id&lt; 2 &gt; sycl_id)</div><div class="ttdoc">Convert the SYCL ID.</div><div class="ttdef"><b>Definition:</b> GenericID.hpp:39</div></div>
+<div class="ttc" id="aclassstencil_1_1GenericID_html_a4fd0af5f4c28c820de4b165395e9abbe"><div class="ttname"><a href="classstencil_1_1GenericID.html#a4fd0af5f4c28c820de4b165395e9abbe">stencil::GenericID::GenericID</a></div><div class="ttdeci">GenericID(T column, T row)</div><div class="ttdoc">Create a new index with the given column and row indices.</div><div class="ttdef"><b>Definition:</b> GenericID.hpp:34</div></div>
+<div class="ttc" id="aclassstencil_1_1GenericID_html_a56f29c35be0f87a5eb18cd55d4d35873"><div class="ttname"><a href="classstencil_1_1GenericID.html#a56f29c35be0f87a5eb18cd55d4d35873">stencil::GenericID::operator==</a></div><div class="ttdeci">bool operator==(GenericID const &amp;other) const</div><div class="ttdoc">Test if the other generic ID has equivalent coordinates to this ID.</div><div class="ttdef"><b>Definition:</b> GenericID.hpp:49</div></div>
+<div class="ttc" id="aclassstencil_1_1GenericID_html_aec43f7ef1ae03330b4cd5c6d09138e60"><div class="ttname"><a href="classstencil_1_1GenericID.html#aec43f7ef1ae03330b4cd5c6d09138e60">stencil::GenericID::r</a></div><div class="ttdeci">T r</div><div class="ttdoc">The row index.</div><div class="ttdef"><b>Definition:</b> GenericID.hpp:62</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

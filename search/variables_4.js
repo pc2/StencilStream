@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['n_5fbuffers_105',['n_buffers',['../classstencil_1_1IOKernel.html#a8bdece85037fda6a4c7e61c2cf5769a0',1,'stencil::IOKernel']]],
-  ['n_5finput_5fcells_106',['n_input_cells',['../classstencil_1_1ExecutionKernel.html#ab3da80b930132d7cf013f1f7bc8420d1',1,'stencil::ExecutionKernel']]],
-  ['n_5frows_107',['n_rows',['../classstencil_1_1IOKernel.html#a28404970fdb4ab5c356dd0fb1a2a48ff',1,'stencil::IOKernel']]]
+  ['id_115',['id',['../classstencil_1_1Stencil.html#a785936fff224b3d16b0039d07540ddc9',1,'stencil::Stencil']]],
+  ['input_5ftile_5fheight_116',['input_tile_height',['../classstencil_1_1ExecutionKernel.html#a507df120323433fc90be06655c42f07e',1,'stencil::ExecutionKernel']]],
+  ['input_5ftile_5fwidth_117',['input_tile_width',['../classstencil_1_1ExecutionKernel.html#abb86ead22063efe4b67ecca08faf5e43',1,'stencil::ExecutionKernel']]]
 ];

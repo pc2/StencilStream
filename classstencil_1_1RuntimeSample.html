@@ -74,22 +74,226 @@ $(function() {
 <div class="title">stencil::RuntimeSample Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>Collection of SYCL events from a <a class="el" href="classstencil_1_1StencilExecutor.html#ab8c99a16a4307919216b9ee4028c89ce">StencilExecutor::run</a> invocation.  
+ <a href="classstencil_1_1RuntimeSample.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="RuntimeSample_8hpp_source.html">RuntimeSample.hpp</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ae9d0802d349124bee3dc01f010310be8"><td class="memItemLeft" align="right" valign="top"><a id="ae9d0802d349124bee3dc01f010310be8"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>RuntimeSample</b> (uindex_t n_passes, uindex_t n_tile_columns, uindex_t n_tile_rows)</td></tr>
+<tr class="memitem:ae9d0802d349124bee3dc01f010310be8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1RuntimeSample.html#ae9d0802d349124bee3dc01f010310be8">RuntimeSample</a> (uindex_t n_passes, uindex_t n_tile_columns, uindex_t n_tile_rows)</td></tr>
+<tr class="memdesc:ae9d0802d349124bee3dc01f010310be8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prepare the collection of SYCL events.  <a href="classstencil_1_1RuntimeSample.html#ae9d0802d349124bee3dc01f010310be8">More...</a><br /></td></tr>
 <tr class="separator:ae9d0802d349124bee3dc01f010310be8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acf1be7c67fc564af11deecb669e700ac"><td class="memItemLeft" align="right" valign="top"><a id="acf1be7c67fc564af11deecb669e700ac"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>add_event</b> (cl::sycl::event event, uindex_t i_pass, uindex_t i_column, uindex_t i_row)</td></tr>
+<tr class="memitem:acf1be7c67fc564af11deecb669e700ac"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1RuntimeSample.html#acf1be7c67fc564af11deecb669e700ac">add_event</a> (cl::sycl::event event, uindex_t i_pass, uindex_t i_column, uindex_t i_row)</td></tr>
+<tr class="memdesc:acf1be7c67fc564af11deecb669e700ac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add an event to the collection.  <a href="classstencil_1_1RuntimeSample.html#acf1be7c67fc564af11deecb669e700ac">More...</a><br /></td></tr>
 <tr class="separator:acf1be7c67fc564af11deecb669e700ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa46bde0eb0a47a5a7396a45d5f3a80c2"><td class="memItemLeft" align="right" valign="top"><a id="aa46bde0eb0a47a5a7396a45d5f3a80c2"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>get_runtime</b> (uindex_t i_pass, uindex_t i_column, uindex_t i_row)</td></tr>
+<tr class="memitem:aa46bde0eb0a47a5a7396a45d5f3a80c2"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1RuntimeSample.html#aa46bde0eb0a47a5a7396a45d5f3a80c2">get_runtime</a> (uindex_t i_pass, uindex_t i_column, uindex_t i_row)</td></tr>
+<tr class="memdesc:aa46bde0eb0a47a5a7396a45d5f3a80c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate the runtime of the specified event.  <a href="classstencil_1_1RuntimeSample.html#aa46bde0eb0a47a5a7396a45d5f3a80c2">More...</a><br /></td></tr>
 <tr class="separator:aa46bde0eb0a47a5a7396a45d5f3a80c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8bc9677093f8fd5c5d6a30a1d29d919a"><td class="memItemLeft" align="right" valign="top"><a id="a8bc9677093f8fd5c5d6a30a1d29d919a"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>get_total_runtime</b> ()</td></tr>
+<tr class="memitem:a8bc9677093f8fd5c5d6a30a1d29d919a"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1RuntimeSample.html#a8bc9677093f8fd5c5d6a30a1d29d919a">get_total_runtime</a> ()</td></tr>
+<tr class="memdesc:a8bc9677093f8fd5c5d6a30a1d29d919a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate the total runtime of all passes.  <a href="classstencil_1_1RuntimeSample.html#a8bc9677093f8fd5c5d6a30a1d29d919a">More...</a><br /></td></tr>
 <tr class="separator:a8bc9677093f8fd5c5d6a30a1d29d919a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Collection of SYCL events from a <a class="el" href="classstencil_1_1StencilExecutor.html#ab8c99a16a4307919216b9ee4028c89ce">StencilExecutor::run</a> invocation. </p>
+<p>It's interface might be extended in the future to support more in-depth analysis. Now, it can analyse the runtime of a single execution kernel invocation as well as the total runtime of all passes. </p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="ae9d0802d349124bee3dc01f010310be8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae9d0802d349124bee3dc01f010310be8">&#9670;&nbsp;</a></span>RuntimeSample()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">stencil::RuntimeSample::RuntimeSample </td>
+          <td>(</td>
+          <td class="paramtype">uindex_t&#160;</td>
+          <td class="paramname"><em>n_passes</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uindex_t&#160;</td>
+          <td class="paramname"><em>n_tile_columns</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uindex_t&#160;</td>
+          <td class="paramname"><em>n_tile_rows</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Prepare the collection of SYCL events. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">n_passes</td><td>The number times the execution kernel is invoced per tile. </td></tr>
+    <tr><td class="paramname">n_tile_columns</td><td>The number of tile columns. </td></tr>
+    <tr><td class="paramname">n_tile_rows</td><td>The number of tile rows. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="acf1be7c67fc564af11deecb669e700ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acf1be7c67fc564af11deecb669e700ac">&#9670;&nbsp;</a></span>add_event()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void stencil::RuntimeSample::add_event </td>
+          <td>(</td>
+          <td class="paramtype">cl::sycl::event&#160;</td>
+          <td class="paramname"><em>event</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uindex_t&#160;</td>
+          <td class="paramname"><em>i_pass</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uindex_t&#160;</td>
+          <td class="paramname"><em>i_column</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uindex_t&#160;</td>
+          <td class="paramname"><em>i_row</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Add an event to the collection. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">event</td><td>The event to add. </td></tr>
+    <tr><td class="paramname">i_pass</td><td>The index of the grid pass. </td></tr>
+    <tr><td class="paramname">i_column</td><td>The index of the tile column. </td></tr>
+    <tr><td class="paramname">i_row</td><td>The index of the tile row. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="aa46bde0eb0a47a5a7396a45d5f3a80c2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa46bde0eb0a47a5a7396a45d5f3a80c2">&#9670;&nbsp;</a></span>get_runtime()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double stencil::RuntimeSample::get_runtime </td>
+          <td>(</td>
+          <td class="paramtype">uindex_t&#160;</td>
+          <td class="paramname"><em>i_pass</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uindex_t&#160;</td>
+          <td class="paramname"><em>i_column</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uindex_t&#160;</td>
+          <td class="paramname"><em>i_row</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Calculate the runtime of the specified event. </p>
+<p>If the event has not been added with <a class="el" href="classstencil_1_1RuntimeSample.html#acf1be7c67fc564af11deecb669e700ac">RuntimeSample::add_event</a> before, the resulting value is undefined.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">i_pass</td><td>The index of the grid pass. </td></tr>
+    <tr><td class="paramname">i_column</td><td>The index of the tile column. </td></tr>
+    <tr><td class="paramname">i_row</td><td>The index of the tile row. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>The runtime of the specified event, in seconds. </dd></dl>
+
+</div>
+</div>
+<a id="a8bc9677093f8fd5c5d6a30a1d29d919a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8bc9677093f8fd5c5d6a30a1d29d919a">&#9670;&nbsp;</a></span>get_total_runtime()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double stencil::RuntimeSample::get_total_runtime </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Calculate the total runtime of all passes. </p>
+<p>This iterates through all known events, finds the earliest start and latest end and returns the time difference between them.</p>
+<dl class="section return"><dt>Returns</dt><dd>The total wall time in seconds it took to execute all passes. </dd></dl>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>StencilStream/<a class="el" href="RuntimeSample_8hpp_source.html">RuntimeSample.hpp</a></li>
 </ul>

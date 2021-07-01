@@ -88,54 +88,58 @@ $(function() {
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">namespace </span>stencil</div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;{</div>
-<div class="line"><a name="l00018"></a><span class="lineno"><a class="line" href="classstencil_1_1RuntimeSample.html">   18</a></span>&#160;<span class="keyword">class </span><a class="code" href="classstencil_1_1RuntimeSample.html">RuntimeSample</a></div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;{</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <a class="code" href="classstencil_1_1RuntimeSample.html">RuntimeSample</a>(uindex_t n_passes, uindex_t n_tile_columns, uindex_t n_tile_rows) : events(boost::extents[n_passes][n_tile_columns][n_tile_rows]) {}</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="keywordtype">void</span> add_event(cl::sycl::event event, uindex_t i_pass, uindex_t i_column, uindex_t i_row)</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    {</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        events[i_pass][i_column][i_row] = event;</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    }</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="keywordtype">double</span> get_runtime(uindex_t i_pass, uindex_t i_column, uindex_t i_row)</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    {</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        <span class="keywordtype">unsigned</span> <span class="keywordtype">long</span> event_start = events[i_pass][i_column][i_row].get_profiling_info&lt;cl::sycl::info::event_profiling::command_start&gt;();</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        <span class="keywordtype">unsigned</span> <span class="keywordtype">long</span> event_end = events[i_pass][i_column][i_row].get_profiling_info&lt;cl::sycl::info::event_profiling::command_end&gt;();</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        <span class="keywordflow">return</span> (event_end - event_start) / timesteps_per_second;</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    }</div>
+<div class="line"><a name="l00023"></a><span class="lineno"><a class="line" href="classstencil_1_1RuntimeSample.html">   23</a></span>&#160;<span class="keyword">class </span><a class="code" href="classstencil_1_1RuntimeSample.html">RuntimeSample</a></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;{</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="classstencil_1_1RuntimeSample.html#ae9d0802d349124bee3dc01f010310be8">   33</a></span>&#160;    <a class="code" href="classstencil_1_1RuntimeSample.html#ae9d0802d349124bee3dc01f010310be8">RuntimeSample</a>(uindex_t n_passes, uindex_t n_tile_columns, uindex_t n_tile_rows) : events(boost::extents[n_passes][n_tile_columns][n_tile_rows]) {}</div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keywordtype">double</span> get_total_runtime()</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    {</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        <span class="keywordtype">unsigned</span> <span class="keywordtype">long</span> earliest_start = std::numeric_limits&lt;unsigned long&gt;::max();</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        <span class="keywordtype">unsigned</span> <span class="keywordtype">long</span> latest_end = std::numeric_limits&lt;unsigned long&gt;::min();</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="keywordflow">for</span> (uindex_t i_pass = 0; i_pass &lt; events.shape()[0]; i_pass++)</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        {</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            <span class="keywordflow">for</span> (uindex_t i_column = 0; i_column &lt; events.shape()[1]; i_column++)</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;            {</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;                <span class="keywordflow">for</span> (uindex_t i_row = 0; i_row &lt; events.shape()[2]; i_row++)</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;                {</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;                    <span class="keywordtype">unsigned</span> <span class="keywordtype">long</span> event_start = events[i_pass][i_column][i_row].get_profiling_info&lt;cl::sycl::info::event_profiling::command_start&gt;();</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;                    <span class="keywordtype">unsigned</span> <span class="keywordtype">long</span> event_end = events[i_pass][i_column][i_row].get_profiling_info&lt;cl::sycl::info::event_profiling::command_end&gt;();</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;                    <span class="keywordflow">if</span> (event_start &lt; earliest_start)</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;                        earliest_start = event_start;</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;                    <span class="keywordflow">if</span> (event_end &gt; latest_end)</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;                        latest_end = event_end;</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                }</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;            }</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        }</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="keywordflow">return</span> (latest_end - earliest_start) / timesteps_per_second;</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    }</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keyword">static</span> constexpr <span class="keywordtype">double</span> timesteps_per_second = 1000000000.0;</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    boost::multi_array&lt;cl::sycl::event, 3&gt; events;</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;};</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;} <span class="comment">// namespace stencil</span></div>
-<div class="ttc" id="aclassstencil_1_1RuntimeSample_html"><div class="ttname"><a href="classstencil_1_1RuntimeSample.html">stencil::RuntimeSample</a></div><div class="ttdef"><b>Definition:</b> RuntimeSample.hpp:19</div></div>
+<div class="line"><a name="l00043"></a><span class="lineno"><a class="line" href="classstencil_1_1RuntimeSample.html#acf1be7c67fc564af11deecb669e700ac">   43</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classstencil_1_1RuntimeSample.html#acf1be7c67fc564af11deecb669e700ac">add_event</a>(cl::sycl::event event, uindex_t i_pass, uindex_t i_column, uindex_t i_row)</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    {</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        events[i_pass][i_column][i_row] = event;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    }</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="classstencil_1_1RuntimeSample.html#aa46bde0eb0a47a5a7396a45d5f3a80c2">   58</a></span>&#160;    <span class="keywordtype">double</span> <a class="code" href="classstencil_1_1RuntimeSample.html#aa46bde0eb0a47a5a7396a45d5f3a80c2">get_runtime</a>(uindex_t i_pass, uindex_t i_column, uindex_t i_row)</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    {</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="keywordtype">unsigned</span> <span class="keywordtype">long</span> event_start = events[i_pass][i_column][i_row].get_profiling_info&lt;cl::sycl::info::event_profiling::command_start&gt;();</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        <span class="keywordtype">unsigned</span> <span class="keywordtype">long</span> event_end = events[i_pass][i_column][i_row].get_profiling_info&lt;cl::sycl::info::event_profiling::command_end&gt;();</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <span class="keywordflow">return</span> (event_end - event_start) / timesteps_per_second;</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    }</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
+<div class="line"><a name="l00072"></a><span class="lineno"><a class="line" href="classstencil_1_1RuntimeSample.html#a8bc9677093f8fd5c5d6a30a1d29d919a">   72</a></span>&#160;    <span class="keywordtype">double</span> <a class="code" href="classstencil_1_1RuntimeSample.html#a8bc9677093f8fd5c5d6a30a1d29d919a">get_total_runtime</a>()</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    {</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <span class="keywordtype">unsigned</span> <span class="keywordtype">long</span> earliest_start = std::numeric_limits&lt;unsigned long&gt;::max();</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keywordtype">unsigned</span> <span class="keywordtype">long</span> latest_end = std::numeric_limits&lt;unsigned long&gt;::min();</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <span class="keywordflow">for</span> (uindex_t i_pass = 0; i_pass &lt; events.shape()[0]; i_pass++)</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        {</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;            <span class="keywordflow">for</span> (uindex_t i_column = 0; i_column &lt; events.shape()[1]; i_column++)</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;            {</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;                <span class="keywordflow">for</span> (uindex_t i_row = 0; i_row &lt; events.shape()[2]; i_row++)</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;                {</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;                    <span class="keywordtype">unsigned</span> <span class="keywordtype">long</span> event_start = events[i_pass][i_column][i_row].get_profiling_info&lt;cl::sycl::info::event_profiling::command_start&gt;();</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;                    <span class="keywordtype">unsigned</span> <span class="keywordtype">long</span> event_end = events[i_pass][i_column][i_row].get_profiling_info&lt;cl::sycl::info::event_profiling::command_end&gt;();</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;                    <span class="keywordflow">if</span> (event_start &lt; earliest_start)</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;                        earliest_start = event_start;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;                    <span class="keywordflow">if</span> (event_end &gt; latest_end)</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;                        latest_end = event_end;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;                }</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            }</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        }</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        <span class="keywordflow">return</span> (latest_end - earliest_start) / timesteps_per_second;</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    }</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="keyword">static</span> constexpr <span class="keywordtype">double</span> timesteps_per_second = 1000000000.0;</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    boost::multi_array&lt;cl::sycl::event, 3&gt; events;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;};</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;} <span class="comment">// namespace stencil</span></div>
+<div class="ttc" id="aclassstencil_1_1RuntimeSample_html"><div class="ttname"><a href="classstencil_1_1RuntimeSample.html">stencil::RuntimeSample</a></div><div class="ttdoc">Collection of SYCL events from a StencilExecutor::run invocation.</div><div class="ttdef"><b>Definition:</b> RuntimeSample.hpp:24</div></div>
+<div class="ttc" id="aclassstencil_1_1RuntimeSample_html_a8bc9677093f8fd5c5d6a30a1d29d919a"><div class="ttname"><a href="classstencil_1_1RuntimeSample.html#a8bc9677093f8fd5c5d6a30a1d29d919a">stencil::RuntimeSample::get_total_runtime</a></div><div class="ttdeci">double get_total_runtime()</div><div class="ttdoc">Calculate the total runtime of all passes.</div><div class="ttdef"><b>Definition:</b> RuntimeSample.hpp:72</div></div>
+<div class="ttc" id="aclassstencil_1_1RuntimeSample_html_aa46bde0eb0a47a5a7396a45d5f3a80c2"><div class="ttname"><a href="classstencil_1_1RuntimeSample.html#aa46bde0eb0a47a5a7396a45d5f3a80c2">stencil::RuntimeSample::get_runtime</a></div><div class="ttdeci">double get_runtime(uindex_t i_pass, uindex_t i_column, uindex_t i_row)</div><div class="ttdoc">Calculate the runtime of the specified event.</div><div class="ttdef"><b>Definition:</b> RuntimeSample.hpp:58</div></div>
+<div class="ttc" id="aclassstencil_1_1RuntimeSample_html_acf1be7c67fc564af11deecb669e700ac"><div class="ttname"><a href="classstencil_1_1RuntimeSample.html#acf1be7c67fc564af11deecb669e700ac">stencil::RuntimeSample::add_event</a></div><div class="ttdeci">void add_event(cl::sycl::event event, uindex_t i_pass, uindex_t i_column, uindex_t i_row)</div><div class="ttdoc">Add an event to the collection.</div><div class="ttdef"><b>Definition:</b> RuntimeSample.hpp:43</div></div>
+<div class="ttc" id="aclassstencil_1_1RuntimeSample_html_ae9d0802d349124bee3dc01f010310be8"><div class="ttname"><a href="classstencil_1_1RuntimeSample.html#ae9d0802d349124bee3dc01f010310be8">stencil::RuntimeSample::RuntimeSample</a></div><div class="ttdeci">RuntimeSample(uindex_t n_passes, uindex_t n_tile_columns, uindex_t n_tile_rows)</div><div class="ttdoc">Prepare the collection of SYCL events.</div><div class="ttdef"><b>Definition:</b> RuntimeSample.hpp:33</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
