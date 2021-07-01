@@ -125,11 +125,11 @@ Indexing and Iteration order</h2>
 <div class="line">        grid[c][r] = ID(c, r);</div>
 <div class="line">    }</div>
 <div class="line">}</div>
-</div><!-- fragment --><h2><a class="anchor" id="model"></a>
-Architecture</h2>
+</div><!-- fragment --><h2><a class="anchor" id="approach"></a>
+General Approach</h2>
 <p>The general goal of a stencil execution engine like StencilStream is to calculate a certain generation of a grid of cells where a single generation step of a single cell is computed from cell's neighbourhood (contained in the stencil). This is repeated iteratively over all cells of the grid and for all generations up to the desired generation.</p>
 <p>However, the naïve approach of storing all cells in a buffer and reading the neihbourhood directly from this buffer doesn't work well for FPGAs. StencilStream therefore uses an approach introduced by <a href="https://dl.acm.org/doi/pdf/10.1145/3174243.3174248">Hamid Reza Zohouri, Artur Podobas and Satoshi Matsuoka</a> that uses a spatially tiled buffer and temporal caching to perform the computations.</p>
-<h3><a class="anchor" id="tiles"></a>
+<h3><a class="anchor" id="tilecomputation"></a>
 Tile-wise computation</h3>
 <p>Let's look at the simplest case first: There is a tile and we want to calculate the it's next generation. StencilStream splits up this task into an input kernel, an execution kernel and an output kernel. They communicate via on-chip FIFO pipe and the input kernel receives access to the current generation of the tile while the output kernel receives access to buffers for the next generation of the tile. The input kernel reads the cells from the buffer column-wise (as discussed in <a href="#index">"Indexing and Iteration order"</a>) and sends them to the execution kernel.</p>
 <p>The execution kernel has an internal stencil buffer stored in registers and a cache stored in on-chip block memory. This cache has a width of <code>stencil_diameter - 1</code> and is as high as the input buffer. When a new cell arrives from the input kernel, every cell in the stencil buffer is shifted to the north once and the new cell is placed in the south-eastern corner of the stencil buffer. The rest of the southern-most row is filled with cells from the cache. Then, the row in the cache is overriden with all the cells in southern-most row of the stencil buffer, except for the western-most cell in this row. In effect, this means that all cells in this row of the cache are shifted west once and the eastern-most cell in this row is set to the input. The following figure illustrates this:</p>

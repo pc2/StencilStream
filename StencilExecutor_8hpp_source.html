@@ -122,24 +122,24 @@ $(function() {
 <div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        <span class="keywordflow">if</span> (runtime_analysis_enabled)</div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;        {</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            runtime_sample = <a class="code" href="classstencil_1_1RuntimeSample.html">RuntimeSample</a>(n_passes, input_grid.get_tile_range().c, input_grid.get_tile_range().r);</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            runtime_sample = <a class="code" href="classstencil_1_1RuntimeSample.html">RuntimeSample</a>(n_passes, input_grid.<a class="code" href="classstencil_1_1Grid.html#a0f83821a1af16c54a3f4f5a3ebb247d6">get_tile_range</a>().c, input_grid.<a class="code" href="classstencil_1_1Grid.html#a0f83821a1af16c54a3f4f5a3ebb247d6">get_tile_range</a>().r);</div>
 <div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;        }</div>
 <div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        uindex_t grid_width = input_grid.get_grid_range().c;</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        uindex_t grid_height = input_grid.get_grid_range().r;</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        uindex_t grid_width = input_grid.<a class="code" href="classstencil_1_1Grid.html#a0fe122916f6cf8317126a7244ea3928b">get_grid_range</a>().c;</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        uindex_t grid_height = input_grid.<a class="code" href="classstencil_1_1Grid.html#a0fe122916f6cf8317126a7244ea3928b">get_grid_range</a>().r;</div>
 <div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
 <div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        <span class="keywordflow">for</span> (uindex_t i = 0; i &lt; n_passes; i++)</div>
 <div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        {</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            <a class="code" href="classstencil_1_1Grid.html">Grid</a> output_grid = input_grid.make_output_grid();</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            <a class="code" href="classstencil_1_1Grid.html">Grid</a> output_grid = input_grid.<a class="code" href="classstencil_1_1Grid.html#a185b1b8d02edfe870a457a8e4e3cf8e7">make_output_grid</a>();</div>
 <div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            uindex_t n_generations_per_pass = pipeline_length;</div>
 <div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            <span class="keywordflow">if</span> (i == n_passes - 1 &amp;&amp; n_generations % pipeline_length != 0)</div>
 <div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;            {</div>
 <div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;                n_generations_per_pass = n_generations % pipeline_length;</div>
 <div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;            }</div>
 <div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160; </div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            <span class="keywordflow">for</span> (uindex_t c = 0; c &lt; input_grid.get_tile_range().c; c++)</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            <span class="keywordflow">for</span> (uindex_t c = 0; c &lt; input_grid.<a class="code" href="classstencil_1_1Grid.html#a0f83821a1af16c54a3f4f5a3ebb247d6">get_tile_range</a>().c; c++)</div>
 <div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            {</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;                <span class="keywordflow">for</span> (uindex_t r = 0; r &lt; input_grid.get_tile_range().r; r++)</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;                <span class="keywordflow">for</span> (uindex_t r = 0; r &lt; input_grid.<a class="code" href="classstencil_1_1Grid.html#a0f83821a1af16c54a3f4f5a3ebb247d6">get_tile_range</a>().r; r++)</div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;                {</div>
 <div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;                    input_grid.template submit_tile_input&lt;in_pipe&gt;(queue, <a class="code" href="classstencil_1_1GenericID.html">UID</a>(c, r));</div>
 <div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160; </div>
@@ -174,12 +174,12 @@ $(function() {
 <div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160; </div>
 <div class="line"><a name="l00168"></a><span class="lineno"><a class="line" href="classstencil_1_1StencilExecutor.html#ac4e10c3b67e1fd823d9804911818ee13">  168</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classstencil_1_1StencilExecutor.html#ac4e10c3b67e1fd823d9804911818ee13">copy_output</a>(cl::sycl::buffer&lt;T, 2&gt; output_buffer)</div>
 <div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    {</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;        input_grid.copy_to(output_buffer);</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;        input_grid.<a class="code" href="classstencil_1_1Grid.html#a6d229b90f3f9d1f966c84c0e85e15733">copy_to</a>(output_buffer);</div>
 <div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    }</div>
 <div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160; </div>
 <div class="line"><a name="l00178"></a><span class="lineno"><a class="line" href="classstencil_1_1StencilExecutor.html#a6ac08b58cf49f50190a70156a2a8a0e8">  178</a></span>&#160;    <a class="code" href="classstencil_1_1GenericID.html">UID</a> <a class="code" href="classstencil_1_1StencilExecutor.html#a6ac08b58cf49f50190a70156a2a8a0e8">get_grid_range</a>()<span class="keyword"> const</span></div>
 <div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        <span class="keywordflow">return</span> input_grid.get_grid_range();</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        <span class="keywordflow">return</span> input_grid.<a class="code" href="classstencil_1_1Grid.html#a0fe122916f6cf8317126a7244ea3928b">get_grid_range</a>();</div>
 <div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;    }</div>
 <div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160; </div>
 <div class="line"><a name="l00188"></a><span class="lineno"><a class="line" href="classstencil_1_1StencilExecutor.html#af115390f7843c324ddbf50b805b480f3">  188</a></span>&#160;    T <a class="code" href="classstencil_1_1StencilExecutor.html#af115390f7843c324ddbf50b805b480f3">get_halo_value</a>()<span class="keyword"> const</span></div>
@@ -281,7 +281,11 @@ $(function() {
 <div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;} <span class="comment">// namespace stencil</span></div>
 <div class="ttc" id="aclassstencil_1_1ExecutionKernel_html"><div class="ttname"><a href="classstencil_1_1ExecutionKernel.html">stencil::ExecutionKernel</a></div><div class="ttdef"><b>Definition:</b> ExecutionKernel.hpp:28</div></div>
 <div class="ttc" id="aclassstencil_1_1GenericID_html"><div class="ttname"><a href="classstencil_1_1GenericID.html">stencil::GenericID</a></div><div class="ttdef"><b>Definition:</b> GenericID.hpp:22</div></div>
-<div class="ttc" id="aclassstencil_1_1Grid_html"><div class="ttname"><a href="classstencil_1_1Grid.html">stencil::Grid</a></div><div class="ttdef"><b>Definition:</b> Grid.hpp:25</div></div>
+<div class="ttc" id="aclassstencil_1_1Grid_html"><div class="ttname"><a href="classstencil_1_1Grid.html">stencil::Grid</a></div><div class="ttdoc">A rectangular container of cells with a dynamic, arbitrary size.</div><div class="ttdef"><b>Definition:</b> Grid.hpp:38</div></div>
+<div class="ttc" id="aclassstencil_1_1Grid_html_a0f83821a1af16c54a3f4f5a3ebb247d6"><div class="ttname"><a href="classstencil_1_1Grid.html#a0f83821a1af16c54a3f4f5a3ebb247d6">stencil::Grid::get_tile_range</a></div><div class="ttdeci">UID get_tile_range() const</div><div class="ttdoc">Return the range of (central) tiles of the grid.</div><div class="ttdef"><b>Definition:</b> Grid.hpp:113</div></div>
+<div class="ttc" id="aclassstencil_1_1Grid_html_a0fe122916f6cf8317126a7244ea3928b"><div class="ttname"><a href="classstencil_1_1Grid.html#a0fe122916f6cf8317126a7244ea3928b">stencil::Grid::get_grid_range</a></div><div class="ttdeci">UID get_grid_range() const</div><div class="ttdoc">Return the range of the grid in cells.</div><div class="ttdef"><b>Definition:</b> Grid.hpp:125</div></div>
+<div class="ttc" id="aclassstencil_1_1Grid_html_a185b1b8d02edfe870a457a8e4e3cf8e7"><div class="ttname"><a href="classstencil_1_1Grid.html#a185b1b8d02edfe870a457a8e4e3cf8e7">stencil::Grid::make_output_grid</a></div><div class="ttdeci">Grid make_output_grid() const</div><div class="ttdoc">Create a new grid that can be used as an output target.</div><div class="ttdef"><b>Definition:</b> Grid.hpp:99</div></div>
+<div class="ttc" id="aclassstencil_1_1Grid_html_a6d229b90f3f9d1f966c84c0e85e15733"><div class="ttname"><a href="classstencil_1_1Grid.html#a6d229b90f3f9d1f966c84c0e85e15733">stencil::Grid::copy_to</a></div><div class="ttdeci">void copy_to(cl::sycl::buffer&lt; T, 2 &gt; &amp;out_buffer)</div><div class="ttdoc">Copy the contents of the grid to a given buffer.</div><div class="ttdef"><b>Definition:</b> Grid.hpp:75</div></div>
 <div class="ttc" id="aclassstencil_1_1RuntimeSample_html"><div class="ttname"><a href="classstencil_1_1RuntimeSample.html">stencil::RuntimeSample</a></div><div class="ttdef"><b>Definition:</b> RuntimeSample.hpp:19</div></div>
 <div class="ttc" id="aclassstencil_1_1StencilExecutor_html"><div class="ttname"><a href="classstencil_1_1StencilExecutor.html">stencil::StencilExecutor</a></div><div class="ttdoc">Execution coordinator.</div><div class="ttdef"><b>Definition:</b> StencilExecutor.hpp:62</div></div>
 <div class="ttc" id="aclassstencil_1_1StencilExecutor_html_a011f33f537758cb44c615eca6b837588"><div class="ttname"><a href="classstencil_1_1StencilExecutor.html#a011f33f537758cb44c615eca6b837588">stencil::StencilExecutor::get_i_generation</a></div><div class="ttdeci">uindex_t get_i_generation() const</div><div class="ttdoc">Get the current generation index of the grid.</div><div class="ttdef"><b>Definition:</b> StencilExecutor.hpp:281</div></div>

@@ -70,12 +70,16 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="classstencil_1_1Grid-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">stencil::Grid&lt; T, tile_width, tile_height, halo_radius, burst_length &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>A rectangular container of cells with a dynamic, arbitrary size.  
+ <a href="classstencil_1_1Grid.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="Grid_8hpp_source.html">Grid.hpp</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
@@ -85,45 +89,443 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>Tile</b> = Tile&lt; 
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a0ce935864769f410eea258a2c4241703"><td class="memItemLeft" align="right" valign="top"><a id="a0ce935864769f410eea258a2c4241703"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Grid</b> (uindex_t width, uindex_t height)</td></tr>
+<tr class="memitem:a0ce935864769f410eea258a2c4241703"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1Grid.html#a0ce935864769f410eea258a2c4241703">Grid</a> (uindex_t width, uindex_t height)</td></tr>
+<tr class="memdesc:a0ce935864769f410eea258a2c4241703"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a grid with undefined contents.  <a href="classstencil_1_1Grid.html#a0ce935864769f410eea258a2c4241703">More...</a><br /></td></tr>
 <tr class="separator:a0ce935864769f410eea258a2c4241703"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a22d381f8eb7fb558c1afae2d3c11f7eb"><td class="memItemLeft" align="right" valign="top"><a id="a22d381f8eb7fb558c1afae2d3c11f7eb"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Grid</b> (cl::sycl::buffer&lt; T, 2 &gt; in_buffer)</td></tr>
+<tr class="memitem:a22d381f8eb7fb558c1afae2d3c11f7eb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1Grid.html#a22d381f8eb7fb558c1afae2d3c11f7eb">Grid</a> (cl::sycl::buffer&lt; T, 2 &gt; in_buffer)</td></tr>
+<tr class="memdesc:a22d381f8eb7fb558c1afae2d3c11f7eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a grid that contains the cells of a buffer.  <a href="classstencil_1_1Grid.html#a22d381f8eb7fb558c1afae2d3c11f7eb">More...</a><br /></td></tr>
 <tr class="separator:a22d381f8eb7fb558c1afae2d3c11f7eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6d229b90f3f9d1f966c84c0e85e15733"><td class="memItemLeft" align="right" valign="top"><a id="a6d229b90f3f9d1f966c84c0e85e15733"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>copy_to</b> (cl::sycl::buffer&lt; T, 2 &gt; &amp;out_buffer)</td></tr>
+<tr class="memitem:a6d229b90f3f9d1f966c84c0e85e15733"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1Grid.html#a6d229b90f3f9d1f966c84c0e85e15733">copy_to</a> (cl::sycl::buffer&lt; T, 2 &gt; &amp;out_buffer)</td></tr>
+<tr class="memdesc:a6d229b90f3f9d1f966c84c0e85e15733"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy the contents of the grid to a given buffer.  <a href="classstencil_1_1Grid.html#a6d229b90f3f9d1f966c84c0e85e15733">More...</a><br /></td></tr>
 <tr class="separator:a6d229b90f3f9d1f966c84c0e85e15733"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a185b1b8d02edfe870a457a8e4e3cf8e7"><td class="memItemLeft" align="right" valign="top"><a id="a185b1b8d02edfe870a457a8e4e3cf8e7"></a>
-<a class="el" href="classstencil_1_1Grid.html">Grid</a>&#160;</td><td class="memItemRight" valign="bottom"><b>make_output_grid</b> () const</td></tr>
+<tr class="memitem:a185b1b8d02edfe870a457a8e4e3cf8e7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classstencil_1_1Grid.html">Grid</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1Grid.html#a185b1b8d02edfe870a457a8e4e3cf8e7">make_output_grid</a> () const</td></tr>
+<tr class="memdesc:a185b1b8d02edfe870a457a8e4e3cf8e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new grid that can be used as an output target.  <a href="classstencil_1_1Grid.html#a185b1b8d02edfe870a457a8e4e3cf8e7">More...</a><br /></td></tr>
 <tr class="separator:a185b1b8d02edfe870a457a8e4e3cf8e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0f83821a1af16c54a3f4f5a3ebb247d6"><td class="memItemLeft" align="right" valign="top"><a id="a0f83821a1af16c54a3f4f5a3ebb247d6"></a>
-<a class="el" href="classstencil_1_1GenericID.html">UID</a>&#160;</td><td class="memItemRight" valign="bottom"><b>get_tile_range</b> () const</td></tr>
+<tr class="memitem:a0f83821a1af16c54a3f4f5a3ebb247d6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classstencil_1_1GenericID.html">UID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1Grid.html#a0f83821a1af16c54a3f4f5a3ebb247d6">get_tile_range</a> () const</td></tr>
+<tr class="memdesc:a0f83821a1af16c54a3f4f5a3ebb247d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the range of (central) tiles of the grid.  <a href="classstencil_1_1Grid.html#a0f83821a1af16c54a3f4f5a3ebb247d6">More...</a><br /></td></tr>
 <tr class="separator:a0f83821a1af16c54a3f4f5a3ebb247d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0fe122916f6cf8317126a7244ea3928b"><td class="memItemLeft" align="right" valign="top"><a id="a0fe122916f6cf8317126a7244ea3928b"></a>
-<a class="el" href="classstencil_1_1GenericID.html">UID</a>&#160;</td><td class="memItemRight" valign="bottom"><b>get_grid_range</b> () const</td></tr>
+<tr class="memitem:a0fe122916f6cf8317126a7244ea3928b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classstencil_1_1GenericID.html">UID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1Grid.html#a0fe122916f6cf8317126a7244ea3928b">get_grid_range</a> () const</td></tr>
+<tr class="memdesc:a0fe122916f6cf8317126a7244ea3928b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the range of the grid in cells.  <a href="classstencil_1_1Grid.html#a0fe122916f6cf8317126a7244ea3928b">More...</a><br /></td></tr>
 <tr class="separator:a0fe122916f6cf8317126a7244ea3928b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af7c08f7871b06df253abc63b90ac99f5"><td class="memItemLeft" align="right" valign="top"><a id="af7c08f7871b06df253abc63b90ac99f5"></a>
-Tile &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>get_tile</b> (<a class="el" href="classstencil_1_1GenericID.html">UID</a> tile_id)</td></tr>
+<tr class="memitem:af7c08f7871b06df253abc63b90ac99f5"><td class="memItemLeft" align="right" valign="top">Tile &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1Grid.html#af7c08f7871b06df253abc63b90ac99f5">get_tile</a> (<a class="el" href="classstencil_1_1GenericID.html">UID</a> tile_id)</td></tr>
+<tr class="memdesc:af7c08f7871b06df253abc63b90ac99f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the tile at the given index.  <a href="classstencil_1_1Grid.html#af7c08f7871b06df253abc63b90ac99f5">More...</a><br /></td></tr>
 <tr class="separator:af7c08f7871b06df253abc63b90ac99f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a19f8aa3dd8f5290594764a1ec92444a1"><td class="memTemplParams" colspan="2"><a id="a19f8aa3dd8f5290594764a1ec92444a1"></a>
-template&lt;typename in_pipe &gt; </td></tr>
-<tr class="memitem:a19f8aa3dd8f5290594764a1ec92444a1"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>submit_tile_input</b> (cl::sycl::queue fpga_queue, <a class="el" href="classstencil_1_1GenericID.html">UID</a> tile_id)</td></tr>
+<tr class="memitem:a19f8aa3dd8f5290594764a1ec92444a1"><td class="memTemplParams" colspan="2">template&lt;typename in_pipe &gt; </td></tr>
+<tr class="memitem:a19f8aa3dd8f5290594764a1ec92444a1"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classstencil_1_1Grid.html#a19f8aa3dd8f5290594764a1ec92444a1">submit_tile_input</a> (cl::sycl::queue fpga_queue, <a class="el" href="classstencil_1_1GenericID.html">UID</a> tile_id)</td></tr>
+<tr class="memdesc:a19f8aa3dd8f5290594764a1ec92444a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Submit the input kernels required for one execution of the <a class="el" href="classstencil_1_1ExecutionKernel.html">ExecutionKernel</a>.  <a href="classstencil_1_1Grid.html#a19f8aa3dd8f5290594764a1ec92444a1">More...</a><br /></td></tr>
 <tr class="separator:a19f8aa3dd8f5290594764a1ec92444a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7fb1cd9c831fe0aa59199a031d94f0cb"><td class="memTemplParams" colspan="2"><a id="a7fb1cd9c831fe0aa59199a031d94f0cb"></a>
-template&lt;typename out_pipe &gt; </td></tr>
-<tr class="memitem:a7fb1cd9c831fe0aa59199a031d94f0cb"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>submit_tile_output</b> (cl::sycl::queue fpga_queue, <a class="el" href="classstencil_1_1GenericID.html">UID</a> tile_id)</td></tr>
+<tr class="memitem:a7fb1cd9c831fe0aa59199a031d94f0cb"><td class="memTemplParams" colspan="2">template&lt;typename out_pipe &gt; </td></tr>
+<tr class="memitem:a7fb1cd9c831fe0aa59199a031d94f0cb"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classstencil_1_1Grid.html#a7fb1cd9c831fe0aa59199a031d94f0cb">submit_tile_output</a> (cl::sycl::queue fpga_queue, <a class="el" href="classstencil_1_1GenericID.html">UID</a> tile_id)</td></tr>
+<tr class="memdesc:a7fb1cd9c831fe0aa59199a031d94f0cb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Submit the output kernels required for one execution of the <a class="el" href="classstencil_1_1ExecutionKernel.html">ExecutionKernel</a>.  <a href="classstencil_1_1Grid.html#a7fb1cd9c831fe0aa59199a031d94f0cb">More...</a><br /></td></tr>
 <tr class="separator:a7fb1cd9c831fe0aa59199a031d94f0cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
-Static Public Attributes</h2></td></tr>
-<tr class="memitem:a9d5a8ca1ff230a6a10160ae0ab187ab4"><td class="memItemLeft" align="right" valign="top"><a id="a9d5a8ca1ff230a6a10160ae0ab187ab4"></a>
-static constexpr uindex_t&#160;</td><td class="memItemRight" valign="bottom"><b>core_height</b> = tile_height - 2 * halo_radius</td></tr>
-<tr class="separator:a9d5a8ca1ff230a6a10160ae0ab187ab4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aca0bc98afaa33f217a60155a1ece2871"><td class="memItemLeft" align="right" valign="top"><a id="aca0bc98afaa33f217a60155a1ece2871"></a>
-static constexpr uindex_t&#160;</td><td class="memItemRight" valign="bottom"><b>core_width</b> = tile_width - 2 * halo_radius</td></tr>
-<tr class="separator:aca0bc98afaa33f217a60155a1ece2871"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><h3>template&lt;typename T, uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius, uindex_t burst_length&gt;<br />
+class stencil::Grid&lt; T, tile_width, tile_height, halo_radius, burst_length &gt;</h3>
+
+<p>A rectangular container of cells with a dynamic, arbitrary size. </p>
+<p>It logically contains the grid the transition function is applied to. As described in <a class="el" href="Architecture.html#tiling">Grid Tiling</a>, it partitions the grid into tiles of static size, which are the units the <a class="el" href="classstencil_1_1ExecutionKernel.html">ExecutionKernel</a> works on.</p>
+<p>Apart from providing copy operations to and from monolithic grid buffers, it also handles the input and output kernel submission for a given tile.</p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">T</td><td>Cell value type. </td></tr>
+    <tr><td class="paramname">tile_width</td><td>The number of columns of a tile. </td></tr>
+    <tr><td class="paramname">tile_height</td><td>The number of rows of a tile. </td></tr>
+    <tr><td class="paramname">halo_radius</td><td>The radius (aka width and height) of the tile halo. </td></tr>
+    <tr><td class="paramname">burst_length</td><td>The number of elements that can be read or written in a burst. </td></tr>
+  </table>
+  </dd>
+</dl>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a0ce935864769f410eea258a2c4241703"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0ce935864769f410eea258a2c4241703">&#9670;&nbsp;</a></span>Grid() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius, uindex_t burst_length&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classstencil_1_1Grid.html">stencil::Grid</a>&lt; T, tile_width, tile_height, halo_radius, burst_length &gt;::<a class="el" href="classstencil_1_1Grid.html">Grid</a> </td>
+          <td>(</td>
+          <td class="paramtype">uindex_t&#160;</td>
+          <td class="paramname"><em>width</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uindex_t&#160;</td>
+          <td class="paramname"><em>height</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Create a grid with undefined contents. </p>
+<p>This constructor is used to create the output grid of a <a class="el" href="classstencil_1_1ExecutionKernel.html">ExecutionKernel</a> invocation. It's contents do not need to be initialized or copied from another buffer since it will override cell values from the execution kernel anyway.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">width</td><td>The number of columns of the grid. </td></tr>
+    <tr><td class="paramname">height</td><td>The number of rows of the grid. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a22d381f8eb7fb558c1afae2d3c11f7eb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a22d381f8eb7fb558c1afae2d3c11f7eb">&#9670;&nbsp;</a></span>Grid() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius, uindex_t burst_length&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classstencil_1_1Grid.html">stencil::Grid</a>&lt; T, tile_width, tile_height, halo_radius, burst_length &gt;::<a class="el" href="classstencil_1_1Grid.html">Grid</a> </td>
+          <td>(</td>
+          <td class="paramtype">cl::sycl::buffer&lt; T, 2 &gt;&#160;</td>
+          <td class="paramname"><em>in_buffer</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Create a grid that contains the cells of a buffer. </p>
+<p>This will allocate enough resources to store the content of the buffer and than copy those cells into the data layout of the grid.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">in_buffer</td><td>The buffer to copy the cells from. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a6d229b90f3f9d1f966c84c0e85e15733"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6d229b90f3f9d1f966c84c0e85e15733">&#9670;&nbsp;</a></span>copy_to()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius, uindex_t burst_length&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classstencil_1_1Grid.html">stencil::Grid</a>&lt; T, tile_width, tile_height, halo_radius, burst_length &gt;::copy_to </td>
+          <td>(</td>
+          <td class="paramtype">cl::sycl::buffer&lt; T, 2 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>out_buffer</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Copy the contents of the grid to a given buffer. </p>
+<p>This buffer has to exactly have the size of the grid, otherwise a range error is thrown.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out_buffer</td><td>The buffer to copy the cells to. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">std::range_error</td><td>The buffer's size is not the same as the grid's size. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a0fe122916f6cf8317126a7244ea3928b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0fe122916f6cf8317126a7244ea3928b">&#9670;&nbsp;</a></span>get_grid_range()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius, uindex_t burst_length&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classstencil_1_1GenericID.html">UID</a> <a class="el" href="classstencil_1_1Grid.html">stencil::Grid</a>&lt; T, tile_width, tile_height, halo_radius, burst_length &gt;::get_grid_range </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Return the range of the grid in cells. </p>
+<p>If the grid was constructed from a buffer, this will be the range of this buffer. If the grid was constructed with width and height arguments, this will be this exact range.</p>
+<dl class="section return"><dt>Returns</dt><dd>The range of cells of the grid. </dd></dl>
+
+</div>
+</div>
+<a id="af7c08f7871b06df253abc63b90ac99f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af7c08f7871b06df253abc63b90ac99f5">&#9670;&nbsp;</a></span>get_tile()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius, uindex_t burst_length&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Tile&amp; <a class="el" href="classstencil_1_1Grid.html">stencil::Grid</a>&lt; T, tile_width, tile_height, halo_radius, burst_length &gt;::get_tile </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classstencil_1_1GenericID.html">UID</a>&#160;</td>
+          <td class="paramname"><em>tile_id</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get the tile at the given index. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">tile_id</td><td>The id of the tile to return. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>The tile. </dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">std::out_of_range</td><td>Thrown if the tile id is outside the range of tiles, as returned by <a class="el" href="classstencil_1_1Grid.html#a0f83821a1af16c54a3f4f5a3ebb247d6">Grid::get_tile_range</a>. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a0f83821a1af16c54a3f4f5a3ebb247d6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0f83821a1af16c54a3f4f5a3ebb247d6">&#9670;&nbsp;</a></span>get_tile_range()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius, uindex_t burst_length&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classstencil_1_1GenericID.html">UID</a> <a class="el" href="classstencil_1_1Grid.html">stencil::Grid</a>&lt; T, tile_width, tile_height, halo_radius, burst_length &gt;::get_tile_range </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Return the range of (central) tiles of the grid. </p>
+<p>This is not the range of a single tile nor is the range of the grid. It is the range of valid arguments for <a class="el" href="classstencil_1_1Grid.html#af7c08f7871b06df253abc63b90ac99f5">Grid::get_tile</a>. For example, if the grid is 60 by 60 cells in size and a tile is 32 by 32 cells in size, the tile range would be 2 by 2 tiles.</p>
+<dl class="section return"><dt>Returns</dt><dd>The range of tiles of the grid. </dd></dl>
+
+</div>
+</div>
+<a id="a185b1b8d02edfe870a457a8e4e3cf8e7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a185b1b8d02edfe870a457a8e4e3cf8e7">&#9670;&nbsp;</a></span>make_output_grid()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius, uindex_t burst_length&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classstencil_1_1Grid.html">Grid</a> <a class="el" href="classstencil_1_1Grid.html">stencil::Grid</a>&lt; T, tile_width, tile_height, halo_radius, burst_length &gt;::make_output_grid </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Create a new grid that can be used as an output target. </p>
+<p>This grid will have the same range as the original grid and will use new buffers.</p>
+<dl class="section return"><dt>Returns</dt><dd>The new grid. </dd></dl>
+
+</div>
+</div>
+<a id="a19f8aa3dd8f5290594764a1ec92444a1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19f8aa3dd8f5290594764a1ec92444a1">&#9670;&nbsp;</a></span>submit_tile_input()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius, uindex_t burst_length&gt; </div>
+<div class="memtemplate">
+template&lt;typename in_pipe &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classstencil_1_1Grid.html">stencil::Grid</a>&lt; T, tile_width, tile_height, halo_radius, burst_length &gt;::submit_tile_input </td>
+          <td>(</td>
+          <td class="paramtype">cl::sycl::queue&#160;</td>
+          <td class="paramname"><em>fpga_queue</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classstencil_1_1GenericID.html">UID</a>&#160;</td>
+          <td class="paramname"><em>tile_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Submit the input kernels required for one execution of the <a class="el" href="classstencil_1_1ExecutionKernel.html">ExecutionKernel</a>. </p>
+<p>This will submit five kernel invocations in total, which are executed in order. Those kernels write the contents of a tile and it's halo to the <code>in_pipe</code>.</p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">in_pipe</td><td>The pipe to write the cells to. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">fpga_queue</td><td>The configured SYCL queue for submissions. </td></tr>
+    <tr><td class="paramname">tile_id</td><td>The id of the tile to read. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">std::out_of_range</td><td>Thrown if the tile id is outside the range of tiles, as returned by <a class="el" href="classstencil_1_1Grid.html#a0f83821a1af16c54a3f4f5a3ebb247d6">Grid::get_tile_range</a>. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a7fb1cd9c831fe0aa59199a031d94f0cb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7fb1cd9c831fe0aa59199a031d94f0cb">&#9670;&nbsp;</a></span>submit_tile_output()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius, uindex_t burst_length&gt; </div>
+<div class="memtemplate">
+template&lt;typename out_pipe &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classstencil_1_1Grid.html">stencil::Grid</a>&lt; T, tile_width, tile_height, halo_radius, burst_length &gt;::submit_tile_output </td>
+          <td>(</td>
+          <td class="paramtype">cl::sycl::queue&#160;</td>
+          <td class="paramname"><em>fpga_queue</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classstencil_1_1GenericID.html">UID</a>&#160;</td>
+          <td class="paramname"><em>tile_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Submit the output kernels required for one execution of the <a class="el" href="classstencil_1_1ExecutionKernel.html">ExecutionKernel</a>. </p>
+<p>This will submit three kernel invocations in total, which are executed in order. Those kernels will write cells from the <code>out_pipe</code> to one of the tiles.</p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">out_pipe</td><td>The pipe to read the cells from. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">fpga_queue</td><td>The configured SYCL queue for submissions. </td></tr>
+    <tr><td class="paramname">tile_id</td><td>The id of the tile to write to. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">std::out_of_range</td><td>Thrown if the tile id is outside the range of tiles, as returned by <a class="el" href="classstencil_1_1Grid.html#a0f83821a1af16c54a3f4f5a3ebb247d6">Grid::get_tile_range</a>. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>StencilStream/<a class="el" href="Grid_8hpp_source.html">Grid.hpp</a></li>
 </ul>

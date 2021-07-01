@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['run_25',['run',['../classstencil_1_1StencilExecutor.html#ab8c99a16a4307919216b9ee4028c89ce',1,'stencil::StencilExecutor']]],
-  ['runtimesample_26',['RuntimeSample',['../classstencil_1_1RuntimeSample.html',1,'stencil']]]
+  ['part_27',['Part',['../classstencil_1_1Tile.html#a19f256c84be0f8db362013da8c70dfc3',1,'stencil::Tile']]]
 ];

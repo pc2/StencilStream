@@ -80,7 +80,8 @@ $(function() {
 : <a class="el" href="classstencil_1_1StencilExecutor.html#ac4e10c3b67e1fd823d9804911818ee13">stencil::StencilExecutor&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;</a>
 </li>
 <li>copy_to()
-: <a class="el" href="classstencil_1_1Tile.html#af07f24950d66fa4067f925b7ddacca99">stencil::Tile&lt; T, width, height, halo_radius, burst_length &gt;</a>
+: <a class="el" href="classstencil_1_1Grid.html#a6d229b90f3f9d1f966c84c0e85e15733">stencil::Grid&lt; T, tile_width, tile_height, halo_radius, burst_length &gt;</a>
+, <a class="el" href="classstencil_1_1Tile.html#af07f24950d66fa4067f925b7ddacca99">stencil::Tile&lt; T, width, height, halo_radius, burst_length &gt;</a>
 </li>
 <li>CounterID()
 : <a class="el" href="classstencil_1_1CounterID.html#a70d3ee8130418cf23a7ab54791cc5c83">stencil::CounterID&lt; T &gt;</a>
@@ -100,7 +101,8 @@ $(function() {
 : <a class="el" href="classstencil_1_1Stencil.html#a30c93703e9bec334cec54dd5efd2bd5f">stencil::Stencil&lt; T, radius &gt;</a>
 </li>
 <li>get_grid_range()
-: <a class="el" href="classstencil_1_1StencilExecutor.html#a6ac08b58cf49f50190a70156a2a8a0e8">stencil::StencilExecutor&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;</a>
+: <a class="el" href="classstencil_1_1Grid.html#a0fe122916f6cf8317126a7244ea3928b">stencil::Grid&lt; T, tile_width, tile_height, halo_radius, burst_length &gt;</a>
+, <a class="el" href="classstencil_1_1StencilExecutor.html#a6ac08b58cf49f50190a70156a2a8a0e8">stencil::StencilExecutor&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;</a>
 </li>
 <li>get_halo_value()
 : <a class="el" href="classstencil_1_1StencilExecutor.html#af115390f7843c324ddbf50b805b480f3">stencil::StencilExecutor&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;</a>
@@ -117,12 +119,28 @@ $(function() {
 <li>get_runtime_sample()
 : <a class="el" href="classstencil_1_1StencilExecutor.html#afd93ce87e5893497f8ef07b26ac9800d">stencil::StencilExecutor&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;</a>
 </li>
+<li>get_tile()
+: <a class="el" href="classstencil_1_1Grid.html#af7c08f7871b06df253abc63b90ac99f5">stencil::Grid&lt; T, tile_width, tile_height, halo_radius, burst_length &gt;</a>
+</li>
+<li>get_tile_range()
+: <a class="el" href="classstencil_1_1Grid.html#a0f83821a1af16c54a3f4f5a3ebb247d6">stencil::Grid&lt; T, tile_width, tile_height, halo_radius, burst_length &gt;</a>
+</li>
+<li>Grid()
+: <a class="el" href="classstencil_1_1Grid.html#a0ce935864769f410eea258a2c4241703">stencil::Grid&lt; T, tile_width, tile_height, halo_radius, burst_length &gt;</a>
+</li>
 </ul>
 
 
 <h3><a id="index_i"></a>- i -</h3><ul>
 <li>id
 : <a class="el" href="classstencil_1_1Stencil.html#a785936fff224b3d16b0039d07540ddc9">stencil::Stencil&lt; T, radius &gt;</a>
+</li>
+</ul>
+
+
+<h3><a id="index_m"></a>- m -</h3><ul>
+<li>make_output_grid()
+: <a class="el" href="classstencil_1_1Grid.html#a185b1b8d02edfe870a457a8e4e3cf8e7">stencil::Grid&lt; T, tile_width, tile_height, halo_radius, burst_length &gt;</a>
 </li>
 </ul>
 
@@ -188,6 +206,12 @@ $(function() {
 </li>
 <li>StencilExecutor()
 : <a class="el" href="classstencil_1_1StencilExecutor.html#af38d8ec6180eddc4ac26320f657d07c8">stencil::StencilExecutor&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;</a>
+</li>
+<li>submit_tile_input()
+: <a class="el" href="classstencil_1_1Grid.html#a19f8aa3dd8f5290594764a1ec92444a1">stencil::Grid&lt; T, tile_width, tile_height, halo_radius, burst_length &gt;</a>
+</li>
+<li>submit_tile_output()
+: <a class="el" href="classstencil_1_1Grid.html#a7fb1cd9c831fe0aa59199a031d94f0cb">stencil::Grid&lt; T, tile_width, tile_height, halo_radius, burst_length &gt;</a>
 </li>
 </ul>
 
