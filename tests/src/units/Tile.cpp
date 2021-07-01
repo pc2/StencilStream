@@ -52,7 +52,7 @@ void copy_from_test_impl(uindex_t tile_width, uindex_t tile_height)
     }
 
     TileImpl tile;
-    tile.copy_from(in_buffer.get_access<access::mode::read_write>(), id<2>(0, 0));
+    tile.copy_from(in_buffer, id<2>(0, 0));
 
     for (TileImpl::Part part : TileImpl::all_parts)
     {
@@ -126,7 +126,7 @@ void copy_to_test_impl(uindex_t tile_width, uindex_t tile_height)
     }
 
     buffer<ID, 2> out_buffer(range<2>(tile_width, tile_height));
-    tile.copy_to(out_buffer.get_access<access::mode::read_write>(), id<2>(0, 0));
+    tile.copy_to(out_buffer, id<2>(0, 0));
 
     auto out_buffer_ac = out_buffer.get_access<access::mode::read>();
     for (uindex_t c = 0; c < tile_width; c++)

@@ -45,13 +45,12 @@ public:
             throw std::range_error("The target buffer has not the same size as the grid");
         }
 
-        auto out_buffer_ac = out_buffer.template get_access<cl::sycl::access::mode::read_write>();
         for (uindex_t tile_column = 1; tile_column < tiles.size() - 1; tile_column++)
         {
             for (uindex_t tile_row = 1; tile_row < tiles[tile_column].size() - 1; tile_row++)
             {
                 cl::sycl::id<2> offset((tile_column - 1) * tile_width, (tile_row - 1) * tile_height);
-                tiles[tile_column][tile_row].copy_to(out_buffer_ac, offset);
+                tiles[tile_column][tile_row].copy_to(out_buffer, offset);
             }
         }
     }
@@ -245,13 +244,12 @@ private:
 
         allocate_tiles();
 
-        auto in_buffer_ac = in_buffer.template get_access<cl::sycl::access::mode::read_write>();
         for (uindex_t tile_column = 1; tile_column < tiles.size() - 1; tile_column++)
         {
             for (uindex_t tile_row = 1; tile_row < tiles[tile_column].size() - 1; tile_row++)
             {
                 cl::sycl::id<2> offset((tile_column - 1) * tile_width, (tile_row - 1) * tile_height);
-                tiles[tile_column][tile_row].copy_from(in_buffer_ac, offset);
+                tiles[tile_column][tile_row].copy_from(in_buffer, offset);
             }
         }
     }

@@ -16,6 +16,20 @@
 
 namespace stencil
 {
+
+/**
+ * \brief A rectangular container of cells with a static size
+ * 
+ * StencilStream tiles the grid and the \ref ExecutionKernel works with those tiles: it receives the content of a tile (together with it's halo) and emits the contents of a tile. A tile is partitioned in four corner buffers, four border buffers and one core buffer. This is done to provide easy access to the halo of a tile. Have a look at the \ref Architecture for more details of the data layout.
+ * 
+ * This tile manager supports copy operations to and from monolithic, user-supplied buffers, as well as an index operation to access the individual parts.
+ * 
+ * \tparam T Cell value type.
+ * \tparam width The number of columns of the tile.
+ * \tparam height The number of rows of the tile.
+ * \tparam halo_radius The radius (aka width and height) of the tile halo.
+ * \tparam burst_length The number of elements that can read and written in a burst.
+ */
 template <typename T, uindex_t width, uindex_t height, uindex_t halo_radius, uindex_t burst_length>
 class Tile
 {
@@ -23,8 +37,16 @@ class Tile
     static_assert(height > 2 * halo_radius);
 
 public:
+    /**
+     * \brief Create a new tile.
+     * 
+     * Logically, the contents of the newly created tile are undefined since no memory resources are allocated during construction and no initialization is done by the indexing operation.
+     */
     Tile() : part{std::nullopt} {}
 
+    /**
+     * \brief Enumeration to address individual parts of the tile.
+     */
     enum class Part
     {
         NORTH_WEST_CORNER,
@@ -38,6 +60,9 @@ public:
         CORE,
     };
 
+    /**
+     * \brief Array with all \ref Part variants to allow iteration over them.
+     */
     static constexpr Part all_parts[] = {
         Part::NORTH_WEST_CORNER,
         Part::NORTH_BORDER,
@@ -50,6 +75,12 @@ public:
         Part::CORE,
     };
 
+    /**
+     * \brief Calculate the range of a given Part.
+     * 
+     * \param part The part to calculate the range for.
+     * \return The range of the part, used for example to allocate it.
+     */
     static cl::sycl::range<2> get_part_range(Part part)
     {
         switch (part)
@@ -72,6 +103,12 @@ public:
         }
     }
 
+    /**
+     * \brief Calculate the index offset of a given part relative to the north-western corner of the tile.
+     * 
+     * \param part The part to calcute the offset for.
+     * \return The offset of the part.
+     */
     static cl::sycl::id<2> get_part_offset(Part part)
     {
         switch (part)
@@ -99,6 +136,14 @@ public:
         }
     }
 
+    /**
+     * \brief Return the buffer with the contents of the given part.
+     * 
+     * If the part has not been accessed before, it will allocate the part's buffer. Note however that this method does not initialize the buffer.
+     * 
+     * \param tile_part The part to access.
+     * \return The buffer of the part.
+     */
     cl::sycl::buffer<T, 2> operator[](Part tile_part)
     {
         uindex_t part_column, part_row;
@@ -157,9 +202,17 @@ public:
         return *part[part_column][part_row];
     }
 
-    template <cl::sycl::access::target access_target>
-    void copy_from(cl::sycl::accessor<T, 2, cl::sycl::access::mode::read_write, access_target> accessor, cl::sycl::id<2> offset)
+    /**
+     * \brief Copy the contents of a buffer into the tile.
+     * 
+     * This will take the buffer section `[offset[0] : min(grid_width, offset[0] + tile_width)) x [offset[1] : min(grid_height, offset[1] + tile_height))` and copy it to the tile. This means that if the grid does not contain enough cells to fill the whole tile, those missing cells are left as-is.
+     * 
+     * \param buffer The buffer to copy the data from.
+     * \param offset The offset of the buffer section relative to the origin of the buffer.
+     */
+    void copy_from(cl::sycl::buffer<T, 2> buffer, cl::sycl::id<2> offset)
     {
+        auto accessor = buffer.template get_access<cl::sycl::access::mode::read_write>();
         copy_part(accessor, Part::NORTH_WEST_CORNER, offset, true);
         copy_part(accessor, Part::NORTH_BORDER, offset, true);
         copy_part(accessor, Part::NORTH_EAST_CORNER, offset, true);
@@ -171,9 +224,17 @@ public:
         copy_part(accessor, Part::CORE, offset, true);
     }
 
-    template <cl::sycl::access::target access_target>
-    void copy_to(cl::sycl::accessor<T, 2, cl::sycl::access::mode::read_write, access_target> accessor, cl::sycl::id<2> offset)
+    /**
+     * \brief Copy the contents of the tile to a buffer.
+     * 
+     * This will take the tile section `[0 : min(tile_width, grid_width - offset[0])) x [0 : min(tile_height, grid_height - offset[1]))` and copy it to the buffer section `[offset[0] : min(grid_width, offset[0] + tile_width)) x [offset[1] : min(grid_height, offset[1] + tile_height))`. This means that if the tile plus the offset is wider or higher than the grid, those superflous cells are ignored.
+     * 
+     * \param buffer The buffer to copy the data to.
+     * \param offset The offset of the buffer section relative to the origin of the buffer.
+     */
+    void copy_to(cl::sycl::buffer<T, 2> buffer, cl::sycl::id<2> offset)
     {
+        auto accessor = buffer.template get_access<cl::sycl::access::mode::read_write>();
         copy_part(accessor, Part::NORTH_WEST_CORNER, offset, false);
         copy_part(accessor, Part::NORTH_BORDER, offset, false);
         copy_part(accessor, Part::NORTH_EAST_CORNER, offset, false);
@@ -186,8 +247,14 @@ public:
     }
 
 private:
-    template <cl::sycl::access::target access_target>
-    void copy_part(cl::sycl::accessor<T, 2, cl::sycl::access::mode::read_write, access_target> accessor, Part part, cl::sycl::id<2> global_offset, bool buffer_to_part)
+    /**
+     * \brief Helper function to copy a part to or from a buffer.
+     */
+    void copy_part(
+        cl::sycl::accessor<T, 2, cl::sycl::access::mode::read_write, cl::sycl::access::target::host_buffer> accessor,
+        Part part,
+        cl::sycl::id<2> global_offset,
+        bool buffer_to_part)
     {
         cl::sycl::id<2> offset = global_offset + get_part_offset(part);
         if (offset[0] >= accessor.get_range()[0] || offset[1] >= accessor.get_range()[1])
