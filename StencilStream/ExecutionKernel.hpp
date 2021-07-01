@@ -17,11 +17,18 @@ namespace stencil
 {
 
 /**
- * A core that executes a stencil transition function on a tile.
+ * \brief A kernel that executes a stencil transition function on a tile.
  * 
- * This core iterates over the rows first and over the columns second due to the way the cells are fed to it by the IO kernels.
+ * It receives the contents of a tile and it's halo from the `in_pipe`, applies the transition function when applicable and writes the result to the `out_pipe`.
  * 
- * The columns that are covered by the stencil are stored in a cache and are used again when the iteration reaches a new coloum.
+ * \tparam TransFunc The type of transition function to use.
+ * \tparam T Cell value type.
+ * \tparam stencil_radius The static, maximal Chebyshev distance of cells in a stencil to the central cell
+ * \tparam pipeline_length The number of pipeline stages to use. Similar to an unroll factor for a loop.
+ * \tparam output_tile_width The number of columns in a grid tile.
+ * \tparam output_tile_height The number of rows in a grid tile.
+ * \tparam in_pipe The pipe to read from.
+ * \tparam out_pipe The pipe to write to.
  */
 template <typename TransFunc, typename T, uindex_t stencil_radius, uindex_t pipeline_length, uindex_t output_tile_width, uindex_t output_tile_height, typename in_pipe, typename out_pipe>
 class ExecutionKernel
@@ -32,11 +39,37 @@ public:
             value);
     static_assert(stencil_radius >= 1);
 
+    /**
+     * \brief The width and height of the stencil buffer.
+     */
     const static uindex_t stencil_diameter = Stencil<T, stencil_radius>::diameter;
+
+    /**
+     * \brief The total number of cells to read from the `in_pipe`.
+     */
     const static uindex_t n_input_cells = (2 * stencil_radius * pipeline_length + output_tile_width) * (2 * stencil_radius * pipeline_length + output_tile_height);
+
+    /**
+     * \brief The width of the processed tile with the tile halo attached.
+     */
     const static uindex_t input_tile_width = 2 * stencil_radius * pipeline_length + output_tile_width;
+
+    /**
+     * \brief The height of the processed tile with the tile halo attached.
+     */
     const static uindex_t input_tile_height = 2 * stencil_radius * pipeline_length + output_tile_height;
 
+    /**
+     * \brief Create and configure the execution kernel.
+     * 
+     * \param trans_func The instance of the transition function to use.
+     * \param i_generation The generation index of the input cells.
+     * \param n_generations The number of generations to compute. If this number is bigger than `pipeline_length`, only `pipeline_length` generations will be computed.
+     * \param grid_c_offset The column offset of the processed tile relative to the grid's origin, not including the halo. For example, for the most north-western tile the offset will always be (0,0), not (-halo_radius,-halo_radius)
+     * \param grid_r_offset The row offset of the processed tile relative to the grid's origin. See `grid_c_offset` for details.
+     * \param grid_width The number of cell columns in the grid.
+     * \param grid_height The number of cell rows in the grid.
+     */
     ExecutionKernel(
         TransFunc trans_func,
         uindex_t i_generation,
@@ -56,6 +89,9 @@ public:
     {
     }
 
+    /**
+     * \brief Execute the configured operations.
+     */
     void operator()() const
     {
         uindex_t input_tile_c = 0;
@@ -72,7 +108,7 @@ public:
 #pragma unroll
             for (uindex_t stage = 0; stage < pipeline_length; stage++)
             {
-                /**
+                /*
                  * Shift up every value in the stencil_buffer.
                  * This operation does not touch the values in the bottom row, which will be filled
                  * from the cache and the new input value later.
