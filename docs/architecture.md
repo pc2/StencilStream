@@ -1,4 +1,4 @@
-# Architecture
+# Architecture {#Architecture}
 
 ### Terminology {#terms}
 
@@ -52,13 +52,13 @@ for (uindex_t c = 0; c < grid_width; c++)
 }
 ```
 
-### Architecture {#model}
+### General Approach {#approach}
 
 The general goal of a stencil execution engine like StencilStream is to calculate a certain generation of a grid of cells where a single generation step of a single cell is computed from cell's neighbourhood (contained in the stencil). This is repeated iteratively over all cells of the grid and for all generations up to the desired generation.
 
 However, the naïve approach of storing all cells in a buffer and reading the neihbourhood directly from this buffer doesn't work well for FPGAs. StencilStream therefore uses an approach introduced by [Hamid Reza Zohouri, Artur Podobas and Satoshi Matsuoka](https://dl.acm.org/doi/pdf/10.1145/3174243.3174248) that uses a spatially tiled buffer and temporal caching to perform the computations.
 
-#### Tile-wise computation {#tiles}
+#### Tile-wise computation {#tilecomputation}
 
 Let's look at the simplest case first: There is a tile and we want to calculate the it's next generation. StencilStream splits up this task into an input kernel, an execution kernel and an output kernel. They communicate via on-chip FIFO pipe and the input kernel receives access to the current generation of the tile while the output kernel receives access to buffers for the next generation of the tile. The input kernel reads the cells from the buffer column-wise (as discussed in ["Indexing and Iteration order"](#index)) and sends them to the execution kernel.
 
@@ -85,3 +85,7 @@ Note that the shapes of tiles and their buffers is static, but the number of til
 The last missing concept is StencilStream's grid halo handling. As one can see in the figure above, there are no neighbouring cells for all cells of the grid: There are no further cells at the northern and western edge of the grid and there are additional cells east and south of the grid. These cells belong to the grid halo and their value depends on the transition function in use. Some transition functions can simply leave those cells undefined and ignore them, some can use a default value and some might require something compldifferent.
 
 StencilStream currently only supports transition functions with a default value, which is a superset of those that ignore missing cells. This default value, also known as halo value, is set in the `StencilExecutor` and StencilStream guarantees that this halo value will be present whenever a cell outside of a grid is accessed.
+
+#### Burst-aligned buffers {#burstalignment}
+
+One last concept of note is the layout of the buffers themselves: The global memory interface of most FPGAs support burst accesses where a specific number of bytes can be read or written in one transaction. Therefore, those interfaces are most efficient when all memory accesses are organizsed in such bursts. StencilStream ensures this by using two-dimensional buffers with the "height" of one memory burst.

@@ -28,7 +28,7 @@ namespace stencil
  * \tparam width The number of columns of the tile.
  * \tparam height The number of rows of the tile.
  * \tparam halo_radius The radius (aka width and height) of the tile halo.
- * \tparam burst_length The number of elements that can read and written in a burst.
+ * \tparam burst_length The number of elements that can be read or written in a burst.
  */
 template <typename T, uindex_t width, uindex_t height, uindex_t halo_radius, uindex_t burst_length>
 class Tile
@@ -139,7 +139,7 @@ public:
     /**
      * \brief Return the buffer with the contents of the given part.
      * 
-     * If the part has not been accessed before, it will allocate the part's buffer. Note however that this method does not initialize the buffer.
+     * If the part has not been accessed before, it will allocate the part's buffer. Note however that this method does not initialize the buffer. Please also note that the buffer is burst-aligned: The height of the returned buffer (the second value of the range) is always `burst_length` and the width is big enough to store all required cells of the part. For more information, read about \ref burstalignment.
      * 
      * \param tile_part The part to access.
      * \return The buffer of the part.
