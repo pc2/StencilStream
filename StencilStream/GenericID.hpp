@@ -15,35 +15,60 @@ namespace stencil
 {
 
 /**
- * A generic, two-dimensional index.
+ * \brief A generic, two-dimensional index.
+ * 
+ * \tparam The index type. It can be anything as long as it can be constructed from a dimension of `cl::sycl::id` and tested for equality.
  */
 template <typename T>
 class GenericID
 {
 public:
+    /**
+     * \brief Create a new index with undefined contents.
+     */
     GenericID() : c(), r() {}
 
+    /**
+     * \brief Create a new index with the given column and row indices.
+     */
     GenericID(T column, T row) : c(column), r(row) {}
 
+    /**
+     * \brief Convert the SYCL ID.
+     */
     GenericID(cl::sycl::id<2> sycl_id) : c(sycl_id[0]), r(sycl_id[1]) {}
 
+    /**
+     * \brief Convert the SYCl range.
+     */
     GenericID(cl::sycl::range<2> sycl_range) : c(sycl_range[0]), r(sycl_range[1]) {}
 
+    /**
+     * \brief Test if the other generic ID has equivalent coordinates to this ID.
+     */
     bool operator==(GenericID const &other) const
     {
         return this->c == other.c && this->r == other.r;
     }
 
-    T c, r;
+    /** 
+     * \brief The column index.
+     */
+    T c;
+
+    /**
+     * \brief The row index.
+     */
+    T r;
 };
 
 /**
- * A signed, two-dimensional index.
+ * \brief A signed, two-dimensional index.
  */
 typedef GenericID<index_t> ID;
 
 /**
- * An unsigned, two-dimensional index.
+ * \brief An unsigned, two-dimensional index.
  */
 typedef GenericID<uindex_t> UID;
 

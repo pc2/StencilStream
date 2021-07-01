@@ -15,16 +15,46 @@
 
 namespace stencil
 {
+/**
+ * \brief Collection of SYCL events from a \ref StencilExecutor.run invocation.
+ * 
+ * It's interface might be extended in the future to support more in-depth analysis. Now, it can analyse the runtime of a single execution kernel invocation as well as the total runtime of all passes.
+ */
 class RuntimeSample
 {
 public:
+    /**
+     * \brief Prepare the collection of SYCL events.
+     * 
+     * \param n_passes The number times the execution kernel is invoced per tile.
+     * \param n_tile_columns The number of tile columns.
+     * \param n_tile_rows The number of tile rows.
+     */
     RuntimeSample(uindex_t n_passes, uindex_t n_tile_columns, uindex_t n_tile_rows) : events(boost::extents[n_passes][n_tile_columns][n_tile_rows]) {}
 
+    /**
+     * \brief Add an event to the collection.
+     * 
+     * \param event The event to add.
+     * \param i_pass The index of the grid pass.
+     * \param i_column The index of the tile column.
+     * \param i_row The index of the tile row.
+     */
     void add_event(cl::sycl::event event, uindex_t i_pass, uindex_t i_column, uindex_t i_row)
     {
         events[i_pass][i_column][i_row] = event;
     }
 
+    /**
+     * \brief Calculate the runtime of the specified event.
+     * 
+     * If the event has not been added with \ref RuntimeSample.add_event before, the resulting value is undefined.
+     * 
+     * \param i_pass The index of the grid pass.
+     * \param i_column The index of the tile column.
+     * \param i_row The index of the tile row.
+     * \return The runtime of the specified event, in seconds.
+     */
     double get_runtime(uindex_t i_pass, uindex_t i_column, uindex_t i_row)
     {
         unsigned long event_start = events[i_pass][i_column][i_row].get_profiling_info<cl::sycl::info::event_profiling::command_start>();
@@ -32,6 +62,13 @@ public:
         return (event_end - event_start) / timesteps_per_second;
     }
 
+    /**
+     * \brief Calculate the total runtime of all passes.
+     * 
+     * This iterates through all known events, finds the earliest start and latest end and returns the time difference between them.
+     * 
+     * \return The total wall time in seconds it took to execute all passes.
+     */
     double get_total_runtime()
     {
         unsigned long earliest_start = std::numeric_limits<unsigned long>::max();
