@@ -1,4 +1,4 @@
-# Architecture
+# Architecture {#Architecture}
 
 ### Terminology {#terms}
 
@@ -85,3 +85,7 @@ Note that the shapes of tiles and their buffers is static, but the number of til
 The last missing concept is StencilStream's grid halo handling. As one can see in the figure above, there are no neighbouring cells for all cells of the grid: There are no further cells at the northern and western edge of the grid and there are additional cells east and south of the grid. These cells belong to the grid halo and their value depends on the transition function in use. Some transition functions can simply leave those cells undefined and ignore them, some can use a default value and some might require something compldifferent.
 
 StencilStream currently only supports transition functions with a default value, which is a superset of those that ignore missing cells. This default value, also known as halo value, is set in the `StencilExecutor` and StencilStream guarantees that this halo value will be present whenever a cell outside of a grid is accessed.
+
+#### Burst-aligned buffers {#burstalignment}
+
+One last concept of note is the layout of the buffers themselves: The global memory interface of most FPGAs support burst accesses where a specific number of bytes can be read or written in one transaction. Therefore, those interfaces are most efficient when all memory accesses are organizsed in such bursts. StencilStream ensures this by using two-dimensional buffers with the "height" of one memory burst.
