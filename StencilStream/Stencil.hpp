@@ -17,11 +17,11 @@ namespace stencil
 /**
  * \brief The stencil buffer.
  * 
- * The stencil buffer contains the extended moore neighbourhood of a central cell and is used by the transition function to
+ * The stencil buffer contains the extended Moore neighborhood of a central cell and is used by the transition function to
  * calculate the next generation of the central cell.
  * 
- * This implementation provides two ways to index the stencil: With an `ID` and a `UID`. Since `ID` is signed, the column and row axies are within the range of [-radius : radius].
- * Therefore, (0,0) points to the central cell. `UID` is unsigned and the column and row axies are within the range of [0 : 2*radius + 1). Therefore, (0,0) points to the north-western corner of the stencil.
+ * This implementation provides two ways to index the stencil: With an `ID` and a `UID`. Since `ID` is signed, the column and row axes are within the range of [-radius : radius].
+ * Therefore, (0,0) points to the central cell. `UID` is unsigned and the column and row axes are within the range of [0 : 2*radius + 1). Therefore, (0,0) points to the north-western corner of the stencil.
  */
 template <typename T, uindex_t radius>
 class Stencil
@@ -106,8 +106,8 @@ public:
      * 
      * The stage index is added to the generation index of the input tile to get the generation
      * index of this stencil. Under the assumption that the pipeline was always fully executed, it
-     * equals to `generation % pipeline_length`. Since it is hardcoded in the final design, it can
-     * be used to alternate between two different datapaths: When you write something like this
+     * equals to `generation % pipeline_length`. Since it is hard coded in the final design, it can
+     * be used to alternate between two different data paths: When you write something like this
      * ```
      * if (stencil.stage & 0b1 == 0)
      * {

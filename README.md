@@ -40,7 +40,7 @@ const Cell halo_value = false;
 const stencil::uindex_t stencil_radius = 1;
 ```
 
-Next are some important definitions: The cell type, the value of cells in the grid halo, and the radius of the stencil buffer. In our example, a cell is either alive or dead. We express that with a boolean value which is true if the cell is alive and false if it is dead. The cells are arranged in a grid, but in order to update the cells on the borders of the grid, we need cells *outside* of the grid. StencilStream assures that these cells always have a constant halo value. If this halo value and the transition function is well-chosen, we don't have to do any edge handling. Here, we assume that cells outside of the grid to be always dead, so we pick the halo value `false`. The radius of the stencil defines how many neighbours of a cell we need to calculate the next generation. In our case, we only need the direct neighbours, so we set the radius to 1. This means that the stencil buffer will be 3 by 3 cells big.
+Next are some important definitions: The cell type, the value of cells in the grid halo, and the radius of the stencil buffer. In our example, a cell is either alive or dead. We express that with a boolean value which is true if the cell is alive and false if it is dead. The cells are arranged in a grid, but in order to update the cells on the borders of the grid, we need cells *outside* of the grid. StencilStream assures that these cells always have a constant halo value. If this halo value and the transition function is well-chosen, we don't have to do any edge handling. Here, we assume that cells outside of the grid to be always dead, so we pick the halo value `false`. The radius of the stencil defines how many neighbors of a cell we need to calculate the next generation. In our case, we only need the direct neighbors, so we set the radius to 1. This means that the stencil buffer will be 3 by 3 cells big.
 
 This is everything we need to define the transition function, so let's do it now:
 
@@ -71,7 +71,7 @@ The first argument is the stencil buffer itself and the second argument is a str
     }
 ```
 
-First, we count the living neighbours since their numbers decides the fate of our cell. The `for`-loops for that are completely unrolled, which means that these evaluations will be carried out in parallel.
+First, we count the living neighbors since their numbers decides the fate of our cell. The `for`-loops for that are completely unrolled, which means that these evaluations will be carried out in parallel.
 
 ``` C++
     if (stencil[stencil::ID(0, 0)])
@@ -85,7 +85,7 @@ First, we count the living neighbours since their numbers decides the fate of ou
 };
 ```
 
-Now we know how many of our neighbours are alive and can therefore return the new cell value according to [the rules of the game](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life#Rules).
+Now we know how many of our neighbors are alive and can therefore return the new cell value according to [the rules of the game](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life#Rules).
 
 ``` C++
 cl::sycl::buffer<Cell, 2> read(stencil::uindex_t width, stencil::uindex_t height)
@@ -215,7 +215,7 @@ conway_hw.report.tar.gz: conway.cpp Makefile
 clean:
 	git clean -dXf
 ```
-If you just run `make conway_emu`, an emulation image will be created that can be executed on the CPU to verify your code. If you want to synthesize the design for your FPGA, you have to run `make conway_hw`. However, this might take a lot of time and therefore, you should first generate a design report to evaluate th performance of the design and estimate the compilation time. You do this by running `make conway_hw.report.tar.gz`.
+If you just run `make conway_emu`, an emulation image will be created that can be executed on the CPU to verify your code. If you want to synthesize the design for your FPGA, you have to run `make conway_hw`. However, this might take a lot of time and therefore, you should first generate a design report to evaluate the performance of the design and estimate the compilation time. You do this by running `make conway_hw.report.tar.gz`.
 
 ### Going further
 

@@ -203,7 +203,7 @@ public:
     /**
      * \brief Manually set the SYCL queue to use for execution.
      * 
-     * Note that as of OneAPI Version 2021.1.1, device code is usuallly built either for CPU/GPU, for the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will lead to exceptions.
+     * Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will lead to exceptions.
      * 
      * In order to use runtime analysis features, the queue has to be configured with the `cl::sycl::property::queue::enable_profiling` property.
      * 
@@ -238,7 +238,7 @@ public:
     }
 
     /**
-     * \brief Set up a SYCL queue with the FPGA emulator device and optional runtime analyis.
+     * \brief Set up a SYCL queue with the FPGA emulator device and optional runtime analysis.
      * 
      * Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will lead to exceptions.
      * 
@@ -251,7 +251,7 @@ public:
     }
 
     /**
-     * \brief Set up a SYCL queue with an FPGA device and optional runtime analyis.
+     * \brief Set up a SYCL queue with an FPGA device and optional runtime analysis.
      * 
      * Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will lead to exceptions.
      * 

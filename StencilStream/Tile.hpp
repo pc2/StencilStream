@@ -106,7 +106,7 @@ public:
     /**
      * \brief Calculate the index offset of a given part relative to the north-western corner of the tile.
      * 
-     * \param part The part to calcute the offset for.
+     * \param part The part to calculate the offset for.
      * \return The offset of the part.
      */
     static cl::sycl::id<2> get_part_offset(Part part)
@@ -227,7 +227,7 @@ public:
     /**
      * \brief Copy the contents of the tile to a buffer.
      * 
-     * This will take the tile section `[0 : min(tile_width, grid_width - offset[0])) x [0 : min(tile_height, grid_height - offset[1]))` and copy it to the buffer section `[offset[0] : min(grid_width, offset[0] + tile_width)) x [offset[1] : min(grid_height, offset[1] + tile_height))`. This means that if the tile plus the offset is wider or higher than the grid, those superflous cells are ignored.
+     * This will take the tile section `[0 : min(tile_width, grid_width - offset[0])) x [0 : min(tile_height, grid_height - offset[1]))` and copy it to the buffer section `[offset[0] : min(grid_width, offset[0] + tile_width)) x [offset[1] : min(grid_height, offset[1] + tile_height))`. This means that if the tile plus the offset is wider or higher than the grid, those superfluous cells are ignored.
      * 
      * \param buffer The buffer to copy the data to.
      * \param offset The offset of the buffer section relative to the origin of the buffer.
