@@ -219,4 +219,4 @@ If you just run `make conway_emu`, an emulation image will be created that can b
 
 ### Going further
 
-TBD
+This example only showed the general way StencilStream is used. More optimised and non-trivial examples can be found in the [examples folder](https://github.com/pc2/StencilStream/tree/master/examples). However, in order to fully understand the way StencilStream works and to optimize your application, you should take a look at [the documentation](https://pc2.github.io/StencilStream/index.html) and especially at the [architecture document](https://pc2.github.io/StencilStream/Architecture.html). Future releases will also feature an optimization guide that discusses the different optimization parameters and gives advice for good designs.
