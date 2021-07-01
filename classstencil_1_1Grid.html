@@ -441,7 +441,7 @@ template&lt;typename in_pipe &gt; </div>
 </div><div class="memdoc">
 
 <p>Submit the input kernels required for one execution of the <a class="el" href="classstencil_1_1ExecutionKernel.html">ExecutionKernel</a>. </p>
-<p>This will submit five kernel invocations in total, which are executed in order. Those kernels write the contents of a tile and it's halo to the <code>in_pipe</code>.</p>
+<p>This will submit five <a class="el" href="classstencil_1_1IOKernel.html">IOKernel</a> invocations in total, which are executed in order. Those kernels write the contents of a tile and it's halo to the <code>in_pipe</code>.</p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
     <tr><td class="paramname">in_pipe</td><td>The pipe to write the cells to. </td></tr>
@@ -503,7 +503,7 @@ template&lt;typename out_pipe &gt; </div>
 </div><div class="memdoc">
 
 <p>Submit the output kernels required for one execution of the <a class="el" href="classstencil_1_1ExecutionKernel.html">ExecutionKernel</a>. </p>
-<p>This will submit three kernel invocations in total, which are executed in order. Those kernels will write cells from the <code>out_pipe</code> to one of the tiles.</p>
+<p>This will submit three <a class="el" href="classstencil_1_1IOKernel.html">IOKernel</a> invocations in total, which are executed in order. Those kernels will write cells from the <code>out_pipe</code> to one of the tiles.</p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
     <tr><td class="paramname">out_pipe</td><td>The pipe to read the cells from. </td></tr>

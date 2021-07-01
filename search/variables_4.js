@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['stage_89',['stage',['../classstencil_1_1Stencil.html#a8093140b6072d63855f7853a34b12991',1,'stencil::Stencil']]]
+  ['n_5fbuffers_98',['n_buffers',['../classstencil_1_1IOKernel.html#a8bdece85037fda6a4c7e61c2cf5769a0',1,'stencil::IOKernel']]],
+  ['n_5frows_99',['n_rows',['../classstencil_1_1IOKernel.html#a28404970fdb4ab5c356dd0fb1a2a48ff',1,'stencil::IOKernel']]]
 ];
