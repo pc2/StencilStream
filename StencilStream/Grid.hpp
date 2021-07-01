@@ -150,7 +150,7 @@ public:
     /**
      * \brief Submit the input kernels required for one execution of the \ref ExecutionKernel.
      * 
-     * This will submit five kernel invocations in total, which are executed in order. Those kernels write the contents of a tile and it's halo to the `in_pipe`. 
+     * This will submit five \ref IOKernel invocations in total, which are executed in order. Those kernels write the contents of a tile and it's halo to the `in_pipe`. 
      * 
      * \tparam in_pipe The pipe to write the cells to.
      * \param fpga_queue The configured SYCL queue for submissions.
@@ -222,7 +222,7 @@ public:
     /**
      * \brief Submit the output kernels required for one execution of the \ref ExecutionKernel.
      * 
-     * This will submit three kernel invocations in total, which are executed in order. Those kernels will write cells from the `out_pipe` to one of the tiles.
+     * This will submit three \ref IOKernel invocations in total, which are executed in order. Those kernels will write cells from the `out_pipe` to one of the tiles.
      * 
      * \tparam out_pipe The pipe to read the cells from.
      * \param fpga_queue The configured SYCL queue for submissions.

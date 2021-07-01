@@ -1,6 +1,6 @@
 # Architecture {#Architecture}
 
-### Terminology {#terms}
+### Terminology {#terminology}
 
 First, we have to lay down some terminology used in StencilStream:
 
@@ -20,7 +20,7 @@ First, we have to lay down some terminology used in StencilStream:
 | Tile Halo | Additional cells that are added to a tile to form an input tile |
 | Grid Halo | Cells outside of the user-defined grid |
 
-### Indexing and Iteration order {#index}
+### Indexing and Iteration order {#indexingorder}
 
 Rectangular containers in StencilStream are always organized in columns and rows. The first index is always the column index and the second index is always the row index. The origin is thought to be in the north-western corner. An example where every grid cell contains it's index:
 
@@ -74,11 +74,11 @@ Of course, the input and output of an execution stage do not necessarily have to
 
 In order to calculate the next generation of a cell, you need it's neighbourhood. This neighbourhood is included in the tile for almost all cells, but not for those on the edge of the tile. This means that in order to calculate the next generation of a tile, cells from neighbouring tiles are needed too. These cells are known as the halo of a tile. Since more cells are needed in the halo for every generation that is computed, the input tile has to contain `stencil_radius` additional cells in every cardinal direction. This leads us to an input tile with `tile_width + 2 * stencil_radius * pipeline_lenth` columns and `tile_height + 2 * stencil_radius * pipeline_length` rows.
 
-The execution kernel described above works on tiles, which have a static size, but the user provides a grid, which has a dynamic size. Therefore, StencilStream needs to partition the grid into tiles. Since every tile also needs parts of neighbouring tiles for their halo, these tiles are partitioned into buffers too. Every tile has four corner buffers, four edge buffers and a core buffer. The following figure illustrates this partition, where the buffer borders are marked in black, tile borders are marked in red and the grid border is marked in yellow:
+The execution kernel described above works on tiles, which have a static size, but the user provides a grid, which has a dynamic size. Therefore, StencilStream needs to partition the grid into tiles. Since every tile also needs parts of neighbouring tiles for their halo, these tiles are partitioned into buffers too. Every tile has four corner buffers, four edge buffers and a core buffer. The following figure illustrates this partition, where the buffer borders are marked in black, tile borders are marked in red and the grid border is marked in yellow. Note that the shapes of tiles and their buffers is static, but the number of tiles is dynamic and adapted to contain the whole grid.
 
 ![Partition](partition.svg)
 
-Note that the shapes of tiles and their buffers is static, but the number of tiles is dynamic and adapted to contain the whole grid. The input kernel receives access to all buffers of a tile as well as the neighbouring buffers from other tiles.
+The resulting input for a submission of the execution kernel is therefore partioned into 5x5 buffers and the output is partitioned into 3x3 buffers. The IO code in use by StencilStream groups these buffers into buffer columns (five buffer columns for the input and three for the output) and submits the input/output kernel for every single column. Therefore, every invocation has access to a number of full cell columns from the input or output which it can process. Also note that the height of the buffers is equal for every buffer column, which is therefore used as a constant parameter of the design.
 
 #### Halo/Edge handling {#halo}
 
