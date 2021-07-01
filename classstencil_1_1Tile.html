@@ -137,7 +137,7 @@ Static Public Attributes</h2></td></tr>
 class stencil::Tile&lt; T, width, height, halo_radius, burst_length &gt;</h3>
 
 <p>A rectangular container of cells with a static size. </p>
-<p>StencilStream tiles the grid and the <a class="el" href="classstencil_1_1ExecutionKernel.html">ExecutionKernel</a> works with those tiles: it receives the content of a tile (together with it's halo) and emits the contents of a tile. A tile is partitioned in four corner buffers, four border buffers and one core buffer. This is done to provide easy access to the halo of a tile. Have a look at the Architecture for more details of the data layout.</p>
+<p>StencilStream tiles the grid and the <a class="el" href="classstencil_1_1ExecutionKernel.html">ExecutionKernel</a> works with those tiles: it receives the content of a tile (together with it's halo) and emits the contents of a tile. A tile is partitioned in four corner buffers, four border buffers and one core buffer. This is done to provide easy access to the halo of a tile. Have a look at the <a class="el" href="Architecture.html">Architecture</a> for more details of the data layout.</p>
 <p>This tile manager supports copy operations to and from monolithic, user-supplied buffers, as well as an index operation to access the individual parts.</p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
@@ -378,7 +378,7 @@ template&lt;typename T , uindex_t width, uindex_t height, uindex_t halo_radius, 
 </div><div class="memdoc">
 
 <p>Return the buffer with the contents of the given part. </p>
-<p>If the part has not been accessed before, it will allocate the part's buffer. Note however that this method does not initialize the buffer.</p>
+<p>If the part has not been accessed before, it will allocate the part's buffer. Note however that this method does not initialize the buffer. Please also note that the buffer is burst-aligned: The height of the returned buffer (the second value of the range) is always <code>burst_length</code> and the width is big enough to store all required cells of the part. For more information, read about <a class="el" href="Architecture.html#burstalignment">Burst-aligned buffers</a>.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">tile_part</td><td>The part to access. </td></tr>

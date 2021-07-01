@@ -67,7 +67,8 @@ $(function() {
 <div class="title">Architecture </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h2><a class="anchor" id="terms"></a>
+<div class="textblock"><p><a class="anchor" id="md_docs_architecture"></a> </p>
+<h2><a class="anchor" id="terms"></a>
 Terminology</h2>
 <p>First, we have to lay down some terminology used in StencilStream:</p>
 <table class="markdownTable">
@@ -144,7 +145,10 @@ Grid Tiling</h3>
 <h3><a class="anchor" id="halo"></a>
 Halo/Edge handling</h3>
 <p>The last missing concept is StencilStream's grid halo handling. As one can see in the figure above, there are no neighbouring cells for all cells of the grid: There are no further cells at the northern and western edge of the grid and there are additional cells east and south of the grid. These cells belong to the grid halo and their value depends on the transition function in use. Some transition functions can simply leave those cells undefined and ignore them, some can use a default value and some might require something compldifferent.</p>
-<p>StencilStream currently only supports transition functions with a default value, which is a superset of those that ignore missing cells. This default value, also known as halo value, is set in the <code>StencilExecutor</code> and StencilStream guarantees that this halo value will be present whenever a cell outside of a grid is accessed. </p>
+<p>StencilStream currently only supports transition functions with a default value, which is a superset of those that ignore missing cells. This default value, also known as halo value, is set in the <code>StencilExecutor</code> and StencilStream guarantees that this halo value will be present whenever a cell outside of a grid is accessed.</p>
+<h3><a class="anchor" id="burstalignment"></a>
+Burst-aligned buffers</h3>
+<p>One last concept of note is the layout of the buffers themselves: The global memory interface of most FPGAs support burst accesses where a specific number of bytes can be read or written in one transaction. Therefore, those interfaces are most efficient when all memory accesses are organizsed in such bursts. StencilStream ensures this by using two-dimensional buffers with the "height" of one memory burst. </p>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->
 <!-- start footer part -->

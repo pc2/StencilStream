@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['architecture_80',['Architecture',['../md_docs_architecture.html',1,'']]]
+  ['architecture_80',['Architecture',['../Architecture.html',1,'']]]
 ];
