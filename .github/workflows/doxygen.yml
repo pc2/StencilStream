@@ -4,9 +4,7 @@ name: Doxygen
 
 on:
   push:
-    branches: [ v2.0.0 ] # master, after merge into master
-  pull_request:
-    # branches: [ master ], after merge into master
+    branches: [ master ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
