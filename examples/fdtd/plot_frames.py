@@ -21,11 +21,15 @@ def get_max_value(path):
     return max(float(line) for line in open(path, "r"))
 
 def plot_frame(path):
+    local_max = get_max_value(path)
     array = np.asarray([float(line) for line in open(path, "r")]).reshape((width, height), order='C')
-    pyplot.pcolormesh(array, norm=Normalize(vmin=0.0, vmax=max_value, clip=True))
+    pyplot.pcolormesh(array, norm=Normalize(vmin=0.0, vmax=local_max, clip=True))
+    print("Scaling to 0.0 ... " + str(local_max) + ", global maximum is " + str(max_value))
     path = path.with_suffix(".png")
     pyplot.savefig(path, format="png")
 
 with Pool() as pool:
     max_value = max(pool.map(get_max_value, (out_file for out_file in output_dir.glob("*.csv"))))
+
+with Pool() as pool:
     pool.map(plot_frame, (out_file for out_file in output_dir.glob("*.csv")))
