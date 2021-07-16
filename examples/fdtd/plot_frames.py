@@ -5,23 +5,19 @@ from sys import argv
 import numpy as np
 from pathlib import PosixPath
 from multiprocessing import Pool
+import csv
 
-if len(argv) < 4:
-    print("Usage: {} <output dir> <width> <height>".format(argv[0]))
+if len(argv) != 2:
+    print("Usage: {} <output dir>".format(argv[0]))
     exit()
 
 output_dir = PosixPath(argv[1])
 assert(output_dir.is_dir())
 
-width = int(argv[2])
-height = int(argv[3])
-
-def get_max_value(path):
-    return max(float(line) for line in open(path, "r"))
-
 def plot_frame(path):
-    local_max = get_max_value(path)
-    array = np.asarray([float(line) for line in open(path, "r")]).reshape((width, height), order='C')
+    with open(path) as frame:
+        array = np.asarray([[float(cell) for cell in row[:-2]] for row in csv.reader(frame, skipinitialspace=True)], dtype=np.float32)
+    local_max = array.max()
     pyplot.pcolormesh(array, norm=Normalize(vmin=0.0, vmax=local_max, clip=True))
     print("Scaling to 0.0 ... " + str(local_max))
     path = path.with_suffix(".png")

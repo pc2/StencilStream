@@ -33,14 +33,15 @@ public:
 
         std::ofstream out(frame_path.str());
 
-        for (uindex_t b = 0; b < samples.get_range()[0]; b++)
+        for (uindex_t r_v = 0; r_v < samples.get_range()[1]; r_v++)
         {
-            for (uindex_t i = 0; i < samples.get_range()[1]; i++)
+            for (uindex_t r_i = 0; r_i < vector_len && (r_v * vector_len + r_i) < samples.get_range()[0]; r_i++)
             {
-                for (uindex_t j = 0; j < vector_len; j++)
+                for (uindex_t c = 0; c < samples.get_range()[0]; c++)
                 {
-                    out << samples[b][i].hz_sum[j] << std::endl;
+                    out << samples[c][r_v].hz_sum[r_i] << ",";
                 }
+                out << std::endl;
             }
         }
 

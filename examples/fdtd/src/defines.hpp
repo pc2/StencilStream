@@ -75,7 +75,7 @@ struct FDTDCell
 
 struct Parameters
 {
-    Parameters(int argc, char **argv) : n_frames(10), n_sample_steps(pipeline_length), disk_radius(default_radius)
+    Parameters(int argc, char **argv) : n_frames(10), n_sample_steps(pipeline_length/2), disk_radius(default_radius)
     {
         int c;
         while ((c = getopt(argc, argv, "hf:c:r:")) != -1)

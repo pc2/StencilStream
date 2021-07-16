@@ -51,8 +51,6 @@ int main(int argc, char **argv)
         grid_height += 1;
     }
 
-    std::cout << "Simulation grid size: " << grid_width << "x" << grid_height * vector_len << " cells" << std::endl;
-
     cl::sycl::buffer<FDTDCell, 2> initial_state(cl::sycl::range<2>(grid_width, grid_height));
     {
         auto init_ac = initial_state.get_access<cl::sycl::access::mode::discard_write>();
