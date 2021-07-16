@@ -127,7 +127,14 @@ public:
             if (current_time < t_cutoff)
             {
                 float wave_progress = (current_time - t0) / tau;
-                cell.hz += cl::sycl::cos(omega * current_time) * cl::sycl::exp(-1 * wave_progress * wave_progress);
+                #pragma unroll
+                for (uindex_t i = 0; i < vector_len; i++)
+                {
+                    if (distance[i] < dx)
+                    {
+                        cell.hz[i] += (dx-distance[i]) * cl::sycl::cos(omega * current_time) * cl::sycl::exp(-1 * wave_progress * wave_progress);
+                    }
+                }
             }
 
             cell.hz_sum += cell.hz * cell.hz; // 2*8 = 16 FOs
