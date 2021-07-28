@@ -16,10 +16,8 @@ assert(output_dir.is_dir())
 
 def plot_frame(path):
     with open(path) as frame:
-        array = np.asarray([[float(cell) for cell in row[:-2]] for row in csv.reader(frame, skipinitialspace=True)], dtype=np.float32)
-    local_max = array.max()
-    pyplot.pcolormesh(array, norm=Normalize(vmin=0.0, vmax=local_max, clip=True))
-    print("Scaling to 0.0 ... " + str(local_max))
+        array = np.asarray([[float(cell) for cell in row] for row in csv.reader(frame)], dtype=np.float32)
+    pyplot.pcolormesh(array)
     path = path.with_suffix(".png")
     pyplot.savefig(path, format="png")
 

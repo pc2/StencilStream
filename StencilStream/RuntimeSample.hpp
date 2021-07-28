@@ -93,6 +93,16 @@ public:
         return (latest_end - earliest_start) / timesteps_per_second;
     }
 
+    /**
+     * \brief Calculate the mean execution speed in passes per second.
+     * 
+     * \return The mean execution speed in passes per second.
+     */
+    double get_mean_speed()
+    {
+        return get_total_runtime() / double(events.shape()[0]);
+    }
+
 private:
     static constexpr double timesteps_per_second = 1000000000.0;
 

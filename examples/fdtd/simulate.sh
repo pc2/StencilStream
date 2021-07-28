@@ -10,5 +10,4 @@ source /cm/shared/opt/intel_oneapi/2021.1.1/setvars.sh
 ml compiler/GCC nalla_pcie
 
 mkdir -p output
-cd output
-../fdtd_hw -c 512 -f 9000
+../fdtd_hw -s 1e-9 -v -o output

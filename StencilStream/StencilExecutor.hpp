@@ -103,6 +103,7 @@ public:
 
         if (runtime_analysis_enabled)
         {
+            runtime_sample = std::nullopt;
             runtime_sample = RuntimeSample(n_passes, input_grid.get_tile_range().c, input_grid.get_tile_range().r);
         }
 

@@ -160,7 +160,8 @@ public:
                     ID(output_grid_c, output_grid_r),
                     i_generation + stage,
                     stage,
-                    stencil_buffer[stage]);
+                    stencil_buffer[stage],
+                    UID(grid_width, grid_height));
 
                 if (stage < n_generations)
                 {

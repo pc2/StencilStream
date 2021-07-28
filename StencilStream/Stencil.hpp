@@ -41,8 +41,9 @@ public:
      * \param id The position of the central cell in the global grid.
      * \param generation The present generation index of the central cell.
      * \param stage The index of the pipeline stage that calls the transition function.
+     * \param grid_range The range of the stencil's grid.
      */
-    Stencil(ID id, uindex_t generation, uindex_t stage) : id(id), generation(generation), stage(stage), internal() {}
+    Stencil(ID id, uindex_t generation, uindex_t stage, UID grid_range) : id(id), generation(generation), stage(stage), internal(), grid_range(grid_range) {}
 
     /**
      * \brief Create a new stencil from the raw buffer.
@@ -51,8 +52,9 @@ public:
      * \param generation The present generation index of the central cell.
      * \param stage The index of the pipeline stage that calls the transition function.
      * \param raw A raw array containing cells.
+     * \param grid_range The range of the stencil's grid.
      */
-    Stencil(ID id, uindex_t generation, uindex_t stage, T raw[diameter][diameter]) : id(id), generation(generation), stage(stage), internal()
+    Stencil(ID id, uindex_t generation, uindex_t stage, T raw[diameter][diameter], UID grid_range) : id(id), generation(generation), stage(stage), internal(), grid_range(grid_range)
     {
 #pragma unroll
         for (uindex_t c = 0; c < diameter; c++)
@@ -97,10 +99,12 @@ public:
      * \brief The position of the central cell in the global grid.
      */
     const ID id;
+
     /**
      * \brief The present generation index of the central cell.
      */
     const uindex_t generation;
+
     /**
      * \brief The index of the pipeline stage that calls the transition function.
      * 
@@ -122,6 +126,11 @@ public:
      * odd pipeline stages.
      */
     const uindex_t stage;
+
+    /**
+     * \brief The number of columns and rows of the grid.
+     */
+    const UID grid_range;
 
 private:
     T internal[diameter][diameter];
