@@ -129,15 +129,21 @@ $(function() {
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        <span class="keywordflow">return</span> (latest_end - earliest_start) / timesteps_per_second;</div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    }</div>
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="keyword">static</span> constexpr <span class="keywordtype">double</span> timesteps_per_second = 1000000000.0;</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    boost::multi_array&lt;cl::sycl::event, 3&gt; events;</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;};</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;} <span class="comment">// namespace stencil</span></div>
+<div class="line"><a name="l00101"></a><span class="lineno"><a class="line" href="classstencil_1_1RuntimeSample.html#ab8fcd723745b6e0d8bff23457c16c4ec">  101</a></span>&#160;    <span class="keywordtype">double</span> <a class="code" href="classstencil_1_1RuntimeSample.html#ab8fcd723745b6e0d8bff23457c16c4ec">get_mean_speed</a>()</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    {</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classstencil_1_1RuntimeSample.html#a8bc9677093f8fd5c5d6a30a1d29d919a">get_total_runtime</a>() / double(events.shape()[0]);</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    }</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <span class="keyword">static</span> constexpr <span class="keywordtype">double</span> timesteps_per_second = 1000000000.0;</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    boost::multi_array&lt;cl::sycl::event, 3&gt; events;</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;};</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;} <span class="comment">// namespace stencil</span></div>
 <div class="ttc" id="aclassstencil_1_1RuntimeSample_html"><div class="ttname"><a href="classstencil_1_1RuntimeSample.html">stencil::RuntimeSample</a></div><div class="ttdoc">Collection of SYCL events from a StencilExecutor::run invocation.</div><div class="ttdef"><b>Definition:</b> RuntimeSample.hpp:24</div></div>
 <div class="ttc" id="aclassstencil_1_1RuntimeSample_html_a8bc9677093f8fd5c5d6a30a1d29d919a"><div class="ttname"><a href="classstencil_1_1RuntimeSample.html#a8bc9677093f8fd5c5d6a30a1d29d919a">stencil::RuntimeSample::get_total_runtime</a></div><div class="ttdeci">double get_total_runtime()</div><div class="ttdoc">Calculate the total runtime of all passes.</div><div class="ttdef"><b>Definition:</b> RuntimeSample.hpp:72</div></div>
 <div class="ttc" id="aclassstencil_1_1RuntimeSample_html_aa46bde0eb0a47a5a7396a45d5f3a80c2"><div class="ttname"><a href="classstencil_1_1RuntimeSample.html#aa46bde0eb0a47a5a7396a45d5f3a80c2">stencil::RuntimeSample::get_runtime</a></div><div class="ttdeci">double get_runtime(uindex_t i_pass, uindex_t i_column, uindex_t i_row)</div><div class="ttdoc">Calculate the runtime of the specified event.</div><div class="ttdef"><b>Definition:</b> RuntimeSample.hpp:58</div></div>
+<div class="ttc" id="aclassstencil_1_1RuntimeSample_html_ab8fcd723745b6e0d8bff23457c16c4ec"><div class="ttname"><a href="classstencil_1_1RuntimeSample.html#ab8fcd723745b6e0d8bff23457c16c4ec">stencil::RuntimeSample::get_mean_speed</a></div><div class="ttdeci">double get_mean_speed()</div><div class="ttdoc">Calculate the mean execution speed in passes per second.</div><div class="ttdef"><b>Definition:</b> RuntimeSample.hpp:101</div></div>
 <div class="ttc" id="aclassstencil_1_1RuntimeSample_html_acf1be7c67fc564af11deecb669e700ac"><div class="ttname"><a href="classstencil_1_1RuntimeSample.html#acf1be7c67fc564af11deecb669e700ac">stencil::RuntimeSample::add_event</a></div><div class="ttdeci">void add_event(cl::sycl::event event, uindex_t i_pass, uindex_t i_column, uindex_t i_row)</div><div class="ttdoc">Add an event to the collection.</div><div class="ttdef"><b>Definition:</b> RuntimeSample.hpp:43</div></div>
 <div class="ttc" id="aclassstencil_1_1RuntimeSample_html_ae9d0802d349124bee3dc01f010310be8"><div class="ttname"><a href="classstencil_1_1RuntimeSample.html#ae9d0802d349124bee3dc01f010310be8">stencil::RuntimeSample::RuntimeSample</a></div><div class="ttdeci">RuntimeSample(uindex_t n_passes, uindex_t n_tile_columns, uindex_t n_tile_rows)</div><div class="ttdoc">Prepare the collection of SYCL events.</div><div class="ttdef"><b>Definition:</b> RuntimeSample.hpp:33</div></div>
 </div><!-- fragment --></div><!-- contents -->
