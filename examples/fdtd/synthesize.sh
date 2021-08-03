@@ -3,7 +3,7 @@
 #SBATCH -o synthesize.log
 #SBATCH -p fpgasyn
 #SBATCH --mail-type=all
-#SBATCH --mem=90000MB
+#SBATCH --exclusive
 #SBATCH --time=24:00:00
 
 source /cm/shared/opt/intel_oneapi/2021.1.1/setvars.sh

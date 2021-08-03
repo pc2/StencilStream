@@ -106,7 +106,7 @@ int main(int argc, char **argv)
     std::cout << "Simulating..." << std::endl;
     if (parameters.interval().has_value())
     {
-        uindex_t interval = *(parameters.interval());
+        uindex_t interval = 2 * *(parameters.interval());
         double runtime = 0.0;
 
         while (executor.get_i_generation() + interval < n_timesteps)
