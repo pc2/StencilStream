@@ -113,11 +113,6 @@ public:
         for (uindex_t i = 0; i < n_passes; i++)
         {
             Grid output_grid = input_grid.make_output_grid();
-            uindex_t n_generations_per_pass = pipeline_length;
-            if (i == n_passes - 1 && n_generations % pipeline_length != 0)
-            {
-                n_generations_per_pass = n_generations % pipeline_length;
-            }
 
             for (uindex_t c = 0; c < input_grid.get_tile_range().c; c++)
             {
@@ -129,7 +124,7 @@ public:
                                                                      { cgh.single_task(ExecutionKernelImpl(
                                                                            trans_func,
                                                                            i_generation,
-                                                                           n_generations_per_pass,
+                                                                           n_generations,
                                                                            c * tile_width,
                                                                            r * tile_height,
                                                                            grid_width,
@@ -145,7 +140,7 @@ public:
                 }
             }
             input_grid = output_grid;
-            i_generation += n_generations_per_pass;
+            i_generation += std::min(n_generations - i_generation, pipeline_length);
         }
     }
 

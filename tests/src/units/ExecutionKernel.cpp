@@ -139,3 +139,34 @@ TEST_CASE("Halo values inside the pipeline are handled correctly", "[ExecutionKe
     REQUIRE(in_pipe::empty());
     REQUIRE(out_pipe::empty());
 }
+
+TEST_CASE("Incomplete Pipeline with i_generation != 0", "[ExecutionKernel]")
+{
+    using Cell = uint8_t;
+    auto trans_func = [](Stencil<Cell, 1> const &stencil) {
+        return stencil[ID(0,0)] + 1;
+    };
+
+    using in_pipe = HostPipe<class IncompletePipelineInPipeID, Cell>;
+    using out_pipe = HostPipe<class IncompletePipelineOutPipeID, Cell>;
+    using TestExecutionKernel = ExecutionKernel<decltype(trans_func), Cell, 1, 16, 64, 64, in_pipe, out_pipe>;
+
+    for (int c = -16; c < 16+64; c++) {
+        for (int r = -16; r < 16+64; r++) {
+            in_pipe::write(0);
+        }
+    }
+
+    TestExecutionKernel kernel(trans_func, 16, 20, 0, 0, 64, 64, 0);
+    kernel.operator()();
+
+    REQUIRE(in_pipe::empty());
+
+    for (int c = 0; c < 64; c++) {
+        for (int r = 0; r < 64; r++) {
+            REQUIRE(out_pipe::read() == 4);
+        }
+    }
+
+    REQUIRE(out_pipe::empty());
+}

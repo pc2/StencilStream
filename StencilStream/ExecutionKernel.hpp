@@ -163,7 +163,7 @@ public:
                     stencil_buffer[stage],
                     UID(grid_width, grid_height));
 
-                if (stage < n_generations)
+                if (i_generation + stage < n_generations)
                 {
                     value = trans_func(stencil);
                 }
