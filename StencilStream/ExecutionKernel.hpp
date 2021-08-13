@@ -97,7 +97,10 @@ public:
         uindex_t input_tile_c = 0;
         uindex_t input_tile_r = 0;
 
-        [[intel::fpga_memory, intel::numbanks(2 * pipeline_length)]] T cache[2][input_tile_height][pipeline_length][stencil_diameter - 1];
+        /*
+         * The intel::numbanks attribute requires a power of two as it's argument and if the pipeline length isn't a power of two, it would produce an error. Therefore, we calculate the next power of two and use it to allocate the cache. The compiler is smart enough to see that these additional banks in the cache aren't used and therefore optimizes them away.
+        */
+        [[intel::fpga_memory, intel::numbanks(2 * next_power_of_two(pipeline_length))]] T cache[2][input_tile_height][next_power_of_two(pipeline_length)][stencil_diameter - 1];
         uindex_t active_cache = 0;
         [[intel::fpga_register]] T stencil_buffer[pipeline_length][stencil_diameter][stencil_diameter];
 
@@ -202,6 +205,19 @@ public:
     }
 
 private:
+    /**
+     * \brief Calculate the smallest power of two that is greater or equal to the given value.
+     */
+    static constexpr uindex_t next_power_of_two(uindex_t value)
+    {
+        uindex_t next_power_of_two = 1;
+        while (next_power_of_two < value)
+        {
+            next_power_of_two = next_power_of_two << 1;
+        }
+        return next_power_of_two;
+    }
+
     TransFunc trans_func;
     uindex_t i_generation;
     uindex_t n_generations;
