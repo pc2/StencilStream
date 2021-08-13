@@ -48,7 +48,7 @@ constexpr uindex_t tile_width = 512;
 constexpr uindex_t stencil_radius = 1;
 
 #ifdef HARDWARE
-constexpr uindex_t pipeline_length = 128;
+constexpr uindex_t pipeline_length = 180;
 #else
 constexpr uindex_t pipeline_length = 16;
 #endif
