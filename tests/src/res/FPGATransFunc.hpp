@@ -13,17 +13,28 @@
 #include <StencilStream/Index.hpp>
 #include <StencilStream/Stencil.hpp>
 
+enum class CellStatus
+{
+    Normal,
+    Invalid,
+    Halo,
+};
+
+struct Cell
+{
+    stencil::index_t c;
+    stencil::index_t r;
+    stencil::index_t i_generation;
+    CellStatus status;
+};
+
 template <stencil::uindex_t radius>
 class FPGATransFunc
 {
 public:
-    // first element: column of the cell
-    // second element: row of the cell
-    // third element: generation
-    // fourth element: status (0: normal, 1: invalid, 2: halo)
-    using Cell = cl::sycl::vec<stencil::uindex_t, 4>;
+    using Cell = Cell;
 
-    static Cell halo() { return Cell(0, 0, 0, 2); }
+    static Cell halo() { return Cell{0, 0, 0, CellStatus::Halo}; }
 
     Cell operator()(stencil::Stencil<Cell, radius> const &stencil) const
     {
@@ -40,17 +51,17 @@ public:
             for (stencil::index_t r = -stencil::index_t(radius); r <= stencil::index_t(radius); r++)
             {
                 Cell old_cell = stencil[stencil::ID(c, r)];
-                is_valid &= (old_cell[0] == c + center_column && old_cell[1] == r + center_row && old_cell[2] == stencil.generation) || (old_cell[3] == 2);
+                is_valid &= (old_cell.c == c + center_column && old_cell.r == r + center_row && old_cell.i_generation == stencil.generation) || (old_cell.status == CellStatus::Halo);
             }
         }
 
-        if (new_cell[3] == 0)
+        if (new_cell.status == CellStatus::Normal)
         {
             if (!is_valid)
             {
-                new_cell[3] = 1;
+                new_cell.status = CellStatus::Invalid;
             }
-            new_cell[2] += 1;
+            new_cell.i_generation += 1;
         }
 
         return new_cell;

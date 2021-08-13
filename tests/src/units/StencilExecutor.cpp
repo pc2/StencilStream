@@ -18,7 +18,6 @@ using namespace stencil;
 using namespace cl::sycl;
 
 using TransFunc = FPGATransFunc<stencil_radius>;
-using Cell = typename TransFunc::Cell;
 
 TEST_CASE("StencilExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[StencilExecutor]")
 {
@@ -29,7 +28,7 @@ TEST_CASE("StencilExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[StencilExecu
         {
             for (uindex_t r = 0; r < grid_height; r++)
             {
-                in_buffer_ac[c][r] = Cell(c, r, 0, 0);
+                in_buffer_ac[c][r] = Cell{index_t(c), index_t(r), 0, CellStatus::Normal};
             }
         }
     }
@@ -46,10 +45,10 @@ TEST_CASE("StencilExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[StencilExecu
         {
             for (uindex_t r = 0; r < grid_height; r++)
             {
-                REQUIRE(out_buffer_ac[c][r][0] == c);
-                REQUIRE(out_buffer_ac[c][r][1] == r);
-                REQUIRE(out_buffer_ac[c][r][2] == 0);
-                REQUIRE(out_buffer_ac[c][r][3] == 0);
+                REQUIRE(out_buffer_ac[c][r].c == c);
+                REQUIRE(out_buffer_ac[c][r].r == r);
+                REQUIRE(out_buffer_ac[c][r].i_generation == 0);
+                REQUIRE(out_buffer_ac[c][r].status == CellStatus::Normal);
             }
         }
     }
@@ -66,7 +65,7 @@ TEST_CASE("StencilExecutor::run(uindex_t)", "[StencilExecutor]")
         {
             for (uindex_t r = 0; r < grid_height; r++)
             {
-                in_buffer_ac[c][r] = Cell(c, r, 0, 0);
+                in_buffer_ac[c][r] = Cell{index_t(c), index_t(r), 0, CellStatus::Normal};
             }
         }
     }
@@ -90,10 +89,10 @@ TEST_CASE("StencilExecutor::run(uindex_t)", "[StencilExecutor]")
         {
             for (uindex_t r = 0; r < grid_height; r++)
             {
-                REQUIRE(out_buffer_ac[c][r][0] == c);
-                REQUIRE(out_buffer_ac[c][r][1] == r);
-                REQUIRE(out_buffer_ac[c][r][2] == n_generations);
-                REQUIRE(out_buffer_ac[c][r][3] == 0);
+                REQUIRE(out_buffer_ac[c][r].c == c);
+                REQUIRE(out_buffer_ac[c][r].r == r);
+                REQUIRE(out_buffer_ac[c][r].i_generation == n_generations);
+                REQUIRE(out_buffer_ac[c][r].status == CellStatus::Normal);
             }
         }
     }

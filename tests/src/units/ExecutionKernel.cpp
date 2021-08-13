@@ -20,9 +20,9 @@ using namespace cl::sycl;
 void test_kernel(uindex_t n_generations)
 {
     using TransFunc = FPGATransFunc<stencil_radius>;
-    using in_pipe = HostPipe<class ExecutionKernelInPipeID, TransFunc::Cell>;
-    using out_pipe = HostPipe<class ExecutionKernelOutPipeID, TransFunc::Cell>;
-    using TestExecutionKernel = ExecutionKernel<TransFunc, TransFunc::Cell, stencil_radius, pipeline_length, tile_width, tile_height, in_pipe, out_pipe>;
+    using in_pipe = HostPipe<class ExecutionKernelInPipeID, Cell>;
+    using out_pipe = HostPipe<class ExecutionKernelOutPipeID, Cell>;
+    using TestExecutionKernel = ExecutionKernel<TransFunc, Cell, stencil_radius, pipeline_length, tile_width, tile_height, in_pipe, out_pipe>;
 
     for (index_t c = -halo_radius; c < index_t(halo_radius + tile_width); c++)
     {
@@ -30,7 +30,7 @@ void test_kernel(uindex_t n_generations)
         {
             if (c >= index_t(0) && c < index_t(tile_width) && r >= index_t(0) && r < index_t(tile_height))
             {
-                in_pipe::write(TransFunc::Cell(c, r, 0, 0));
+                in_pipe::write(Cell{c, r, 0, CellStatus::Normal});
             }
             else
             {
@@ -41,7 +41,7 @@ void test_kernel(uindex_t n_generations)
 
     TestExecutionKernel(TransFunc(), 0, n_generations, 0, 0, tile_width, tile_height, TransFunc::halo())();
 
-    buffer<TransFunc::Cell, 2> output_buffer(range<2>(tile_width, tile_height));
+    buffer<Cell, 2> output_buffer(range<2>(tile_width, tile_height));
 
     {
         auto output_buffer_ac = output_buffer.get_access<access::mode::discard_write>();
@@ -62,11 +62,11 @@ void test_kernel(uindex_t n_generations)
     {
         for (uindex_t r = 1; r < tile_height; r++)
         {
-            TransFunc::Cell cell = output_buffer_ac[c][r];
-            REQUIRE(cell[0] == c);
-            REQUIRE(cell[1] == r);
-            REQUIRE(cell[2] == n_generations);
-            REQUIRE(cell[3] == 0);
+            Cell cell = output_buffer_ac[c][r];
+            REQUIRE(cell.c == c);
+            REQUIRE(cell.r == r);
+            REQUIRE(cell.i_generation == n_generations);
+            REQUIRE(cell.status == CellStatus::Normal);
         }
     }
 }

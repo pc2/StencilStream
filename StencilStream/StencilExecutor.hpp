@@ -61,8 +61,7 @@ template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipe
 class StencilExecutor
 {
 public:
-    static_assert(burst_size % sizeof(T) == 0);
-    static constexpr uindex_t burst_length = burst_size / sizeof(T);
+    static constexpr uindex_t burst_length = std::min<uindex_t>(1, burst_size / sizeof(T));
     static constexpr uindex_t halo_radius = stencil_radius * pipeline_length;
 
     /**

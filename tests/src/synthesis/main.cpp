@@ -25,7 +25,6 @@ const uindex_t grid_height = 2 * tile_height;
 const uindex_t burst_size = 1024;
 
 using TransFunc = FPGATransFunc<stencil_radius>;
-using Cell = TransFunc::Cell;
 using Executor = StencilExecutor<Cell, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size>;
 
 void exception_handler(cl::sycl::exception_list exceptions)
@@ -62,7 +61,7 @@ int main()
         {
             for (uindex_t r = 0; r < grid_height; r++)
             {
-                in_buffer_ac[c][r] = Cell(c, r, 0, 0);
+                in_buffer_ac[c][r] = Cell{index_t(c), index_t(r), 0, CellStatus::Normal};
             }
         }
     }
@@ -87,10 +86,10 @@ int main()
         {
             for (uindex_t r = 0; r < grid_height; r++)
             {
-                assert(out_buffer_ac[c][r][0] == c);
-                assert(out_buffer_ac[c][r][1] == r);
-                assert(out_buffer_ac[c][r][2] == 2 * pipeline_length);
-                assert(out_buffer_ac[c][r][3] == 0);
+                assert(out_buffer_ac[c][r].c == c);
+                assert(out_buffer_ac[c][r].r == r);
+                assert(out_buffer_ac[c][r].i_generation == 2 * pipeline_length);
+                assert(out_buffer_ac[c][r].status == CellStatus::Normal);
             }
         }
     }
