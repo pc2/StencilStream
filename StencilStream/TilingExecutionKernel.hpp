@@ -31,7 +31,7 @@ namespace stencil
  * \tparam out_pipe The pipe to write to.
  */
 template <typename TransFunc, typename T, uindex_t stencil_radius, uindex_t pipeline_length, uindex_t output_tile_width, uindex_t output_tile_height, typename in_pipe, typename out_pipe>
-class ExecutionKernel
+class TilingExecutionKernel
 {
 public:
     static_assert(
@@ -70,7 +70,7 @@ public:
      * \param grid_width The number of cell columns in the grid.
      * \param grid_height The number of cell rows in the grid.
      */
-    ExecutionKernel(
+    TilingExecutionKernel(
         TransFunc trans_func,
         uindex_t i_generation,
         uindex_t n_generations,

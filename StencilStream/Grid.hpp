@@ -23,7 +23,7 @@ namespace stencil
 /**
  * \brief A rectangular container of cells with a dynamic, arbitrary size.
  * 
- * It logically contains the grid the transition function is applied to. As described in \ref tiling, it partitions the grid into tiles of static size, which are the units the \ref ExecutionKernel works on.
+ * It logically contains the grid the transition function is applied to. As described in \ref tiling, it partitions the grid into tiles of static size, which are the units the \ref TilingExecutionKernel works on.
  * 
  * Apart from providing copy operations to and from monolithic grid buffers, it also handles the input and output kernel submission for a given tile.
  * 
@@ -42,7 +42,7 @@ public:
     /**
      * \brief Create a grid with undefined contents.
      * 
-     * This constructor is used to create the output grid of a \ref ExecutionKernel invocation. It's contents do not need to be initialized or copied from another buffer since it will override cell values from the execution kernel anyway.
+     * This constructor is used to create the output grid of a \ref TilingExecutionKernel invocation. It's contents do not need to be initialized or copied from another buffer since it will override cell values from the execution kernel anyway.
      * 
      * \param width The number of columns of the grid.
      * \param height The number of rows of the grid.
@@ -148,7 +148,7 @@ public:
     }
 
     /**
-     * \brief Submit the input kernels required for one execution of the \ref ExecutionKernel.
+     * \brief Submit the input kernels required for one execution of the \ref TilingExecutionKernel.
      * 
      * This will submit five \ref IOKernel invocations in total, which are executed in order. Those kernels write the contents of a tile and it's halo to the `in_pipe`. 
      * 
@@ -220,7 +220,7 @@ public:
     }
 
     /**
-     * \brief Submit the output kernels required for one execution of the \ref ExecutionKernel.
+     * \brief Submit the output kernels required for one execution of the \ref TilingExecutionKernel.
      * 
      * This will submit three \ref IOKernel invocations in total, which are executed in order. Those kernels will write cells from the `out_pipe` to one of the tiles.
      * 

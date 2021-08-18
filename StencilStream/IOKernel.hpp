@@ -18,9 +18,9 @@ namespace stencil
 {
 
 /**
- * \brief Generic Input/Output kernel for use with the \ref ExecutionKernel and \ref Grid.
+ * \brief Generic Input/Output kernel for use with the \ref TilingExecutionKernel and \ref Grid.
  * 
- * This kernel provides IO services to the execution kernel by writing the contents of a input tile with halo to the input pipe and writing the output of the execution kernel to an output tile. The input and output code only differs by one line. Therefore, both services are provided by the same class. Unlike \ref ExecutionKernel, this kernel is supposed to be constructed by a lambda expression that then either executes \ref IOKernel.read or \ref IOKernel.write.
+ * This kernel provides IO services to the execution kernel by writing the contents of a input tile with halo to the input pipe and writing the output of the execution kernel to an output tile. The input and output code only differs by one line. Therefore, both services are provided by the same class. Unlike \ref TilingExecutionKernel, this kernel is supposed to be constructed by a lambda expression that then either executes \ref IOKernel.read or \ref IOKernel.write.
  * 
  * Logically, an instance of the IO kernel receives access to a horizontal slice of the input or output and processes this slice in the \ref indexingorder. Due to the \ref tiling, this slice is partioned vertically into 2*n + 1 buffers, where n is the `n_halo_height_buffers` template parameter. For the input buffer, n should be 2, and for the output buffer, n should be 1. All buffers are expected to have a static height and dynamic width. The upper n and lower n buffers are all expected be `halo_height` cells high, while the buffer in the middle is expected to have be `core_height` cells high.
  * 

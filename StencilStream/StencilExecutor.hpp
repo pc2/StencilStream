@@ -8,7 +8,7 @@
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "ExecutionKernel.hpp"
+#include "TilingExecutionKernel.hpp"
 #include "Grid.hpp"
 #include "RuntimeSample.hpp"
 #include <CL/sycl.hpp>
@@ -85,7 +85,7 @@ public:
     {
         using in_pipe = cl::sycl::pipe<class in_pipe_id, T>;
         using out_pipe = cl::sycl::pipe<class out_pipe_id, T>;
-        using ExecutionKernelImpl = ExecutionKernel<TransFunc, T, stencil_radius, pipeline_length, tile_width, tile_height, in_pipe, out_pipe>;
+        using ExecutionKernelImpl = TilingExecutionKernel<TransFunc, T, stencil_radius, pipeline_length, tile_width, tile_height, in_pipe, out_pipe>;
 
         if (!this->queue.has_value())
         {

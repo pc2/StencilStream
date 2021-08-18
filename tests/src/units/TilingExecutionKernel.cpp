@@ -11,7 +11,7 @@
 #include "../res/HostPipe.hpp"
 #include "../res/catch.hpp"
 #include "../res/constants.hpp"
-#include <StencilStream/ExecutionKernel.hpp>
+#include <StencilStream/TilingExecutionKernel.hpp>
 
 using namespace stencil;
 using namespace std;
@@ -22,7 +22,7 @@ void test_kernel(uindex_t n_generations)
     using TransFunc = FPGATransFunc<stencil_radius>;
     using in_pipe = HostPipe<class ExecutionKernelInPipeID, Cell>;
     using out_pipe = HostPipe<class ExecutionKernelOutPipeID, Cell>;
-    using TestExecutionKernel = ExecutionKernel<TransFunc, Cell, stencil_radius, pipeline_length, tile_width, tile_height, in_pipe, out_pipe>;
+    using TestExecutionKernel = TilingExecutionKernel<TransFunc, Cell, stencil_radius, pipeline_length, tile_width, tile_height, in_pipe, out_pipe>;
 
     for (index_t c = -halo_radius; c < index_t(halo_radius + tile_width); c++)
     {
@@ -71,23 +71,23 @@ void test_kernel(uindex_t n_generations)
     }
 }
 
-TEST_CASE("ExecutionKernel", "[ExecutionKernel]")
+TEST_CASE("TilingExecutionKernel", "[TilingExecutionKernel]")
 {
     test_kernel(pipeline_length);
 }
 
-TEST_CASE("ExecutionKernel (partial pipeline)", "[ExecutionKernel]")
+TEST_CASE("TilingExecutionKernel (partial pipeline)", "[TilingExecutionKernel]")
 {
     static_assert(pipeline_length != 1);
     test_kernel(pipeline_length - 1);
 }
 
-TEST_CASE("ExecutionKernel (noop)", "[ExecutionKernel]")
+TEST_CASE("TilingExecutionKernel (noop)", "[TilingExecutionKernel]")
 {
     test_kernel(0);
 }
 
-TEST_CASE("Halo values inside the pipeline are handled correctly", "[ExecutionKernel]")
+TEST_CASE("Halo values inside the pipeline are handled correctly", "[TilingExecutionKernel]")
 {
     auto my_kernel = [=](Stencil<bool, stencil_radius> const &stencil)
     {
@@ -116,7 +116,7 @@ TEST_CASE("Halo values inside the pipeline are handled correctly", "[ExecutionKe
 
     using in_pipe = HostPipe<class HaloValueTestInPipeID, bool>;
     using out_pipe = HostPipe<class HaloValueTestOutPipeID, bool>;
-    using TestExecutionKernel = ExecutionKernel<decltype(my_kernel), bool, stencil_radius, pipeline_length, tile_width, tile_height, in_pipe, out_pipe>;
+    using TestExecutionKernel = TilingExecutionKernel<decltype(my_kernel), bool, stencil_radius, pipeline_length, tile_width, tile_height, in_pipe, out_pipe>;
 
     for (index_t c = -halo_radius; c < index_t(halo_radius + tile_width); c++)
     {
@@ -140,7 +140,7 @@ TEST_CASE("Halo values inside the pipeline are handled correctly", "[ExecutionKe
     REQUIRE(out_pipe::empty());
 }
 
-TEST_CASE("Incomplete Pipeline with i_generation != 0", "[ExecutionKernel]")
+TEST_CASE("Incomplete Pipeline with i_generation != 0", "[TilingExecutionKernel]")
 {
     using Cell = uint8_t;
     auto trans_func = [](Stencil<Cell, 1> const &stencil) {
@@ -149,7 +149,7 @@ TEST_CASE("Incomplete Pipeline with i_generation != 0", "[ExecutionKernel]")
 
     using in_pipe = HostPipe<class IncompletePipelineInPipeID, Cell>;
     using out_pipe = HostPipe<class IncompletePipelineOutPipeID, Cell>;
-    using TestExecutionKernel = ExecutionKernel<decltype(trans_func), Cell, 1, 16, 64, 64, in_pipe, out_pipe>;
+    using TestExecutionKernel = TilingExecutionKernel<decltype(trans_func), Cell, 1, 16, 64, 64, in_pipe, out_pipe>;
 
     for (int c = -16; c < 16+64; c++) {
         for (int r = -16; r < 16+64; r++) {
