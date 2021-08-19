@@ -1,11 +1,21 @@
 /*
- * Copyright © 2020-2021Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn University
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * Copyright © 2020-2021Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
+ * University
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the “Software”), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <CL/sycl.hpp>
 #include <CL/sycl/INTEL/fpga_extensions.hpp>
@@ -49,11 +59,9 @@ const uindex_t burst_size = 1024;
 /* Number of simulations to run in benchmark mode */
 const uindex_t n_simulations = 10;
 
-void write_output(buffer<vec<FLOAT, 2>, 2> vect, string file)
-{
+void write_output(buffer<vec<FLOAT, 2>, 2> vect, string file) {
     fstream out(file, out.out | out.trunc);
-    if (!out.is_open())
-    {
+    if (!out.is_open()) {
         throw std::runtime_error("The file was not opened\n");
     }
 
@@ -62,10 +70,8 @@ void write_output(buffer<vec<FLOAT, 2>, 2> vect, string file)
     auto vect_ac = vect.get_access<access::mode::read>();
 
     int i = 0;
-    for (index_t r = 0; r < n_rows; r++)
-    {
-        for (index_t c = 0; c < n_columns; c++)
-        {
+    for (index_t r = 0; r < n_rows; r++) {
+        for (index_t c = 0; c < n_columns; c++) {
             out << i << "\t" << vect_ac[id<2>(c, r)][0] << std::endl;
             i++;
         }
@@ -74,13 +80,10 @@ void write_output(buffer<vec<FLOAT, 2>, 2> vect, string file)
     out.close();
 }
 
-buffer<vec<FLOAT, 2>, 2>
-read_input(string temp_file, string power_file, range<2> buffer_range)
-{
+buffer<vec<FLOAT, 2>, 2> read_input(string temp_file, string power_file, range<2> buffer_range) {
     fstream temp(temp_file, temp.in);
     fstream power(power_file, power.in);
-    if (!temp.is_open() || !power.is_open())
-    {
+    if (!temp.is_open() || !power.is_open()) {
         throw std::runtime_error("file could not be opened for reading");
     }
 
@@ -92,10 +95,8 @@ read_input(string temp_file, string power_file, range<2> buffer_range)
         auto vect_ac = vect.get_access<access::mode::write>();
 
         FLOAT tmp_temp, tmp_power;
-        for (index_t r = 0; r < n_rows; r++)
-        {
-            for (index_t c = 0; c < n_columns; c++)
-            {
+        for (index_t r = 0; r < n_rows; r++) {
+            for (index_t c = 0; c < n_columns; c++) {
                 temp >> tmp_temp;
                 power >> tmp_power;
                 vect_ac[id<2>(c, r)] = vec<FLOAT, 2>(tmp_temp, tmp_power);
@@ -108,38 +109,42 @@ read_input(string temp_file, string power_file, range<2> buffer_range)
     return vect;
 }
 
-void usage(int argc, char **argv)
-{
-    std::cerr << "Usage: " << argv[0] << "  <grid_rows> <grid_cols> <sim_time> <temp_file> <power_file> <output_file>" << std::endl;
-    std::cerr << "    <grid_rows>      - number of rows in the grid (positive integer)" << std::endl;
-    std::cerr << "    <grid_cols>      - number of columns in the grid (positive integer)" << std::endl;
+void usage(int argc, char **argv) {
+    std::cerr << "Usage: " << argv[0]
+              << "  <grid_rows> <grid_cols> <sim_time> <temp_file> <power_file> <output_file>"
+              << std::endl;
+    std::cerr << "    <grid_rows>      - number of rows in the grid (positive integer)"
+              << std::endl;
+    std::cerr << "    <grid_cols>      - number of columns in the grid (positive integer)"
+              << std::endl;
     std::cerr << "    <sim_time>       - number of iterations (positive integer)" << std::endl;
-    std::cerr << "    <temp_file>      - name of the file containing the initial temperature values of each cell" << std::endl;
-    std::cerr << "    <power_file>     - name of the file containing the dissipated power values of each cell" << std::endl;
+    std::cerr << "    <temp_file>      - name of the file containing the initial temperature "
+                 "values of each cell"
+              << std::endl;
+    std::cerr << "    <power_file>     - name of the file containing the dissipated power values "
+                 "of each cell"
+              << std::endl;
     std::cerr << "    <output_file>    - name of the output file" << std::endl;
-    std::cerr << "                       " << n_simulations << " simulations with i*<sim_time> generations will be executed in total, where i is the index of the simulation." << std::endl;
+    std::cerr << "                       " << n_simulations
+              << " simulations with i*<sim_time> generations will be executed in total, where i is "
+                 "the index of the simulation."
+              << std::endl;
     exit(1);
 }
 
-auto exception_handler = [](cl::sycl::exception_list exceptions)
-{
-    for (std::exception_ptr const &e : exceptions)
-    {
-        try
-        {
+auto exception_handler = [](cl::sycl::exception_list exceptions) {
+    for (std::exception_ptr const &e : exceptions) {
+        try {
             std::rethrow_exception(e);
-        }
-        catch (cl::sycl::exception const &e)
-        {
-            std::cout << "Caught asynchronous SYCL exception:\n"
-                      << e.what() << "\n";
+        } catch (cl::sycl::exception const &e) {
+            std::cout << "Caught asynchronous SYCL exception:\n" << e.what() << "\n";
             std::terminate();
         }
     }
 };
 
-double run_simulation(cl::sycl::queue working_queue, buffer<vec<FLOAT, 2>, 2> temp, uindex_t sim_time)
-{
+double run_simulation(cl::sycl::queue working_queue, buffer<vec<FLOAT, 2>, 2> temp,
+                      uindex_t sim_time) {
     uindex_t n_columns = temp.get_range()[0];
     uindex_t n_rows = temp.get_range()[1];
 
@@ -159,9 +164,7 @@ double run_simulation(cl::sycl::queue working_queue, buffer<vec<FLOAT, 2>, 2> te
     FLOAT Rz_1 = 1.f / Rz;
     FLOAT Cap_1 = step / Cap;
 
-    auto kernel =
-        [=](Stencil<vec<FLOAT, 2>, stencil_radius> const &temp)
-    {
+    auto kernel = [=](Stencil<vec<FLOAT, 2>, stencil_radius> const &temp) {
         ID idx = temp.id;
         index_t c = idx.c;
         index_t r = idx.r;
@@ -174,12 +177,16 @@ double run_simulation(cl::sycl::queue working_queue, buffer<vec<FLOAT, 2>, 2> te
         FLOAT bottom = temp[ID(0, 1)][0];
 
         // As in the OpenCL version of the rodinia "hotspot" benchmark.
-        FLOAT new_temp = old + Cap_1 * (power + (bottom + top - 2.f * old) * Ry_1 + (right + left - 2.f * old) * Rx_1 + (amb_temp - old) * Rz_1);
+        FLOAT new_temp =
+            old + Cap_1 * (power + (bottom + top - 2.f * old) * Ry_1 +
+                           (right + left - 2.f * old) * Rx_1 + (amb_temp - old) * Rz_1);
 
         return vec(new_temp, power);
     };
 
-    StencilExecutor<vec<FLOAT, 2>, stencil_radius, decltype(kernel), pipeline_length, tile_width, tile_height, burst_size> executor(vec<FLOAT, 2>(0.0, 0.0), kernel);
+    StencilExecutor<vec<FLOAT, 2>, stencil_radius, decltype(kernel), pipeline_length, tile_width,
+                    tile_height, burst_size>
+        executor(vec<FLOAT, 2>(0.0, 0.0), kernel);
     executor.set_input(temp);
 
 #ifdef HARDWARE
@@ -193,8 +200,7 @@ double run_simulation(cl::sycl::queue working_queue, buffer<vec<FLOAT, 2>, 2> te
     return executor.get_runtime_sample().value().get_total_runtime();
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     int n_rows, n_columns, sim_time;
     char *tfile, *pfile, *ofile;
     bool benchmark_mode = false;
@@ -204,7 +210,8 @@ int main(int argc, char **argv)
 #else
     INTEL::fpga_emulator_selector device_selector;
 #endif
-    cl::sycl::queue working_queue(device_selector, exception_handler, {property::queue::enable_profiling{}});
+    cl::sycl::queue working_queue(device_selector, exception_handler,
+                                  {property::queue::enable_profiling{}});
 
     /* check validity of inputs	*/
     if (argc != 7)
@@ -220,7 +227,8 @@ int main(int argc, char **argv)
     tfile = argv[4];
     pfile = argv[5];
     ofile = argv[6];
-    buffer<vec<FLOAT, 2>, 2> temp = read_input(string(tfile), string(pfile), range<2>(n_columns, n_rows));
+    buffer<vec<FLOAT, 2>, 2> temp =
+        read_input(string(tfile), string(pfile), range<2>(n_columns, n_rows));
 
     printf("Start computing the transient temperature\n");
 
