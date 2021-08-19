@@ -8,11 +8,9 @@
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "TilingExecutionKernel.hpp"
 #include "Grid.hpp"
-#include "RuntimeSample.hpp"
-#include <CL/sycl.hpp>
-#include <CL/sycl/INTEL/fpga_extensions.hpp>
+#include "SingleQueueExecutor.hpp"
+#include "TilingExecutionKernel.hpp"
 
 namespace stencil
 {
@@ -58,7 +56,7 @@ namespace stencil
  * \tparam burst_size The number of bytes to load/store in one burst. Defaults to 1024.
  */
 template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipeline_length = 1, uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024>
-class StencilExecutor
+class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc>
 {
 public:
     static constexpr uindex_t burst_length = std::min<uindex_t>(1, burst_size / sizeof(T));
@@ -70,7 +68,7 @@ public:
      * \param halo_value The value of cells in the grid halo.
      * \param trans_func An instance of the transition function type.
      */
-    StencilExecutor(T halo_value, TransFunc trans_func) : input_grid(cl::sycl::buffer<T, 2>(cl::sycl::range<2>(0, 0))), queue(), trans_func(trans_func), i_generation(0), halo_value(halo_value), runtime_analysis_enabled(false)
+    StencilExecutor(T halo_value, TransFunc trans_func) : SingleQueueExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func), input_grid(cl::sycl::buffer<T, 2>(cl::sycl::range<2>(0, 0)))
     {
     }
 
@@ -81,18 +79,13 @@ public:
      * 
      * \param n_generations The number of generations to advance the state of the grid by.
      */
-    void run(uindex_t n_generations)
+    void run(uindex_t n_generations) override
     {
         using in_pipe = cl::sycl::pipe<class in_pipe_id, T>;
         using out_pipe = cl::sycl::pipe<class out_pipe_id, T>;
         using ExecutionKernelImpl = TilingExecutionKernel<TransFunc, T, stencil_radius, pipeline_length, tile_width, tile_height, in_pipe, out_pipe>;
 
-        if (!this->queue.has_value())
-        {
-            select_emulator(false);
-        }
-
-        cl::sycl::queue queue = *(this->queue);
+        cl::sycl::queue queue = this->get_queue();
 
         uindex_t n_passes = n_generations / pipeline_length;
         if (n_generations % pipeline_length != 0)
@@ -100,11 +93,7 @@ public:
             n_passes += 1;
         }
 
-        if (runtime_analysis_enabled)
-        {
-            runtime_sample = std::nullopt;
-            runtime_sample = RuntimeSample(n_passes, input_grid.get_tile_range().c, input_grid.get_tile_range().r);
-        }
+        RuntimeSample runtime_sample(n_passes, input_grid.get_tile_range().c, input_grid.get_tile_range().r);
 
         uindex_t grid_width = input_grid.get_grid_range().c;
         uindex_t grid_height = input_grid.get_grid_range().r;
@@ -119,28 +108,32 @@ public:
                 {
                     input_grid.template submit_tile_input<in_pipe>(queue, UID(c, r));
 
-                    cl::sycl::event computation_event = queue.submit([&](cl::sycl::handler &cgh)
-                                                                     { cgh.single_task(ExecutionKernelImpl(
-                                                                           trans_func,
-                                                                           i_generation,
-                                                                           n_generations,
-                                                                           c * tile_width,
-                                                                           r * tile_height,
-                                                                           grid_width,
-                                                                           grid_height,
-                                                                           halo_value)); });
+                    auto submission_lambda = [&](cl::sycl::handler &cgh)
+                    { cgh.single_task(ExecutionKernelImpl(
+                          this->get_trans_func(),
+                          this->get_i_generation(),
+                          n_generations,
+                          c * tile_width,
+                          r * tile_height,
+                          grid_width,
+                          grid_height,
+                          this->get_halo_value())); };
 
-                    if (runtime_analysis_enabled)
+                    cl::sycl::event computation_event = this->get_queue().submit(submission_lambda);
+
+                    if (this->is_runtime_analysis_enabled())
                     {
-                        runtime_sample->add_event(computation_event, i, c, r);
+                        runtime_sample.add_event(computation_event, i, c, r);
                     }
 
                     output_grid.template submit_tile_output<out_pipe>(queue, UID(c, r));
                 }
             }
             input_grid = output_grid;
-            i_generation += std::min(n_generations - i_generation, pipeline_length);
+            this->inc_i_generation(std::min(n_generations - this->get_i_generation(), pipeline_length));
         }
+
+        this->set_runtime_sample(runtime_sample);
     }
 
     /**
@@ -148,7 +141,7 @@ public:
      * 
      * \param input_buffer A buffer containing the new state of the grid.
      */
-    void set_input(cl::sycl::buffer<T, 2> input_buffer)
+    void set_input(cl::sycl::buffer<T, 2> input_buffer) override
     {
         this->input_grid = GridImpl(input_buffer);
     }
@@ -160,7 +153,7 @@ public:
      * 
      * \param output_buffer Copy the state of the grid to this buffer.
      */
-    void copy_output(cl::sycl::buffer<T, 2> output_buffer)
+    void copy_output(cl::sycl::buffer<T, 2> output_buffer) override
     {
         input_grid.copy_to(output_buffer);
     }
@@ -175,164 +168,8 @@ public:
         return input_grid.get_grid_range();
     }
 
-    /**
-     * \brief Return the value of cells in the grid halo.
-     * 
-     * \return The value of cells in the grid halo.
-     */
-    T get_halo_value() const
-    {
-        return halo_value;
-    }
-
-    /**
-     * \brief Set the value of cells in the grid halo.
-     * 
-     * \param halo_value The new value of cells in the grid halo.
-     */
-    void set_halo_value(T halo_value)
-    {
-        this->halo_value = halo_value;
-    }
-
-    /**
-     * \brief Manually set the SYCL queue to use for execution.
-     * 
-     * Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will lead to exceptions.
-     * 
-     * In order to use runtime analysis features, the queue has to be configured with the `cl::sycl::property::queue::enable_profiling` property.
-     * 
-     * \param queue The new SYCL queue to use for execution.
-     * \param runtime_analysis Enable event-level runtime analysis.
-     */
-    void set_queue(cl::sycl::queue queue, bool runtime_analysis)
-    {
-        runtime_analysis_enabled = runtime_analysis;
-        this->queue = queue;
-        verify_queue_properties();
-    }
-
-    /**
-     * \brief Set up a SYCL queue with the FPGA emulator device.
-     * 
-     * Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will lead to exceptions.
-     */
-    void select_emulator()
-    {
-        select_emulator(false);
-    }
-
-    /**
-     * \brief Set up a SYCL queue with an FPGA device.
-     * 
-     * Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will lead to exceptions.
-     */
-    void select_fpga()
-    {
-        select_fpga(false);
-    }
-
-    /**
-     * \brief Set up a SYCL queue with the FPGA emulator device and optional runtime analysis.
-     * 
-     * Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will lead to exceptions.
-     * 
-     * \param runtime_analysis Enable event-level runtime analysis.
-     */
-    void select_emulator(bool runtime_analysis)
-    {
-        runtime_analysis_enabled = runtime_analysis;
-        this->queue = cl::sycl::queue(cl::sycl::INTEL::fpga_emulator_selector(), get_queue_properties());
-    }
-
-    /**
-     * \brief Set up a SYCL queue with an FPGA device and optional runtime analysis.
-     * 
-     * Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will lead to exceptions.
-     * 
-     * \param runtime_analysis Enable event-level runtime analysis.
-     */
-    void select_fpga(bool runtime_analysis)
-    {
-        runtime_analysis_enabled = runtime_analysis;
-        this->queue = cl::sycl::queue(cl::sycl::INTEL::fpga_selector(), get_queue_properties());
-    }
-
-    /**
-     * \brief Update the transition function instance.
-     * 
-     * \param trans_func The new transition function instance.
-     */
-    void set_trans_func(TransFunc trans_func)
-    {
-        this->trans_func = trans_func;
-    }
-
-    /**
-     * \brief Get the current generation index of the grid.
-     * 
-     * \return The current generation index of the grid.
-     */
-    uindex_t get_i_generation() const
-    {
-        return i_generation;
-    }
-
-    /**
-     * \brief Set the generation index of the grid.
-     * 
-     * \param i_generation The new generation index of the grid.
-     */
-    void set_i_generation(uindex_t i_generation)
-    {
-        this->i_generation = i_generation;
-    }
-
-    /**
-     * \brief Return the runtime information collected from the last \ref StencilExecutor.run call.
-     * 
-     * \return The collected runtime information. May be `nullopt` if no runtime analysis was configured.
-     */
-    std::optional<RuntimeSample> get_runtime_sample()
-    {
-        return runtime_sample;
-    }
-
 private:
-    cl::sycl::property_list get_queue_properties()
-    {
-        cl::sycl::property_list properties;
-        if (runtime_analysis_enabled)
-        {
-            properties = {cl::sycl::property::queue::enable_profiling{}};
-        }
-        else
-        {
-            properties = {};
-        }
-        return properties;
-    }
-
-    void verify_queue_properties()
-    {
-        if (!queue.has_value())
-            return;
-
-        if (runtime_analysis_enabled && !queue->has_property<cl::sycl::property::queue::enable_profiling>())
-        {
-            throw std::runtime_error("Runtime analysis is enabled, but the queue does not support it.");
-        }
-    }
-
     using GridImpl = Grid<T, tile_width, tile_height, halo_radius, burst_length>;
-
     GridImpl input_grid;
-    std::optional<cl::sycl::queue> queue;
-    TransFunc trans_func;
-    uindex_t i_generation;
-    T halo_value;
-
-    bool runtime_analysis_enabled;
-    std::optional<RuntimeSample> runtime_sample;
 };
 } // namespace stencil
