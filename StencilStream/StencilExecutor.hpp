@@ -167,7 +167,7 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc>
      *
      * \return The range of the grid.
      */
-    UID get_grid_range() const { return input_grid.get_grid_range(); }
+    UID get_grid_range() const override { return input_grid.get_grid_range(); }
 
   private:
     using GridImpl = Grid<T, tile_width, tile_height, halo_radius, burst_length>;
