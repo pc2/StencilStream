@@ -8,7 +8,7 @@
  * 
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "../res/FPGATransFunc.hpp"
+#include "../res/TransFuncs.hpp"
 #include "../res/catch.hpp"
 #include "../res/constants.hpp"
 #include <StencilStream/StencilExecutor.hpp>
@@ -33,7 +33,7 @@ TEST_CASE("StencilExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[StencilExecu
         }
     }
 
-    StencilExecutor<Cell, stencil_radius, TransFunc> executor(TransFunc::halo(), TransFunc());
+    StencilExecutor<Cell, stencil_radius, TransFunc> executor(Cell::halo(), TransFunc());
     executor.set_input(in_buffer);
 
     buffer<Cell, 2> out_buffer(range<2>(grid_width, grid_height));
@@ -70,7 +70,7 @@ TEST_CASE("StencilExecutor::run(uindex_t)", "[StencilExecutor]")
         }
     }
 
-    StencilExecutor<Cell, stencil_radius, TransFunc, pipeline_length> executor(TransFunc::halo(), TransFunc());
+    StencilExecutor<Cell, stencil_radius, TransFunc, pipeline_length> executor(Cell::halo(), TransFunc());
     REQUIRE(executor.get_i_generation() == 0);
 
     executor.set_input(in_buffer);

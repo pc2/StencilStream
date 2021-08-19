@@ -7,7 +7,7 @@
  * 
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "../res/FPGATransFunc.hpp"
+#include "../res/TransFuncs.hpp"
 #include "../res/HostPipe.hpp"
 #include "../res/catch.hpp"
 #include "../res/constants.hpp"
@@ -19,7 +19,7 @@ using namespace cl::sycl;
 
 void test_monotile_kernel(uindex_t n_generations)
 {
-    using TransFunc = FPGATransFunc<stencil_radius>;
+    using TransFunc = HostTransFunc<stencil_radius>;
     using in_pipe = HostPipe<class MonotileExecutionKernelInPipeID, Cell>;
     using out_pipe = HostPipe<class MonotileExecutionKernelOutPipeID, Cell>;
     using TestExecutionKernel = MonotileExecutionKernel<TransFunc, Cell, stencil_radius, pipeline_length, tile_width, tile_height, in_pipe, out_pipe>;
@@ -32,7 +32,7 @@ void test_monotile_kernel(uindex_t n_generations)
         }
     }
 
-    TestExecutionKernel(TransFunc(), 0, n_generations, tile_width, tile_height, TransFunc::halo())();
+    TestExecutionKernel(TransFunc(), 0, n_generations, tile_width, tile_height, Cell::halo())();
 
     buffer<Cell, 2> output_buffer(range<2>(tile_width, tile_height));
 
@@ -79,61 +79,8 @@ TEST_CASE("MonotileExecutionKernel (noop)", "[MonotileExecutionKernel]")
 {
     test_monotile_kernel(0);
 }
-/*
-TEST_CASE("Halo values inside the pipeline are handled correctly", "[MonotileExecutionKernel]")
-{
-    auto my_kernel = [=](Stencil<bool, stencil_radius> const &stencil)
-    {
-        ID idx = stencil.id;
-        bool is_valid = true;
-        if (idx.c == 0)
-        {
-            is_valid &= stencil[ID(-1, -1)] && stencil[ID(-1, 0)] && stencil[ID(-1, 1)];
-        }
-        else if (idx.c == tile_width - 1)
-        {
-            is_valid &= stencil[ID(1, -1)] && stencil[ID(1, 0)] && stencil[ID(1, 1)];
-        }
 
-        if (idx.r == 0)
-        {
-            is_valid &= stencil[ID(-1, -1)] && stencil[ID(0, -1)] && stencil[ID(1, -1)];
-        }
-        else if (idx.r == tile_height - 1)
-        {
-            is_valid &= stencil[ID(-1, 1)] && stencil[ID(0, 1)] && stencil[ID(1, 1)];
-        }
-
-        return is_valid;
-    };
-
-    using in_pipe = HostPipe<class HaloValueTestInPipeID, bool>;
-    using out_pipe = HostPipe<class HaloValueTestOutPipeID, bool>;
-    using TestExecutionKernel = MonotileExecutionKernel<decltype(my_kernel), bool, stencil_radius, pipeline_length, tile_width, tile_height, in_pipe, out_pipe>;
-
-    for (index_t c = -halo_radius; c < index_t(halo_radius + tile_width); c++)
-    {
-        for (index_t r = -halo_radius; r < index_t(halo_radius + tile_height); r++)
-        {
-            in_pipe::write(false);
-        }
-    }
-
-    TestExecutionKernel(my_kernel, 0, pipeline_length, 0, 0, tile_width, tile_height, true)();
-
-    for (uindex_t c = 0; c < tile_width; c++)
-    {
-        for (uindex_t r = 0; r < tile_height; r++)
-        {
-            REQUIRE(out_pipe::read());
-        }
-    }
-
-    REQUIRE(in_pipe::empty());
-    REQUIRE(out_pipe::empty());
-}
-
-TEST_CASE("Incomplete Pipeline with i_generation != 0", "[MonotileExecutionKernel]")
+TEST_CASE("MonotileExecutionKernel: Incomplete Pipeline with i_generation != 0", "[MonotileExecutionKernel]")
 {
     using Cell = uint8_t;
     auto trans_func = [](Stencil<Cell, 1> const &stencil) {
@@ -144,13 +91,13 @@ TEST_CASE("Incomplete Pipeline with i_generation != 0", "[MonotileExecutionKerne
     using out_pipe = HostPipe<class IncompletePipelineOutPipeID, Cell>;
     using TestExecutionKernel = MonotileExecutionKernel<decltype(trans_func), Cell, 1, 16, 64, 64, in_pipe, out_pipe>;
 
-    for (int c = -16; c < 16+64; c++) {
-        for (int r = -16; r < 16+64; r++) {
+    for (int c = 0; c < 64; c++) {
+        for (int r = 0; r < 64; r++) {
             in_pipe::write(0);
         }
     }
 
-    TestExecutionKernel kernel(trans_func, 16, 20, 0, 0, 64, 64, 0);
+    TestExecutionKernel kernel(trans_func, 16, 20, 64, 64, 0);
     kernel.operator()();
 
     REQUIRE(in_pipe::empty());
@@ -163,4 +110,3 @@ TEST_CASE("Incomplete Pipeline with i_generation != 0", "[MonotileExecutionKerne
 
     REQUIRE(out_pipe::empty());
 }
-*/

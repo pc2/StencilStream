@@ -95,7 +95,7 @@ public:
             if (r[i] < index_t(0))
             {
                 r[i] += tile_height;
-                c[i] += 1;
+                c[i] -= 1;
             }
             prev_c = c[i];
             prev_r = r[i];
@@ -104,8 +104,8 @@ public:
         [[intel::fpga_memory, intel::numbanks(2 * pipeline_length)]] T cache[2][tile_height][pipeline_length][stencil_diameter - 1];
         [[intel::fpga_register]] T stencil_buffer[pipeline_length][stencil_diameter][stencil_diameter];
 
-// Initializing the first cache. All following caches will be initialized with their predecessor's output,
-// but since the first stage has no predecessor, it's cache needs to be initilized.
+        // Initializing the first cache. All following caches will be initialized with their predecessor's output,
+        // but since the first stage has no predecessor, it's cache needs to be initilized.
 #pragma unroll
         for (uindex_t cache_r = 0; cache_r < tile_height; cache_r++)
         {
@@ -164,14 +164,31 @@ public:
 
                 if (i_generation + stage < n_generations)
                 {
-                    if (c[stage] >= (index_t)0 && r[stage] >= (index_t)0 && c[stage] < (index_t)grid_width && r[stage] < (index_t)grid_height)
+                    if (id_in_grid(c[stage], r[stage]))
                     {
                         Stencil<T, stencil_radius> stencil(
                             ID(c[stage], r[stage]),
                             i_generation + stage,
                             stage,
-                            stencil_buffer[stage],
                             UID(grid_width, grid_height));
+
+                        #pragma unroll
+                        for (index_t cell_c = -stencil_radius; cell_c <= index_t(stencil_radius); cell_c++)
+                        {
+                            #pragma unroll
+                            for (index_t cell_r = -stencil_radius; cell_r <= index_t(stencil_radius); cell_r++)
+                            {
+                                if (id_in_grid(cell_c + c[stage], cell_r + r[stage]))
+                                {
+                                    stencil[ID(cell_c, cell_r)] = stencil_buffer[stage][cell_c + stencil_radius][cell_r + stencil_radius];
+                                }
+                                else
+                                {
+                                    stencil[ID(cell_c, cell_r)] = halo_value;
+                                }
+                            }
+                        }
+
                         value = trans_func(stencil);
                     }
                     else
@@ -199,114 +216,12 @@ public:
         }
     }
 
-    /**
-     * \brief Execute the configured operations.
-    void operator()() const
-    {
-        uindex_t input_tile_c = 0;
-        uindex_t input_tile_r = 0;
-
-        [[intel::fpga_memory, intel::numbanks(2 * pipeline_length)]] T cache[2][input_tile_height][pipeline_length][stencil_diameter - 1];
-        uindex_t active_cache = 0;
-        [[intel::fpga_register]] T stencil_buffer[pipeline_length][stencil_diameter][stencil_diameter];
-
-        for (uindex_t i = 0; i < n_input_cells; i++)
-        {
-            T value = in_pipe::read();
-
-#pragma unroll
-            for (uindex_t stage = 0; stage < pipeline_length; stage++)
-            {
-#pragma unroll
-                for (uindex_t r = 0; r < stencil_diameter - 1; r++)
-                {
-#pragma unroll
-                    for (uindex_t c = 0; c < stencil_diameter; c++)
-                    {
-                        stencil_buffer[stage][c][r] = stencil_buffer[stage][c][r + 1];
-                    }
-                }
-
-                index_t input_grid_c = grid_c_offset + index_t(input_tile_c) - (stencil_diameter - 1) - (pipeline_length + stage - 2) * stencil_radius;
-                index_t input_grid_r = grid_r_offset + index_t(input_tile_r) - (stencil_diameter - 1) - (pipeline_length + stage - 2) * stencil_radius;
-
-                // Update the stencil buffer and cache with previous cache contents and the new input cell.
-#pragma unroll
-                for (uindex_t cache_c = 0; cache_c < stencil_diameter; cache_c++)
-                {
-                    T new_value;
-                    if (cache_c == stencil_diameter - 1)
-                    {
-                        if (input_grid_c < 0 || input_grid_r < 0 || input_grid_c >= grid_width || input_grid_r >= grid_height)
-                        {
-                            new_value = halo_value;
-                        }
-                        else
-                        {
-                            new_value = value;
-                        }
-                    }
-                    else
-                    {
-                        new_value = cache[active_cache][input_tile_r][stage][cache_c];
-                    }
-
-                    stencil_buffer[stage][cache_c][stencil_diameter - 1] = new_value;
-                    if (cache_c > 0)
-                    {
-                        cache[active_cache == 0 ? 1 : 0][input_tile_r][stage][cache_c - 1] = new_value;
-                    }
-                }
-
-                index_t output_grid_c = input_grid_c - stencil_radius;
-                index_t output_grid_r = input_grid_r - stencil_radius;
-                Stencil<T, stencil_radius> stencil(
-                    ID(output_grid_c, output_grid_r),
-                    i_generation + stage,
-                    stage,
-                    stencil_buffer[stage],
-                    UID(grid_width, grid_height));
-
-                if (i_generation + stage < n_generations)
-                {
-                    value = trans_func(stencil);
-                }
-                else
-                {
-                    value = stencil_buffer[stage][stencil_radius][stencil_radius];
-                }
-            }
-
-            bool is_valid_output = input_tile_c >= (stencil_diameter - 1) * pipeline_length;
-            is_valid_output &= input_tile_r >= (stencil_diameter - 1) * pipeline_length;
-
-            if (is_valid_output)
-            {
-                out_pipe::write(value);
-            }
-
-            if (input_tile_r == input_tile_height - 1)
-            {
-                active_cache = active_cache == 0 ? 1 : 0;
-                input_tile_r = 0;
-                if (input_tile_c == input_tile_width - 1)
-                {
-                    input_tile_c = 0;
-                }
-                else
-                {
-                    input_tile_c++;
-                }
-            }
-            else
-            {
-                input_tile_r++;
-            }
-        }
-    }
-    */
-
 private:
+    bool id_in_grid(index_t c, index_t r) const
+    {
+        return c >= index_t(0) && r >= index_t(0) && c < index_t(grid_width) && r < index_t(grid_height);
+    }
+
     TransFunc trans_func;
     uindex_t i_generation;
     uindex_t n_generations;

@@ -7,7 +7,7 @@
  * 
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "../res/FPGATransFunc.hpp"
+#include "../res/TransFuncs.hpp"
 #include <CL/sycl.hpp>
 #include <CL/sycl/INTEL/fpga_extensions.hpp>
 #include <StencilStream/StencilExecutor.hpp>
@@ -68,7 +68,7 @@ int main()
 
     std::cout << "Input loaded" << std::endl;
 
-    Executor executor(TransFunc::halo(), TransFunc());
+    Executor executor(Cell::halo(), TransFunc());
     executor.set_input(in_buffer);
     executor.set_queue(working_queue, false);
 
@@ -93,6 +93,8 @@ int main()
             }
         }
     }
+
+    std::cout << "Test finished successfully!" << std::endl;
 
     return 0;
 }

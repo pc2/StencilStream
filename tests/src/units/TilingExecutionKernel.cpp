@@ -7,7 +7,7 @@
  * 
  * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "../res/FPGATransFunc.hpp"
+#include "../res/TransFuncs.hpp"
 #include "../res/HostPipe.hpp"
 #include "../res/catch.hpp"
 #include "../res/constants.hpp"
@@ -34,12 +34,12 @@ void test_tiling_kernel(uindex_t n_generations)
             }
             else
             {
-                in_pipe::write(TransFunc::halo());
+                in_pipe::write(Cell::halo());
             }
         }
     }
 
-    TestExecutionKernel(TransFunc(), 0, n_generations, 0, 0, tile_width, tile_height, TransFunc::halo())();
+    TestExecutionKernel(TransFunc(), 0, n_generations, 0, 0, tile_width, tile_height, Cell::halo())();
 
     buffer<Cell, 2> output_buffer(range<2>(tile_width, tile_height));
 
