@@ -38,7 +38,7 @@ const FLOAT amb_temp = 80.0;
 /* stencil parameters */
 const uindex_t stencil_radius = 1;
 #ifdef HARDWARE
-const uindex_t pipeline_length = 285;
+const uindex_t pipeline_length = 280;
 #else
 const uindex_t pipeline_length = 32;
 #endif
