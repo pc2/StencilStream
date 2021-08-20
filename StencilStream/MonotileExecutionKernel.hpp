@@ -81,8 +81,8 @@ public:
 
     void operator()() const
     {
-        index_t c[pipeline_length];
-        index_t r[pipeline_length];
+        [[intel::fpga_register]] index_t c[pipeline_length];
+        [[intel::fpga_register]] index_t r[pipeline_length];
 
         // Initializing (output) column and row counters.
         index_t prev_c = 0;
@@ -103,18 +103,6 @@ public:
 
         [[intel::fpga_memory, intel::numbanks(2 * pipeline_length)]] T cache[2][tile_height][pipeline_length][stencil_diameter - 1];
         [[intel::fpga_register]] T stencil_buffer[pipeline_length][stencil_diameter][stencil_diameter];
-
-        // Initializing the first cache. All following caches will be initialized with their predecessor's output,
-        // but since the first stage has no predecessor, it's cache needs to be initilized.
-#pragma unroll
-        for (uindex_t cache_r = 0; cache_r < tile_height; cache_r++)
-        {
-#pragma unroll
-            for (uindex_t cache_c = 0; cache_c < stencil_diameter - 1; cache_c++)
-            {
-                cache[0][cache_r][0][cache_c] = cache[1][cache_r][0][cache_c] = halo_value;
-            }
-        }
 
         for (uindex_t i = 0; i < n_iterations; i++)
         {

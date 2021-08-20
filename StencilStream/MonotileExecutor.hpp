@@ -34,7 +34,7 @@ class MonotileExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc
 
     MonotileExecutor(T halo_value, TransFunc trans_func)
         : SingleQueueExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
-          tile_buffer(cl::sycl::range<2>(1, 1)) {
+          tile_buffer(cl::sycl::range<2>(tile_width, tile_height)) {
         auto ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
         ac[0][0] = halo_value;
     }
@@ -46,7 +46,14 @@ class MonotileExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc
                                    "requires that grid ranges are smaller or equal to the tile "
                                    "range");
         }
-        tile_buffer = input_buffer;
+        auto in_ac = input_buffer.template get_access<cl::sycl::access::mode::read>();
+        tile_buffer = cl::sycl::buffer<T, 2>(input_buffer.get_range());
+        auto tile_ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
+        for (uindex_t c = 0; c < input_buffer.get_range()[0]; c++) {
+            for (uindex_t r = 0; r < input_buffer.get_range()[1]; r++) {
+                tile_ac[c][r] = in_ac[c][r];
+            }
+        }
     }
 
     void copy_output(cl::sycl::buffer<T, 2> output_buffer) override {
@@ -93,17 +100,17 @@ class MonotileExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc
                 T halo_value = this->get_halo_value();
 
                 cgh.single_task<class MonotileInputKernel>([=]() {
-                    for (uindex_t c = 0; c < grid_width; c++) {
-                        for (uindex_t r = 0; r < grid_height; r++) {
-                            in_pipe::write(ac[c][r]);
-                        }
-                        for (uindex_t r = grid_height; r < tile_height; r++) {
-                            in_pipe::write(halo_value);
-                        }
-                    }
-                    for (uindex_t c = grid_width; c < tile_width; c++) {
+                    [[intel::loop_coalesce(2)]]
+                    for (uindex_t c = 0; c < tile_width; c++) {
                         for (uindex_t r = 0; r < tile_height; r++) {
-                            in_pipe::write(halo_value);
+                            T value;
+                            if (c < grid_width && r < grid_height) {
+                                value = ac[c][r];
+                            } else {
+                                value = halo_value;
+                            }
+
+                            in_pipe::write(value);
                         }
                     }
                 });
@@ -121,17 +128,13 @@ class MonotileExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc
                 T halo_value = this->get_halo_value();
 
                 cgh.single_task<class MonotileInputKernel>([=]() {
-                    for (uindex_t c = 0; c < grid_width; c++) {
-                        for (uindex_t r = 0; r < grid_height; r++) {
-                            ac[c][r] = out_pipe::read();
-                        }
-                        for (uindex_t r = grid_height; r < tile_height; r++) {
-                            out_pipe::read();
-                        }
-                    }
-                    for (uindex_t c = grid_width; c < tile_width; c++) {
+                    [[intel::loop_coalesce(2)]]
+                    for (uindex_t c = 0; c < tile_width; c++) {
                         for (uindex_t r = 0; r < tile_height; r++) {
-                            out_pipe::read();
+                            T value = out_pipe::read();
+                            if (c < grid_width && r < grid_height) {
+                                ac[c][r] = value;
+                            }
                         }
                     }
                 });
@@ -146,5 +149,6 @@ class MonotileExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc
 
   private:
     cl::sycl::buffer<T, 2> tile_buffer;
+    UID grid_range;
 };
 } // namespace stencil
