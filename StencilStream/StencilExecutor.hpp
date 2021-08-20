@@ -99,6 +99,7 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc>
 
         cl::sycl::queue queue = this->get_queue();
 
+        uindex_t target_i_generation = n_generations + i_generation;
         uindex_t n_passes = n_generations / pipeline_length;
         if (n_generations % pipeline_length != 0) {
             n_passes += 1;
@@ -117,14 +118,11 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc>
                 for (uindex_t r = 0; r < input_grid.get_tile_range().r; r++) {
                     input_grid.template submit_tile_input<in_pipe>(queue, UID(c, r));
 
-                    auto submission_lambda = [&](cl::sycl::handler &cgh) {
-                        cgh.single_task(
-                            ExecutionKernelImpl(this->get_trans_func(), this->get_i_generation(),
-                                                n_generations, c * tile_width, r * tile_height,
-                                                grid_width, grid_height, this->get_halo_value()));
-                    };
-
-                    cl::sycl::event computation_event = this->get_queue().submit(submission_lambda);
+                    cl::sycl::event computation_event = queue.submit([&](cl::sycl::handler &cgh) {
+                        cgh.single_task(ExecutionKernelImpl(
+                            trans_func, i_generation, target_i_generation, c * tile_width,
+                            r * tile_height, grid_width, grid_height, halo_value));
+                    });
 
                     if (this->is_runtime_analysis_enabled()) {
                         runtime_sample.add_event(computation_event, i, c, r);
@@ -134,8 +132,7 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc>
                 }
             }
             input_grid = output_grid;
-            this->inc_i_generation(
-                std::min(n_generations - this->get_i_generation(), pipeline_length));
+            i_generation += std::min(target_i_generation - i_generation, pipeline_length);
         }
 
         this->set_runtime_sample(runtime_sample);

@@ -77,20 +77,22 @@ class TilingExecutionKernel {
      *
      * \param trans_func The instance of the transition function to use.
      * \param i_generation The generation index of the input cells.
-     * \param n_generations The number of generations to compute. If this number is bigger than
-     * `pipeline_length`, only `pipeline_length` generations will be computed. \param grid_c_offset
-     * The column offset of the processed tile relative to the grid's origin, not including the
-     * halo. For example, for the most north-western tile the offset will always be (0,0), not
+     * \param target_i_generation The number of generations to compute. If this number is bigger
+     * than `pipeline_length`, only `pipeline_length` generations will be computed. \param
+     * grid_c_offset The column offset of the processed tile relative to the grid's origin, not
+     * including the halo. For example, for the most north-western tile the offset will always be
+     * (0,0), not
      * (-halo_radius,-halo_radius) \param grid_r_offset The row offset of the processed tile
      * relative to the grid's origin. See `grid_c_offset` for details. \param grid_width The number
      * of cell columns in the grid. \param grid_height The number of cell rows in the grid.
      */
-    TilingExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t n_generations,
+    TilingExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t target_i_generation,
                           uindex_t grid_c_offset, uindex_t grid_r_offset, uindex_t grid_width,
                           uindex_t grid_height, T halo_value)
-        : trans_func(trans_func), i_generation(i_generation), n_generations(n_generations),
-          grid_c_offset(grid_c_offset), grid_r_offset(grid_r_offset), grid_width(grid_width),
-          grid_height(grid_height), halo_value(halo_value) {}
+        : trans_func(trans_func), i_generation(i_generation),
+          target_i_generation(target_i_generation), grid_c_offset(grid_c_offset),
+          grid_r_offset(grid_r_offset), grid_width(grid_width), grid_height(grid_height),
+          halo_value(halo_value) {}
 
     /**
      * \brief Execute the configured operations.
@@ -159,7 +161,7 @@ class TilingExecutionKernel {
                     ID(output_grid_c, output_grid_r), i_generation + stage, stage,
                     stencil_buffer[stage], UID(grid_width, grid_height));
 
-                if (i_generation + stage < n_generations) {
+                if (i_generation + stage < target_i_generation) {
                     value = trans_func(stencil);
                 } else {
                     value = stencil_buffer[stage][stencil_radius][stencil_radius];
@@ -190,7 +192,7 @@ class TilingExecutionKernel {
   private:
     TransFunc trans_func;
     uindex_t i_generation;
-    uindex_t n_generations;
+    uindex_t target_i_generation;
     uindex_t grid_c_offset;
     uindex_t grid_r_offset;
     uindex_t grid_width;
