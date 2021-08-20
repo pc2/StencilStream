@@ -97,4 +97,21 @@ TEST_CASE("StencilExecutor::run(uindex_t)", "[StencilExecutor]") {
             }
         }
     }
+
+    // Now, a second run to show that behavior is still correct when i_generation != 0:
+    executor.run(n_generations);
+    REQUIRE(executor.get_i_generation() == 2 * n_generations);
+
+    executor.copy_output(out_buffer);
+    {
+        auto out_buffer_ac = out_buffer.get_access<access::mode::read>();
+        for (uindex_t c = 0; c < grid_width; c++) {
+            for (uindex_t r = 0; r < grid_height; r++) {
+                REQUIRE(out_buffer_ac[c][r].c == c);
+                REQUIRE(out_buffer_ac[c][r].r == r);
+                REQUIRE(out_buffer_ac[c][r].i_generation == 2 * n_generations);
+                REQUIRE(out_buffer_ac[c][r].status == CellStatus::Normal);
+            }
+        }
+    }
 }

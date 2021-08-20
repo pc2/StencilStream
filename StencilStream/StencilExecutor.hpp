@@ -105,6 +105,7 @@ class StencilExecutor {
 
         cl::sycl::queue queue = *(this->queue);
 
+        uindex_t target_i_generation = n_generations + i_generation;
         uindex_t n_passes = n_generations / pipeline_length;
         if (n_generations % pipeline_length != 0) {
             n_passes += 1;
@@ -127,9 +128,9 @@ class StencilExecutor {
                     input_grid.template submit_tile_input<in_pipe>(queue, UID(c, r));
 
                     cl::sycl::event computation_event = queue.submit([&](cl::sycl::handler &cgh) {
-                        cgh.single_task(ExecutionKernelImpl(trans_func, i_generation, n_generations,
-                                                            c * tile_width, r * tile_height,
-                                                            grid_width, grid_height, halo_value));
+                        cgh.single_task(ExecutionKernelImpl(
+                            trans_func, i_generation, target_i_generation, c * tile_width,
+                            r * tile_height, grid_width, grid_height, halo_value));
                     });
 
                     if (runtime_analysis_enabled) {
@@ -140,7 +141,7 @@ class StencilExecutor {
                 }
             }
             input_grid = output_grid;
-            i_generation += std::min(n_generations - i_generation, pipeline_length);
+            i_generation += std::min(target_i_generation - i_generation, pipeline_length);
         }
     }
 
