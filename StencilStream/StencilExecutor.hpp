@@ -113,7 +113,7 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc,
     UID get_grid_range() const override { return input_grid.get_grid_range(); }
 
   protected:
-    void run_pass(uindex_t target_i_generation) override {
+    std::optional<double> run_pass(uindex_t target_i_generation) override {
         using in_pipe = cl::sycl::pipe<class tiling_in_pipe_id, T>;
         using out_pipe = cl::sycl::pipe<class tiling_out_pipe_id, T>;
         using ExecutionKernelImpl =
@@ -127,6 +127,9 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc,
 
         Grid output_grid = input_grid.make_output_grid();
 
+        std::vector<cl::sycl::event> events;
+        events.reserve(input_grid.get_tile_range().c * input_grid.get_tile_range().r);
+
         for (uindex_t c = 0; c < input_grid.get_tile_range().c; c++) {
             for (uindex_t r = 0; r < input_grid.get_tile_range().r; r++) {
                 input_grid.template submit_tile_input<in_pipe>(queue, UID(c, r));
@@ -137,12 +140,27 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc,
                                             target_i_generation, c * tile_width, r * tile_height,
                                             grid_width, grid_height, this->get_halo_value()));
                 });
+                events.push_back(computation_event);
 
                 output_grid.template submit_tile_output<out_pipe>(queue, UID(c, r));
             }
         }
 
         input_grid = output_grid;
+
+        if (this->is_runtime_analysis_enabled()) {
+            double earliest_start = std::numeric_limits<double>::max();
+            double latest_end = std::numeric_limits<double>::min();
+
+            for (cl::sycl::event event : events) {
+                earliest_start = std::min(earliest_start, RuntimeSample::start_of_event(event));
+                latest_end = std::max(latest_end, RuntimeSample::end_of_event(event));
+            }
+
+            return latest_end - earliest_start;
+        } else {
+            return std::nullopt;
+        }
     }
 
   private:

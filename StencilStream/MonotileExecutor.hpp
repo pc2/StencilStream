@@ -74,7 +74,7 @@ class MonotileExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc
     }
 
   protected:
-    void run_pass(uindex_t target_i_generation) override {
+    std::optional<double> run_pass(uindex_t target_i_generation) override {
         using in_pipe = cl::sycl::pipe<class monotile_in_pipe_id, T>;
         using out_pipe = cl::sycl::pipe<class monotile_out_pipe_id, T>;
         using ExecutionKernelImpl =
@@ -128,7 +128,14 @@ class MonotileExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc
                 }
             });
         });
+
         tile_buffer = out_buffer;
+
+        if (this->is_runtime_analysis_enabled()) {
+            return RuntimeSample::runtime_of_event(computation_event);
+        } else {
+            return std::nullopt;
+        }
     }
 
   private:

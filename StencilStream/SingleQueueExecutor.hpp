@@ -27,7 +27,7 @@ namespace stencil {
 template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipeline_length = 1>
 class SingleQueueExecutor : public AbstractExecutor<T, stencil_radius, TransFunc> {
   protected:
-    virtual void run_pass(uindex_t target_i_generation) = 0;
+    virtual std::optional<double> run_pass(uindex_t target_i_generation) = 0;
 
   public:
     SingleQueueExecutor(T halo_value, TransFunc trans_func)
@@ -37,6 +37,12 @@ class SingleQueueExecutor : public AbstractExecutor<T, stencil_radius, TransFunc
     void run(uindex_t n_generations) override {
         cl::sycl::queue queue = this->get_queue();
 
+        if (is_runtime_analysis_enabled()) {
+            runtime_sample = RuntimeSample();
+        } else {
+            runtime_sample = std::nullopt;
+        }
+
         uindex_t target_i_generation = n_generations + this->get_i_generation();
         uindex_t n_passes = n_generations / pipeline_length;
         if (n_generations % pipeline_length != 0) {
@@ -44,7 +50,15 @@ class SingleQueueExecutor : public AbstractExecutor<T, stencil_radius, TransFunc
         }
 
         for (uindex_t i = 0; i < n_passes; i++) {
-            this->run_pass(target_i_generation);
+            std::optional<double> runtime = this->run_pass(target_i_generation);
+            if (is_runtime_analysis_enabled()) {
+                if (runtime.has_value()) {
+                    runtime_sample->add_pass(*runtime);
+                } else {
+                    runtime_sample->add_pass(0.0);
+                }
+            }
+
             this->inc_i_generation(
                 std::min(target_i_generation - this->get_i_generation(), pipeline_length));
         }

@@ -19,7 +19,6 @@
  */
 #pragma once
 #include "Index.hpp"
-#include "boost/multi_array.hpp"
 #include <CL/sycl/buffer.hpp>
 #include <CL/sycl/event.hpp>
 
@@ -35,45 +34,26 @@ class RuntimeSample {
   public:
     /**
      * \brief Prepare the collection of SYCL events.
-     *
-     * \param n_passes The number times the execution kernel is invoced per tile.
-     * \param n_tile_columns The number of tile columns.
-     * \param n_tile_rows The number of tile rows.
      */
-    RuntimeSample(uindex_t n_passes, uindex_t n_tile_columns, uindex_t n_tile_rows)
-        : events(boost::extents[n_passes][n_tile_columns][n_tile_rows]) {}
+    RuntimeSample() : makespan(0.0), n_passes(0.0) {}
 
-    /**
-     * \brief Add an event to the collection.
-     *
-     * \param event The event to add.
-     * \param i_pass The index of the grid pass.
-     * \param i_column The index of the tile column.
-     * \param i_row The index of the tile row.
-     */
-    void add_event(cl::sycl::event event, uindex_t i_pass, uindex_t i_column, uindex_t i_row) {
-        events[i_pass][i_column][i_row] = event;
+    static double start_of_event(cl::sycl::event event) {
+        return double(event.get_profiling_info<cl::sycl::info::event_profiling::command_start>()) /
+               timesteps_per_second;
     }
 
-    /**
-     * \brief Calculate the runtime of the specified event.
-     *
-     * If the event has not been added with \ref RuntimeSample.add_event before, the resulting value
-     * is undefined.
-     *
-     * \param i_pass The index of the grid pass.
-     * \param i_column The index of the tile column.
-     * \param i_row The index of the tile row.
-     * \return The runtime of the specified event, in seconds.
-     */
-    double get_runtime(uindex_t i_pass, uindex_t i_column, uindex_t i_row) {
-        unsigned long event_start =
-            events[i_pass][i_column][i_row]
-                .get_profiling_info<cl::sycl::info::event_profiling::command_start>();
-        unsigned long event_end =
-            events[i_pass][i_column][i_row]
-                .get_profiling_info<cl::sycl::info::event_profiling::command_end>();
-        return (event_end - event_start) / timesteps_per_second;
+    static double end_of_event(cl::sycl::event event) {
+        return double(event.get_profiling_info<cl::sycl::info::event_profiling::command_end>()) /
+               timesteps_per_second;
+    }
+
+    static double runtime_of_event(cl::sycl::event event) {
+        return end_of_event(event) - start_of_event(event);
+    }
+
+    void add_pass(double pass_runtime) {
+        makespan += pass_runtime;
+        n_passes += 1.0;
     }
 
     /**
@@ -84,40 +64,18 @@ class RuntimeSample {
      *
      * \return The total wall time in seconds it took to execute all passes.
      */
-    double get_total_runtime() {
-        unsigned long earliest_start = std::numeric_limits<unsigned long>::max();
-        unsigned long latest_end = std::numeric_limits<unsigned long>::min();
-
-        for (uindex_t i_pass = 0; i_pass < events.shape()[0]; i_pass++) {
-            for (uindex_t i_column = 0; i_column < events.shape()[1]; i_column++) {
-                for (uindex_t i_row = 0; i_row < events.shape()[2]; i_row++) {
-                    unsigned long event_start =
-                        events[i_pass][i_column][i_row]
-                            .get_profiling_info<cl::sycl::info::event_profiling::command_start>();
-                    unsigned long event_end =
-                        events[i_pass][i_column][i_row]
-                            .get_profiling_info<cl::sycl::info::event_profiling::command_end>();
-                    if (event_start < earliest_start)
-                        earliest_start = event_start;
-                    if (event_end > latest_end)
-                        latest_end = event_end;
-                }
-            }
-        }
-
-        return (latest_end - earliest_start) / timesteps_per_second;
-    }
+    double get_total_runtime() { return makespan; }
 
     /**
      * \brief Calculate the mean execution speed in passes per second.
      *
      * \return The mean execution speed in passes per second.
      */
-    double get_mean_speed() { return get_total_runtime() / double(events.shape()[0]); }
+    double get_mean_speed() { return makespan / n_passes; }
 
   private:
     static constexpr double timesteps_per_second = 1000000000.0;
 
-    boost::multi_array<cl::sycl::event, 3> events;
+    double makespan, n_passes;
 };
 } // namespace stencil
