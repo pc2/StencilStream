@@ -68,10 +68,11 @@ namespace stencil {
  */
 template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipeline_length = 1,
           uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024>
-class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc> {
+class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc, pipeline_length> {
   public:
     static constexpr uindex_t burst_length = std::min<uindex_t>(1, burst_size / sizeof(T));
     static constexpr uindex_t halo_radius = stencil_radius * pipeline_length;
+    using Parent = SingleQueueExecutor<T, stencil_radius, TransFunc, pipeline_length>;
 
     /**
      * \brief Create a new stencil executor.
@@ -80,63 +81,8 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc>
      * \param trans_func An instance of the transition function type.
      */
     StencilExecutor(T halo_value, TransFunc trans_func)
-        : SingleQueueExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
+        : Parent(halo_value, trans_func),
           input_grid(cl::sycl::buffer<T, 2>(cl::sycl::range<2>(0, 0))) {}
-
-    /**
-     * \brief Compute the next generations.
-     *
-     * It uses the transition function to advance the state of the grid.
-     *
-     * \param n_generations The number of generations to advance the state of the grid by.
-     */
-    void run(uindex_t n_generations) override {
-        using in_pipe = cl::sycl::pipe<class in_pipe_id, T>;
-        using out_pipe = cl::sycl::pipe<class out_pipe_id, T>;
-        using ExecutionKernelImpl =
-            TilingExecutionKernel<TransFunc, T, stencil_radius, pipeline_length, tile_width,
-                                  tile_height, in_pipe, out_pipe>;
-
-        cl::sycl::queue queue = this->get_queue();
-
-        uindex_t target_i_generation = n_generations + i_generation;
-        uindex_t n_passes = n_generations / pipeline_length;
-        if (n_generations % pipeline_length != 0) {
-            n_passes += 1;
-        }
-
-        RuntimeSample runtime_sample(n_passes, input_grid.get_tile_range().c,
-                                     input_grid.get_tile_range().r);
-
-        uindex_t grid_width = input_grid.get_grid_range().c;
-        uindex_t grid_height = input_grid.get_grid_range().r;
-
-        for (uindex_t i = 0; i < n_passes; i++) {
-            Grid output_grid = input_grid.make_output_grid();
-
-            for (uindex_t c = 0; c < input_grid.get_tile_range().c; c++) {
-                for (uindex_t r = 0; r < input_grid.get_tile_range().r; r++) {
-                    input_grid.template submit_tile_input<in_pipe>(queue, UID(c, r));
-
-                    cl::sycl::event computation_event = queue.submit([&](cl::sycl::handler &cgh) {
-                        cgh.single_task(ExecutionKernelImpl(
-                            trans_func, i_generation, target_i_generation, c * tile_width,
-                            r * tile_height, grid_width, grid_height, halo_value));
-                    });
-
-                    if (this->is_runtime_analysis_enabled()) {
-                        runtime_sample.add_event(computation_event, i, c, r);
-                    }
-
-                    output_grid.template submit_tile_output<out_pipe>(queue, UID(c, r));
-                }
-            }
-            input_grid = output_grid;
-            i_generation += std::min(target_i_generation - i_generation, pipeline_length);
-        }
-
-        this->set_runtime_sample(runtime_sample);
-    }
 
     /**
      * \brief Set the state of the grid.
@@ -165,6 +111,39 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc>
      * \return The range of the grid.
      */
     UID get_grid_range() const override { return input_grid.get_grid_range(); }
+
+  protected:
+    void run_pass(uindex_t target_i_generation) override {
+        using in_pipe = cl::sycl::pipe<class tiling_in_pipe_id, T>;
+        using out_pipe = cl::sycl::pipe<class tiling_out_pipe_id, T>;
+        using ExecutionKernelImpl =
+            TilingExecutionKernel<TransFunc, T, stencil_radius, pipeline_length, tile_width,
+                                  tile_height, in_pipe, out_pipe>;
+
+        cl::sycl::queue &queue = this->get_queue();
+
+        uindex_t grid_width = input_grid.get_grid_range().c;
+        uindex_t grid_height = input_grid.get_grid_range().r;
+
+        Grid output_grid = input_grid.make_output_grid();
+
+        for (uindex_t c = 0; c < input_grid.get_tile_range().c; c++) {
+            for (uindex_t r = 0; r < input_grid.get_tile_range().r; r++) {
+                input_grid.template submit_tile_input<in_pipe>(queue, UID(c, r));
+
+                cl::sycl::event computation_event = queue.submit([&](cl::sycl::handler &cgh) {
+                    cgh.single_task(
+                        ExecutionKernelImpl(this->get_trans_func(), this->get_i_generation(),
+                                            target_i_generation, c * tile_width, r * tile_height,
+                                            grid_width, grid_height, this->get_halo_value()));
+                });
+
+                output_grid.template submit_tile_output<out_pipe>(queue, UID(c, r));
+            }
+        }
+
+        input_grid = output_grid;
+    }
 
   private:
     using GridImpl = Grid<T, tile_width, tile_height, halo_radius, burst_length>;

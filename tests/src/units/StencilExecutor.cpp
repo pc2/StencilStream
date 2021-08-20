@@ -29,7 +29,10 @@ using namespace stencil;
 using namespace cl::sycl;
 
 using TransFunc = FPGATransFunc<stencil_radius>;
-using SingleQueueExecutorImpl = SingleQueueExecutor<Cell, stencil_radius, TransFunc>;
+using SingleQueueExecutorImpl =
+    SingleQueueExecutor<Cell, stencil_radius, TransFunc, pipeline_length>;
+using StencilExecutorImpl = StencilExecutor<Cell, stencil_radius, TransFunc, pipeline_length>;
+using MonotileExecutorImpl = MonotileExecutor<Cell, stencil_radius, TransFunc, pipeline_length>;
 
 void test_executor_set_input_copy_output(SingleQueueExecutorImpl *executor, uindex_t grid_width,
                                          uindex_t grid_height) {
@@ -60,12 +63,12 @@ void test_executor_set_input_copy_output(SingleQueueExecutorImpl *executor, uind
 }
 
 TEST_CASE("StencilExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[StencilExecutor]") {
-    StencilExecutor<Cell, stencil_radius, TransFunc> executor(Cell::halo(), TransFunc());
+    StencilExecutorImpl executor(Cell::halo(), TransFunc());
     test_executor_set_input_copy_output(&executor, grid_width, grid_height);
 }
 
 TEST_CASE("MonotileExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[MonotileExecutor]") {
-    MonotileExecutor<Cell, stencil_radius, TransFunc> executor(Cell::halo(), TransFunc());
+    MonotileExecutorImpl executor(Cell::halo(), TransFunc());
     test_executor_set_input_copy_output(&executor, tile_width - 1, tile_height - 1);
 }
 
@@ -126,13 +129,11 @@ void test_executor_run(SingleQueueExecutorImpl *executor, uindex_t grid_width,
 }
 
 TEST_CASE("StencilExecutor::run", "[StencilExecutor]") {
-    StencilExecutor<Cell, stencil_radius, TransFunc, pipeline_length> executor(Cell::halo(),
-                                                                               TransFunc());
+    StencilExecutorImpl executor(Cell::halo(), TransFunc());
     test_executor_run(&executor, grid_width, grid_height);
 }
 
 TEST_CASE("MonotileExecutor::run", "[MonotileExecutor]") {
-    MonotileExecutor<Cell, stencil_radius, TransFunc, pipeline_length> executor(Cell::halo(),
-                                                                                TransFunc());
+    MonotileExecutorImpl executor(Cell::halo(), TransFunc());
     test_executor_run(&executor, grid_width, grid_height);
 }
