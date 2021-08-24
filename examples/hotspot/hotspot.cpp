@@ -48,7 +48,7 @@ const FLOAT amb_temp = 80.0;
 /* stencil parameters */
 const uindex_t stencil_radius = 1;
 #ifdef HARDWARE
-const uindex_t pipeline_length = 256;
+const uindex_t pipeline_length = 280;
 #else
 const uindex_t pipeline_length = 32;
 #endif
@@ -168,6 +168,8 @@ double run_simulation(cl::sycl::queue working_queue, buffer<vec<FLOAT, 2>, 2> te
         ID idx = temp.id;
         index_t c = idx.c;
         index_t r = idx.r;
+        uindex_t width = temp.grid_range.c;
+        uindex_t height = temp.grid_range.r;
 
         FLOAT power = temp[ID(0, 0)][1];
         FLOAT old = temp[ID(0, 0)][0];
@@ -175,6 +177,18 @@ double run_simulation(cl::sycl::queue working_queue, buffer<vec<FLOAT, 2>, 2> te
         FLOAT right = temp[ID(1, 0)][0];
         FLOAT top = temp[ID(0, -1)][0];
         FLOAT bottom = temp[ID(0, 1)][0];
+
+        if (c == 0) {
+            left = old;
+        } else if (c == width - 1) {
+            right = old;
+        }
+
+        if (r == 0) {
+            top = old;
+        } else if (r == height - 1) {
+            bottom = old;
+        }
 
         // As in the OpenCL version of the rodinia "hotspot" benchmark.
         FLOAT new_temp =
@@ -196,6 +210,8 @@ double run_simulation(cl::sycl::queue working_queue, buffer<vec<FLOAT, 2>, 2> te
 #endif
 
     executor.run(sim_time);
+
+    executor.copy_output(temp);
 
     return executor.get_runtime_sample().value().get_total_runtime();
 }

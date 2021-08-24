@@ -27,7 +27,7 @@ using namespace cl::sycl;
 using namespace stencil;
 
 const uindex_t stencil_radius = 1;
-const uindex_t pipeline_length = 32;
+const uindex_t pipeline_length = 34;
 const uindex_t tile_width = 1024;
 const uindex_t tile_height = 1024;
 const uindex_t grid_width = 2 * tile_width;
