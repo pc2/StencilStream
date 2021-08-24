@@ -96,9 +96,15 @@ class MonotileExecutionKernel {
             prev_r = r[i];
         }
 
-        [[intel::fpga_memory,
-          intel::numbanks(
-              2 * pipeline_length)]] T cache[2][tile_height][pipeline_length][stencil_diameter - 1];
+        /*
+         * The intel::numbanks attribute requires a power of two as it's argument and if the
+         * pipeline length isn't a power of two, it would produce an error. Therefore, we calculate
+         * the next power of two and use it to allocate the cache. The compiler is smart enough to
+         * see that these additional banks in the cache aren't used and therefore optimizes them
+         * away.
+         */
+        [[intel::fpga_memory, intel::numbanks(2 * next_power_of_two(pipeline_length))]] T
+            cache[2][tile_height][next_power_of_two(pipeline_length)][stencil_diameter - 1];
         [[intel::fpga_register]] T stencil_buffer[pipeline_length][stencil_diameter]
                                                  [stencil_diameter];
 

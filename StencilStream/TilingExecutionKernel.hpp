@@ -110,7 +110,6 @@ class TilingExecutionKernel {
          */
         [[intel::fpga_memory, intel::numbanks(2 * next_power_of_two(pipeline_length))]] T
             cache[2][input_tile_height][next_power_of_two(pipeline_length)][stencil_diameter - 1];
-        uindex_t active_cache = 0;
         [[intel::fpga_register]] T stencil_buffer[pipeline_length][stencil_diameter]
                                                  [stencil_diameter];
 
@@ -119,11 +118,11 @@ class TilingExecutionKernel {
 
 #pragma unroll
             for (uindex_t stage = 0; stage < pipeline_length; stage++) {
-/*
- * Shift up every value in the stencil_buffer.
- * This operation does not touch the values in the bottom row, which will be filled
- * from the cache and the new input value later.
- */
+                /*
+                 * Shift up every value in the stencil_buffer.
+                 * This operation does not touch the values in the bottom row, which will be filled
+                 * from the cache and the new input value later.
+                 */
 #pragma unroll
                 for (uindex_t r = 0; r < stencil_diameter - 1; r++) {
 #pragma unroll
@@ -152,13 +151,12 @@ class TilingExecutionKernel {
                             new_value = value;
                         }
                     } else {
-                        new_value = cache[active_cache][input_tile_r][stage][cache_c];
+                        new_value = cache[input_tile_c & 0b1][input_tile_r][stage][cache_c];
                     }
 
                     stencil_buffer[stage][cache_c][stencil_diameter - 1] = new_value;
                     if (cache_c > 0) {
-                        cache[active_cache == 0 ? 1 : 0][input_tile_r][stage][cache_c - 1] =
-                            new_value;
+                        cache[(~input_tile_c) & 0b1][input_tile_r][stage][cache_c - 1] = new_value;
                     }
                 }
 
@@ -183,13 +181,8 @@ class TilingExecutionKernel {
             }
 
             if (input_tile_r == input_tile_height - 1) {
-                active_cache = active_cache == 0 ? 1 : 0;
                 input_tile_r = 0;
-                if (input_tile_c == input_tile_width - 1) {
-                    input_tile_c = 0;
-                } else {
-                    input_tile_c++;
-                }
+                input_tile_c++;
             } else {
                 input_tile_r++;
             }
@@ -197,17 +190,6 @@ class TilingExecutionKernel {
     }
 
   private:
-    /**
-     * \brief Calculate the smallest power of two that is greater or equal to the given value.
-     */
-    static constexpr uindex_t next_power_of_two(uindex_t value) {
-        uindex_t next_power_of_two = 1;
-        while (next_power_of_two < value) {
-            next_power_of_two = next_power_of_two << 1;
-        }
-        return next_power_of_two;
-    }
-
     TransFunc trans_func;
     uindex_t i_generation;
     uindex_t target_i_generation;

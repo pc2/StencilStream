@@ -44,4 +44,12 @@ inline constexpr bool is_mode_writable(cl::sycl::access::mode access_mode) {
            access_mode == cl::sycl::access::mode::discard_write ||
            access_mode == cl::sycl::access::mode::discard_read_write;
 }
+
+inline constexpr uindex_t next_power_of_two(uindex_t value) {
+    uindex_t next_power_of_two = 1;
+    while (next_power_of_two < value) {
+        next_power_of_two = next_power_of_two << 1;
+    }
+    return next_power_of_two;
+}
 } // namespace stencil
