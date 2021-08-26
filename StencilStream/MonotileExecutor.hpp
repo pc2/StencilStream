@@ -40,8 +40,7 @@ class MonotileExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc
     }
 
     void set_input(cl::sycl::buffer<T, 2> input_buffer) override {
-        if (input_buffer.get_range()[0] >= tile_width &&
-            input_buffer.get_range()[1] >= tile_height) {
+        if (input_buffer.get_range()[0] > tile_width && input_buffer.get_range()[1] > tile_height) {
             throw std::range_error("The grid is bigger than the tile. The monotile architecture "
                                    "requires that grid ranges are smaller or equal to the tile "
                                    "range");

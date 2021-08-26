@@ -18,8 +18,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "simulation.hpp"
+#include <StencilStream/MonotileExecutor.hpp>
 #include <StencilStream/StencilExecutor.hpp>
 #include <deque>
+
+#ifdef MONOTILE
+using Executor = MonotileExecutor<FDTDCell, stencil_radius, FDTDKernel, pipeline_length, tile_width,
+                                  tile_height>;
+#else
+using Executor = StencilExecutor<FDTDCell, stencil_radius, FDTDKernel, pipeline_length, tile_width,
+                                 tile_height, FDTD_BURST_SIZE>;
+#endif
+
+#ifdef HARDWARE
+using selector = INTEL::fpga_selector;
+#else
+using selector = INTEL::fpga_emulator_selector;
+#endif
 
 auto exception_handler = [](cl::sycl::exception_list exceptions) {
     for (std::exception_ptr const &e : exceptions) {
@@ -104,11 +119,15 @@ int main(int argc, char **argv) {
     Parameters parameters(argc, argv);
     parameters.print_configuration();
 
-#ifdef HARDWARE
-    INTEL::fpga_selector device_selector;
-#else
-    INTEL::fpga_emulator_selector device_selector;
+#ifdef MONOTILE
+    if (parameters.grid_range()[0] > tile_width || parameters.grid_range()[1] > tile_height) {
+        std::cerr << "Error: The grid may not exceed the size of the tile (" << tile_width << " by "
+                  << tile_height << " cells) when using the monotile architecture." << std::endl;
+        exit(1);
+    }
 #endif
+
+    selector device_selector;
     cl::sycl::queue fpga_queue(device_selector, exception_handler,
                                {property::queue::enable_profiling{}});
 
@@ -126,9 +145,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    StencilExecutor<FDTDCell, stencil_radius, FDTDKernel, pipeline_length, tile_width, tile_height,
-                    FDTD_BURST_SIZE>
-        executor(FDTDKernel::halo(), FDTDKernel(parameters));
+    Executor executor(FDTDKernel::halo(), FDTDKernel(parameters));
     executor.set_input(grid_buffer);
     executor.set_queue(fpga_queue, true);
 

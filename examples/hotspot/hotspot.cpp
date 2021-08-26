@@ -19,6 +19,7 @@
  */
 #include <CL/sycl.hpp>
 #include <CL/sycl/INTEL/fpga_extensions.hpp>
+#include <StencilStream/MonotileExecutor.hpp>
 #include <StencilStream/StencilExecutor.hpp>
 #include <fstream>
 
@@ -47,17 +48,16 @@ const FLOAT amb_temp = 80.0;
 
 /* stencil parameters */
 const uindex_t stencil_radius = 1;
-#ifdef HARDWARE
-const uindex_t pipeline_length = 280;
-#else
-const uindex_t pipeline_length = 32;
-#endif
+const uindex_t pipeline_length = 256;
 const uindex_t tile_width = 1024;
 const uindex_t tile_height = 1024;
 const uindex_t burst_size = 1024;
 
-/* Number of simulations to run in benchmark mode */
-const uindex_t n_simulations = 10;
+#ifdef HARDWARE
+using selector = INTEL::fpga_selector;
+#else
+using selector = INTEL::fpga_emulator_selector;
+#endif
 
 void write_output(buffer<vec<FLOAT, 2>, 2> vect, string file) {
     fstream out(file, out.out | out.trunc);
@@ -125,10 +125,6 @@ void usage(int argc, char **argv) {
                  "of each cell"
               << std::endl;
     std::cerr << "    <output_file>    - name of the output file" << std::endl;
-    std::cerr << "                       " << n_simulations
-              << " simulations with i*<sim_time> generations will be executed in total, where i is "
-                 "the index of the simulation."
-              << std::endl;
     exit(1);
 }
 
@@ -198,9 +194,15 @@ double run_simulation(cl::sycl::queue working_queue, buffer<vec<FLOAT, 2>, 2> te
         return vec(new_temp, power);
     };
 
-    StencilExecutor<vec<FLOAT, 2>, stencil_radius, decltype(kernel), pipeline_length, tile_width,
-                    tile_height, burst_size>
-        executor(vec<FLOAT, 2>(0.0, 0.0), kernel);
+#ifdef MONOTILE
+    using Executor = MonotileExecutor<vec<FLOAT, 2>, stencil_radius, decltype(kernel),
+                                      pipeline_length, tile_width, tile_height>;
+#else
+    using Executor = StencilExecutor<vec<FLOAT, 2>, stencil_radius, decltype(kernel),
+                                     pipeline_length, tile_width, tile_height, burst_size>;
+#endif
+
+    Executor executor(vec<FLOAT, 2>(0.0, 0.0), kernel);
     executor.set_input(temp);
 
 #ifdef HARDWARE
@@ -221,11 +223,7 @@ int main(int argc, char **argv) {
     char *tfile, *pfile, *ofile;
     bool benchmark_mode = false;
 
-#ifdef HARDWARE
-    INTEL::fpga_selector device_selector;
-#else
-    INTEL::fpga_emulator_selector device_selector;
-#endif
+    selector device_selector;
     cl::sycl::queue working_queue(device_selector, exception_handler,
                                   {property::queue::enable_profiling{}});
 
@@ -238,6 +236,14 @@ int main(int argc, char **argv) {
         usage(argc, argv);
     if ((sim_time = atoi(argv[3])) <= 0)
         usage(argc, argv);
+
+#ifdef MONOTILE
+    if (n_columns > tile_width || n_rows > tile_height) {
+        std::cerr << "Error: The grid may not exceed the size of the tile (" << tile_width << " by "
+                  << tile_height << " cells) when using the monotile architecture." << std::endl;
+        exit(1);
+    }
+#endif
 
     /* read initial temperatures and input power	*/
     tfile = argv[4];

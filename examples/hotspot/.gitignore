@@ -1,7 +1,5 @@
 # executables
-hotspot_emu
-hotspot_hw
-hotspot_rodinia
+hotspot_*
 
 # build directories
 rodinia_3.1
