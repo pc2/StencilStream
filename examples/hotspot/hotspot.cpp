@@ -59,7 +59,9 @@ using selector = INTEL::fpga_selector;
 using selector = INTEL::fpga_emulator_selector;
 #endif
 
-void write_output(buffer<vec<FLOAT, 2>, 2> vect, string file) {
+using Cell = vec<FLOAT, 2>;
+
+void write_output(buffer<Cell, 2> vect, string file) {
     fstream out(file, out.out | out.trunc);
     if (!out.is_open()) {
         throw std::runtime_error("The file was not opened\n");
@@ -80,7 +82,7 @@ void write_output(buffer<vec<FLOAT, 2>, 2> vect, string file) {
     out.close();
 }
 
-buffer<vec<FLOAT, 2>, 2> read_input(string temp_file, string power_file, range<2> buffer_range) {
+buffer<Cell, 2> read_input(string temp_file, string power_file, range<2> buffer_range) {
     fstream temp(temp_file, temp.in);
     fstream power(power_file, power.in);
     if (!temp.is_open() || !power.is_open()) {
@@ -89,7 +91,7 @@ buffer<vec<FLOAT, 2>, 2> read_input(string temp_file, string power_file, range<2
 
     uindex_t n_columns = buffer_range[0];
     uindex_t n_rows = buffer_range[1];
-    buffer<vec<FLOAT, 2>, 2> vect(buffer_range);
+    buffer<Cell, 2> vect(buffer_range);
 
     {
         auto vect_ac = vect.get_access<access::mode::write>();
@@ -99,7 +101,7 @@ buffer<vec<FLOAT, 2>, 2> read_input(string temp_file, string power_file, range<2
             for (index_t c = 0; c < n_columns; c++) {
                 temp >> tmp_temp;
                 power >> tmp_power;
-                vect_ac[id<2>(c, r)] = vec<FLOAT, 2>(tmp_temp, tmp_power);
+                vect_ac[id<2>(c, r)] = Cell(tmp_temp, tmp_power);
             }
         }
     }
@@ -139,7 +141,7 @@ auto exception_handler = [](cl::sycl::exception_list exceptions) {
     }
 };
 
-double run_simulation(cl::sycl::queue working_queue, buffer<vec<FLOAT, 2>, 2> temp,
+double run_simulation(cl::sycl::queue working_queue, buffer<Cell, 2> temp,
                       uindex_t sim_time) {
     uindex_t n_columns = temp.get_range()[0];
     uindex_t n_rows = temp.get_range()[1];
@@ -160,7 +162,7 @@ double run_simulation(cl::sycl::queue working_queue, buffer<vec<FLOAT, 2>, 2> te
     FLOAT Rz_1 = 1.f / Rz;
     FLOAT Cap_1 = step / Cap;
 
-    auto kernel = [=](Stencil<vec<FLOAT, 2>, stencil_radius> const &temp) {
+    auto kernel = [=](Stencil<Cell, stencil_radius> const &temp) {
         ID idx = temp.id;
         index_t c = idx.c;
         index_t r = idx.r;
@@ -195,14 +197,14 @@ double run_simulation(cl::sycl::queue working_queue, buffer<vec<FLOAT, 2>, 2> te
     };
 
 #ifdef MONOTILE
-    using Executor = MonotileExecutor<vec<FLOAT, 2>, stencil_radius, decltype(kernel),
+    using Executor = MonotileExecutor<Cell, stencil_radius, decltype(kernel),
                                       pipeline_length, tile_width, tile_height>;
 #else
-    using Executor = StencilExecutor<vec<FLOAT, 2>, stencil_radius, decltype(kernel),
+    using Executor = StencilExecutor<Cell, stencil_radius, decltype(kernel),
                                      pipeline_length, tile_width, tile_height, burst_size>;
 #endif
 
-    Executor executor(vec<FLOAT, 2>(0.0, 0.0), kernel);
+    Executor executor(Cell(0.0, 0.0), kernel);
     executor.set_input(temp);
 
 #ifdef HARDWARE
@@ -249,7 +251,7 @@ int main(int argc, char **argv) {
     tfile = argv[4];
     pfile = argv[5];
     ofile = argv[6];
-    buffer<vec<FLOAT, 2>, 2> temp =
+    buffer<Cell, 2> temp =
         read_input(string(tfile), string(pfile), range<2>(n_columns, n_rows));
 
     printf("Start computing the transient temperature\n");

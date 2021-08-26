@@ -38,7 +38,7 @@ hotspot_mono_hw: $(SOURCES) $(RESOURCES)
 	$(CC) $(ARGS) $(MONOTILE) $(HW) $(SOURCES) -o hotspot_mono_hw
 
 hotspot_mono_hw.report.tar.gz: $(SOURCES) $(RESOURCES)
-	rm -f hotspot_tiling_hw
+	rm -f hotspot_mono_hw
 	$(CC) $(ARGS) $(MONOTILE) $(HW) -fsycl-link $(SOURCES) -o hotspot_mono_hw
 	tar -caf hotspot_mono_hw.report.tar.gz hotspot_mono_hw.prj/reports
 

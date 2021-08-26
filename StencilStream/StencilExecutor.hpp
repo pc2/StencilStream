@@ -114,8 +114,8 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc,
 
   protected:
     std::optional<double> run_pass(uindex_t target_i_generation) override {
-        using in_pipe = cl::sycl::pipe<class tiling_in_pipe_id, T>;
-        using out_pipe = cl::sycl::pipe<class tiling_out_pipe_id, T>;
+        using in_pipe = cl::sycl::pipe<class tiling_in_pipe, T>;
+        using out_pipe = cl::sycl::pipe<class tiling_out_pipe, T>;
         using ExecutionKernelImpl =
             TilingExecutionKernel<TransFunc, T, stencil_radius, pipeline_length, tile_width,
                                   tile_height, in_pipe, out_pipe>;
