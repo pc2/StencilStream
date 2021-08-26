@@ -32,25 +32,62 @@ auto exception_handler = [](cl::sycl::exception_list exceptions) {
     }
 };
 
+enum class CellField {
+    EX,
+    EY,
+    HZ,
+    HZ_SUM,
+    DISTANCE,
+};
+
 void save_frame(cl::sycl::buffer<FDTDCell, 2> frame_buffer, uindex_t generation_index,
-                bool snapshot, Parameters const &parameters) {
+                CellField field, Parameters const &parameters) {
     auto frame = frame_buffer.get_access<access::mode::read>();
 
     ostringstream frame_path;
-    frame_path << parameters.out_dir;
-    if (snapshot) {
-        frame_path << "/hz." << generation_index << ".csv";
-    } else {
-        frame_path << "/hz_sum.csv";
+    frame_path << parameters.out_dir << "/";
+    switch (field) {
+    case CellField::EX:
+        frame_path << "ex";
+        break;
+    case CellField::EY:
+        frame_path << "ey";
+        break;
+    case CellField::HZ:
+        frame_path << "hz";
+        break;
+    case CellField::HZ_SUM:
+        frame_path << "hz_sum";
+        break;
+    case CellField::DISTANCE:
+        frame_path << "distance";
+        break;
+    default:
+        break;
     }
+    frame_path << "." << generation_index << ".csv";
     std::ofstream out(frame_path.str());
 
     for (uindex_t r = 0; r < frame.get_range()[1]; r++) {
         for (uindex_t c = 0; c < frame.get_range()[0]; c++) {
-            if (snapshot) {
+            switch (field) {
+            case CellField::EX:
+                out << frame[c][r].ex;
+                break;
+            case CellField::EY:
+                out << frame[c][r].ey;
+                break;
+            case CellField::HZ:
                 out << frame[c][r].hz;
-            } else {
+                break;
+            case CellField::HZ_SUM:
                 out << frame[c][r].hz_sum;
+                break;
+            case CellField::DISTANCE:
+                out << frame[c][r].distance;
+                break;
+            default:
+                break;
             }
 
             if (c != frame.get_range()[0] - 1) {
@@ -107,7 +144,11 @@ int main(int argc, char **argv) {
             executor.copy_output(grid_buffer);
 
             uindex_t i_generation = executor.get_i_generation();
-            save_frame(grid_buffer, i_generation, true, parameters);
+            save_frame(grid_buffer, i_generation, CellField::EX, parameters);
+            save_frame(grid_buffer, i_generation, CellField::EY, parameters);
+            save_frame(grid_buffer, i_generation, CellField::HZ, parameters);
+            save_frame(grid_buffer, i_generation, CellField::HZ_SUM, parameters);
+            save_frame(grid_buffer, i_generation, CellField::DISTANCE, parameters);
 
             runtime += executor.get_runtime_sample()->get_total_runtime();
             double progress = 100.0 * (double(i_generation) / double(n_timesteps));
@@ -128,7 +169,7 @@ int main(int argc, char **argv) {
     std::cout << "Simulation complete!" << std::endl;
 
     executor.copy_output(grid_buffer);
-    save_frame(grid_buffer, n_timesteps, false, parameters);
+    save_frame(grid_buffer, n_timesteps, CellField::HZ_SUM, parameters);
 
     return 0;
 }
