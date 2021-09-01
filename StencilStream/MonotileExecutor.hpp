@@ -27,11 +27,16 @@
 namespace stencil {
 template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipeline_length = 1,
           uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024>
-class MonotileExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc, pipeline_length> {
+/**
+ * \brief An executor that follows \ref monotile.
+ *
+ *
+ */
+class MonotileExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc> {
   public:
     static constexpr uindex_t burst_length = std::min<uindex_t>(1, burst_size / sizeof(T));
     static constexpr uindex_t halo_radius = stencil_radius * pipeline_length;
-    using Parent = SingleQueueExecutor<T, stencil_radius, TransFunc, pipeline_length>;
+    using Parent = SingleQueueExecutor<T, stencil_radius, TransFunc>;
 
     MonotileExecutor(T halo_value, TransFunc trans_func)
         : Parent(halo_value, trans_func), tile_buffer(cl::sycl::range<2>(tile_width, tile_height)) {
@@ -72,8 +77,7 @@ class MonotileExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc
         return UID(tile_buffer.get_range()[0], tile_buffer.get_range()[1]);
     }
 
-  protected:
-    std::optional<double> run_pass(uindex_t target_i_generation) override {
+    void run(uindex_t n_generations) override {
         using in_pipe = cl::sycl::pipe<class monotile_in_pipe, T>;
         using out_pipe = cl::sycl::pipe<class monotile_out_pipe, T>;
         using ExecutionKernelImpl =
@@ -82,58 +86,64 @@ class MonotileExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc
 
         cl::sycl::queue &queue = this->get_queue();
 
+        uindex_t target_i_generation = this->get_i_generation() + n_generations;
         uindex_t grid_width = tile_buffer.get_range()[0];
         uindex_t grid_height = tile_buffer.get_range()[1];
-        cl::sycl::buffer<T, 2> out_buffer(tile_buffer.get_range());
 
-        queue.submit([&](cl::sycl::handler &cgh) {
-            auto ac = tile_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
-            T halo_value = this->get_halo_value();
+        while (this->get_i_generation() < target_i_generation) {
+            cl::sycl::buffer<T, 2> out_buffer(tile_buffer.get_range());
 
-            cgh.single_task<class MonotileInputKernel>([=]() {
-                [[intel::loop_coalesce(2)]] for (uindex_t c = 0; c < tile_width; c++) {
-                    for (uindex_t r = 0; r < tile_height; r++) {
-                        T value;
-                        if (c < grid_width && r < grid_height) {
-                            value = ac[c][r];
-                        } else {
-                            value = halo_value;
-                        }
+            queue.submit([&](cl::sycl::handler &cgh) {
+                auto ac = tile_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
+                T halo_value = this->get_halo_value();
 
-                        in_pipe::write(value);
-                    }
-                }
-            });
-        });
+                cgh.single_task<class MonotileInputKernel>([=]() {
+                    [[intel::loop_coalesce(2)]] for (uindex_t c = 0; c < tile_width; c++) {
+                        for (uindex_t r = 0; r < tile_height; r++) {
+                            T value;
+                            if (c < grid_width && r < grid_height) {
+                                value = ac[c][r];
+                            } else {
+                                value = halo_value;
+                            }
 
-        cl::sycl::event computation_event = queue.submit([&](cl::sycl::handler &cgh) {
-            cgh.single_task(ExecutionKernelImpl(this->get_trans_func(), this->get_i_generation(),
-                                                target_i_generation, grid_width, grid_height,
-                                                this->get_halo_value()));
-        });
-
-        queue.submit([&](cl::sycl::handler &cgh) {
-            auto ac = out_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
-            T halo_value = this->get_halo_value();
-
-            cgh.single_task<class MonotileInputKernel>([=]() {
-                [[intel::loop_coalesce(2)]] for (uindex_t c = 0; c < tile_width; c++) {
-                    for (uindex_t r = 0; r < tile_height; r++) {
-                        T value = out_pipe::read();
-                        if (c < grid_width && r < grid_height) {
-                            ac[c][r] = value;
+                            in_pipe::write(value);
                         }
                     }
-                }
+                });
             });
-        });
 
-        tile_buffer = out_buffer;
+            cl::sycl::event computation_event = queue.submit([&](cl::sycl::handler &cgh) {
+                cgh.single_task(ExecutionKernelImpl(
+                    this->get_trans_func(), this->get_i_generation(), target_i_generation,
+                    grid_width, grid_height, this->get_halo_value()));
+            });
 
-        if (this->is_runtime_analysis_enabled()) {
-            return RuntimeSample::runtime_of_event(computation_event);
-        } else {
-            return std::nullopt;
+            queue.submit([&](cl::sycl::handler &cgh) {
+                auto ac =
+                    out_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
+                T halo_value = this->get_halo_value();
+
+                cgh.single_task<class MonotileInputKernel>([=]() {
+                    [[intel::loop_coalesce(2)]] for (uindex_t c = 0; c < tile_width; c++) {
+                        for (uindex_t r = 0; r < tile_height; r++) {
+                            T value = out_pipe::read();
+                            if (c < grid_width && r < grid_height) {
+                                ac[c][r] = value;
+                            }
+                        }
+                    }
+                });
+            });
+
+            tile_buffer = out_buffer;
+
+            if (this->is_runtime_analysis_enabled()) {
+                this->get_runtime_sample().add_pass(computation_event);
+            }
+
+            this->inc_i_generation(
+                std::min(target_i_generation - this->get_i_generation(), pipeline_length));
         }
     }
 

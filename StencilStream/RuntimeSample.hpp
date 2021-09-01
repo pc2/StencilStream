@@ -56,6 +56,8 @@ class RuntimeSample {
         n_passes += 1.0;
     }
 
+    void add_pass(cl::sycl::event event) { add_pass(runtime_of_event(event)); }
+
     /**
      * \brief Calculate the total runtime of all passes.
      *

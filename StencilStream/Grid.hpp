@@ -30,11 +30,12 @@
 namespace stencil {
 
 /**
- * \brief A rectangular container of cells with a dynamic, arbitrary size.
+ * \brief A rectangular container of cells with a dynamic, arbitrary size, used by the \ref
+ * StencilExecutor.
  *
- * It logically contains the grid the transition function is applied to. As described in \ref
- * tiling, it partitions the grid into tiles of static size, which are the units the \ref
- * TilingExecutionKernel works on.
+ * This class is part of the \ref tiling architecture. It logically contains the grid the transition
+ * function is applied to and it partitions the grid into tiles of static size. These are the units
+ * the \ref TilingExecutionKernel works on.
  *
  * Apart from providing copy operations to and from monolithic grid buffers, it also handles the
  * input and output kernel submission for a given tile.
@@ -48,9 +49,10 @@ namespace stencil {
 template <typename T, uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius,
           uindex_t burst_length>
 class Grid {
-  public:
+  private:
     using Tile = Tile<T, tile_width, tile_height, halo_radius, burst_length>;
 
+  public:
     /**
      * \brief Create a grid with undefined contents.
      *

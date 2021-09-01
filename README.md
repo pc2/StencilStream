@@ -138,7 +138,7 @@ int main(int argc, char **argv) {
     executor.set_input(grid_buffer);
 ```
 
-After checking and parsing the arguments, we read the input data. Then, we pick and initialize an executor. Executors are the user-facing facades of StencilStream and the library offers different executors that are optimized for different scenarios. In this case, we pick the `StencilExecutor`, which is the general-purpose, jack-of-all-trades executor. The static operation and performance parameters are defined as template parameters to an executor. In it's simplest form, it only requires our cell type, the radius of the stencil and the type of the transition function. 
+After checking and parsing the arguments, we read the input data. Then, we pick and initialize an executor. Executors are the user-facing facades of StencilStream and the library offers different executors that are optimized for different scenarios. In this case, we pick the `StencilExecutor`, which is the most universal executor. The static operation and performance parameters are defined as template parameters to an executor. In it's simplest form, it only requires our cell type, the radius of the stencil and the type of the transition function. 
 
 ``` C++
 #ifdef HARDWARE

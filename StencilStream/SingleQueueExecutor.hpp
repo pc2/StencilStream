@@ -24,45 +24,25 @@
 #include <optional>
 
 namespace stencil {
-template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipeline_length = 1>
+/**
+ * \brief An abstract executor with common code for executors that work with a single SYCL queue.
+ *
+ * This class contains common code for executors that submit an execution kernel to a single queue
+ * that computes up to a fixed number of generations. This includes queue selection and management
+ * as well as event-based runtime analysis and an \ref AbstractExecutor.run implementation that
+ * incorporates the former. Child classes need to implement \ref SingleQueueExecutor.run_pass,
+ * submitting their execution kernel to the queue.
+ *
+ * \tparam T The cell type.
+ * \tparam stencil_radius The radius of the stencil buffer supplied to the transition function.
+ * \tparam TransFunc The type of the transition function.
+ */
+template <typename T, uindex_t stencil_radius, typename TransFunc>
 class SingleQueueExecutor : public AbstractExecutor<T, stencil_radius, TransFunc> {
-  protected:
-    virtual std::optional<double> run_pass(uindex_t target_i_generation) = 0;
-
   public:
     SingleQueueExecutor(T halo_value, TransFunc trans_func)
         : AbstractExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
-          queue(std::nullopt), runtime_sample(std::nullopt) {}
-
-    void run(uindex_t n_generations) override {
-        cl::sycl::queue queue = this->get_queue();
-
-        if (is_runtime_analysis_enabled()) {
-            runtime_sample = RuntimeSample();
-        } else {
-            runtime_sample = std::nullopt;
-        }
-
-        uindex_t target_i_generation = n_generations + this->get_i_generation();
-        uindex_t n_passes = n_generations / pipeline_length;
-        if (n_generations % pipeline_length != 0) {
-            n_passes += 1;
-        }
-
-        for (uindex_t i = 0; i < n_passes; i++) {
-            std::optional<double> runtime = this->run_pass(target_i_generation);
-            if (is_runtime_analysis_enabled()) {
-                if (runtime.has_value()) {
-                    runtime_sample->add_pass(*runtime);
-                } else {
-                    runtime_sample->add_pass(0.0);
-                }
-            }
-
-            this->inc_i_generation(
-                std::min(target_i_generation - this->get_i_generation(), pipeline_length));
-        }
-    }
+          queue(std::nullopt), runtime_sample() {}
 
     cl::sycl::queue &get_queue() {
         if (!this->queue.has_value()) {
@@ -153,7 +133,7 @@ class SingleQueueExecutor : public AbstractExecutor<T, stencil_radius, TransFunc
      * \return The collected runtime information. May be `nullopt` if no runtime analysis was
      * configured.
      */
-    std::optional<RuntimeSample> get_runtime_sample() { return runtime_sample; }
+    RuntimeSample &get_runtime_sample() { return runtime_sample; }
 
   private:
     static cl::sycl::property_list get_queue_properties(bool runtime_analysis) {
@@ -167,6 +147,6 @@ class SingleQueueExecutor : public AbstractExecutor<T, stencil_radius, TransFunc
     }
 
     std::optional<cl::sycl::queue> queue;
-    std::optional<RuntimeSample> runtime_sample;
+    RuntimeSample runtime_sample;
 };
 } // namespace stencil

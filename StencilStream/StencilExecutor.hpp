@@ -68,11 +68,11 @@ namespace stencil {
  */
 template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipeline_length = 1,
           uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024>
-class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc, pipeline_length> {
+class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc> {
   public:
     static constexpr uindex_t burst_length = std::min<uindex_t>(1, burst_size / sizeof(T));
     static constexpr uindex_t halo_radius = stencil_radius * pipeline_length;
-    using Parent = SingleQueueExecutor<T, stencil_radius, TransFunc, pipeline_length>;
+    using Parent = SingleQueueExecutor<T, stencil_radius, TransFunc>;
 
     /**
      * \brief Create a new stencil executor.
@@ -112,8 +112,7 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc,
      */
     UID get_grid_range() const override { return input_grid.get_grid_range(); }
 
-  protected:
-    std::optional<double> run_pass(uindex_t target_i_generation) override {
+    void run(uindex_t n_generations) override {
         using in_pipe = cl::sycl::pipe<class tiling_in_pipe, T>;
         using out_pipe = cl::sycl::pipe<class tiling_out_pipe, T>;
         using ExecutionKernelImpl =
@@ -122,44 +121,47 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc,
 
         cl::sycl::queue &queue = this->get_queue();
 
+        uindex_t target_i_generation = this->get_i_generation() + n_generations;
         uindex_t grid_width = input_grid.get_grid_range().c;
         uindex_t grid_height = input_grid.get_grid_range().r;
 
-        Grid output_grid = input_grid.make_output_grid();
+        while (this->get_i_generation() < target_i_generation) {
+            Grid output_grid = input_grid.make_output_grid();
 
-        std::vector<cl::sycl::event> events;
-        events.reserve(input_grid.get_tile_range().c * input_grid.get_tile_range().r);
+            std::vector<cl::sycl::event> events;
+            events.reserve(input_grid.get_tile_range().c * input_grid.get_tile_range().r);
 
-        for (uindex_t c = 0; c < input_grid.get_tile_range().c; c++) {
-            for (uindex_t r = 0; r < input_grid.get_tile_range().r; r++) {
-                input_grid.template submit_tile_input<in_pipe>(queue, UID(c, r));
+            for (uindex_t c = 0; c < input_grid.get_tile_range().c; c++) {
+                for (uindex_t r = 0; r < input_grid.get_tile_range().r; r++) {
+                    input_grid.template submit_tile_input<in_pipe>(queue, UID(c, r));
 
-                cl::sycl::event computation_event = queue.submit([&](cl::sycl::handler &cgh) {
-                    cgh.single_task(
-                        ExecutionKernelImpl(this->get_trans_func(), this->get_i_generation(),
-                                            target_i_generation, c * tile_width, r * tile_height,
-                                            grid_width, grid_height, this->get_halo_value()));
-                });
-                events.push_back(computation_event);
+                    cl::sycl::event computation_event = queue.submit([&](cl::sycl::handler &cgh) {
+                        cgh.single_task(ExecutionKernelImpl(
+                            this->get_trans_func(), this->get_i_generation(), target_i_generation,
+                            c * tile_width, r * tile_height, grid_width, grid_height,
+                            this->get_halo_value()));
+                    });
+                    events.push_back(computation_event);
 
-                output_grid.template submit_tile_output<out_pipe>(queue, UID(c, r));
-            }
-        }
-
-        input_grid = output_grid;
-
-        if (this->is_runtime_analysis_enabled()) {
-            double earliest_start = std::numeric_limits<double>::max();
-            double latest_end = std::numeric_limits<double>::min();
-
-            for (cl::sycl::event event : events) {
-                earliest_start = std::min(earliest_start, RuntimeSample::start_of_event(event));
-                latest_end = std::max(latest_end, RuntimeSample::end_of_event(event));
+                    output_grid.template submit_tile_output<out_pipe>(queue, UID(c, r));
+                }
             }
 
-            return latest_end - earliest_start;
-        } else {
-            return std::nullopt;
+            input_grid = output_grid;
+
+            if (this->is_runtime_analysis_enabled()) {
+                double earliest_start = std::numeric_limits<double>::max();
+                double latest_end = std::numeric_limits<double>::min();
+
+                for (cl::sycl::event event : events) {
+                    earliest_start = std::min(earliest_start, RuntimeSample::start_of_event(event));
+                    latest_end = std::max(latest_end, RuntimeSample::end_of_event(event));
+                }
+                this->get_runtime_sample().add_pass(latest_end - earliest_start);
+            }
+
+            this->inc_i_generation(
+                std::min(target_i_generation - this->get_i_generation(), pipeline_length));
         }
     }
 

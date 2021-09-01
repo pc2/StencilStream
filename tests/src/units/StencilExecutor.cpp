@@ -29,8 +29,7 @@ using namespace stencil;
 using namespace cl::sycl;
 
 using TransFunc = FPGATransFunc<stencil_radius>;
-using SingleQueueExecutorImpl =
-    SingleQueueExecutor<Cell, stencil_radius, TransFunc, pipeline_length>;
+using SingleQueueExecutorImpl = SingleQueueExecutor<Cell, stencil_radius, TransFunc>;
 using StencilExecutorImpl = StencilExecutor<Cell, stencil_radius, TransFunc, pipeline_length>;
 using MonotileExecutorImpl = MonotileExecutor<Cell, stencil_radius, TransFunc, pipeline_length>;
 

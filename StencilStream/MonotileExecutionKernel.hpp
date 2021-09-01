@@ -19,18 +19,22 @@
  */
 #pragma once
 #include "GenericID.hpp"
+#include "Helpers.hpp"
 #include "Index.hpp"
 #include "Stencil.hpp"
-#include "Helpers.hpp"
 #include <optional>
 
 namespace stencil {
 
 /**
- * \brief A kernel that executes a stencil transition function on a tile.
+ * \brief A kernel that executes a stencil transition function using the monotile approach.
  *
  * It receives the contents of a tile and it's halo from the `in_pipe`, applies the transition
  * function when applicable and writes the result to the `out_pipe`.
+ *
+ * With the monotile approach, the whole grid fits in one tile. This eliminates the need to
+ * calculate the cells of the tile halo, reducing the cache size and number of loop iterations. More
+ * is described in \ref monotile.
  *
  * \tparam TransFunc The type of transition function to use.
  * \tparam T Cell value type.
@@ -53,14 +57,25 @@ class MonotileExecutionKernel {
      */
     const static uindex_t stencil_diameter = Stencil<T, stencil_radius>::diameter;
 
+    /**
+     * \brief The number of cells in the tile.
+     */
     const static uindex_t n_cells = tile_width * tile_height;
 
+    /**
+     * \brief The number of cells that need to be fed into a stage before it produces correct
+     * values.
+     */
     const static uindex_t stage_latency = stencil_radius * (tile_height + 1);
 
+    /**
+     * \brief The number of cells that need to be fed into the pipeline before it produces correct
+     * values.
+     */
     const static uindex_t pipeline_latency = pipeline_length * stage_latency;
 
     /**
-     * \brief The total number of cells to read from the `in_pipe`.
+     * \brief The total number of loop iterations.
      */
     const static uindex_t n_iterations = pipeline_latency + n_cells;
 
@@ -70,14 +85,19 @@ class MonotileExecutionKernel {
      * \param trans_func The instance of the transition function to use.
      * \param i_generation The generation index of the input cells.
      * \param n_generations The number of generations to compute. If this number is bigger than
-     * `pipeline_length`, only `pipeline_length` generations will be computed. \param grid_width The
-     * number of cell columns in the grid. \param grid_height The number of cell rows in the grid.
+     * `pipeline_length`, only `pipeline_length` generations will be computed.
+     * \param grid_width The number of cell columns in the grid.
+     * \param grid_height The number of cell rows in the grid.
+     * \param halo_value The value of cells outside the grid.
      */
     MonotileExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t n_generations,
                             uindex_t grid_width, uindex_t grid_height, T halo_value)
         : trans_func(trans_func), i_generation(i_generation), n_generations(n_generations),
           grid_width(grid_width), grid_height(grid_height), halo_value(halo_value) {}
 
+    /**
+     * \brief Execute the kernel.
+     */
     void operator()() const {
         [[intel::fpga_register]] index_t c[pipeline_length];
         [[intel::fpga_register]] index_t r[pipeline_length];
