@@ -18,7 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "GenericID.hpp"
+#include "../GenericID.hpp"
 #include "IOKernel.hpp"
 #include "Tile.hpp"
 #include <CL/sycl/accessor.hpp>
@@ -28,6 +28,7 @@
 #include <vector>
 
 namespace stencil {
+namespace tiling {
 
 /**
  * \brief A rectangular container of cells with a dynamic, arbitrary size, used by the \ref
@@ -35,7 +36,7 @@ namespace stencil {
  *
  * This class is part of the \ref tiling architecture. It logically contains the grid the transition
  * function is applied to and it partitions the grid into tiles of static size. These are the units
- * the \ref TilingExecutionKernel works on.
+ * the \ref ExecutionKernel works on.
  *
  * Apart from providing copy operations to and from monolithic grid buffers, it also handles the
  * input and output kernel submission for a given tile.
@@ -56,7 +57,7 @@ class Grid {
     /**
      * \brief Create a grid with undefined contents.
      *
-     * This constructor is used to create the output grid of a \ref TilingExecutionKernel
+     * This constructor is used to create the output grid of a \ref ExecutionKernel
      * invocation. It's contents do not need to be initialized or copied from another buffer since
      * it will override cell values from the execution kernel anyway.
      *
@@ -153,7 +154,7 @@ class Grid {
     }
 
     /**
-     * \brief Submit the input kernels required for one execution of the \ref TilingExecutionKernel.
+     * \brief Submit the input kernels required for one execution of the \ref ExecutionKernel.
      *
      * This will submit five \ref IOKernel invocations in total, which are executed in order. Those
      * kernels write the contents of a tile and it's halo to the `in_pipe`.
@@ -227,7 +228,7 @@ class Grid {
 
     /**
      * \brief Submit the output kernels required for one execution of the \ref
-     * TilingExecutionKernel.
+     * ExecutionKernel.
      *
      * This will submit three \ref IOKernel invocations in total, which are executed in order. Those
      * kernels will write cells from the `out_pipe` to one of the tiles.
@@ -356,4 +357,5 @@ class Grid {
     cl::sycl::range<2> grid_range;
 };
 
+} // namespace tiling
 } // namespace stencil

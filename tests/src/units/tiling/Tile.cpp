@@ -17,14 +17,15 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "../res/catch.hpp"
-#include "../res/constants.hpp"
 #include <CL/sycl.hpp>
 #include <StencilStream/GenericID.hpp>
-#include <StencilStream/Tile.hpp>
+#include <StencilStream/tiling/Tile.hpp>
+#include <res/catch.hpp>
+#include <res/constants.hpp>
 
 using namespace stencil;
 using namespace cl::sycl;
+using namespace stencil::tiling;
 using namespace std;
 
 using TileImpl = Tile<ID, tile_width, tile_height, halo_radius, burst_length>;

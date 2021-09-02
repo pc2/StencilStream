@@ -18,21 +18,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "CounterID.hpp"
-#include "Index.hpp"
+#include "../CounterID.hpp"
+#include "../Index.hpp"
 #include <CL/sycl.hpp>
 #include <CL/sycl/accessor.hpp>
 #include <array>
 
 namespace stencil {
+namespace tiling {
 
 /**
- * \brief Generic Input/Output kernel for use with the \ref TilingExecutionKernel and \ref Grid.
+ * \brief Generic Input/Output kernel for use with the \ref ExecutionKernel and \ref Grid.
  *
  * This kernel provides IO services to the execution kernel by writing the contents of a input tile
  * with halo to the input pipe and writing the output of the execution kernel to an output tile. The
  * input and output code only differs by one line. Therefore, both services are provided by the same
- * class. Unlike \ref TilingExecutionKernel, this kernel is supposed to be constructed by a lambda
+ * class. Unlike \ref ExecutionKernel, this kernel is supposed to be constructed by a lambda
  * expression that then either executes \ref IOKernel.read or \ref IOKernel.write.
  *
  * Logically, an instance of the IO kernel receives access to a horizontal slice of the input or
@@ -156,4 +157,5 @@ class IOKernel {
     uindex_t n_columns;
 };
 
+} // namespace tiling
 } // namespace stencil

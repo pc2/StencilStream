@@ -18,9 +18,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "Grid.hpp"
 #include "SingleQueueExecutor.hpp"
-#include "TilingExecutionKernel.hpp"
+#include "tiling/ExecutionKernel.hpp"
+#include "tiling/Grid.hpp"
 
 namespace stencil {
 /**
@@ -96,7 +96,7 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc>
     /**
      * \brief Copy the current state of the grid to the buffer.
      *
-     * The \ref output_buffer has to have the exact range as returned by \ref
+     * The `output_buffer` has to have the exact range as returned by \ref
      * StencilExecutor.get_grid_range.
      *
      * \param output_buffer Copy the state of the grid to this buffer.
@@ -116,8 +116,8 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc>
         using in_pipe = cl::sycl::pipe<class tiling_in_pipe, T>;
         using out_pipe = cl::sycl::pipe<class tiling_out_pipe, T>;
         using ExecutionKernelImpl =
-            TilingExecutionKernel<TransFunc, T, stencil_radius, pipeline_length, tile_width,
-                                  tile_height, in_pipe, out_pipe>;
+            tiling::ExecutionKernel<TransFunc, T, stencil_radius, pipeline_length, tile_width,
+                                    tile_height, in_pipe, out_pipe>;
 
         cl::sycl::queue &queue = this->get_queue();
 
@@ -126,7 +126,7 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc>
         uindex_t grid_height = input_grid.get_grid_range().r;
 
         while (this->get_i_generation() < target_i_generation) {
-            Grid output_grid = input_grid.make_output_grid();
+            GridImpl output_grid = input_grid.make_output_grid();
 
             std::vector<cl::sycl::event> events;
             events.reserve(input_grid.get_tile_range().c * input_grid.get_tile_range().r);
@@ -166,7 +166,7 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc>
     }
 
   private:
-    using GridImpl = Grid<T, tile_width, tile_height, halo_radius, burst_length>;
+    using GridImpl = tiling::Grid<T, tile_width, tile_height, halo_radius, burst_length>;
     GridImpl input_grid;
 };
 } // namespace stencil

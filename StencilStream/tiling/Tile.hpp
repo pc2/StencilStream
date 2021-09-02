@@ -18,18 +18,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "Helpers.hpp"
-#include "Index.hpp"
+#include "../Helpers.hpp"
+#include "../Index.hpp"
 #include <CL/sycl.hpp>
 #include <optional>
 #include <stdexcept>
 
 namespace stencil {
+namespace tiling {
 
 /**
  * \brief A rectangular container of cells with a static size
  *
- * StencilStream tiles the grid and the \ref TilingExecutionKernel works with those tiles: it
+ * StencilStream tiles the grid and the \ref ExecutionKernel works with those tiles: it
  * receives the content of a tile (together with it's halo) and emits the contents of a tile. A tile
  * is partitioned in four corner buffers, four border buffers and one core buffer. This is done to
  * provide easy access to the halo of a tile. Have a look at the \ref Architecture for more details
@@ -298,4 +299,6 @@ class Tile {
 
     std::optional<cl::sycl::buffer<T, 2>> part[3][3];
 };
+
+} // namespace tiling
 } // namespace stencil

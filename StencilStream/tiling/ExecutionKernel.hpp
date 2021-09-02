@@ -18,12 +18,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "GenericID.hpp"
-#include "Index.hpp"
-#include "Stencil.hpp"
+#include "../GenericID.hpp"
+#include "../Helpers.hpp"
+#include "../Index.hpp"
+#include "../Stencil.hpp"
 #include <optional>
 
 namespace stencil {
+namespace tiling {
 
 /**
  * \brief A kernel that executes a stencil transition function on a tile.
@@ -42,7 +44,7 @@ namespace stencil {
 template <typename TransFunc, typename T, uindex_t stencil_radius, uindex_t pipeline_length,
           uindex_t output_tile_width, uindex_t output_tile_height, typename in_pipe,
           typename out_pipe>
-class TilingExecutionKernel {
+class ExecutionKernel {
   public:
     static_assert(
         std::is_invocable_r<T, TransFunc const, Stencil<T, stencil_radius> const &>::value);
@@ -86,9 +88,9 @@ class TilingExecutionKernel {
      * relative to the grid's origin. See `grid_c_offset` for details. \param grid_width The number
      * of cell columns in the grid. \param grid_height The number of cell rows in the grid.
      */
-    TilingExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t target_i_generation,
-                          uindex_t grid_c_offset, uindex_t grid_r_offset, uindex_t grid_width,
-                          uindex_t grid_height, T halo_value)
+    ExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t target_i_generation,
+                    uindex_t grid_c_offset, uindex_t grid_r_offset, uindex_t grid_width,
+                    uindex_t grid_height, T halo_value)
         : trans_func(trans_func), i_generation(i_generation),
           target_i_generation(target_i_generation), grid_c_offset(grid_c_offset),
           grid_r_offset(grid_r_offset), grid_width(grid_width), grid_height(grid_height),
@@ -200,4 +202,5 @@ class TilingExecutionKernel {
     T halo_value;
 };
 
+} // namespace tiling
 } // namespace stencil

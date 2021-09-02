@@ -18,13 +18,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "GenericID.hpp"
-#include "Helpers.hpp"
-#include "Index.hpp"
-#include "Stencil.hpp"
+#include "../GenericID.hpp"
+#include "../Helpers.hpp"
+#include "../Index.hpp"
+#include "../Stencil.hpp"
 #include <optional>
 
 namespace stencil {
+namespace monotile {
 
 /**
  * \brief A kernel that executes a stencil transition function using the monotile approach.
@@ -46,7 +47,7 @@ namespace stencil {
  */
 template <typename TransFunc, typename T, uindex_t stencil_radius, uindex_t pipeline_length,
           uindex_t tile_width, uindex_t tile_height, typename in_pipe, typename out_pipe>
-class MonotileExecutionKernel {
+class ExecutionKernel {
   public:
     static_assert(
         std::is_invocable_r<T, TransFunc const, Stencil<T, stencil_radius> const &>::value);
@@ -90,8 +91,8 @@ class MonotileExecutionKernel {
      * \param grid_height The number of cell rows in the grid.
      * \param halo_value The value of cells outside the grid.
      */
-    MonotileExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t n_generations,
-                            uindex_t grid_width, uindex_t grid_height, T halo_value)
+    ExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t n_generations,
+                    uindex_t grid_width, uindex_t grid_height, T halo_value)
         : trans_func(trans_func), i_generation(i_generation), n_generations(n_generations),
           grid_width(grid_width), grid_height(grid_height), halo_value(halo_value) {}
 
@@ -221,4 +222,5 @@ class MonotileExecutionKernel {
     T halo_value;
 };
 
+} // namespace monotile
 } // namespace stencil

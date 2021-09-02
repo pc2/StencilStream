@@ -141,8 +141,7 @@ auto exception_handler = [](cl::sycl::exception_list exceptions) {
     }
 };
 
-double run_simulation(cl::sycl::queue working_queue, buffer<Cell, 2> temp,
-                      uindex_t sim_time) {
+double run_simulation(cl::sycl::queue working_queue, buffer<Cell, 2> temp, uindex_t sim_time) {
     uindex_t n_columns = temp.get_range()[0];
     uindex_t n_rows = temp.get_range()[1];
 
@@ -197,11 +196,11 @@ double run_simulation(cl::sycl::queue working_queue, buffer<Cell, 2> temp,
     };
 
 #ifdef MONOTILE
-    using Executor = MonotileExecutor<Cell, stencil_radius, decltype(kernel),
-                                      pipeline_length, tile_width, tile_height>;
+    using Executor = MonotileExecutor<Cell, stencil_radius, decltype(kernel), pipeline_length,
+                                      tile_width, tile_height>;
 #else
-    using Executor = StencilExecutor<Cell, stencil_radius, decltype(kernel),
-                                     pipeline_length, tile_width, tile_height, burst_size>;
+    using Executor = StencilExecutor<Cell, stencil_radius, decltype(kernel), pipeline_length,
+                                     tile_width, tile_height, burst_size>;
 #endif
 
     Executor executor(Cell(0.0, 0.0), kernel);
@@ -217,7 +216,7 @@ double run_simulation(cl::sycl::queue working_queue, buffer<Cell, 2> temp,
 
     executor.copy_output(temp);
 
-    return executor.get_runtime_sample().value().get_total_runtime();
+    return executor.get_runtime_sample().get_total_runtime();
 }
 
 int main(int argc, char **argv) {
@@ -251,8 +250,7 @@ int main(int argc, char **argv) {
     tfile = argv[4];
     pfile = argv[5];
     ofile = argv[6];
-    buffer<Cell, 2> temp =
-        read_input(string(tfile), string(pfile), range<2>(n_columns, n_rows));
+    buffer<Cell, 2> temp = read_input(string(tfile), string(pfile), range<2>(n_columns, n_rows));
 
     printf("Start computing the transient temperature\n");
 

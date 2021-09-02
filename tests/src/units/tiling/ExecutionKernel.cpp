@@ -17,23 +17,23 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "../res/HostPipe.hpp"
-#include "../res/TransFuncs.hpp"
-#include "../res/catch.hpp"
-#include "../res/constants.hpp"
-#include <StencilStream/TilingExecutionKernel.hpp>
+#include <StencilStream/tiling/ExecutionKernel.hpp>
+#include <res/HostPipe.hpp>
+#include <res/TransFuncs.hpp>
+#include <res/catch.hpp>
+#include <res/constants.hpp>
 
 using namespace stencil;
 using namespace std;
+using namespace stencil::tiling;
 using namespace cl::sycl;
 
 void test_tiling_kernel(uindex_t n_generations) {
     using TransFunc = FPGATransFunc<stencil_radius>;
     using in_pipe = HostPipe<class TilingExecutionKernelInPipeID, Cell>;
     using out_pipe = HostPipe<class TilingExecutionKernelOutPipeID, Cell>;
-    using TestExecutionKernel =
-        TilingExecutionKernel<TransFunc, Cell, stencil_radius, pipeline_length, tile_width,
-                              tile_height, in_pipe, out_pipe>;
+    using TestExecutionKernel = ExecutionKernel<TransFunc, Cell, stencil_radius, pipeline_length,
+                                                tile_width, tile_height, in_pipe, out_pipe>;
 
     for (index_t c = -halo_radius; c < index_t(halo_radius + tile_width); c++) {
         for (index_t r = -halo_radius; r < index_t(halo_radius + tile_height); r++) {
@@ -75,18 +75,18 @@ void test_tiling_kernel(uindex_t n_generations) {
     }
 }
 
-TEST_CASE("TilingExecutionKernel", "[TilingExecutionKernel]") {
+TEST_CASE("tiling::ExecutionKernel", "[tiling::ExecutionKernel]") {
     test_tiling_kernel(pipeline_length);
 }
 
-TEST_CASE("TilingExecutionKernel (partial pipeline)", "[TilingExecutionKernel]") {
+TEST_CASE("tiling::ExecutionKernel (partial pipeline)", "[tiling::ExecutionKernel]") {
     static_assert(pipeline_length != 1);
     test_tiling_kernel(pipeline_length - 1);
 }
 
-TEST_CASE("TilingExecutionKernel (noop)", "[TilingExecutionKernel]") { test_tiling_kernel(0); }
+TEST_CASE("tiling::ExecutionKernel (noop)", "[tiling::ExecutionKernel]") { test_tiling_kernel(0); }
 
-TEST_CASE("Halo values inside the pipeline are handled correctly", "[TilingExecutionKernel]") {
+TEST_CASE("Halo values inside the pipeline are handled correctly", "[tiling::ExecutionKernel]") {
     auto my_kernel = [=](Stencil<bool, stencil_radius> const &stencil) {
         ID idx = stencil.id;
         bool is_valid = true;
@@ -108,8 +108,8 @@ TEST_CASE("Halo values inside the pipeline are handled correctly", "[TilingExecu
     using in_pipe = HostPipe<class HaloValueTestInPipeID, bool>;
     using out_pipe = HostPipe<class HaloValueTestOutPipeID, bool>;
     using TestExecutionKernel =
-        TilingExecutionKernel<decltype(my_kernel), bool, stencil_radius, pipeline_length,
-                              tile_width, tile_height, in_pipe, out_pipe>;
+        ExecutionKernel<decltype(my_kernel), bool, stencil_radius, pipeline_length, tile_width,
+                        tile_height, in_pipe, out_pipe>;
 
     for (index_t c = -halo_radius; c < index_t(halo_radius + tile_width); c++) {
         for (index_t r = -halo_radius; r < index_t(halo_radius + tile_height); r++) {
@@ -129,14 +129,14 @@ TEST_CASE("Halo values inside the pipeline are handled correctly", "[TilingExecu
     REQUIRE(out_pipe::empty());
 }
 
-TEST_CASE("Incomplete Pipeline with i_generation != 0", "[TilingExecutionKernel]") {
+TEST_CASE("Incomplete Pipeline with i_generation != 0", "[tiling::ExecutionKernel]") {
     using Cell = uint8_t;
     auto trans_func = [](Stencil<Cell, 1> const &stencil) { return stencil[ID(0, 0)] + 1; };
 
     using in_pipe = HostPipe<class IncompletePipelineInPipeID, Cell>;
     using out_pipe = HostPipe<class IncompletePipelineOutPipeID, Cell>;
     using TestExecutionKernel =
-        TilingExecutionKernel<decltype(trans_func), Cell, 1, 16, 64, 64, in_pipe, out_pipe>;
+        ExecutionKernel<decltype(trans_func), Cell, 1, 16, 64, 64, in_pipe, out_pipe>;
 
     for (int c = -16; c < 16 + 64; c++) {
         for (int r = -16; r < 16 + 64; r++) {

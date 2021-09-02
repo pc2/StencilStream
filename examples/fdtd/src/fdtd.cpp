@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
 
     Executor executor(FDTDKernel::halo(), FDTDKernel(parameters));
     executor.set_input(grid_buffer);
-    executor.set_queue(fpga_queue, true);
+    executor.set_queue(fpga_queue);
 
     uindex_t n_timesteps = parameters.n_timesteps();
 
@@ -167,7 +167,7 @@ int main(int argc, char **argv) {
             save_frame(grid_buffer, i_generation, CellField::HZ_SUM, parameters);
             save_frame(grid_buffer, i_generation, CellField::DISTANCE, parameters);
 
-            runtime += executor.get_runtime_sample()->get_total_runtime();
+            runtime += executor.get_runtime_sample().get_total_runtime();
             double progress = 100.0 * (double(i_generation) / double(n_timesteps));
             double speed = double(i_generation) / runtime;
             double time_remaining = double(n_timesteps - i_generation) / speed;

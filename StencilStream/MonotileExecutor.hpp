@@ -21,8 +21,8 @@
  * SOFTWARE.
  */
 #pragma once
-#include "MonotileExecutionKernel.hpp"
 #include "SingleQueueExecutor.hpp"
+#include "monotile/ExecutionKernel.hpp"
 
 namespace stencil {
 template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipeline_length = 1,
@@ -81,8 +81,8 @@ class MonotileExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc
         using in_pipe = cl::sycl::pipe<class monotile_in_pipe, T>;
         using out_pipe = cl::sycl::pipe<class monotile_out_pipe, T>;
         using ExecutionKernelImpl =
-            MonotileExecutionKernel<TransFunc, T, stencil_radius, pipeline_length, tile_width,
-                                    tile_height, in_pipe, out_pipe>;
+            monotile::ExecutionKernel<TransFunc, T, stencil_radius, pipeline_length, tile_width,
+                                      tile_height, in_pipe, out_pipe>;
 
         cl::sycl::queue &queue = this->get_queue();
 

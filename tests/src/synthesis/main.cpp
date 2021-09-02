@@ -72,7 +72,7 @@ int main() {
 
     Executor executor(Cell::halo(), TransFunc());
     executor.set_input(in_buffer);
-    executor.set_queue(working_queue, false);
+    executor.set_queue(working_queue);
 
     executor.run(2 * pipeline_length);
 
