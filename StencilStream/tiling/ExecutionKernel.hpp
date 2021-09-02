@@ -36,9 +36,12 @@ namespace tiling {
  * \tparam TransFunc The type of transition function to use.
  * \tparam T Cell value type.
  * \tparam stencil_radius The static, maximal Chebyshev distance of cells in a stencil to the
- * central cell \tparam pipeline_length The number of pipeline stages to use. Similar to an unroll
- * factor for a loop. \tparam output_tile_width The number of columns in a grid tile. \tparam
- * output_tile_height The number of rows in a grid tile. \tparam in_pipe The pipe to read from.
+ * central cell
+ * \tparam pipeline_length The number of pipeline stages to use. Similar to an unroll
+ * factor for a loop.
+ * \tparam output_tile_width The number of columns in a grid tile.
+ * \tparam output_tile_height The number of rows in a grid tile.
+ * \tparam in_pipe The pipe to read from.
  * \tparam out_pipe The pipe to write to.
  */
 template <typename TransFunc, typename T, uindex_t stencil_radius, uindex_t pipeline_length,
@@ -80,13 +83,15 @@ class ExecutionKernel {
      * \param trans_func The instance of the transition function to use.
      * \param i_generation The generation index of the input cells.
      * \param target_i_generation The number of generations to compute. If this number is bigger
-     * than `pipeline_length`, only `pipeline_length` generations will be computed. \param
-     * grid_c_offset The column offset of the processed tile relative to the grid's origin, not
-     * including the halo. For example, for the most north-western tile the offset will always be
-     * (0,0), not
-     * (-halo_radius,-halo_radius) \param grid_r_offset The row offset of the processed tile
-     * relative to the grid's origin. See `grid_c_offset` for details. \param grid_width The number
-     * of cell columns in the grid. \param grid_height The number of cell rows in the grid.
+     * than `pipeline_length`, only `pipeline_length` generations will be computed.
+     * \param grid_c_offset The column offset of the processed tile relative to the grid's origin,
+     * not including the halo. For example, for the most north-western tile the offset will always
+     * be (0,0), not (-halo_radius,-halo_radius)
+     * \param grid_r_offset The row offset of the processed tile relative to the grid's origin. See
+     * `grid_c_offset` for details.
+     * \param grid_width The number of cell columns in the grid.
+     * \param grid_height The number of cell rows in the grid.
+     * \param halo_value The value of cells in the grid halo.
      */
     ExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t target_i_generation,
                     uindex_t grid_c_offset, uindex_t grid_r_offset, uindex_t grid_width,

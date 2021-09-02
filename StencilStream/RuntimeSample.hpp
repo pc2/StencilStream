@@ -24,11 +24,7 @@
 
 namespace stencil {
 /**
- * \brief Collection of SYCL events from a \ref StencilExecutor.run invocation.
- *
- * It's interface might be extended in the future to support more in-depth analysis. Now, it can
- * analyse the runtime of a single execution kernel invocation as well as the total runtime of all
- * passes.
+ * \brief Collection of runtime performance information for a \ref SingleQueueExecutor.
  */
 class RuntimeSample {
   public:
@@ -37,34 +33,55 @@ class RuntimeSample {
      */
     RuntimeSample() : makespan(0.0), n_passes(0.0) {}
 
+    /**
+     * \brief Retrieve the starting timestamp of the event, in seconds.
+     *
+     * This will fail with an exception if the event's queue has not been configured to collect
+     * runtime information.
+     */
     static double start_of_event(cl::sycl::event event) {
         return double(event.get_profiling_info<cl::sycl::info::event_profiling::command_start>()) /
                timesteps_per_second;
     }
 
+    /**
+     * \brief Retrieve the ending timestamp of the event, in seconds.
+     *
+     * This will fail with an exception if the event's queue has not been configured to collect
+     * runtime information.
+     */
     static double end_of_event(cl::sycl::event event) {
         return double(event.get_profiling_info<cl::sycl::info::event_profiling::command_end>()) /
                timesteps_per_second;
     }
 
+    /**
+     * \brief Retrieve the runtime/makespan of the event, in seconds.
+     *
+     * This will fail with an exception if the event's queue has not been configured to collect
+     * runtime information.
+     */
     static double runtime_of_event(cl::sycl::event event) {
         return end_of_event(event) - start_of_event(event);
     }
 
+    /**
+     * \brief Add the runtime/makespan of a single pass over the grid to the database.
+     */
     void add_pass(double pass_runtime) {
         makespan += pass_runtime;
         n_passes += 1.0;
     }
 
+    /**
+     * \brief Add the event of a single pass over the grid to the database.
+     */
     void add_pass(cl::sycl::event event) { add_pass(runtime_of_event(event)); }
 
     /**
-     * \brief Calculate the total runtime of all passes.
+     * \brief Get the makespan of all grid passes.
      *
-     * This iterates through all known events, finds the earliest start and latest end and returns
-     * the time difference between them.
-     *
-     * \return The total wall time in seconds it took to execute all passes.
+     * \return The makespan in seconds it took to execute all passes.
      */
     double get_total_runtime() { return makespan; }
 

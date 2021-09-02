@@ -30,20 +30,50 @@ template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipe
 /**
  * \brief An executor that follows \ref monotile.
  *
+ * The feature that distincts this executor from \ref StencilExecutor is that it works with exactly
+ * one tile. This means the grid range may not exceed the set tile range, but it uses less resources
+ * and time per kernel execution.
  *
+ * \tparam T The cell type.
+ * \tparam stencil_radius The radius of the stencil buffer supplied to the transition function.
+ * \tparam TransFunc The type of the transition function.
+ * \tparam pipeline_length The number of hardware execution stages per kernel. Must be at least 1.
+ * Defaults to 1.
+ * \tparam tile_width The number of columns in a tile and maximum number of columns in a grid.
+ * Defaults to 1024.
+ * \tparam tile_height The number of rows in a tile and maximum number of rows in a grid. Defaults
+ * to 1024.
  */
 class MonotileExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc> {
   public:
-    static constexpr uindex_t burst_length = std::min<uindex_t>(1, burst_size / sizeof(T));
-    static constexpr uindex_t halo_radius = stencil_radius * pipeline_length;
+    /**
+     * \brief Shorthand for the parent class.
+     */
     using Parent = SingleQueueExecutor<T, stencil_radius, TransFunc>;
 
+    /**
+     * \brief Create a new executor.
+     *
+     * \param halo_value The value of cells in the grid halo.
+     * \param trans_func An instance of the transition function type.
+     */
     MonotileExecutor(T halo_value, TransFunc trans_func)
         : Parent(halo_value, trans_func), tile_buffer(cl::sycl::range<2>(tile_width, tile_height)) {
         auto ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
         ac[0][0] = halo_value;
     }
 
+    /**
+     * \brief Set the internal state of the grid.
+     *
+     * This will copy the contents of the buffer to an internal representation. The buffer may be
+     * used for other purposes later. It must not reset the generation index. The range of the input
+     * buffer will be used as the new grid range.
+     *
+     * \throws std::range_error Thrown if the number of width or height of the buffer exceeds the
+     * set width and height of the tile. \param input_buffer The source buffer of the new grid
+     * state.
+     */
     void set_input(cl::sycl::buffer<T, 2> input_buffer) override {
         if (input_buffer.get_range()[0] > tile_width && input_buffer.get_range()[1] > tile_height) {
             throw std::range_error("The grid is bigger than the tile. The monotile architecture "

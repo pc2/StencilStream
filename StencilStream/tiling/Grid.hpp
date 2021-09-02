@@ -81,7 +81,8 @@ class Grid {
     /**
      * \brief Copy the contents of the grid to a given buffer.
      *
-     * This buffer has to exactly have the size of the grid, otherwise a range error is thrown.
+     * This buffer has to exactly have the size of the grid, otherwise a `std::range_error` is
+     * thrown.
      *
      * \param out_buffer The buffer to copy the cells to.
      * \throws std::range_error The buffer's size is not the same as the grid's size.

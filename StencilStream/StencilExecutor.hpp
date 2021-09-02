@@ -24,54 +24,44 @@
 
 namespace stencil {
 /**
- * \brief Execution coordinator.
+ * \brief The default stencil executor.
  *
- * The `StencilExecutor` binds the different parts of StencilStream together and provides a unified
- * interface for applications. Users create a stencil executor, configure it and then use it to run
- * the payload computations. It has multiple logical attributes that can be configured:
+ * Unlike \ref MonotileExecutor, this executors supports any grid range by tiling the grid as
+ * described in \ref tiling, at the cost of complexer IO and a computational overhead for every
+ * tile.
  *
- * ### Grid
+ * This executor is called `StencilExecutor` since was the first one in StencilStream 2.x. A better
+ * name for it would be `TilingExecutor`.
  *
- * The grid is the logical array of cells, set with \ref StencilExecutor.set_input A stencil
- * executor does not work in place and a buffer used to initialize the grid can be used for other
- * tasks afterwards. The \ref StencilExecutor.run method alters the state of the grid and the grid
- * can be copied back to a given buffer using \ref StencilExecutor.copy_output.
- *
- * ### SYCL queue
- *
- * The queue provides the OpenCL platform, device, context and queue to execute the kernels. A
- * stencil executor does not have a queue when constructed and \ref StencilExecutor.run tries to
- * select the FPGA emulation device if no queue has been configured yet. \ref
- * StencilExecutor.set_queue is used to directly set the queue, but \ref
- * StencilExecutor.select_emulator and \ref StencilExecutor.select_fpga can be used to automatically
- * configure the FPGA emulator or the FPGA, respectively.
- *
- * ### Transition Function
- *
- * A stencil executor stores an instance of the transition function since it may require some
- * configuration and runtime-dynamic parameters too. An instance is required for the initialization,
- * but it may be replaced at any time with \ref StencilExecutor.set_trans_func.
- *
- * ### Generation Index
- *
- * This is the generation index of the current state of the grid. \ref StencilExecutor.run updates
- * and therefore, it can be ignored in most instances. However, it can be reset if a transition
- * function needs it.
- *
- * \tparam T Cell value type.
- * \tparam stencil_radius The static, maximal Chebyshev distance of cells in a stencil to the
- * central cell. Must be at least 1. \tparam TransFunc An invocable type that maps a \ref Stencil to
- * the next generation of the stencil's central cell. \tparam pipeline_length The number of hardware
- * execution stages. Must be at least 1. Defaults to 1. \tparam tile_width The number of columns in
- * a tile. Defaults to 1024. \tparam tile_height The number of rows in a tile. Defaults to 1024.
+ * \tparam T The cell type.
+ * \tparam stencil_radius The radius of the stencil buffer supplied to the transition function.
+ * \tparam TransFunc The type of the transition function.
+ * \tparam pipeline_length The number of hardware execution stages per kernel. Must be at least 1.
+ * Defaults to 1.
+ * \tparam tile_width The number of columns in a tile and maximum number of columns in a grid.
+ * Defaults to 1024.
+ * \tparam tile_height The number of rows in a tile and maximum number of rows in a grid. Defaults
+ * to 1024.
  * \tparam burst_size The number of bytes to load/store in one burst. Defaults to 1024.
  */
 template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipeline_length = 1,
           uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024>
 class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc> {
   public:
+    /**
+     * \brief The number of cells that can be transfered in a single burst.
+     */
     static constexpr uindex_t burst_length = std::min<uindex_t>(1, burst_size / sizeof(T));
+
+    /**
+     * \brief The number of cells that have be added to the tile in every direction to form the
+     * complete input.
+     */
     static constexpr uindex_t halo_radius = stencil_radius * pipeline_length;
+
+    /**
+     * \brief Shorthand for the parent class.
+     */
     using Parent = SingleQueueExecutor<T, stencil_radius, TransFunc>;
 
     /**
@@ -84,32 +74,14 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc>
         : Parent(halo_value, trans_func),
           input_grid(cl::sycl::buffer<T, 2>(cl::sycl::range<2>(0, 0))) {}
 
-    /**
-     * \brief Set the state of the grid.
-     *
-     * \param input_buffer A buffer containing the new state of the grid.
-     */
     void set_input(cl::sycl::buffer<T, 2> input_buffer) override {
         this->input_grid = GridImpl(input_buffer);
     }
 
-    /**
-     * \brief Copy the current state of the grid to the buffer.
-     *
-     * The `output_buffer` has to have the exact range as returned by \ref
-     * StencilExecutor.get_grid_range.
-     *
-     * \param output_buffer Copy the state of the grid to this buffer.
-     */
     void copy_output(cl::sycl::buffer<T, 2> output_buffer) override {
         input_grid.copy_to(output_buffer);
     }
 
-    /**
-     * \brief Return the range of the grid.
-     *
-     * \return The range of the grid.
-     */
     UID get_grid_range() const override { return input_grid.get_grid_range(); }
 
     void run(uindex_t n_generations) override {

@@ -46,17 +46,22 @@ namespace tiling {
  *
  * \tparam T Cell value type.
  * \tparam halo_height The radius (aka width and height) of the tile halo (and therefore both
- * dimensions of a corner buffer). \tparam core_height The height of the core buffer. \tparam
- * burst_length The number of elements that can be read or written in a burst. \tparam pipe The pipe
- * to read or write to. \tparam n_halo_height_buffers The number of buffers to accept, in addition
- * to \tparam access_mode The access mode to expect for the buffer accessor. \tparam access_target
- * The access target to expect for the buffer accessor.
+ * dimensions of a corner buffer).
+ * \tparam core_height The height of the core buffer.
+ * \tparam burst_length The number of elements that can be read or written in a burst.
+ * \tparam pipe The pipe to read or write to.
+ * \tparam n_halo_height_buffers The number of buffers to accept, in addition to the core buffer.
+ * \tparam access_mode The access mode to expect for the buffer accessor.
+ * \tparam access_target The access target to expect for the buffer accessor.
  */
 template <typename T, uindex_t halo_height, uindex_t core_height, uindex_t burst_length,
           typename pipe, uindex_t n_halo_height_buffers, cl::sycl::access::mode access_mode,
           cl::sycl::access::target access_target = cl::sycl::access::target::global_buffer>
 class IOKernel {
   public:
+    /**
+     * \brief The exact accessor type required by the IO kernel.
+     */
     using Accessor = cl::sycl::accessor<T, 2, access_mode, access_target>;
 
     /**
