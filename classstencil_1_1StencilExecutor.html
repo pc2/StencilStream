@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">StencilStream
-   &#160;<span id="projectnumber">v2.0.0</span>
+   &#160;<span id="projectnumber">v2.1.0</span>
    </div>
    <div id="projectbrief">Generic Stencil Simulation Library for FPGAs.</div>
   </td>
@@ -68,6 +68,7 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="classstencil_1_1StencilExecutor-members.html">List of all members</a>  </div>
@@ -76,97 +77,146 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>Execution coordinator.  
+<p>The default stencil executor.  
  <a href="classstencil_1_1StencilExecutor.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="StencilExecutor_8hpp_source.html">StencilExecutor.hpp</a>&gt;</code></p>
+<div class="dynheader">
+Inheritance diagram for stencil::StencilExecutor&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;:</div>
+<div class="dyncontent">
+<div class="center"><img src="classstencil_1_1StencilExecutor__inherit__graph.png" border="0" usemap="#astencil_1_1StencilExecutor_3_01T_00_01stencil__radius_00_01TransFunc_00_01pipeline__length_00_01tile__width_00_01tile__height_00_01burst__size_01_4_inherit__map" alt="Inheritance graph"/></div>
+<map name="astencil_1_1StencilExecutor_3_01T_00_01stencil__radius_00_01TransFunc_00_01pipeline__length_00_01tile__width_00_01tile__height_00_01burst__size_01_4_inherit__map" id="astencil_1_1StencilExecutor_3_01T_00_01stencil__radius_00_01TransFunc_00_01pipeline__length_00_01tile__width_00_01tile__height_00_01burst__size_01_4_inherit__map">
+<area shape="rect" title="The default stencil executor." alt="" coords="9,184,210,255"/>
+<area shape="rect" href="classstencil_1_1SingleQueueExecutor.html" title="An abstract executor with common code for executors that work with a single SYCL queue." alt="" coords="5,95,213,136"/>
+<area shape="rect" href="classstencil_1_1AbstractExecutor.html" title="Base class for all execution managers." alt="" coords="5,5,213,47"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
+<div class="dynheader">
+Collaboration diagram for stencil::StencilExecutor&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;:</div>
+<div class="dyncontent">
+<div class="center"><img src="classstencil_1_1StencilExecutor__coll__graph.png" border="0" usemap="#astencil_1_1StencilExecutor_3_01T_00_01stencil__radius_00_01TransFunc_00_01pipeline__length_00_01tile__width_00_01tile__height_00_01burst__size_01_4_coll__map" alt="Collaboration graph"/></div>
+<map name="astencil_1_1StencilExecutor_3_01T_00_01stencil__radius_00_01TransFunc_00_01pipeline__length_00_01tile__width_00_01tile__height_00_01burst__size_01_4_coll__map" id="astencil_1_1StencilExecutor_3_01T_00_01stencil__radius_00_01TransFunc_00_01pipeline__length_00_01tile__width_00_01tile__height_00_01burst__size_01_4_coll__map">
+<area shape="rect" title="The default stencil executor." alt="" coords="9,184,210,255"/>
+<area shape="rect" href="classstencil_1_1SingleQueueExecutor.html" title="An abstract executor with common code for executors that work with a single SYCL queue." alt="" coords="5,95,213,136"/>
+<area shape="rect" href="classstencil_1_1AbstractExecutor.html" title="Base class for all execution managers." alt="" coords="5,5,213,47"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:ad8ad8b4a5771858b4870ef830786743c"><td class="memItemLeft" align="right" valign="top"><a id="ad8ad8b4a5771858b4870ef830786743c"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#ad8ad8b4a5771858b4870ef830786743c">Parent</a> = <a class="el" href="classstencil_1_1SingleQueueExecutor.html">SingleQueueExecutor</a>&lt; T, stencil_radius, TransFunc &gt;</td></tr>
+<tr class="memdesc:ad8ad8b4a5771858b4870ef830786743c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shorthand for the parent class. <br /></td></tr>
+<tr class="separator:ad8ad8b4a5771858b4870ef830786743c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:af38d8ec6180eddc4ac26320f657d07c8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#af38d8ec6180eddc4ac26320f657d07c8">StencilExecutor</a> (T halo_value, TransFunc trans_func)</td></tr>
 <tr class="memdesc:af38d8ec6180eddc4ac26320f657d07c8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new stencil executor.  <a href="classstencil_1_1StencilExecutor.html#af38d8ec6180eddc4ac26320f657d07c8">More...</a><br /></td></tr>
 <tr class="separator:af38d8ec6180eddc4ac26320f657d07c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab8c99a16a4307919216b9ee4028c89ce"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#ab8c99a16a4307919216b9ee4028c89ce">run</a> (uindex_t n_generations)</td></tr>
-<tr class="memdesc:ab8c99a16a4307919216b9ee4028c89ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the next generations.  <a href="classstencil_1_1StencilExecutor.html#ab8c99a16a4307919216b9ee4028c89ce">More...</a><br /></td></tr>
-<tr class="separator:ab8c99a16a4307919216b9ee4028c89ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab638594920f9668b7a88c66eb5a4d2e9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#ab638594920f9668b7a88c66eb5a4d2e9">set_input</a> (cl::sycl::buffer&lt; T, 2 &gt; input_buffer)</td></tr>
-<tr class="memdesc:ab638594920f9668b7a88c66eb5a4d2e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the state of the grid.  <a href="classstencil_1_1StencilExecutor.html#ab638594920f9668b7a88c66eb5a4d2e9">More...</a><br /></td></tr>
-<tr class="separator:ab638594920f9668b7a88c66eb5a4d2e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac4e10c3b67e1fd823d9804911818ee13"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#ac4e10c3b67e1fd823d9804911818ee13">copy_output</a> (cl::sycl::buffer&lt; T, 2 &gt; output_buffer)</td></tr>
-<tr class="memdesc:ac4e10c3b67e1fd823d9804911818ee13"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy the current state of the grid to the buffer.  <a href="classstencil_1_1StencilExecutor.html#ac4e10c3b67e1fd823d9804911818ee13">More...</a><br /></td></tr>
-<tr class="separator:ac4e10c3b67e1fd823d9804911818ee13"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6ac08b58cf49f50190a70156a2a8a0e8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classstencil_1_1GenericID.html">UID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#a6ac08b58cf49f50190a70156a2a8a0e8">get_grid_range</a> () const</td></tr>
-<tr class="memdesc:a6ac08b58cf49f50190a70156a2a8a0e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the range of the grid.  <a href="classstencil_1_1StencilExecutor.html#a6ac08b58cf49f50190a70156a2a8a0e8">More...</a><br /></td></tr>
-<tr class="separator:a6ac08b58cf49f50190a70156a2a8a0e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af115390f7843c324ddbf50b805b480f3"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#af115390f7843c324ddbf50b805b480f3">get_halo_value</a> () const</td></tr>
-<tr class="memdesc:af115390f7843c324ddbf50b805b480f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the value of cells in the grid halo.  <a href="classstencil_1_1StencilExecutor.html#af115390f7843c324ddbf50b805b480f3">More...</a><br /></td></tr>
-<tr class="separator:af115390f7843c324ddbf50b805b480f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa040485937b47b1a85f42b45c5506a07"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#aa040485937b47b1a85f42b45c5506a07">set_halo_value</a> (T halo_value)</td></tr>
-<tr class="memdesc:aa040485937b47b1a85f42b45c5506a07"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the value of cells in the grid halo.  <a href="classstencil_1_1StencilExecutor.html#aa040485937b47b1a85f42b45c5506a07">More...</a><br /></td></tr>
-<tr class="separator:aa040485937b47b1a85f42b45c5506a07"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af05b86f6ccc20951892e6418a853f5e2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#af05b86f6ccc20951892e6418a853f5e2">set_queue</a> (cl::sycl::queue queue, bool runtime_analysis)</td></tr>
-<tr class="memdesc:af05b86f6ccc20951892e6418a853f5e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Manually set the SYCL queue to use for execution.  <a href="classstencil_1_1StencilExecutor.html#af05b86f6ccc20951892e6418a853f5e2">More...</a><br /></td></tr>
-<tr class="separator:af05b86f6ccc20951892e6418a853f5e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa8b6eac01acd82f121b21cdb1de1abc3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#aa8b6eac01acd82f121b21cdb1de1abc3">select_emulator</a> ()</td></tr>
-<tr class="memdesc:aa8b6eac01acd82f121b21cdb1de1abc3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set up a SYCL queue with the FPGA emulator device.  <a href="classstencil_1_1StencilExecutor.html#aa8b6eac01acd82f121b21cdb1de1abc3">More...</a><br /></td></tr>
-<tr class="separator:aa8b6eac01acd82f121b21cdb1de1abc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac74791f7624f9505826bb92a86268d6c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#ac74791f7624f9505826bb92a86268d6c">select_fpga</a> ()</td></tr>
-<tr class="memdesc:ac74791f7624f9505826bb92a86268d6c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set up a SYCL queue with an FPGA device.  <a href="classstencil_1_1StencilExecutor.html#ac74791f7624f9505826bb92a86268d6c">More...</a><br /></td></tr>
-<tr class="separator:ac74791f7624f9505826bb92a86268d6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a80d8d48f05a6bb71724a1e2593081ad4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#a80d8d48f05a6bb71724a1e2593081ad4">select_emulator</a> (bool runtime_analysis)</td></tr>
-<tr class="memdesc:a80d8d48f05a6bb71724a1e2593081ad4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set up a SYCL queue with the FPGA emulator device and optional runtime analysis.  <a href="classstencil_1_1StencilExecutor.html#a80d8d48f05a6bb71724a1e2593081ad4">More...</a><br /></td></tr>
-<tr class="separator:a80d8d48f05a6bb71724a1e2593081ad4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e46c6ad7dbf9ff1bef8f0b4e6a52f95"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#a1e46c6ad7dbf9ff1bef8f0b4e6a52f95">select_fpga</a> (bool runtime_analysis)</td></tr>
-<tr class="memdesc:a1e46c6ad7dbf9ff1bef8f0b4e6a52f95"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set up a SYCL queue with an FPGA device and optional runtime analysis.  <a href="classstencil_1_1StencilExecutor.html#a1e46c6ad7dbf9ff1bef8f0b4e6a52f95">More...</a><br /></td></tr>
-<tr class="separator:a1e46c6ad7dbf9ff1bef8f0b4e6a52f95"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:accb792ce008ce7bd7651e59ffaba82b8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#accb792ce008ce7bd7651e59ffaba82b8">set_trans_func</a> (TransFunc trans_func)</td></tr>
-<tr class="memdesc:accb792ce008ce7bd7651e59ffaba82b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the transition function instance.  <a href="classstencil_1_1StencilExecutor.html#accb792ce008ce7bd7651e59ffaba82b8">More...</a><br /></td></tr>
-<tr class="separator:accb792ce008ce7bd7651e59ffaba82b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a011f33f537758cb44c615eca6b837588"><td class="memItemLeft" align="right" valign="top">uindex_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#a011f33f537758cb44c615eca6b837588">get_i_generation</a> () const</td></tr>
-<tr class="memdesc:a011f33f537758cb44c615eca6b837588"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the current generation index of the grid.  <a href="classstencil_1_1StencilExecutor.html#a011f33f537758cb44c615eca6b837588">More...</a><br /></td></tr>
-<tr class="separator:a011f33f537758cb44c615eca6b837588"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9fa760af5f2218a3cf122bf677ac0292"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#a9fa760af5f2218a3cf122bf677ac0292">set_i_generation</a> (uindex_t i_generation)</td></tr>
-<tr class="memdesc:a9fa760af5f2218a3cf122bf677ac0292"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the generation index of the grid.  <a href="classstencil_1_1StencilExecutor.html#a9fa760af5f2218a3cf122bf677ac0292">More...</a><br /></td></tr>
-<tr class="separator:a9fa760af5f2218a3cf122bf677ac0292"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afd93ce87e5893497f8ef07b26ac9800d"><td class="memItemLeft" align="right" valign="top">std::optional&lt; <a class="el" href="classstencil_1_1RuntimeSample.html">RuntimeSample</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#afd93ce87e5893497f8ef07b26ac9800d">get_runtime_sample</a> ()</td></tr>
-<tr class="memdesc:afd93ce87e5893497f8ef07b26ac9800d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the runtime information collected from the last <a class="el" href="classstencil_1_1StencilExecutor.html#ab8c99a16a4307919216b9ee4028c89ce">StencilExecutor::run</a> call.  <a href="classstencil_1_1StencilExecutor.html#afd93ce87e5893497f8ef07b26ac9800d">More...</a><br /></td></tr>
-<tr class="separator:afd93ce87e5893497f8ef07b26ac9800d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adf3b0eafb5bde6caef6d23eaf38d623a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#adf3b0eafb5bde6caef6d23eaf38d623a">set_input</a> (cl::sycl::buffer&lt; T, 2 &gt; input_buffer) override</td></tr>
+<tr class="memdesc:adf3b0eafb5bde6caef6d23eaf38d623a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the internal state of the grid.  <a href="classstencil_1_1StencilExecutor.html#adf3b0eafb5bde6caef6d23eaf38d623a">More...</a><br /></td></tr>
+<tr class="separator:adf3b0eafb5bde6caef6d23eaf38d623a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aefdbb17862cb2cadf03eaa56d0caaa3d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#aefdbb17862cb2cadf03eaa56d0caaa3d">copy_output</a> (cl::sycl::buffer&lt; T, 2 &gt; output_buffer) override</td></tr>
+<tr class="memdesc:aefdbb17862cb2cadf03eaa56d0caaa3d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy the state of the grid to a buffer.  <a href="classstencil_1_1StencilExecutor.html#aefdbb17862cb2cadf03eaa56d0caaa3d">More...</a><br /></td></tr>
+<tr class="separator:aefdbb17862cb2cadf03eaa56d0caaa3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb016b21d9eadb9dbfd2e5afaba9605d"><td class="memItemLeft" align="right" valign="top"><a id="acb016b21d9eadb9dbfd2e5afaba9605d"></a>
+<a class="el" href="classstencil_1_1GenericID.html">UID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#acb016b21d9eadb9dbfd2e5afaba9605d">get_grid_range</a> () const override</td></tr>
+<tr class="memdesc:acb016b21d9eadb9dbfd2e5afaba9605d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the range of the internal grid. <br /></td></tr>
+<tr class="separator:acb016b21d9eadb9dbfd2e5afaba9605d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ed55e8cd01320d8d57369c47af04924"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#a3ed55e8cd01320d8d57369c47af04924">run</a> (uindex_t n_generations) override</td></tr>
+<tr class="memdesc:a3ed55e8cd01320d8d57369c47af04924"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the next generations of the grid and store it internally.  <a href="classstencil_1_1StencilExecutor.html#a3ed55e8cd01320d8d57369c47af04924">More...</a><br /></td></tr>
+<tr class="separator:a3ed55e8cd01320d8d57369c47af04924"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_classstencil_1_1SingleQueueExecutor"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classstencil_1_1SingleQueueExecutor')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classstencil_1_1SingleQueueExecutor.html">stencil::SingleQueueExecutor&lt; T, stencil_radius, TransFunc &gt;</a></td></tr>
+<tr class="memitem:a896ae4b1cd8183db939a597c11de1aec inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1SingleQueueExecutor.html#a896ae4b1cd8183db939a597c11de1aec">SingleQueueExecutor</a> (T halo_value, TransFunc trans_func)</td></tr>
+<tr class="memdesc:a896ae4b1cd8183db939a597c11de1aec inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new executor.  <a href="classstencil_1_1SingleQueueExecutor.html#a896ae4b1cd8183db939a597c11de1aec">More...</a><br /></td></tr>
+<tr class="separator:a896ae4b1cd8183db939a597c11de1aec inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c47e69ffb60fa9a91c766d1e1025c5b inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memItemLeft" align="right" valign="top">cl::sycl::queue &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1SingleQueueExecutor.html#a2c47e69ffb60fa9a91c766d1e1025c5b">get_queue</a> ()</td></tr>
+<tr class="memdesc:a2c47e69ffb60fa9a91c766d1e1025c5b inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the configured queue.  <a href="classstencil_1_1SingleQueueExecutor.html#a2c47e69ffb60fa9a91c766d1e1025c5b">More...</a><br /></td></tr>
+<tr class="separator:a2c47e69ffb60fa9a91c766d1e1025c5b inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7fb2e92cf13631d35bca94a5db8c3e8d inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1SingleQueueExecutor.html#a7fb2e92cf13631d35bca94a5db8c3e8d">set_queue</a> (cl::sycl::queue queue, bool runtime_analysis)</td></tr>
+<tr class="memdesc:a7fb2e92cf13631d35bca94a5db8c3e8d inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="mdescLeft">&#160;</td><td class="mdescRight">Manually set the SYCL queue to use for execution.  <a href="classstencil_1_1SingleQueueExecutor.html#a7fb2e92cf13631d35bca94a5db8c3e8d">More...</a><br /></td></tr>
+<tr class="separator:a7fb2e92cf13631d35bca94a5db8c3e8d inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af03ed6474b391e4691cd947799746493 inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1SingleQueueExecutor.html#af03ed6474b391e4691cd947799746493">set_queue</a> (cl::sycl::queue queue)</td></tr>
+<tr class="memdesc:af03ed6474b391e4691cd947799746493 inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="mdescLeft">&#160;</td><td class="mdescRight">Manually set the SYCL queue to use for execution.  <a href="classstencil_1_1SingleQueueExecutor.html#af03ed6474b391e4691cd947799746493">More...</a><br /></td></tr>
+<tr class="separator:af03ed6474b391e4691cd947799746493 inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e1de708004fe3179fd8384e3a384e37 inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1SingleQueueExecutor.html#a6e1de708004fe3179fd8384e3a384e37">select_emulator</a> ()</td></tr>
+<tr class="memdesc:a6e1de708004fe3179fd8384e3a384e37 inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set up a SYCL queue with the FPGA emulator device, without runtime analysis.  <a href="classstencil_1_1SingleQueueExecutor.html#a6e1de708004fe3179fd8384e3a384e37">More...</a><br /></td></tr>
+<tr class="separator:a6e1de708004fe3179fd8384e3a384e37 inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa1ab607cddecfdfca9c7ebd11de1c1ff inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1SingleQueueExecutor.html#aa1ab607cddecfdfca9c7ebd11de1c1ff">select_fpga</a> ()</td></tr>
+<tr class="memdesc:aa1ab607cddecfdfca9c7ebd11de1c1ff inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set up a SYCL queue with an FPGA device, without runtime analysis.  <a href="classstencil_1_1SingleQueueExecutor.html#aa1ab607cddecfdfca9c7ebd11de1c1ff">More...</a><br /></td></tr>
+<tr class="separator:aa1ab607cddecfdfca9c7ebd11de1c1ff inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10009c1a1e97c2b01e996f1615646886 inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1SingleQueueExecutor.html#a10009c1a1e97c2b01e996f1615646886">select_emulator</a> (bool runtime_analysis)</td></tr>
+<tr class="memdesc:a10009c1a1e97c2b01e996f1615646886 inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set up a SYCL queue with the FPGA emulator device and optional runtime analysis.  <a href="classstencil_1_1SingleQueueExecutor.html#a10009c1a1e97c2b01e996f1615646886">More...</a><br /></td></tr>
+<tr class="separator:a10009c1a1e97c2b01e996f1615646886 inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a58c7fea4a4fd0b50845fbcbbe81da1ed inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1SingleQueueExecutor.html#a58c7fea4a4fd0b50845fbcbbe81da1ed">select_fpga</a> (bool runtime_analysis)</td></tr>
+<tr class="memdesc:a58c7fea4a4fd0b50845fbcbbe81da1ed inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set up a SYCL queue with an FPGA device and optional runtime analysis.  <a href="classstencil_1_1SingleQueueExecutor.html#a58c7fea4a4fd0b50845fbcbbe81da1ed">More...</a><br /></td></tr>
+<tr class="separator:a58c7fea4a4fd0b50845fbcbbe81da1ed inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a41a5db39828f2007a434d1c8fd8edd4d inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1SingleQueueExecutor.html#a41a5db39828f2007a434d1c8fd8edd4d">is_runtime_analysis_enabled</a> () const</td></tr>
+<tr class="memdesc:a41a5db39828f2007a434d1c8fd8edd4d inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if the configured queue supports runtime analysis.  <a href="classstencil_1_1SingleQueueExecutor.html#a41a5db39828f2007a434d1c8fd8edd4d">More...</a><br /></td></tr>
+<tr class="separator:a41a5db39828f2007a434d1c8fd8edd4d inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8eb5deb049594939cf07e9a7ad72e82e inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classstencil_1_1RuntimeSample.html">RuntimeSample</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1SingleQueueExecutor.html#a8eb5deb049594939cf07e9a7ad72e82e">get_runtime_sample</a> ()</td></tr>
+<tr class="memdesc:a8eb5deb049594939cf07e9a7ad72e82e inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return a reference to the runtime information struct.  <a href="classstencil_1_1SingleQueueExecutor.html#a8eb5deb049594939cf07e9a7ad72e82e">More...</a><br /></td></tr>
+<tr class="separator:a8eb5deb049594939cf07e9a7ad72e82e inherit pub_methods_classstencil_1_1SingleQueueExecutor"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_classstencil_1_1AbstractExecutor"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classstencil_1_1AbstractExecutor')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classstencil_1_1AbstractExecutor.html">stencil::AbstractExecutor&lt; T, stencil_radius, TransFunc &gt;</a></td></tr>
+<tr class="memitem:a2b987fda186af9541c3601cbf7c63c33 inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1AbstractExecutor.html#a2b987fda186af9541c3601cbf7c63c33">AbstractExecutor</a> (T halo_value, TransFunc trans_func)</td></tr>
+<tr class="memdesc:a2b987fda186af9541c3601cbf7c63c33 inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new abstract executor.  <a href="classstencil_1_1AbstractExecutor.html#a2b987fda186af9541c3601cbf7c63c33">More...</a><br /></td></tr>
+<tr class="separator:a2b987fda186af9541c3601cbf7c63c33 inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaed239df6a12f950056909adabf2d5cd inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="memItemLeft" align="right" valign="top"><a id="aaed239df6a12f950056909adabf2d5cd"></a>
+T const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1AbstractExecutor.html#aaed239df6a12f950056909adabf2d5cd">get_halo_value</a> () const</td></tr>
+<tr class="memdesc:aaed239df6a12f950056909adabf2d5cd inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the value of cells outside of the grid. <br /></td></tr>
+<tr class="separator:aaed239df6a12f950056909adabf2d5cd inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab884480cabbdf28be82f5177b9e5504f inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="memItemLeft" align="right" valign="top"><a id="ab884480cabbdf28be82f5177b9e5504f"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1AbstractExecutor.html#ab884480cabbdf28be82f5177b9e5504f">set_halo_value</a> (T halo_value)</td></tr>
+<tr class="memdesc:ab884480cabbdf28be82f5177b9e5504f inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the value of cells outside of the grid. <br /></td></tr>
+<tr class="separator:ab884480cabbdf28be82f5177b9e5504f inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c907bd618542fc4b9bb37da6c722e84 inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="memItemLeft" align="right" valign="top"><a id="a3c907bd618542fc4b9bb37da6c722e84"></a>
+TransFunc&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1AbstractExecutor.html#a3c907bd618542fc4b9bb37da6c722e84">get_trans_func</a> () const</td></tr>
+<tr class="memdesc:a3c907bd618542fc4b9bb37da6c722e84 inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the configured transition function instance. <br /></td></tr>
+<tr class="separator:a3c907bd618542fc4b9bb37da6c722e84 inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62afa5cdc5e86e543eb2d23af147e6a9 inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="memItemLeft" align="right" valign="top"><a id="a62afa5cdc5e86e543eb2d23af147e6a9"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1AbstractExecutor.html#a62afa5cdc5e86e543eb2d23af147e6a9">set_trans_func</a> (TransFunc trans_func)</td></tr>
+<tr class="memdesc:a62afa5cdc5e86e543eb2d23af147e6a9 inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the transition function instance. <br /></td></tr>
+<tr class="separator:a62afa5cdc5e86e543eb2d23af147e6a9 inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36d0db61c38759569eac48ce509d32b6 inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="memItemLeft" align="right" valign="top"><a id="a36d0db61c38759569eac48ce509d32b6"></a>
+uindex_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1AbstractExecutor.html#a36d0db61c38759569eac48ce509d32b6">get_i_generation</a> () const</td></tr>
+<tr class="memdesc:a36d0db61c38759569eac48ce509d32b6 inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the generation index of the grid. <br /></td></tr>
+<tr class="separator:a36d0db61c38759569eac48ce509d32b6 inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5f05f8e8dbf22646d0ce0f993c68e15 inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="memItemLeft" align="right" valign="top"><a id="ac5f05f8e8dbf22646d0ce0f993c68e15"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1AbstractExecutor.html#ac5f05f8e8dbf22646d0ce0f993c68e15">set_i_generation</a> (uindex_t i_generation)</td></tr>
+<tr class="memdesc:ac5f05f8e8dbf22646d0ce0f993c68e15 inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the generation index of the grid. <br /></td></tr>
+<tr class="separator:ac5f05f8e8dbf22646d0ce0f993c68e15 inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2623b422fa14ef62324889ea4d10068c inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="memItemLeft" align="right" valign="top"><a id="a2623b422fa14ef62324889ea4d10068c"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1AbstractExecutor.html#a2623b422fa14ef62324889ea4d10068c">inc_i_generation</a> (index_t delta)</td></tr>
+<tr class="memdesc:a2623b422fa14ef62324889ea4d10068c inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="mdescLeft">&#160;</td><td class="mdescRight">Increase the generation index of the grid by a certain delta. <br /></td></tr>
+<tr class="separator:a2623b422fa14ef62324889ea4d10068c inherit pub_methods_classstencil_1_1AbstractExecutor"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
 <tr class="memitem:aa0f873043f88eac3fb7d05361e01ee59"><td class="memItemLeft" align="right" valign="top"><a id="aa0f873043f88eac3fb7d05361e01ee59"></a>
-static constexpr uindex_t&#160;</td><td class="memItemRight" valign="bottom"><b>burst_length</b> = std::min&lt;uindex_t&gt;(1, burst_size / sizeof(T))</td></tr>
+static constexpr uindex_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#aa0f873043f88eac3fb7d05361e01ee59">burst_length</a> = std::min&lt;uindex_t&gt;(1, burst_size / sizeof(T))</td></tr>
+<tr class="memdesc:aa0f873043f88eac3fb7d05361e01ee59"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number of cells that can be transfered in a single burst. <br /></td></tr>
 <tr class="separator:aa0f873043f88eac3fb7d05361e01ee59"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a026905e54000d91fcd5a181492481252"><td class="memItemLeft" align="right" valign="top"><a id="a026905e54000d91fcd5a181492481252"></a>
-static constexpr uindex_t&#160;</td><td class="memItemRight" valign="bottom"><b>halo_radius</b> = stencil_radius * pipeline_length</td></tr>
+static constexpr uindex_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1StencilExecutor.html#a026905e54000d91fcd5a181492481252">halo_radius</a> = stencil_radius * pipeline_length</td></tr>
+<tr class="memdesc:a026905e54000d91fcd5a181492481252"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number of cells that have be added to the tile in every direction to form the complete input. <br /></td></tr>
 <tr class="separator:a026905e54000d91fcd5a181492481252"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipeline_length = 1, uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024&gt;<br />
 class stencil::StencilExecutor&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;</h3>
 
-<p>Execution coordinator. </p>
-<p>The <code><a class="el" href="classstencil_1_1StencilExecutor.html" title="Execution coordinator.">StencilExecutor</a></code> binds the different parts of StencilStream together and provides a unified interface for applications. Users create a stencil executor, configure it and then use it to run the payload computations. It has multiple logical attributes that can be configured:</p>
-<h3><a class="anchor" id="autotoc_md0"></a>
-Grid</h3>
-<p>The grid is the logical array of cells, set with <a class="el" href="classstencil_1_1StencilExecutor.html#ab638594920f9668b7a88c66eb5a4d2e9">StencilExecutor::set_input</a> A stencil executor does not work in place and a buffer used to initialize the grid can be used for other tasks afterwards. The <a class="el" href="classstencil_1_1StencilExecutor.html#ab8c99a16a4307919216b9ee4028c89ce">StencilExecutor::run</a> method alters the state of the grid and the grid can be copied back to a given buffer using <a class="el" href="classstencil_1_1StencilExecutor.html#ac4e10c3b67e1fd823d9804911818ee13">StencilExecutor::copy_output</a>.</p>
-<h3><a class="anchor" id="autotoc_md1"></a>
-SYCL queue</h3>
-<p>The queue provides the OpenCL platform, device, context and queue to execute the kernels. A stencil executor does not have a queue when constructed and <a class="el" href="classstencil_1_1StencilExecutor.html#ab8c99a16a4307919216b9ee4028c89ce">StencilExecutor::run</a> tries to select the FPGA emulation device if no queue has been configured yet. <a class="el" href="classstencil_1_1StencilExecutor.html#af05b86f6ccc20951892e6418a853f5e2">StencilExecutor::set_queue</a> is used to directly set the queue, but <a class="el" href="classstencil_1_1StencilExecutor.html#aa8b6eac01acd82f121b21cdb1de1abc3">StencilExecutor::select_emulator</a> and <a class="el" href="classstencil_1_1StencilExecutor.html#ac74791f7624f9505826bb92a86268d6c">StencilExecutor::select_fpga</a> can be used to automatically configure the FPGA emulator or the FPGA, respectively.</p>
-<h3><a class="anchor" id="autotoc_md2"></a>
-Transition Function</h3>
-<p>A stencil executor stores an instance of the transition function since it may require some configuration and runtime-dynamic parameters too. An instance is required for the initialization, but it may be replaced at any time with <a class="el" href="classstencil_1_1StencilExecutor.html#accb792ce008ce7bd7651e59ffaba82b8">StencilExecutor::set_trans_func</a>.</p>
-<h3><a class="anchor" id="autotoc_md3"></a>
-Generation Index</h3>
-<p>This is the generation index of the current state of the grid. <a class="el" href="classstencil_1_1StencilExecutor.html#ab8c99a16a4307919216b9ee4028c89ce">StencilExecutor::run</a> updates and therefore, it can be ignored in most instances. However, it can be reset if a transition function needs it.</p>
+<p>The default stencil executor. </p>
+<p>Unlike <a class="el" href="classstencil_1_1MonotileExecutor.html">MonotileExecutor</a>, this executors supports any grid range by tiling the grid as described in <a class="el" href="Architecture.html#tiling">Grid Tiling</a>, at the cost of complexer IO and a computational overhead for every tile.</p>
+<p>This executor is called <code><a class="el" href="classstencil_1_1StencilExecutor.html" title="The default stencil executor.">StencilExecutor</a></code> since was the first one in StencilStream 2.x. A better name for it would be <code>TilingExecutor</code>.</p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
-    <tr><td class="paramname">T</td><td>Cell value type. </td></tr>
-    <tr><td class="paramname">stencil_radius</td><td>The static, maximal Chebyshev distance of cells in a stencil to the central cell. Must be at least 1. </td></tr>
-    <tr><td class="paramname">TransFunc</td><td>An invocable type that maps a <a class="el" href="classstencil_1_1Stencil.html">Stencil</a> to the next generation of the stencil's central cell. </td></tr>
-    <tr><td class="paramname">pipeline_length</td><td>The number of hardware execution stages. Must be at least 1. Defaults to 1. </td></tr>
-    <tr><td class="paramname">tile_width</td><td>The number of columns in a tile. Defaults to 1024. </td></tr>
-    <tr><td class="paramname">tile_height</td><td>The number of rows in a tile. Defaults to 1024. </td></tr>
+    <tr><td class="paramname">T</td><td>The cell type. </td></tr>
+    <tr><td class="paramname">stencil_radius</td><td>The radius of the stencil buffer supplied to the transition function. </td></tr>
+    <tr><td class="paramname">TransFunc</td><td>The type of the transition function. </td></tr>
+    <tr><td class="paramname">pipeline_length</td><td>The number of hardware execution stages per kernel. Must be at least 1. Defaults to 1. </td></tr>
+    <tr><td class="paramname">tile_width</td><td>The number of columns in a tile and maximum number of columns in a grid. Defaults to 1024. </td></tr>
+    <tr><td class="paramname">tile_height</td><td>The number of rows in a tile and maximum number of rows in a grid. Defaults to 1024. </td></tr>
     <tr><td class="paramname">burst_size</td><td>The number of bytes to load/store in one burst. Defaults to 1024. </td></tr>
   </table>
   </dd>
@@ -220,8 +270,8 @@ template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ac4e10c3b67e1fd823d9804911818ee13"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac4e10c3b67e1fd823d9804911818ee13">&#9670;&nbsp;</a></span>copy_output()</h2>
+<a id="aefdbb17862cb2cadf03eaa56d0caaa3d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aefdbb17862cb2cadf03eaa56d0caaa3d">&#9670;&nbsp;</a></span>copy_output()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -241,144 +291,26 @@ template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t 
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>Copy the current state of the grid to the buffer. </p>
-<p>The output_buffer has to have the exact range as returned by <a class="el" href="classstencil_1_1StencilExecutor.html#a6ac08b58cf49f50190a70156a2a8a0e8">StencilExecutor::get_grid_range</a>.</p>
+<p>Copy the state of the grid to a buffer. </p>
+<p>This will copy the cells of the internal grid representation to the buffer. The range of the output buffer must be equal to the grid range (retrievable with <a class="el" href="classstencil_1_1AbstractExecutor.html#a010f56407bd8b2728fa229f8dd0392b2">AbstractExecutor::get_grid_range</a>).</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">output_buffer</td><td>Copy the state of the grid to this buffer. </td></tr>
+    <tr><td class="paramname">output_buffer</td><td>The target buffer. </td></tr>
   </table>
   </dd>
 </dl>
 
-</div>
-</div>
-<a id="a6ac08b58cf49f50190a70156a2a8a0e8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6ac08b58cf49f50190a70156a2a8a0e8">&#9670;&nbsp;</a></span>get_grid_range()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t pipeline_length = 1, uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classstencil_1_1GenericID.html">UID</a> <a class="el" href="classstencil_1_1StencilExecutor.html">stencil::StencilExecutor</a>&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;::get_grid_range </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Return the range of the grid. </p>
-<dl class="section return"><dt>Returns</dt><dd>The range of the grid. </dd></dl>
+<p>Implements <a class="el" href="classstencil_1_1AbstractExecutor.html#a9a1a12b6a2627a7cc941a4febe8edc0a">stencil::AbstractExecutor&lt; T, stencil_radius, TransFunc &gt;</a>.</p>
 
 </div>
 </div>
-<a id="af115390f7843c324ddbf50b805b480f3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af115390f7843c324ddbf50b805b480f3">&#9670;&nbsp;</a></span>get_halo_value()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t pipeline_length = 1, uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">T <a class="el" href="classstencil_1_1StencilExecutor.html">stencil::StencilExecutor</a>&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;::get_halo_value </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Return the value of cells in the grid halo. </p>
-<dl class="section return"><dt>Returns</dt><dd>The value of cells in the grid halo. </dd></dl>
-
-</div>
-</div>
-<a id="a011f33f537758cb44c615eca6b837588"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a011f33f537758cb44c615eca6b837588">&#9670;&nbsp;</a></span>get_i_generation()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t pipeline_length = 1, uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">uindex_t <a class="el" href="classstencil_1_1StencilExecutor.html">stencil::StencilExecutor</a>&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;::get_i_generation </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Get the current generation index of the grid. </p>
-<dl class="section return"><dt>Returns</dt><dd>The current generation index of the grid. </dd></dl>
-
-</div>
-</div>
-<a id="afd93ce87e5893497f8ef07b26ac9800d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afd93ce87e5893497f8ef07b26ac9800d">&#9670;&nbsp;</a></span>get_runtime_sample()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t pipeline_length = 1, uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::optional&lt;<a class="el" href="classstencil_1_1RuntimeSample.html">RuntimeSample</a>&gt; <a class="el" href="classstencil_1_1StencilExecutor.html">stencil::StencilExecutor</a>&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;::get_runtime_sample </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Return the runtime information collected from the last <a class="el" href="classstencil_1_1StencilExecutor.html#ab8c99a16a4307919216b9ee4028c89ce">StencilExecutor::run</a> call. </p>
-<dl class="section return"><dt>Returns</dt><dd>The collected runtime information. May be <code>nullopt</code> if no runtime analysis was configured. </dd></dl>
-
-</div>
-</div>
-<a id="ab8c99a16a4307919216b9ee4028c89ce"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab8c99a16a4307919216b9ee4028c89ce">&#9670;&nbsp;</a></span>run()</h2>
+<a id="a3ed55e8cd01320d8d57369c47af04924"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ed55e8cd01320d8d57369c47af04924">&#9670;&nbsp;</a></span>run()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -398,230 +330,26 @@ template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t 
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>Compute the next generations. </p>
-<p>It uses the transition function to advance the state of the grid.</p>
+<p>Compute the next generations of the grid and store it internally. </p>
+<p>This will use the transition function to compute the next <code>n_generations</code> generations of the grid and store the new state of the grid internally. The resulting grid state can be retrieved with <a class="el" href="classstencil_1_1AbstractExecutor.html#a9a1a12b6a2627a7cc941a4febe8edc0a">AbstractExecutor::copy_output</a>.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">n_generations</td><td>The number of generations to advance the state of the grid by. </td></tr>
+    <tr><td class="paramname">n_generations</td><td>The number of generations to calculate. </td></tr>
   </table>
   </dd>
 </dl>
 
-</div>
-</div>
-<a id="aa8b6eac01acd82f121b21cdb1de1abc3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa8b6eac01acd82f121b21cdb1de1abc3">&#9670;&nbsp;</a></span>select_emulator() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t pipeline_length = 1, uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classstencil_1_1StencilExecutor.html">stencil::StencilExecutor</a>&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;::select_emulator </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Set up a SYCL queue with the FPGA emulator device. </p>
-<p>Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will lead to exceptions. </p>
+<p>Implements <a class="el" href="classstencil_1_1AbstractExecutor.html#af29b1ee296324ceb30b0b66b335c0c26">stencil::AbstractExecutor&lt; T, stencil_radius, TransFunc &gt;</a>.</p>
 
 </div>
 </div>
-<a id="a80d8d48f05a6bb71724a1e2593081ad4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a80d8d48f05a6bb71724a1e2593081ad4">&#9670;&nbsp;</a></span>select_emulator() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t pipeline_length = 1, uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classstencil_1_1StencilExecutor.html">stencil::StencilExecutor</a>&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;::select_emulator </td>
-          <td>(</td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>runtime_analysis</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Set up a SYCL queue with the FPGA emulator device and optional runtime analysis. </p>
-<p>Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will lead to exceptions.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">runtime_analysis</td><td>Enable event-level runtime analysis. </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="ac74791f7624f9505826bb92a86268d6c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac74791f7624f9505826bb92a86268d6c">&#9670;&nbsp;</a></span>select_fpga() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t pipeline_length = 1, uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classstencil_1_1StencilExecutor.html">stencil::StencilExecutor</a>&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;::select_fpga </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Set up a SYCL queue with an FPGA device. </p>
-<p>Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will lead to exceptions. </p>
-
-</div>
-</div>
-<a id="a1e46c6ad7dbf9ff1bef8f0b4e6a52f95"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1e46c6ad7dbf9ff1bef8f0b4e6a52f95">&#9670;&nbsp;</a></span>select_fpga() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t pipeline_length = 1, uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classstencil_1_1StencilExecutor.html">stencil::StencilExecutor</a>&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;::select_fpga </td>
-          <td>(</td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>runtime_analysis</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Set up a SYCL queue with an FPGA device and optional runtime analysis. </p>
-<p>Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will lead to exceptions.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">runtime_analysis</td><td>Enable event-level runtime analysis. </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="aa040485937b47b1a85f42b45c5506a07"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa040485937b47b1a85f42b45c5506a07">&#9670;&nbsp;</a></span>set_halo_value()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t pipeline_length = 1, uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classstencil_1_1StencilExecutor.html">stencil::StencilExecutor</a>&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;::set_halo_value </td>
-          <td>(</td>
-          <td class="paramtype">T&#160;</td>
-          <td class="paramname"><em>halo_value</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Set the value of cells in the grid halo. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">halo_value</td><td>The new value of cells in the grid halo. </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a9fa760af5f2218a3cf122bf677ac0292"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9fa760af5f2218a3cf122bf677ac0292">&#9670;&nbsp;</a></span>set_i_generation()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t pipeline_length = 1, uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classstencil_1_1StencilExecutor.html">stencil::StencilExecutor</a>&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;::set_i_generation </td>
-          <td>(</td>
-          <td class="paramtype">uindex_t&#160;</td>
-          <td class="paramname"><em>i_generation</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Set the generation index of the grid. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">i_generation</td><td>The new generation index of the grid. </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="ab638594920f9668b7a88c66eb5a4d2e9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab638594920f9668b7a88c66eb5a4d2e9">&#9670;&nbsp;</a></span>set_input()</h2>
+<a id="adf3b0eafb5bde6caef6d23eaf38d623a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adf3b0eafb5bde6caef6d23eaf38d623a">&#9670;&nbsp;</a></span>set_input()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -641,103 +369,21 @@ template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t 
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>Set the state of the grid. </p>
+<p>Set the internal state of the grid. </p>
+<p>This will copy the contents of the buffer to an internal representation. The buffer may be used for other purposes later. It must not reset the generation index. The range of the input buffer will be used as the new grid range.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">input_buffer</td><td>A buffer containing the new state of the grid. </td></tr>
+    <tr><td class="paramname">input_buffer</td><td>The source buffer of the new grid state. </td></tr>
   </table>
   </dd>
 </dl>
 
-</div>
-</div>
-<a id="af05b86f6ccc20951892e6418a853f5e2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af05b86f6ccc20951892e6418a853f5e2">&#9670;&nbsp;</a></span>set_queue()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t pipeline_length = 1, uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classstencil_1_1StencilExecutor.html">stencil::StencilExecutor</a>&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;::set_queue </td>
-          <td>(</td>
-          <td class="paramtype">cl::sycl::queue&#160;</td>
-          <td class="paramname"><em>queue</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>runtime_analysis</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Manually set the SYCL queue to use for execution. </p>
-<p>Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will lead to exceptions.</p>
-<p>In order to use runtime analysis features, the queue has to be configured with the <code>cl::sycl::property::queue::enable_profiling</code> property.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">queue</td><td>The new SYCL queue to use for execution. </td></tr>
-    <tr><td class="paramname">runtime_analysis</td><td>Enable event-level runtime analysis. </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="accb792ce008ce7bd7651e59ffaba82b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#accb792ce008ce7bd7651e59ffaba82b8">&#9670;&nbsp;</a></span>set_trans_func()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , uindex_t stencil_radius, typename TransFunc , uindex_t pipeline_length = 1, uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classstencil_1_1StencilExecutor.html">stencil::StencilExecutor</a>&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;::set_trans_func </td>
-          <td>(</td>
-          <td class="paramtype">TransFunc&#160;</td>
-          <td class="paramname"><em>trans_func</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Update the transition function instance. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">trans_func</td><td>The new transition function instance. </td></tr>
-  </table>
-  </dd>
-</dl>
+<p>Implements <a class="el" href="classstencil_1_1AbstractExecutor.html#adde5e379faabcc8452c0cc6a474fd630">stencil::AbstractExecutor&lt; T, stencil_radius, TransFunc &gt;</a>.</p>
 
 </div>
 </div>

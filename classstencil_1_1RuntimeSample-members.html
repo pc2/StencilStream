@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">StencilStream
-   &#160;<span id="projectnumber">v2.0.0</span>
+   &#160;<span id="projectnumber">v2.1.0</span>
    </div>
    <div id="projectbrief">Generic Stencil Simulation Library for FPGAs.</div>
   </td>
@@ -74,11 +74,14 @@ $(function() {
 
 <p>This is the complete list of members for <a class="el" href="classstencil_1_1RuntimeSample.html">stencil::RuntimeSample</a>, including all inherited members.</p>
 <table class="directory">
-  <tr class="even"><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html#acf1be7c67fc564af11deecb669e700ac">add_event</a>(cl::sycl::event event, uindex_t i_pass, uindex_t i_column, uindex_t i_row)</td><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html">stencil::RuntimeSample</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html#af0375f7361068c2d1ac1e9d8d38f1706">add_pass</a>(double pass_runtime)</td><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html">stencil::RuntimeSample</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html#a803217e8d17261c2152b40fe27bf1828">add_pass</a>(cl::sycl::event event)</td><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html">stencil::RuntimeSample</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html#a57cd36f1b9d72eabb7d33950275d6f00">end_of_event</a>(cl::sycl::event event)</td><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html">stencil::RuntimeSample</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">static</span></td></tr>
   <tr><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html#ab8fcd723745b6e0d8bff23457c16c4ec">get_mean_speed</a>()</td><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html">stencil::RuntimeSample</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html#aa46bde0eb0a47a5a7396a45d5f3a80c2">get_runtime</a>(uindex_t i_pass, uindex_t i_column, uindex_t i_row)</td><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html">stencil::RuntimeSample</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html#a8bc9677093f8fd5c5d6a30a1d29d919a">get_total_runtime</a>()</td><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html">stencil::RuntimeSample</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html#ae9d0802d349124bee3dc01f010310be8">RuntimeSample</a>(uindex_t n_passes, uindex_t n_tile_columns, uindex_t n_tile_rows)</td><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html">stencil::RuntimeSample</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html#a8bc9677093f8fd5c5d6a30a1d29d919a">get_total_runtime</a>()</td><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html">stencil::RuntimeSample</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html#a187b66ee010af853610a41cbf2c1510c">runtime_of_event</a>(cl::sycl::event event)</td><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html">stencil::RuntimeSample</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">static</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html#a022d5ec607cce2e8bc7f9cf13d1d270c">RuntimeSample</a>()</td><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html">stencil::RuntimeSample</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html#ac05a18f634b084d074efad9aa0301b26">start_of_event</a>(cl::sycl::event event)</td><td class="entry"><a class="el" href="classstencil_1_1RuntimeSample.html">stencil::RuntimeSample</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">static</span></td></tr>
 </table></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

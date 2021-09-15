@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>StencilStream: stencil::Tile&lt; T, width, height, halo_radius, burst_length &gt; Class Template Reference</title>
+<title>StencilStream: stencil::tiling::Tile&lt; T, width, height, halo_radius, burst_length &gt; Class Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">StencilStream
-   &#160;<span id="projectnumber">v2.0.0</span>
+   &#160;<span id="projectnumber">v2.1.0</span>
    </div>
    <div id="projectbrief">Generic Stencil Simulation Library for FPGAs.</div>
   </td>
@@ -63,7 +63,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>stencil</b></li><li class="navelem"><a class="el" href="classstencil_1_1Tile.html">Tile</a></li>  </ul>
+<li class="navelem"><b>stencil</b></li><li class="navelem"><b>tiling</b></li><li class="navelem"><a class="el" href="classstencil_1_1tiling_1_1Tile.html">Tile</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -72,20 +72,20 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
-<a href="classstencil_1_1Tile-members.html">List of all members</a>  </div>
+<a href="classstencil_1_1tiling_1_1Tile-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">stencil::Tile&lt; T, width, height, halo_radius, burst_length &gt; Class Template Reference</div>  </div>
+<div class="title">stencil::tiling::Tile&lt; T, width, height, halo_radius, burst_length &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
 <p>A rectangular container of cells with a static size.  
- <a href="classstencil_1_1Tile.html#details">More...</a></p>
+ <a href="classstencil_1_1tiling_1_1Tile.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="Tile_8hpp_source.html">Tile.hpp</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a19f256c84be0f8db362013da8c70dfc3"><td class="memItemLeft" align="right" valign="top"><a id="a19f256c84be0f8db362013da8c70dfc3"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1Tile.html#a19f256c84be0f8db362013da8c70dfc3">Part</a> { <br />
+<tr class="memitem:abb375d5eaea794fdc9ff37f2cdd46d61"><td class="memItemLeft" align="right" valign="top"><a id="abb375d5eaea794fdc9ff37f2cdd46d61"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1tiling_1_1Tile.html#abb375d5eaea794fdc9ff37f2cdd46d61">Part</a> { <br />
 &#160;&#160;<b>NORTH_WEST_CORNER</b>
 , <b>NORTH_BORDER</b>
 , <b>NORTH_EAST_CORNER</b>
@@ -99,45 +99,45 @@ Public Types</h2></td></tr>
 &#160;&#160;<b>CORE</b>
 <br />
  }</td></tr>
-<tr class="memdesc:a19f256c84be0f8db362013da8c70dfc3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enumeration to address individual parts of the tile. <br /></td></tr>
-<tr class="separator:a19f256c84be0f8db362013da8c70dfc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memdesc:abb375d5eaea794fdc9ff37f2cdd46d61"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enumeration to address individual parts of the tile. <br /></td></tr>
+<tr class="separator:abb375d5eaea794fdc9ff37f2cdd46d61"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a3f4df44ed8d908ca5c7c3919c5911696"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1Tile.html#a3f4df44ed8d908ca5c7c3919c5911696">Tile</a> ()</td></tr>
-<tr class="memdesc:a3f4df44ed8d908ca5c7c3919c5911696"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new tile.  <a href="classstencil_1_1Tile.html#a3f4df44ed8d908ca5c7c3919c5911696">More...</a><br /></td></tr>
-<tr class="separator:a3f4df44ed8d908ca5c7c3919c5911696"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aabf79fa6258a2c46a3ebb86bf02c4948"><td class="memItemLeft" align="right" valign="top">cl::sycl::buffer&lt; T, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1Tile.html#aabf79fa6258a2c46a3ebb86bf02c4948">operator[]</a> (<a class="el" href="classstencil_1_1Tile.html#a19f256c84be0f8db362013da8c70dfc3">Part</a> tile_part)</td></tr>
-<tr class="memdesc:aabf79fa6258a2c46a3ebb86bf02c4948"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the buffer with the contents of the given part.  <a href="classstencil_1_1Tile.html#aabf79fa6258a2c46a3ebb86bf02c4948">More...</a><br /></td></tr>
-<tr class="separator:aabf79fa6258a2c46a3ebb86bf02c4948"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af414dc82302458137a8da36582831002"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1Tile.html#af414dc82302458137a8da36582831002">copy_from</a> (cl::sycl::buffer&lt; T, 2 &gt; buffer, cl::sycl::id&lt; 2 &gt; offset)</td></tr>
-<tr class="memdesc:af414dc82302458137a8da36582831002"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy the contents of a buffer into the tile.  <a href="classstencil_1_1Tile.html#af414dc82302458137a8da36582831002">More...</a><br /></td></tr>
-<tr class="separator:af414dc82302458137a8da36582831002"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af07f24950d66fa4067f925b7ddacca99"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1Tile.html#af07f24950d66fa4067f925b7ddacca99">copy_to</a> (cl::sycl::buffer&lt; T, 2 &gt; buffer, cl::sycl::id&lt; 2 &gt; offset)</td></tr>
-<tr class="memdesc:af07f24950d66fa4067f925b7ddacca99"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy the contents of the tile to a buffer.  <a href="classstencil_1_1Tile.html#af07f24950d66fa4067f925b7ddacca99">More...</a><br /></td></tr>
-<tr class="separator:af07f24950d66fa4067f925b7ddacca99"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03ff7ce677be4eac30bf92b48ee198b9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1tiling_1_1Tile.html#a03ff7ce677be4eac30bf92b48ee198b9">Tile</a> ()</td></tr>
+<tr class="memdesc:a03ff7ce677be4eac30bf92b48ee198b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new tile.  <a href="classstencil_1_1tiling_1_1Tile.html#a03ff7ce677be4eac30bf92b48ee198b9">More...</a><br /></td></tr>
+<tr class="separator:a03ff7ce677be4eac30bf92b48ee198b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad107f81cbbcaa71bbafc7ba4dcee940c"><td class="memItemLeft" align="right" valign="top">cl::sycl::buffer&lt; T, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1tiling_1_1Tile.html#ad107f81cbbcaa71bbafc7ba4dcee940c">operator[]</a> (<a class="el" href="classstencil_1_1tiling_1_1Tile.html#abb375d5eaea794fdc9ff37f2cdd46d61">Part</a> tile_part)</td></tr>
+<tr class="memdesc:ad107f81cbbcaa71bbafc7ba4dcee940c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the buffer with the contents of the given part.  <a href="classstencil_1_1tiling_1_1Tile.html#ad107f81cbbcaa71bbafc7ba4dcee940c">More...</a><br /></td></tr>
+<tr class="separator:ad107f81cbbcaa71bbafc7ba4dcee940c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a55c05bd6e2ea37d69a07f5979eb22163"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1tiling_1_1Tile.html#a55c05bd6e2ea37d69a07f5979eb22163">copy_from</a> (cl::sycl::buffer&lt; T, 2 &gt; buffer, cl::sycl::id&lt; 2 &gt; offset)</td></tr>
+<tr class="memdesc:a55c05bd6e2ea37d69a07f5979eb22163"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy the contents of a buffer into the tile.  <a href="classstencil_1_1tiling_1_1Tile.html#a55c05bd6e2ea37d69a07f5979eb22163">More...</a><br /></td></tr>
+<tr class="separator:a55c05bd6e2ea37d69a07f5979eb22163"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84ddc129c5d58a579256b6093e14eb63"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1tiling_1_1Tile.html#a84ddc129c5d58a579256b6093e14eb63">copy_to</a> (cl::sycl::buffer&lt; T, 2 &gt; buffer, cl::sycl::id&lt; 2 &gt; offset)</td></tr>
+<tr class="memdesc:a84ddc129c5d58a579256b6093e14eb63"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy the contents of the tile to a buffer.  <a href="classstencil_1_1tiling_1_1Tile.html#a84ddc129c5d58a579256b6093e14eb63">More...</a><br /></td></tr>
+<tr class="separator:a84ddc129c5d58a579256b6093e14eb63"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a9a01bb61116d96e72bf10e147ff01ffd"><td class="memItemLeft" align="right" valign="top">static cl::sycl::range&lt; 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1Tile.html#a9a01bb61116d96e72bf10e147ff01ffd">get_part_range</a> (<a class="el" href="classstencil_1_1Tile.html#a19f256c84be0f8db362013da8c70dfc3">Part</a> part)</td></tr>
-<tr class="memdesc:a9a01bb61116d96e72bf10e147ff01ffd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate the range of a given Part.  <a href="classstencil_1_1Tile.html#a9a01bb61116d96e72bf10e147ff01ffd">More...</a><br /></td></tr>
-<tr class="separator:a9a01bb61116d96e72bf10e147ff01ffd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a337635e43015e54e746987325d0bfba6"><td class="memItemLeft" align="right" valign="top">static cl::sycl::id&lt; 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1Tile.html#a337635e43015e54e746987325d0bfba6">get_part_offset</a> (<a class="el" href="classstencil_1_1Tile.html#a19f256c84be0f8db362013da8c70dfc3">Part</a> part)</td></tr>
-<tr class="memdesc:a337635e43015e54e746987325d0bfba6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate the index offset of a given part relative to the north-western corner of the tile.  <a href="classstencil_1_1Tile.html#a337635e43015e54e746987325d0bfba6">More...</a><br /></td></tr>
-<tr class="separator:a337635e43015e54e746987325d0bfba6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5bca2076180c94dd17973f8f6e175e65"><td class="memItemLeft" align="right" valign="top">static cl::sycl::range&lt; 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1tiling_1_1Tile.html#a5bca2076180c94dd17973f8f6e175e65">get_part_range</a> (<a class="el" href="classstencil_1_1tiling_1_1Tile.html#abb375d5eaea794fdc9ff37f2cdd46d61">Part</a> part)</td></tr>
+<tr class="memdesc:a5bca2076180c94dd17973f8f6e175e65"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate the range of a given Part.  <a href="classstencil_1_1tiling_1_1Tile.html#a5bca2076180c94dd17973f8f6e175e65">More...</a><br /></td></tr>
+<tr class="separator:a5bca2076180c94dd17973f8f6e175e65"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abdc9c4bc679ebff269dccec8632f9bed"><td class="memItemLeft" align="right" valign="top">static cl::sycl::id&lt; 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1tiling_1_1Tile.html#abdc9c4bc679ebff269dccec8632f9bed">get_part_offset</a> (<a class="el" href="classstencil_1_1tiling_1_1Tile.html#abb375d5eaea794fdc9ff37f2cdd46d61">Part</a> part)</td></tr>
+<tr class="memdesc:abdc9c4bc679ebff269dccec8632f9bed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate the index offset of a given part relative to the north-western corner of the tile.  <a href="classstencil_1_1tiling_1_1Tile.html#abdc9c4bc679ebff269dccec8632f9bed">More...</a><br /></td></tr>
+<tr class="separator:abdc9c4bc679ebff269dccec8632f9bed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:aa19f7edcbd6f9e4bbbeaa95080334a58"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="classstencil_1_1Tile.html#a19f256c84be0f8db362013da8c70dfc3">Part</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1Tile.html#aa19f7edcbd6f9e4bbbeaa95080334a58">all_parts</a> []</td></tr>
-<tr class="memdesc:aa19f7edcbd6f9e4bbbeaa95080334a58"><td class="mdescLeft">&#160;</td><td class="mdescRight">Array with all <a class="el" href="classstencil_1_1Tile.html#a19f256c84be0f8db362013da8c70dfc3">Part</a> variants to allow iteration over them.  <a href="classstencil_1_1Tile.html#aa19f7edcbd6f9e4bbbeaa95080334a58">More...</a><br /></td></tr>
-<tr class="separator:aa19f7edcbd6f9e4bbbeaa95080334a58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a58d8e724482f7bf74b268f9dcb0c8b"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="classstencil_1_1tiling_1_1Tile.html#abb375d5eaea794fdc9ff37f2cdd46d61">Part</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classstencil_1_1tiling_1_1Tile.html#a7a58d8e724482f7bf74b268f9dcb0c8b">all_parts</a> []</td></tr>
+<tr class="memdesc:a7a58d8e724482f7bf74b268f9dcb0c8b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Array with all <a class="el" href="classstencil_1_1tiling_1_1Tile.html#abb375d5eaea794fdc9ff37f2cdd46d61">Part</a> variants to allow iteration over them.  <a href="classstencil_1_1tiling_1_1Tile.html#a7a58d8e724482f7bf74b268f9dcb0c8b">More...</a><br /></td></tr>
+<tr class="separator:a7a58d8e724482f7bf74b268f9dcb0c8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;typename T, uindex_t width, uindex_t height, uindex_t halo_radius, uindex_t burst_length&gt;<br />
-class stencil::Tile&lt; T, width, height, halo_radius, burst_length &gt;</h3>
+class stencil::tiling::Tile&lt; T, width, height, halo_radius, burst_length &gt;</h3>
 
 <p>A rectangular container of cells with a static size. </p>
-<p>StencilStream tiles the grid and the <a class="el" href="classstencil_1_1ExecutionKernel.html">ExecutionKernel</a> works with those tiles: it receives the content of a tile (together with it's halo) and emits the contents of a tile. A tile is partitioned in four corner buffers, four border buffers and one core buffer. This is done to provide easy access to the halo of a tile. Have a look at the <a class="el" href="Architecture.html">Architecture</a> for more details of the data layout.</p>
+<p>StencilStream tiles the grid and the <a class="el" href="classstencil_1_1tiling_1_1ExecutionKernel.html">ExecutionKernel</a> works with those tiles: it receives the content of a tile (together with it's halo) and emits the contents of a tile. A tile is partitioned in four corner buffers, four border buffers and one core buffer. This is done to provide easy access to the halo of a tile. Have a look at the <a class="el" href="Architecture.html">Architecture</a> for more details of the data layout.</p>
 <p>This tile manager supports copy operations to and from monolithic, user-supplied buffers, as well as an index operation to access the individual parts.</p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
@@ -150,8 +150,8 @@ class stencil::Tile&lt; T, width, height, halo_radius, burst_length &gt;</h3>
   </dd>
 </dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a3f4df44ed8d908ca5c7c3919c5911696"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3f4df44ed8d908ca5c7c3919c5911696">&#9670;&nbsp;</a></span>Tile()</h2>
+<a id="a03ff7ce677be4eac30bf92b48ee198b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03ff7ce677be4eac30bf92b48ee198b9">&#9670;&nbsp;</a></span>Tile()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -162,7 +162,7 @@ template&lt;typename T , uindex_t width, uindex_t height, uindex_t halo_radius, 
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classstencil_1_1Tile.html">stencil::Tile</a>&lt; T, width, height, halo_radius, burst_length &gt;::<a class="el" href="classstencil_1_1Tile.html">Tile</a> </td>
+          <td class="memname"><a class="el" href="classstencil_1_1tiling_1_1Tile.html">stencil::tiling::Tile</a>&lt; T, width, height, halo_radius, burst_length &gt;::<a class="el" href="classstencil_1_1tiling_1_1Tile.html">Tile</a> </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -181,8 +181,8 @@ template&lt;typename T , uindex_t width, uindex_t height, uindex_t halo_radius, 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="af414dc82302458137a8da36582831002"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af414dc82302458137a8da36582831002">&#9670;&nbsp;</a></span>copy_from()</h2>
+<a id="a55c05bd6e2ea37d69a07f5979eb22163"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a55c05bd6e2ea37d69a07f5979eb22163">&#9670;&nbsp;</a></span>copy_from()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -193,7 +193,7 @@ template&lt;typename T , uindex_t width, uindex_t height, uindex_t halo_radius, 
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classstencil_1_1Tile.html">stencil::Tile</a>&lt; T, width, height, halo_radius, burst_length &gt;::copy_from </td>
+          <td class="memname">void <a class="el" href="classstencil_1_1tiling_1_1Tile.html">stencil::tiling::Tile</a>&lt; T, width, height, halo_radius, burst_length &gt;::copy_from </td>
           <td>(</td>
           <td class="paramtype">cl::sycl::buffer&lt; T, 2 &gt;&#160;</td>
           <td class="paramname"><em>buffer</em>, </td>
@@ -229,8 +229,8 @@ template&lt;typename T , uindex_t width, uindex_t height, uindex_t halo_radius, 
 
 </div>
 </div>
-<a id="af07f24950d66fa4067f925b7ddacca99"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af07f24950d66fa4067f925b7ddacca99">&#9670;&nbsp;</a></span>copy_to()</h2>
+<a id="a84ddc129c5d58a579256b6093e14eb63"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a84ddc129c5d58a579256b6093e14eb63">&#9670;&nbsp;</a></span>copy_to()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -241,7 +241,7 @@ template&lt;typename T , uindex_t width, uindex_t height, uindex_t halo_radius, 
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classstencil_1_1Tile.html">stencil::Tile</a>&lt; T, width, height, halo_radius, burst_length &gt;::copy_to </td>
+          <td class="memname">void <a class="el" href="classstencil_1_1tiling_1_1Tile.html">stencil::tiling::Tile</a>&lt; T, width, height, halo_radius, burst_length &gt;::copy_to </td>
           <td>(</td>
           <td class="paramtype">cl::sycl::buffer&lt; T, 2 &gt;&#160;</td>
           <td class="paramname"><em>buffer</em>, </td>
@@ -266,7 +266,7 @@ template&lt;typename T , uindex_t width, uindex_t height, uindex_t halo_radius, 
 </div><div class="memdoc">
 
 <p>Copy the contents of the tile to a buffer. </p>
-<p>This will take the tile section <code>[0 : min(tile_width, grid_width - offset[0])) x [0 : min(tile_height, grid_height - offset[1]))</code> and copy it to the buffer section <code>[offset[0] : min(grid_width, offset[0] + tile_width)) x [offset[1] : min(grid_height, offset[1] + tile_height))</code>. This means that if the tile plus the offset is wider or higher than the grid, those superfluous cells are ignored.</p>
+<p>This will take the tile section <code>[0 : min(tile_width, grid_width - offset[0])) x [0 : min(tile_height, grid_height - offset[1]))</code> and copy it to the buffer section `[offset[0] : min(grid_width, offset[0] + tile_width)) x [offset[1] : min(grid_height, offset[1] + tile_height))`. This means that if the tile plus the offset is wider or higher than the grid, those superfluous cells are ignored.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">buffer</td><td>The buffer to copy the data to. </td></tr>
@@ -277,8 +277,8 @@ template&lt;typename T , uindex_t width, uindex_t height, uindex_t halo_radius, 
 
 </div>
 </div>
-<a id="a337635e43015e54e746987325d0bfba6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a337635e43015e54e746987325d0bfba6">&#9670;&nbsp;</a></span>get_part_offset()</h2>
+<a id="abdc9c4bc679ebff269dccec8632f9bed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abdc9c4bc679ebff269dccec8632f9bed">&#9670;&nbsp;</a></span>get_part_offset()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -289,9 +289,9 @@ template&lt;typename T , uindex_t width, uindex_t height, uindex_t halo_radius, 
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static cl::sycl::id&lt;2&gt; <a class="el" href="classstencil_1_1Tile.html">stencil::Tile</a>&lt; T, width, height, halo_radius, burst_length &gt;::get_part_offset </td>
+          <td class="memname">static cl::sycl::id&lt;2&gt; <a class="el" href="classstencil_1_1tiling_1_1Tile.html">stencil::tiling::Tile</a>&lt; T, width, height, halo_radius, burst_length &gt;::get_part_offset </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classstencil_1_1Tile.html#a19f256c84be0f8db362013da8c70dfc3">Part</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classstencil_1_1tiling_1_1Tile.html#abb375d5eaea794fdc9ff37f2cdd46d61">Part</a>&#160;</td>
           <td class="paramname"><em>part</em></td><td>)</td>
           <td></td>
         </tr>
@@ -314,8 +314,8 @@ template&lt;typename T , uindex_t width, uindex_t height, uindex_t halo_radius, 
 
 </div>
 </div>
-<a id="a9a01bb61116d96e72bf10e147ff01ffd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9a01bb61116d96e72bf10e147ff01ffd">&#9670;&nbsp;</a></span>get_part_range()</h2>
+<a id="a5bca2076180c94dd17973f8f6e175e65"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5bca2076180c94dd17973f8f6e175e65">&#9670;&nbsp;</a></span>get_part_range()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -326,9 +326,9 @@ template&lt;typename T , uindex_t width, uindex_t height, uindex_t halo_radius, 
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static cl::sycl::range&lt;2&gt; <a class="el" href="classstencil_1_1Tile.html">stencil::Tile</a>&lt; T, width, height, halo_radius, burst_length &gt;::get_part_range </td>
+          <td class="memname">static cl::sycl::range&lt;2&gt; <a class="el" href="classstencil_1_1tiling_1_1Tile.html">stencil::tiling::Tile</a>&lt; T, width, height, halo_radius, burst_length &gt;::get_part_range </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classstencil_1_1Tile.html#a19f256c84be0f8db362013da8c70dfc3">Part</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classstencil_1_1tiling_1_1Tile.html#abb375d5eaea794fdc9ff37f2cdd46d61">Part</a>&#160;</td>
           <td class="paramname"><em>part</em></td><td>)</td>
           <td></td>
         </tr>
@@ -351,8 +351,8 @@ template&lt;typename T , uindex_t width, uindex_t height, uindex_t halo_radius, 
 
 </div>
 </div>
-<a id="aabf79fa6258a2c46a3ebb86bf02c4948"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aabf79fa6258a2c46a3ebb86bf02c4948">&#9670;&nbsp;</a></span>operator[]()</h2>
+<a id="ad107f81cbbcaa71bbafc7ba4dcee940c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad107f81cbbcaa71bbafc7ba4dcee940c">&#9670;&nbsp;</a></span>operator[]()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -363,9 +363,9 @@ template&lt;typename T , uindex_t width, uindex_t height, uindex_t halo_radius, 
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">cl::sycl::buffer&lt;T, 2&gt; <a class="el" href="classstencil_1_1Tile.html">stencil::Tile</a>&lt; T, width, height, halo_radius, burst_length &gt;::operator[] </td>
+          <td class="memname">cl::sycl::buffer&lt;T, 2&gt; <a class="el" href="classstencil_1_1tiling_1_1Tile.html">stencil::tiling::Tile</a>&lt; T, width, height, halo_radius, burst_length &gt;::operator[] </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classstencil_1_1Tile.html#a19f256c84be0f8db362013da8c70dfc3">Part</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classstencil_1_1tiling_1_1Tile.html#abb375d5eaea794fdc9ff37f2cdd46d61">Part</a>&#160;</td>
           <td class="paramname"><em>tile_part</em></td><td>)</td>
           <td></td>
         </tr>
@@ -390,8 +390,8 @@ template&lt;typename T , uindex_t width, uindex_t height, uindex_t halo_radius, 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="aa19f7edcbd6f9e4bbbeaa95080334a58"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa19f7edcbd6f9e4bbbeaa95080334a58">&#9670;&nbsp;</a></span>all_parts</h2>
+<a id="a7a58d8e724482f7bf74b268f9dcb0c8b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a58d8e724482f7bf74b268f9dcb0c8b">&#9670;&nbsp;</a></span>all_parts</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -402,7 +402,7 @@ template&lt;typename T , uindex_t width, uindex_t height, uindex_t halo_radius, 
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr <a class="el" href="classstencil_1_1Tile.html#a19f256c84be0f8db362013da8c70dfc3">Part</a> <a class="el" href="classstencil_1_1Tile.html">stencil::Tile</a>&lt; T, width, height, halo_radius, burst_length &gt;::all_parts[]</td>
+          <td class="memname">constexpr <a class="el" href="classstencil_1_1tiling_1_1Tile.html#abb375d5eaea794fdc9ff37f2cdd46d61">Part</a> <a class="el" href="classstencil_1_1tiling_1_1Tile.html">stencil::tiling::Tile</a>&lt; T, width, height, halo_radius, burst_length &gt;::all_parts[]</td>
         </tr>
       </table>
   </td>
@@ -412,23 +412,17 @@ template&lt;typename T , uindex_t width, uindex_t height, uindex_t halo_radius, 
 </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">= {</div>
-<div class="line">        Part::NORTH_WEST_CORNER,</div>
-<div class="line">        Part::NORTH_BORDER,</div>
-<div class="line">        Part::NORTH_EAST_CORNER,</div>
-<div class="line">        Part::EAST_BORDER,</div>
-<div class="line">        Part::SOUTH_EAST_CORNER,</div>
-<div class="line">        Part::SOUTH_BORDER,</div>
-<div class="line">        Part::SOUTH_WEST_CORNER,</div>
-<div class="line">        Part::WEST_BORDER,</div>
-<div class="line">        Part::CORE,</div>
+<div class="line">        Part::NORTH_WEST_CORNER, Part::NORTH_BORDER,      Part::NORTH_EAST_CORNER,</div>
+<div class="line">        Part::EAST_BORDER,       Part::SOUTH_EAST_CORNER, Part::SOUTH_BORDER,</div>
+<div class="line">        Part::SOUTH_WEST_CORNER, Part::WEST_BORDER,       Part::CORE,</div>
 <div class="line">    }</div>
 </div><!-- fragment -->
-<p>Array with all <a class="el" href="classstencil_1_1Tile.html#a19f256c84be0f8db362013da8c70dfc3">Part</a> variants to allow iteration over them. </p>
+<p>Array with all <a class="el" href="classstencil_1_1tiling_1_1Tile.html#abb375d5eaea794fdc9ff37f2cdd46d61">Part</a> variants to allow iteration over them. </p>
 
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>StencilStream/<a class="el" href="Tile_8hpp_source.html">Tile.hpp</a></li>
+<li>StencilStream/tiling/<a class="el" href="Tile_8hpp_source.html">Tile.hpp</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

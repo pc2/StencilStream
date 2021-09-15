@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>StencilStream: StencilStream/IOKernel.hpp Source File</title>
+<title>StencilStream: StencilStream/tiling/IOKernel.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">StencilStream
-   &#160;<span id="projectnumber">v2.0.0</span>
+   &#160;<span id="projectnumber">v2.1.0</span>
    </div>
    <div id="projectbrief">Generic Stencil Simulation Library for FPGAs.</div>
   </td>
@@ -63,7 +63,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_5e2394f53400ec3b819dca9374f90d55.html">StencilStream</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_5e2394f53400ec3b819dca9374f90d55.html">StencilStream</a></li><li class="navelem"><a class="el" href="dir_2bbcefc313a5aaefe7ac1cd4adfe39da.html">tiling</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -72,117 +72,122 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">/*</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment"> * Copyright © 2020-2021 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn University</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"> * </span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment"> * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment"> * </span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment"> * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment"> * </span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment"> * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment"> */</span></div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#pragma once</span></div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &quot;CounterID.hpp&quot;</span></div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &quot;Index.hpp&quot;</span></div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &lt;CL/sycl.hpp&gt;</span></div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#include &lt;CL/sycl/accessor.hpp&gt;</span></div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#include &lt;array&gt;</span></div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="keyword">namespace </span>stencil</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;{</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T, uindex_t halo_height, uindex_t core_height, uindex_t burst_length, <span class="keyword">typename</span> pipe, uindex_t n_halo_height_buffers, cl::sycl::access::mode access_mode, cl::sycl::access::target access_target = cl::sycl::access::target::global_buffer&gt;</div>
-<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="classstencil_1_1IOKernel.html">   37</a></span>&#160;<span class="keyword">class </span><a class="code" href="classstencil_1_1IOKernel.html">IOKernel</a></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;{</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keyword">using</span> Accessor = cl::sycl::accessor&lt;T, 2, access_mode, access_target&gt;;</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00045"></a><span class="lineno"><a class="line" href="classstencil_1_1IOKernel.html#a8bdece85037fda6a4c7e61c2cf5769a0">   45</a></span>&#160;    <span class="keyword">static</span> constexpr uindex_t <a class="code" href="classstencil_1_1IOKernel.html#a8bdece85037fda6a4c7e61c2cf5769a0">n_buffers</a> = 2 * n_halo_height_buffers + 1;</div>
-<div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="classstencil_1_1IOKernel.html#a28404970fdb4ab5c356dd0fb1a2a48ff">   49</a></span>&#160;    <span class="keyword">static</span> constexpr uindex_t <a class="code" href="classstencil_1_1IOKernel.html#a28404970fdb4ab5c356dd0fb1a2a48ff">n_rows</a> = 2 * n_halo_height_buffers * halo_height + core_height;</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
-<div class="line"><a name="l00057"></a><span class="lineno"><a class="line" href="classstencil_1_1IOKernel.html#af2abad01d716f37b3066baab22cd496b">   57</a></span>&#160;    <span class="keyword">static</span> constexpr uindex_t <a class="code" href="classstencil_1_1IOKernel.html#af2abad01d716f37b3066baab22cd496b">get_buffer_height</a>(uindex_t index)</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    {</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        <span class="keywordflow">if</span> (index == n_halo_height_buffers)</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        {</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            <span class="keywordflow">return</span> core_height;</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        }</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        {</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            <span class="keywordflow">return</span> halo_height;</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        }</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    }</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00077"></a><span class="lineno"><a class="line" href="classstencil_1_1IOKernel.html#a4ac779215ecf14f0f2352568e247ade5">   77</a></span>&#160;    <a class="code" href="classstencil_1_1IOKernel.html#a4ac779215ecf14f0f2352568e247ade5">IOKernel</a>(std::array&lt;Accessor, n_buffers&gt; accessor, uindex_t n_columns) : accessor(accessor), n_columns(n_columns)</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    {</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="preprocessor">#ifndef __SYCL_DEVICE_ONLY__</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <span class="keywordflow">for</span> (uindex_t i = 0; i &lt; <a class="code" href="classstencil_1_1IOKernel.html#a8bdece85037fda6a4c7e61c2cf5769a0">n_buffers</a>; i++)</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        {</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            assert(accessor[i].get_range()[1] == burst_length);</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            assert(<a class="code" href="classstencil_1_1IOKernel.html#af2abad01d716f37b3066baab22cd496b">get_buffer_height</a>(i) * n_columns &lt;= accessor[i].get_range()[0] * accessor[i].get_range()[1]);</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        }</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    }</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00091"></a><span class="lineno"><a class="line" href="classstencil_1_1IOKernel.html#a955fdf621e6dc75836c75afdb719aef2">   91</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classstencil_1_1IOKernel.html#a955fdf621e6dc75836c75afdb719aef2">read</a>()</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    {</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        static_assert(access_mode == cl::sycl::access::mode::read || access_mode == cl::sycl::access::mode::read_write);</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        run([](Accessor &amp;accessor, uindex_t burst_i, uindex_t cell_i)</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;            { pipe::write(accessor[burst_i][cell_i]); });</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    }</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
-<div class="line"><a name="l00101"></a><span class="lineno"><a class="line" href="classstencil_1_1IOKernel.html#ae92f8ebfe659f5f5a9278b5edf0c177c">  101</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classstencil_1_1IOKernel.html#ae92f8ebfe659f5f5a9278b5edf0c177c">write</a>()</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    {</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        static_assert(access_mode == cl::sycl::access::mode::write || access_mode == cl::sycl::access::mode::discard_write || access_mode == cl::sycl::access::mode::read_write || access_mode == cl::sycl::access::mode::discard_read_write);</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        run([](Accessor &amp;accessor, uindex_t burst_i, uindex_t cell_i)</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            { accessor[burst_i][cell_i] = pipe::read(); });</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    }</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> Action&gt;</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <span class="keywordtype">void</span> run(Action action)</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    {</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        static_assert(std::is_invocable&lt;Action, Accessor &amp;, uindex_t, uindex_t&gt;::value);</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160; </div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        uindex_t burst_i[<a class="code" href="classstencil_1_1IOKernel.html#a8bdece85037fda6a4c7e61c2cf5769a0">n_buffers</a>] = {0};</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        uindex_t cell_i[<a class="code" href="classstencil_1_1IOKernel.html#a8bdece85037fda6a4c7e61c2cf5769a0">n_buffers</a>] = {0};</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160; </div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        <span class="keywordflow">for</span> (uindex_t c = 0; c &lt; n_columns; c++)</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        {</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;            uindex_t buffer_i = 0;</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            uindex_t next_bound = <a class="code" href="classstencil_1_1IOKernel.html#af2abad01d716f37b3066baab22cd496b">get_buffer_height</a>(0);</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            <span class="keywordflow">for</span> (uindex_t r = 0; r &lt; <a class="code" href="classstencil_1_1IOKernel.html#a28404970fdb4ab5c356dd0fb1a2a48ff">n_rows</a>; r++)</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            {</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;                <span class="keywordflow">if</span> (r == next_bound)</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;                {</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;                    buffer_i++;</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;                    next_bound += <a class="code" href="classstencil_1_1IOKernel.html#af2abad01d716f37b3066baab22cd496b">get_buffer_height</a>(buffer_i);</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;                }</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160; </div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;                action(accessor[buffer_i], burst_i[buffer_i], cell_i[buffer_i]);</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;                <span class="keywordflow">if</span> (cell_i[buffer_i] == burst_length - 1)</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;                {</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;                    cell_i[buffer_i] = 0;</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                    burst_i[buffer_i]++;</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;                }</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;                <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;                {</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;                    cell_i[buffer_i]++;</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;                }</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;            }</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;        }</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;    }</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160; </div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;    std::array&lt;Accessor, n_buffers&gt; accessor;</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    uindex_t n_columns;</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;};</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160; </div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;} <span class="comment">// namespace stencil</span></div>
-<div class="ttc" id="aclassstencil_1_1IOKernel_html"><div class="ttname"><a href="classstencil_1_1IOKernel.html">stencil::IOKernel</a></div><div class="ttdoc">Generic Input/Output kernel for use with the ExecutionKernel and Grid.</div><div class="ttdef"><b>Definition:</b> IOKernel.hpp:38</div></div>
-<div class="ttc" id="aclassstencil_1_1IOKernel_html_a28404970fdb4ab5c356dd0fb1a2a48ff"><div class="ttname"><a href="classstencil_1_1IOKernel.html#a28404970fdb4ab5c356dd0fb1a2a48ff">stencil::IOKernel::n_rows</a></div><div class="ttdeci">static constexpr uindex_t n_rows</div><div class="ttdoc">The total number of cell rows in the (logical) slice/column.</div><div class="ttdef"><b>Definition:</b> IOKernel.hpp:49</div></div>
-<div class="ttc" id="aclassstencil_1_1IOKernel_html_a4ac779215ecf14f0f2352568e247ade5"><div class="ttname"><a href="classstencil_1_1IOKernel.html#a4ac779215ecf14f0f2352568e247ade5">stencil::IOKernel::IOKernel</a></div><div class="ttdeci">IOKernel(std::array&lt; Accessor, n_buffers &gt; accessor, uindex_t n_columns)</div><div class="ttdoc">Create a new IOKernel instance.</div><div class="ttdef"><b>Definition:</b> IOKernel.hpp:77</div></div>
-<div class="ttc" id="aclassstencil_1_1IOKernel_html_a8bdece85037fda6a4c7e61c2cf5769a0"><div class="ttname"><a href="classstencil_1_1IOKernel.html#a8bdece85037fda6a4c7e61c2cf5769a0">stencil::IOKernel::n_buffers</a></div><div class="ttdeci">static constexpr uindex_t n_buffers</div><div class="ttdoc">The total number of buffers in a slice/column.</div><div class="ttdef"><b>Definition:</b> IOKernel.hpp:45</div></div>
-<div class="ttc" id="aclassstencil_1_1IOKernel_html_a955fdf621e6dc75836c75afdb719aef2"><div class="ttname"><a href="classstencil_1_1IOKernel.html#a955fdf621e6dc75836c75afdb719aef2">stencil::IOKernel::read</a></div><div class="ttdeci">void read()</div><div class="ttdoc">Read the cells from the buffers and write them to the pipe.</div><div class="ttdef"><b>Definition:</b> IOKernel.hpp:91</div></div>
-<div class="ttc" id="aclassstencil_1_1IOKernel_html_ae92f8ebfe659f5f5a9278b5edf0c177c"><div class="ttname"><a href="classstencil_1_1IOKernel.html#ae92f8ebfe659f5f5a9278b5edf0c177c">stencil::IOKernel::write</a></div><div class="ttdeci">void write()</div><div class="ttdoc">Read the cells from the pipe and write them to the buffers.</div><div class="ttdef"><b>Definition:</b> IOKernel.hpp:101</div></div>
-<div class="ttc" id="aclassstencil_1_1IOKernel_html_af2abad01d716f37b3066baab22cd496b"><div class="ttname"><a href="classstencil_1_1IOKernel.html#af2abad01d716f37b3066baab22cd496b">stencil::IOKernel::get_buffer_height</a></div><div class="ttdeci">static constexpr uindex_t get_buffer_height(uindex_t index)</div><div class="ttdoc">Get the height of a buffer.</div><div class="ttdef"><b>Definition:</b> IOKernel.hpp:57</div></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment"> * Copyright © 2020-2021 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"> * University</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment"> *</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment"> * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment"> * associated documentation files (the “Software”), to deal in the Software without restriction,</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment"> * including without limitation the rights to use, copy, modify, merge, publish, distribute,</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment"> * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment"> * furnished to do so, subject to the following conditions:</span></div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="comment"> *</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="comment"> * The above copyright notice and this permission notice shall be included in all copies or</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="comment"> * substantial portions of the Software.</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="comment"> *</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="comment"> * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="comment"> * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="comment"> * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment"> * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,</span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment"> * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="comment"> */</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#pragma once</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &quot;../CounterID.hpp&quot;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &quot;../Index.hpp&quot;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;CL/sycl.hpp&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;CL/sycl/accessor.hpp&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;array&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keyword">namespace </span>stencil {</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span>tiling {</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T, uindex_t halo_height, uindex_t core_height, uindex_t burst_length,</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;          <span class="keyword">typename</span> pipe, uindex_t n_halo_height_buffers, cl::sycl::access::mode access_mode,</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;          cl::sycl::access::target access_target = cl::sycl::access::target::global_buffer&gt;</div>
+<div class="line"><a name="l00060"></a><span class="lineno"><a class="line" href="classstencil_1_1tiling_1_1IOKernel.html">   60</a></span>&#160;<span class="keyword">class </span><a class="code" href="classstencil_1_1tiling_1_1IOKernel.html">IOKernel</a> {</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;  <span class="keyword">public</span>:</div>
+<div class="line"><a name="l00065"></a><span class="lineno"><a class="line" href="classstencil_1_1tiling_1_1IOKernel.html#a4f1b1911ef7887d37b509afcaa6bc0c6">   65</a></span>&#160;    <span class="keyword">using</span> <a class="code" href="classstencil_1_1tiling_1_1IOKernel.html#a4f1b1911ef7887d37b509afcaa6bc0c6">Accessor</a> = cl::sycl::accessor&lt;T, 2, access_mode, access_target&gt;;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
+<div class="line"><a name="l00070"></a><span class="lineno"><a class="line" href="classstencil_1_1tiling_1_1IOKernel.html#a2735af2c1f310b4ec49e5d6dc51f3cb8">   70</a></span>&#160;    <span class="keyword">static</span> constexpr uindex_t <a class="code" href="classstencil_1_1tiling_1_1IOKernel.html#a2735af2c1f310b4ec49e5d6dc51f3cb8">n_buffers</a> = 2 * n_halo_height_buffers + 1;</div>
+<div class="line"><a name="l00074"></a><span class="lineno"><a class="line" href="classstencil_1_1tiling_1_1IOKernel.html#a47f7730160f6c0c419f0cdb8f9a703fa">   74</a></span>&#160;    <span class="keyword">static</span> constexpr uindex_t <a class="code" href="classstencil_1_1tiling_1_1IOKernel.html#a47f7730160f6c0c419f0cdb8f9a703fa">n_rows</a> = 2 * n_halo_height_buffers * halo_height + core_height;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
+<div class="line"><a name="l00082"></a><span class="lineno"><a class="line" href="classstencil_1_1tiling_1_1IOKernel.html#acc4920dfb51b5c0d7af763fff6e5835f">   82</a></span>&#160;    <span class="keyword">static</span> constexpr uindex_t <a class="code" href="classstencil_1_1tiling_1_1IOKernel.html#acc4920dfb51b5c0d7af763fff6e5835f">get_buffer_height</a>(uindex_t index) {</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        <span class="keywordflow">if</span> (index == n_halo_height_buffers) {</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            <span class="keywordflow">return</span> core_height;</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            <span class="keywordflow">return</span> halo_height;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        }</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    }</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
+<div class="line"><a name="l00099"></a><span class="lineno"><a class="line" href="classstencil_1_1tiling_1_1IOKernel.html#aa38c2d9f25d53121168f8f7c77b87a0d">   99</a></span>&#160;    <a class="code" href="classstencil_1_1tiling_1_1IOKernel.html#aa38c2d9f25d53121168f8f7c77b87a0d">IOKernel</a>(std::array&lt;Accessor, n_buffers&gt; accessor, uindex_t n_columns)</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        : accessor(accessor), n_columns(n_columns) {</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="preprocessor">#ifndef __SYCL_DEVICE_ONLY__</span></div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        <span class="keywordflow">for</span> (uindex_t i = 0; i &lt; <a class="code" href="classstencil_1_1tiling_1_1IOKernel.html#a2735af2c1f310b4ec49e5d6dc51f3cb8">n_buffers</a>; i++) {</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;            assert(accessor[i].get_range()[1] == burst_length);</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;            assert(<a class="code" href="classstencil_1_1tiling_1_1IOKernel.html#acc4920dfb51b5c0d7af763fff6e5835f">get_buffer_height</a>(i) * n_columns &lt;=</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;                   accessor[i].get_range()[0] * accessor[i].get_range()[1]);</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;        }</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    }</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
+<div class="line"><a name="l00113"></a><span class="lineno"><a class="line" href="classstencil_1_1tiling_1_1IOKernel.html#a8a973e6f817028e4ba71ba3497330d73">  113</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classstencil_1_1tiling_1_1IOKernel.html#a8a973e6f817028e4ba71ba3497330d73">read</a>() {</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        static_assert(access_mode == cl::sycl::access::mode::read ||</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;                      access_mode == cl::sycl::access::mode::read_write);</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        run([](<a class="code" href="classstencil_1_1tiling_1_1IOKernel.html#a4f1b1911ef7887d37b509afcaa6bc0c6">Accessor</a> &amp;accessor, uindex_t burst_i, uindex_t cell_i) {</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;            pipe::write(accessor[burst_i][cell_i]);</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        });</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    }</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160; </div>
+<div class="line"><a name="l00124"></a><span class="lineno"><a class="line" href="classstencil_1_1tiling_1_1IOKernel.html#a30619e34c4546761e308ade09292d2d6">  124</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classstencil_1_1tiling_1_1IOKernel.html#a30619e34c4546761e308ade09292d2d6">write</a>() {</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        static_assert(access_mode == cl::sycl::access::mode::write ||</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;                      access_mode == cl::sycl::access::mode::discard_write ||</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;                      access_mode == cl::sycl::access::mode::read_write ||</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;                      access_mode == cl::sycl::access::mode::discard_read_write);</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        run([](<a class="code" href="classstencil_1_1tiling_1_1IOKernel.html#a4f1b1911ef7887d37b509afcaa6bc0c6">Accessor</a> &amp;accessor, uindex_t burst_i, uindex_t cell_i) {</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;            accessor[burst_i][cell_i] = pipe::read();</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;        });</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    }</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160; </div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;  <span class="keyword">private</span>:</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> Action&gt; <span class="keywordtype">void</span> run(Action action) {</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;        static_assert(std::is_invocable&lt;Action, Accessor &amp;, uindex_t, uindex_t&gt;::value);</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160; </div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;        uindex_t burst_i[<a class="code" href="classstencil_1_1tiling_1_1IOKernel.html#a2735af2c1f310b4ec49e5d6dc51f3cb8">n_buffers</a>] = {0};</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;        uindex_t cell_i[<a class="code" href="classstencil_1_1tiling_1_1IOKernel.html#a2735af2c1f310b4ec49e5d6dc51f3cb8">n_buffers</a>] = {0};</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160; </div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;        <span class="keywordflow">for</span> (uindex_t c = 0; c &lt; n_columns; c++) {</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;            uindex_t buffer_i = 0;</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;            uindex_t next_bound = <a class="code" href="classstencil_1_1tiling_1_1IOKernel.html#acc4920dfb51b5c0d7af763fff6e5835f">get_buffer_height</a>(0);</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;            <span class="keywordflow">for</span> (uindex_t r = 0; r &lt; <a class="code" href="classstencil_1_1tiling_1_1IOKernel.html#a47f7730160f6c0c419f0cdb8f9a703fa">n_rows</a>; r++) {</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;                <span class="keywordflow">if</span> (r == next_bound) {</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;                    buffer_i++;</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;                    next_bound += <a class="code" href="classstencil_1_1tiling_1_1IOKernel.html#acc4920dfb51b5c0d7af763fff6e5835f">get_buffer_height</a>(buffer_i);</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                }</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160; </div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                action(accessor[buffer_i], burst_i[buffer_i], cell_i[buffer_i]);</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;                <span class="keywordflow">if</span> (cell_i[buffer_i] == burst_length - 1) {</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;                    cell_i[buffer_i] = 0;</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;                    burst_i[buffer_i]++;</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;                } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;                    cell_i[buffer_i]++;</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;                }</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;            }</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;        }</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;    }</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160; </div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;    std::array&lt;Accessor, n_buffers&gt; accessor;</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;    uindex_t n_columns;</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;};</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160; </div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;} <span class="comment">// namespace tiling</span></div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;} <span class="comment">// namespace stencil</span></div>
+<div class="ttc" id="aclassstencil_1_1tiling_1_1IOKernel_html"><div class="ttname"><a href="classstencil_1_1tiling_1_1IOKernel.html">stencil::tiling::IOKernel</a></div><div class="ttdoc">Generic Input/Output kernel for use with the ExecutionKernel and Grid.</div><div class="ttdef"><b>Definition:</b> IOKernel.hpp:60</div></div>
+<div class="ttc" id="aclassstencil_1_1tiling_1_1IOKernel_html_a2735af2c1f310b4ec49e5d6dc51f3cb8"><div class="ttname"><a href="classstencil_1_1tiling_1_1IOKernel.html#a2735af2c1f310b4ec49e5d6dc51f3cb8">stencil::tiling::IOKernel::n_buffers</a></div><div class="ttdeci">static constexpr uindex_t n_buffers</div><div class="ttdoc">The total number of buffers in a slice/column.</div><div class="ttdef"><b>Definition:</b> IOKernel.hpp:70</div></div>
+<div class="ttc" id="aclassstencil_1_1tiling_1_1IOKernel_html_a30619e34c4546761e308ade09292d2d6"><div class="ttname"><a href="classstencil_1_1tiling_1_1IOKernel.html#a30619e34c4546761e308ade09292d2d6">stencil::tiling::IOKernel::write</a></div><div class="ttdeci">void write()</div><div class="ttdoc">Read the cells from the pipe and write them to the buffers.</div><div class="ttdef"><b>Definition:</b> IOKernel.hpp:124</div></div>
+<div class="ttc" id="aclassstencil_1_1tiling_1_1IOKernel_html_a47f7730160f6c0c419f0cdb8f9a703fa"><div class="ttname"><a href="classstencil_1_1tiling_1_1IOKernel.html#a47f7730160f6c0c419f0cdb8f9a703fa">stencil::tiling::IOKernel::n_rows</a></div><div class="ttdeci">static constexpr uindex_t n_rows</div><div class="ttdoc">The total number of cell rows in the (logical) slice/column.</div><div class="ttdef"><b>Definition:</b> IOKernel.hpp:74</div></div>
+<div class="ttc" id="aclassstencil_1_1tiling_1_1IOKernel_html_a4f1b1911ef7887d37b509afcaa6bc0c6"><div class="ttname"><a href="classstencil_1_1tiling_1_1IOKernel.html#a4f1b1911ef7887d37b509afcaa6bc0c6">stencil::tiling::IOKernel::Accessor</a></div><div class="ttdeci">cl::sycl::accessor&lt; T, 2, access_mode, access_target &gt; Accessor</div><div class="ttdoc">The exact accessor type required by the IO kernel.</div><div class="ttdef"><b>Definition:</b> IOKernel.hpp:65</div></div>
+<div class="ttc" id="aclassstencil_1_1tiling_1_1IOKernel_html_a8a973e6f817028e4ba71ba3497330d73"><div class="ttname"><a href="classstencil_1_1tiling_1_1IOKernel.html#a8a973e6f817028e4ba71ba3497330d73">stencil::tiling::IOKernel::read</a></div><div class="ttdeci">void read()</div><div class="ttdoc">Read the cells from the buffers and write them to the pipe.</div><div class="ttdef"><b>Definition:</b> IOKernel.hpp:113</div></div>
+<div class="ttc" id="aclassstencil_1_1tiling_1_1IOKernel_html_aa38c2d9f25d53121168f8f7c77b87a0d"><div class="ttname"><a href="classstencil_1_1tiling_1_1IOKernel.html#aa38c2d9f25d53121168f8f7c77b87a0d">stencil::tiling::IOKernel::IOKernel</a></div><div class="ttdeci">IOKernel(std::array&lt; Accessor, n_buffers &gt; accessor, uindex_t n_columns)</div><div class="ttdoc">Create a new IOKernel instance.</div><div class="ttdef"><b>Definition:</b> IOKernel.hpp:99</div></div>
+<div class="ttc" id="aclassstencil_1_1tiling_1_1IOKernel_html_acc4920dfb51b5c0d7af763fff6e5835f"><div class="ttname"><a href="classstencil_1_1tiling_1_1IOKernel.html#acc4920dfb51b5c0d7af763fff6e5835f">stencil::tiling::IOKernel::get_buffer_height</a></div><div class="ttdeci">static constexpr uindex_t get_buffer_height(uindex_t index)</div><div class="ttdoc">Get the height of a buffer.</div><div class="ttdef"><b>Definition:</b> IOKernel.hpp:82</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

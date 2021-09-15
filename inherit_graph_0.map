@@ -1,3 +1,6 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classstencil_1_1ExecutionKernel.html" title="A kernel that executes a stencil transition function on a tile." alt="" coords="5,5,208,91"/>
+<area shape="rect" id="node1" href="$classstencil_1_1AbstractExecutor.html" title="Base class for all execution managers." alt="" coords="5,68,213,109"/>
+<area shape="rect" id="node2" href="$classstencil_1_1SingleQueueExecutor.html" title="An abstract executor with common code for executors that work with a single SYCL queue." alt="" coords="261,68,469,109"/>
+<area shape="rect" id="node3" href="$classstencil_1_1MonotileExecutor.html" title="An executor that follows The Monotile Architecture." alt="" coords="517,5,719,76"/>
+<area shape="rect" id="node4" href="$classstencil_1_1StencilExecutor.html" title="The default stencil executor." alt="" coords="517,100,719,171"/>
 </map>

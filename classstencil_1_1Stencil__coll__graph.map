@@ -1,4 +1,5 @@
 <map id="stencil::Stencil&lt; T, radius &gt;" name="stencil::Stencil&lt; T, radius &gt;">
-<area shape="rect" id="node1" title="The stencil buffer." alt="" coords="18,109,147,151"/>
-<area shape="rect" id="node2" href="$classstencil_1_1GenericID.html" title="A generic, two&#45;dimensional index." alt="" coords="5,5,160,32"/>
+<area shape="rect" id="node1" title="The stencil buffer." alt="" coords="84,109,213,151"/>
+<area shape="rect" id="node2" href="$classstencil_1_1GenericID.html" title=" " alt="" coords="5,5,129,47"/>
+<area shape="rect" id="node3" href="$classstencil_1_1GenericID.html" title="A generic, two&#45;dimensional index." alt="" coords="153,13,307,39"/>
 </map>

@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">StencilStream
-   &#160;<span id="projectnumber">v2.0.0</span>
+   &#160;<span id="projectnumber">v2.1.0</span>
    </div>
    <div id="projectbrief">Generic Stencil Simulation Library for FPGAs.</div>
   </td>
@@ -69,18 +69,18 @@ $(function() {
 <div class="contents">
 <div class="textblock"><p><a class="anchor" id="md_README"></a> Generic Stencil Simulation Library for FPGAs.</p>
 <p>This project uses Intel's OneAPI to provide a C++ template library that can execute arbitrary Moore-like stencil kernels on arbitrary cell types in arbitrary buffers, using FPGAs.</p>
-<h1><a class="anchor" id="autotoc_md5"></a>
+<h1><a class="anchor" id="autotoc_md4"></a>
 Performance Metrics</h1>
 <p>To be done.</p>
-<h1><a class="anchor" id="autotoc_md6"></a>
+<h1><a class="anchor" id="autotoc_md5"></a>
 How to use StencilStream</h1>
-<h2><a class="anchor" id="autotoc_md7"></a>
+<h2><a class="anchor" id="autotoc_md6"></a>
 Required Software</h2>
 <p>This library requires the "Intel® oneAPI Base Toolkit for Linux" as well as the "Intel® FPGA Add-On for oneAPI Base Toolkit", which you can download <a href="https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit/download.html#operatingsystem=Linux&amp;#distributions=Web%20and%20Local%20Install&amp;#options=Online">here</a>. You also need to have a GCC toolchain with support for C++17 features installed and loaded as well the <a href="https://www.boost.org">boost libraries</a>, version 1.29.0 or newer. If your FPGA accelerator card isn't an Intel® PAC, you also need the board support package of your card.</p>
 <p>If you're working with <a href="https://pc2.uni-paderborn.de/hpc-services/available-systems/noctua/">the Noctua super-computer by the Paderborn Center for Parallel Computing</a> and the Nallatech/Bittware 520N Board, you can easily load all required components by executing the following commands:</p>
 <div class="fragment"><div class="line">source /cm/shared/opt/intel_oneapi/{latest-version}/setvars.sh</div>
 <div class="line">module load nalla_pcie compiler/GCC</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md8"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md7"></a>
 A basic stencil kernel</h2>
 <p>As an example, we are going to implement a simple version of <a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">Conway's Game of Life</a>. However, please note that this isn't the most efficient way to do it, just an example.</p>
 <p>First, create a new working directory for your project and copy the <code>StencilStream</code> folder into it. We will only need a single source file, so create a <code>conway.cpp</code> too! We are now going to walk through it:</p>
@@ -92,45 +92,35 @@ A basic stencil kernel</h2>
 <div class="line">const stencil::uindex_t stencil_radius = 1;</div>
 </div><!-- fragment --><p>Next are some important definitions: The cell type, the value of cells in the grid halo, and the radius of the stencil buffer. In our example, a cell is either alive or dead. We express that with a boolean value which is true if the cell is alive and false if it is dead. The cells are arranged in a grid, but in order to update the cells on the borders of the grid, we need cells <em>outside</em> of the grid. StencilStream assures that these cells always have a constant halo value. If this halo value and the transition function is well-chosen, we don't have to do any edge handling. Here, we assume that cells outside of the grid to be always dead, so we pick the halo value <code>false</code>. The radius of the stencil defines how many neighbors of a cell we need to calculate the next generation. In our case, we only need the direct neighbors, so we set the radius to 1. This means that the stencil buffer will be 3 by 3 cells big.</p>
 <p>This is everything we need to define the transition function, so let's do it now:</p>
-<div class="fragment"><div class="line">auto conway = [](stencil::Stencil&lt;Cell, stencil_radius&gt; const &amp;stencil, stencil::StencilInfo const &amp;info)</div>
-<div class="line">{</div>
+<div class="fragment"><div class="line">auto conway = [](stencil::Stencil&lt;Cell, stencil_radius&gt; const &amp;stencil) {</div>
 </div><!-- fragment --><p>As you can see, a transition function is just an invocable object. In this case, we have chosen a lambda expression, but more complicated applications may define their transition function as a class with an <code>operator()</code> method.</p>
-<p>The first argument is the stencil buffer itself and the second argument is a struct with useful information about the current invocation, like the coordinates of the central cell of the stencil buffer. This is the cell we are going to replace.</p>
-<div class="fragment"><div class="line">    stencil::ID idx = info.center_cell_id;</div>
+<p>The only argument is the stencil buffer itself. It also contains useful information about the current invocation, like the coordinates of the central cell of the stencil buffer. This is the cell we are going to replace.</p>
+<div class="fragment"><div class="line">    stencil::ID idx = stencil.id;</div>
 <div class="line"> </div>
 <div class="line">    uint8_t alive_neighbours = 0;</div>
 <div class="line">#pragma unroll</div>
-<div class="line">    for (stencil::index_t c = -stencil_radius; c &lt;= stencil::index_t(stencil_radius); c++)</div>
-<div class="line">    {</div>
+<div class="line">    for (stencil::index_t c = -stencil_radius; c &lt;= stencil::index_t(stencil_radius); c++) {</div>
 <div class="line">#pragma unroll</div>
-<div class="line">        for (stencil::index_t r = -stencil_radius; r &lt;= stencil::index_t(stencil_radius); r++)</div>
-<div class="line">        {</div>
-<div class="line">            if (stencil[stencil::ID(c, r)] &amp;&amp; !(c == 0 &amp;&amp; r == 0))</div>
-<div class="line">            {</div>
+<div class="line">        for (stencil::index_t r = -stencil_radius; r &lt;= stencil::index_t(stencil_radius); r++) {</div>
+<div class="line">            if (stencil[stencil::ID(c, r)] &amp;&amp; !(c == 0 &amp;&amp; r == 0)) {</div>
 <div class="line">                alive_neighbours += 1;</div>
 <div class="line">            }</div>
 <div class="line">        }</div>
 <div class="line">    }</div>
 </div><!-- fragment --><p>First, we count the living neighbors since their numbers decides the fate of our cell. The <code>for</code>-loops for that are completely unrolled, which means that these evaluations will be carried out in parallel.</p>
-<div class="fragment"><div class="line">    if (stencil[stencil::ID(0, 0)])</div>
-<div class="line">    {</div>
+<div class="fragment"><div class="line">    if (stencil[stencil::ID(0, 0)]) {</div>
 <div class="line">        return alive_neighbours == 2 || alive_neighbours == 3;</div>
-<div class="line">    }</div>
-<div class="line">    else</div>
-<div class="line">    {</div>
+<div class="line">    } else {</div>
 <div class="line">        return alive_neighbours == 3;</div>
 <div class="line">    }</div>
 <div class="line">};</div>
 </div><!-- fragment --><p>Now we know how many of our neighbors are alive and can therefore return the new cell value according to <a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life#Rules">the rules of the game</a>.</p>
-<div class="fragment"><div class="line">cl::sycl::buffer&lt;Cell, 2&gt; read(stencil::uindex_t width, stencil::uindex_t height)</div>
-<div class="line">{</div>
+<div class="fragment"><div class="line">cl::sycl::buffer&lt;Cell, 2&gt; read(stencil::uindex_t width, stencil::uindex_t height) {</div>
 <div class="line">    cl::sycl::buffer&lt;Cell, 2&gt; input_buffer(cl::sycl::range&lt;2&gt;(width, height));</div>
 <div class="line">    auto buffer_ac = input_buffer.get_access&lt;cl::sycl::access::mode::write&gt;();</div>
 <div class="line"> </div>
-<div class="line">    for (stencil::uindex_t r = 0; r &lt; height; r++)</div>
-<div class="line">    {</div>
-<div class="line">        for (stencil::uindex_t c = 0; c &lt; width; c++)</div>
-<div class="line">        {</div>
+<div class="line">    for (stencil::uindex_t r = 0; r &lt; height; r++) {</div>
+<div class="line">        for (stencil::uindex_t c = 0; c &lt; width; c++) {</div>
 <div class="line">            char Cell;</div>
 <div class="line">            std::cin &gt;&gt; Cell;</div>
 <div class="line">            assert(Cell == &#39;X&#39; || Cell == &#39;.&#39;);</div>
@@ -141,35 +131,27 @@ A basic stencil kernel</h2>
 <div class="line">    return input_buffer;</div>
 <div class="line">}</div>
 <div class="line"> </div>
-<div class="line">void write(cl::sycl::buffer&lt;Cell, 2&gt; output_buffer)</div>
-<div class="line">{</div>
+<div class="line">void write(cl::sycl::buffer&lt;Cell, 2&gt; output_buffer) {</div>
 <div class="line">    auto buffer_ac = output_buffer.get_access&lt;cl::sycl::access::mode::read&gt;();</div>
 <div class="line"> </div>
 <div class="line">    stencil::uindex_t width = output_buffer.get_range()[0];</div>
 <div class="line">    stencil::uindex_t height = output_buffer.get_range()[1];</div>
 <div class="line"> </div>
-<div class="line">    for (stencil::uindex_t r = 0; r &lt; height; r++)</div>
-<div class="line">    {</div>
-<div class="line">        for (stencil::uindex_t c = 0; c &lt; width; c++)</div>
-<div class="line">        {</div>
-<div class="line">            if (buffer_ac[c][r])</div>
-<div class="line">            {</div>
+<div class="line">    for (stencil::uindex_t r = 0; r &lt; height; r++) {</div>
+<div class="line">        for (stencil::uindex_t c = 0; c &lt; width; c++) {</div>
+<div class="line">            if (buffer_ac[c][r]) {</div>
 <div class="line">                std::cout &lt;&lt; &quot;X&quot;;</div>
-<div class="line">            }</div>
-<div class="line">            else</div>
-<div class="line">            {</div>
+<div class="line">            } else {</div>
 <div class="line">                std::cout &lt;&lt; &quot;.&quot;;</div>
 <div class="line">            }</div>
 <div class="line">        }</div>
 <div class="line">        std::cout &lt;&lt; std::endl;</div>
 <div class="line">    }</div>
 <div class="line">}</div>
-</div><!-- fragment --><p>The next part is some boilerplate code to read the input from stdin and write the output to stdout. Nothing to spectacular.</p>
+</div><!-- fragment --><p>The next part is some boilerplate code to read the input from stdin and write the output to stdout. Nothing too spectacular.</p>
 <p>The only thing left is to run the calculations. We do this like this:</p>
-<div class="fragment"><div class="line">int main(int argc, char **argv)</div>
-<div class="line">{</div>
-<div class="line">    if (argc != 4)</div>
-<div class="line">    {</div>
+<div class="fragment"><div class="line">int main(int argc, char **argv) {</div>
+<div class="line">    if (argc != 4) {</div>
 <div class="line">        std::cerr &lt;&lt; &quot;Usage: &quot; &lt;&lt; argv[0] &lt;&lt; &quot; &lt;width&gt; &lt;height&gt; &lt;n_generations&gt;&quot; &lt;&lt; std::endl;</div>
 <div class="line">        return 1;</div>
 <div class="line">    }</div>
@@ -183,7 +165,7 @@ A basic stencil kernel</h2>
 <div class="line">    using Executor = stencil::StencilExecutor&lt;Cell, stencil_radius, decltype(conway)&gt;;</div>
 <div class="line">    Executor executor(halo_value, conway);</div>
 <div class="line">    executor.set_input(grid_buffer);</div>
-</div><!-- fragment --><p>After checking and parsing the arguments, we read the input data and initialize the executor. This is the central API facade to control the calculations. In it's simplest form, it only requires cell type, the radius of the stencil and the type of the transition function as template arguments. It has more template arguments, but these are performance parameters. We are looking into them later. The actual constructor arguments are only the initial data, the halo value and an instance of the transition function.</p>
+</div><!-- fragment --><p>After checking and parsing the arguments, we read the input data. Then, we pick and initialize an executor. Executors are the user-facing facades of StencilStream and the library offers different executors that are optimized for different scenarios. In this case, we pick the <code>StencilExecutor</code>, which is the most universal executor. The static operation and performance parameters are defined as template parameters to an executor. In it's simplest form, it only requires our cell type, the radius of the stencil and the type of the transition function.</p>
 <div class="fragment"><div class="line">#ifdef HARDWARE</div>
 <div class="line">    executor.select_fpga();</div>
 <div class="line">#else</div>
@@ -214,15 +196,17 @@ A basic stencil kernel</h2>
 <div class="line">endif</div>
 <div class="line"> </div>
 <div class="line">EMU_ARGS = $(ARGS)</div>
-<div class="line">HW_ARGS = $(ARGS) -DHARDWARE -Xshardware </div>
+<div class="line">HW_ARGS = $(ARGS) -DHARDWARE -Xshardware</div>
 <div class="line"> </div>
-<div class="line">conway_emu: conway.cpp Makefile</div>
+<div class="line">RESOURCES = conway.cpp $(wildcard StencilStream/*) Makefile</div>
+<div class="line"> </div>
+<div class="line">conway_emu: $(RESOURCES)</div>
 <div class="line">    $(CC) $(EMU_ARGS) conway.cpp -o conway_emu</div>
 <div class="line"> </div>
-<div class="line">conway_hw: conway.cpp Makefile</div>
+<div class="line">conway_hw: $(RESOURCES)</div>
 <div class="line">    $(CC) $(HW_ARGS) conway.cpp -o conway_hw</div>
 <div class="line"> </div>
-<div class="line">conway_hw.report.tar.gz: conway.cpp Makefile</div>
+<div class="line">conway_hw.report.tar.gz: $(RESOURCES)</div>
 <div class="line">    rm -f conway_hw</div>
 <div class="line">    $(CC) $(HW_ARGS) -fsycl-link conway.cpp -o conway_hw</div>
 <div class="line">    tar -caf conway_hw.report.tar.gz conway_hw.prj/reports</div>
@@ -230,7 +214,7 @@ A basic stencil kernel</h2>
 <div class="line">clean:</div>
 <div class="line">    git clean -dXf</div>
 </div><!-- fragment --><p> If you just run <code>make conway_emu</code>, an emulation image will be created that can be executed on the CPU to verify your code. If you want to synthesize the design for your FPGA, you have to run <code>make conway_hw</code>. However, this might take a lot of time and therefore, you should first generate a design report to evaluate the performance of the design and estimate the compilation time. You do this by running <code>make conway_hw.report.tar.gz</code>.</p>
-<h2><a class="anchor" id="autotoc_md9"></a>
+<h2><a class="anchor" id="autotoc_md8"></a>
 Going further</h2>
 <p>This example only showed the general way StencilStream is used. More optimised and non-trivial examples can be found in the <a href="https://github.com/pc2/StencilStream/tree/master/examples">examples folder</a>. However, in order to fully understand the way StencilStream works and to optimize your application, you should take a look at <a href="https://pc2.github.io/StencilStream/index.html">the documentation</a> and especially at the <a href="https://pc2.github.io/StencilStream/Architecture.html">architecture document</a>. Future releases will also feature an optimization guide that discusses the different optimization parameters and gives advice for good designs. </p>
 </div></div><!-- PageDoc -->

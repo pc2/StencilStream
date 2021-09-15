@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">StencilStream
-   &#160;<span id="projectnumber">v2.0.0</span>
+   &#160;<span id="projectnumber">v2.1.0</span>
    </div>
    <div id="projectbrief">Generic Stencil Simulation Library for FPGAs.</div>
   </td>
@@ -70,9 +70,12 @@ $(function() {
 <div class="textblock">
 <p><a href="hierarchy.html">Go to the textual class hierarchy</a></p>
 </div><table border="0" cellspacing="10" cellpadding="0">
-<tr><td><img src="inherit_graph_0.png" border="0" usemap="#astencil_1_1ExecutionKernel_3_01TransFunc_00_01T_00_01stencil__radius_00_01pipeline__length_00_01output__tile__width_00_01output__tile__height_00_01in__pipe_00_01out__pipe_01_4" alt=""/>
-<map name="astencil_1_1ExecutionKernel_3_01TransFunc_00_01T_00_01stencil__radius_00_01pipeline__length_00_01output__tile__width_00_01output__tile__height_00_01in__pipe_00_01out__pipe_01_4" id="astencil_1_1ExecutionKernel_3_01TransFunc_00_01T_00_01stencil__radius_00_01pipeline__length_00_01output__tile__width_00_01output__tile__height_00_01in__pipe_00_01out__pipe_01_4">
-<area shape="rect" href="classstencil_1_1ExecutionKernel.html" title="A kernel that executes a stencil transition function on a tile." alt="" coords="5,5,208,91"/>
+<tr><td><img src="inherit_graph_0.png" border="0" usemap="#astencil_1_1AbstractExecutor_3_01T_00_01stencil__radius_00_01TransFunc_01_4" alt=""/>
+<map name="astencil_1_1AbstractExecutor_3_01T_00_01stencil__radius_00_01TransFunc_01_4" id="astencil_1_1AbstractExecutor_3_01T_00_01stencil__radius_00_01TransFunc_01_4">
+<area shape="rect" href="classstencil_1_1AbstractExecutor.html" title="Base class for all execution managers." alt="" coords="5,68,213,109"/>
+<area shape="rect" href="classstencil_1_1SingleQueueExecutor.html" title="An abstract executor with common code for executors that work with a single SYCL queue." alt="" coords="261,68,469,109"/>
+<area shape="rect" href="classstencil_1_1MonotileExecutor.html" title="An executor that follows The Monotile Architecture." alt="" coords="517,5,719,76"/>
+<area shape="rect" href="classstencil_1_1StencilExecutor.html" title="The default stencil executor." alt="" coords="517,100,719,171"/>
 </map>
 </td></tr>
 <tr><td><img src="inherit_graph_1.png" border="0" usemap="#astencil_1_1GenericID_3_01T_01_4" alt=""/>
@@ -81,39 +84,49 @@ $(function() {
 <area shape="rect" href="classstencil_1_1CounterID.html" title="A subclass of the GenericID&lt;T&gt; with two&#45;dimensional index counting." alt="" coords="208,5,363,32"/>
 </map>
 </td></tr>
-<tr><td><img src="inherit_graph_2.png" border="0" usemap="#astencil_1_1Grid_3_01T_00_011024_00_011024_00_01halo__radius_00_01burst__length_01_4" alt=""/>
-<map name="astencil_1_1Grid_3_01T_00_011024_00_011024_00_01halo__radius_00_01burst__length_01_4" id="astencil_1_1Grid_3_01T_00_011024_00_011024_00_01halo__radius_00_01burst__length_01_4">
-<area shape="rect" href="classstencil_1_1Grid.html" title=" " alt="" coords="5,5,168,61"/>
+<tr><td><img src="inherit_graph_2.png" border="0" usemap="#astencil_1_1GenericID_3_01uindex__t_01_4" alt=""/>
+<map name="astencil_1_1GenericID_3_01uindex__t_01_4" id="astencil_1_1GenericID_3_01uindex__t_01_4">
+<area shape="rect" href="classstencil_1_1GenericID.html" title=" " alt="" coords="5,5,129,47"/>
 </map>
 </td></tr>
-<tr><td><img src="inherit_graph_3.png" border="0" usemap="#astencil_1_1Grid_3_01T_00_01tile__width_00_01tile__height_00_01halo__radius_00_01burst__length_01_4" alt=""/>
-<map name="astencil_1_1Grid_3_01T_00_01tile__width_00_01tile__height_00_01halo__radius_00_01burst__length_01_4" id="astencil_1_1Grid_3_01T_00_01tile__width_00_01tile__height_00_01halo__radius_00_01burst__length_01_4">
-<area shape="rect" href="classstencil_1_1Grid.html" title="A rectangular container of cells with a dynamic, arbitrary size." alt="" coords="5,5,163,61"/>
+<tr><td><img src="inherit_graph_3.png" border="0" usemap="#astencil_1_1monotile_1_1ExecutionKernel_3_01TransFunc_00_01T_00_01stencil__radius_00_01pipeline__length_00_01tile__width_00_01tile__height_00_01in__pipe_00_01out__pipe_01_4" alt=""/>
+<map name="astencil_1_1monotile_1_1ExecutionKernel_3_01TransFunc_00_01T_00_01stencil__radius_00_01pipeline__length_00_01tile__width_00_01tile__height_00_01in__pipe_00_01out__pipe_01_4" id="astencil_1_1monotile_1_1ExecutionKernel_3_01TransFunc_00_01T_00_01stencil__radius_00_01pipeline__length_00_01tile__width_00_01tile__height_00_01in__pipe_00_01out__pipe_01_4">
+<area shape="rect" href="classstencil_1_1monotile_1_1ExecutionKernel.html" title="A kernel that executes a stencil transition function using the monotile approach." alt="" coords="5,5,201,91"/>
 </map>
 </td></tr>
-<tr><td><img src="inherit_graph_4.png" border="0" usemap="#astencil_1_1IOKernel_3_01T_00_01halo__height_00_01core__height_00_01burst__length_00_01pipe_00_01n__halo__height__buffers_00_01access__mode_00_01access__target_01_4" alt=""/>
-<map name="astencil_1_1IOKernel_3_01T_00_01halo__height_00_01core__height_00_01burst__length_00_01pipe_00_01n__halo__height__buffers_00_01access__mode_00_01access__target_01_4" id="astencil_1_1IOKernel_3_01T_00_01halo__height_00_01core__height_00_01burst__length_00_01pipe_00_01n__halo__height__buffers_00_01access__mode_00_01access__target_01_4">
-<area shape="rect" href="classstencil_1_1IOKernel.html" title="Generic Input/Output kernel for use with the ExecutionKernel and Grid." alt="" coords="5,5,212,91"/>
-</map>
-</td></tr>
-<tr><td><img src="inherit_graph_5.png" border="0" usemap="#astencil_1_1RuntimeSample" alt=""/>
+<tr><td><img src="inherit_graph_4.png" border="0" usemap="#astencil_1_1RuntimeSample" alt=""/>
 <map name="astencil_1_1RuntimeSample" id="astencil_1_1RuntimeSample">
-<area shape="rect" href="classstencil_1_1RuntimeSample.html" title="Collection of SYCL events from a StencilExecutor::run invocation." alt="" coords="5,5,164,32"/>
+<area shape="rect" href="classstencil_1_1RuntimeSample.html" title="Collection of runtime performance information for a SingleQueueExecutor." alt="" coords="5,5,164,32"/>
 </map>
 </td></tr>
-<tr><td><img src="inherit_graph_6.png" border="0" usemap="#astencil_1_1Stencil_3_01T_00_01radius_01_4" alt=""/>
+<tr><td><img src="inherit_graph_5.png" border="0" usemap="#astencil_1_1Stencil_3_01T_00_01radius_01_4" alt=""/>
 <map name="astencil_1_1Stencil_3_01T_00_01radius_01_4" id="astencil_1_1Stencil_3_01T_00_01radius_01_4">
 <area shape="rect" href="classstencil_1_1Stencil.html" title="The stencil buffer." alt="" coords="5,5,135,47"/>
 </map>
 </td></tr>
-<tr><td><img src="inherit_graph_7.png" border="0" usemap="#astencil_1_1StencilExecutor_3_01T_00_01stencil__radius_00_01TransFunc_00_01pipeline__length_00_01tile__width_00_01tile__height_00_01burst__size_01_4" alt=""/>
-<map name="astencil_1_1StencilExecutor_3_01T_00_01stencil__radius_00_01TransFunc_00_01pipeline__length_00_01tile__width_00_01tile__height_00_01burst__size_01_4" id="astencil_1_1StencilExecutor_3_01T_00_01stencil__radius_00_01TransFunc_00_01pipeline__length_00_01tile__width_00_01tile__height_00_01burst__size_01_4">
-<area shape="rect" href="classstencil_1_1StencilExecutor.html" title="Execution coordinator." alt="" coords="5,5,207,76"/>
+<tr><td><img src="inherit_graph_6.png" border="0" usemap="#astencil_1_1tiling_1_1ExecutionKernel_3_01TransFunc_00_01T_00_01stencil__radius_00_01pipeline__length_00_01output__tile__width_00_01output__tile__height_00_01in__pipe_00_01out__pipe_01_4" alt=""/>
+<map name="astencil_1_1tiling_1_1ExecutionKernel_3_01TransFunc_00_01T_00_01stencil__radius_00_01pipeline__length_00_01output__tile__width_00_01output__tile__height_00_01in__pipe_00_01out__pipe_01_4" id="astencil_1_1tiling_1_1ExecutionKernel_3_01TransFunc_00_01T_00_01stencil__radius_00_01pipeline__length_00_01output__tile__width_00_01output__tile__height_00_01in__pipe_00_01out__pipe_01_4">
+<area shape="rect" href="classstencil_1_1tiling_1_1ExecutionKernel.html" title="A kernel that executes a stencil transition function on a tile." alt="" coords="5,5,205,91"/>
 </map>
 </td></tr>
-<tr><td><img src="inherit_graph_8.png" border="0" usemap="#astencil_1_1Tile_3_01T_00_01width_00_01height_00_01halo__radius_00_01burst__length_01_4" alt=""/>
-<map name="astencil_1_1Tile_3_01T_00_01width_00_01height_00_01halo__radius_00_01burst__length_01_4" id="astencil_1_1Tile_3_01T_00_01width_00_01height_00_01halo__radius_00_01burst__length_01_4">
-<area shape="rect" href="classstencil_1_1Tile.html" title="A rectangular container of cells with a static size." alt="" coords="5,5,153,61"/>
+<tr><td><img src="inherit_graph_7.png" border="0" usemap="#astencil_1_1tiling_1_1Grid_3_01T_00_011024_00_011024_00_01halo__radius_00_01burst__length_01_4" alt=""/>
+<map name="astencil_1_1tiling_1_1Grid_3_01T_00_011024_00_011024_00_01halo__radius_00_01burst__length_01_4" id="astencil_1_1tiling_1_1Grid_3_01T_00_011024_00_011024_00_01halo__radius_00_01burst__length_01_4">
+<area shape="rect" href="classstencil_1_1tiling_1_1Grid.html" title=" " alt="" coords="5,5,159,61"/>
+</map>
+</td></tr>
+<tr><td><img src="inherit_graph_8.png" border="0" usemap="#astencil_1_1tiling_1_1Grid_3_01T_00_01tile__width_00_01tile__height_00_01halo__radius_00_01burst__length_01_4" alt=""/>
+<map name="astencil_1_1tiling_1_1Grid_3_01T_00_01tile__width_00_01tile__height_00_01halo__radius_00_01burst__length_01_4" id="astencil_1_1tiling_1_1Grid_3_01T_00_01tile__width_00_01tile__height_00_01halo__radius_00_01burst__length_01_4">
+<area shape="rect" href="classstencil_1_1tiling_1_1Grid.html" title="A rectangular container of cells with a dynamic, arbitrary size, used by the StencilExecutor." alt="" coords="5,5,147,76"/>
+</map>
+</td></tr>
+<tr><td><img src="inherit_graph_9.png" border="0" usemap="#astencil_1_1tiling_1_1IOKernel_3_01T_00_01halo__height_00_01core__height_00_01burst__length_00_01pipe_00_01n__halo__height__buffers_00_01access__mode_00_01access__target_01_4" alt=""/>
+<map name="astencil_1_1tiling_1_1IOKernel_3_01T_00_01halo__height_00_01core__height_00_01burst__length_00_01pipe_00_01n__halo__height__buffers_00_01access__mode_00_01access__target_01_4" id="astencil_1_1tiling_1_1IOKernel_3_01T_00_01halo__height_00_01core__height_00_01burst__length_00_01pipe_00_01n__halo__height__buffers_00_01access__mode_00_01access__target_01_4">
+<area shape="rect" href="classstencil_1_1tiling_1_1IOKernel.html" title="Generic Input/Output kernel for use with the ExecutionKernel and Grid." alt="" coords="5,5,205,91"/>
+</map>
+</td></tr>
+<tr><td><img src="inherit_graph_10.png" border="0" usemap="#astencil_1_1tiling_1_1Tile_3_01T_00_01width_00_01height_00_01halo__radius_00_01burst__length_01_4" alt=""/>
+<map name="astencil_1_1tiling_1_1Tile_3_01T_00_01width_00_01height_00_01halo__radius_00_01burst__length_01_4" id="astencil_1_1tiling_1_1Tile_3_01T_00_01width_00_01height_00_01halo__radius_00_01burst__length_01_4">
+<area shape="rect" href="classstencil_1_1tiling_1_1Tile.html" title="A rectangular container of cells with a static size." alt="" coords="5,5,159,61"/>
 </map>
 </td></tr>
 </table>

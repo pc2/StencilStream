@@ -1,0 +1,5 @@
+<map id="stencil::MonotileExecutor&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;" name="stencil::MonotileExecutor&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;">
+<area shape="rect" id="node1" title="An executor that follows The Monotile Architecture." alt="" coords="9,184,210,255"/>
+<area shape="rect" id="node2" href="$classstencil_1_1SingleQueueExecutor.html" title="An abstract executor with common code for executors that work with a single SYCL queue." alt="" coords="5,95,213,136"/>
+<area shape="rect" id="node3" href="$classstencil_1_1AbstractExecutor.html" title="Base class for all execution managers." alt="" coords="5,5,213,47"/>
+</map>

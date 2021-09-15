@@ -1,7 +1,8 @@
 var searchData=
 [
-  ['r_41',['r',['../classstencil_1_1GenericID.html#aec43f7ef1ae03330b4cd5c6d09138e60',1,'stencil::GenericID']]],
-  ['read_42',['read',['../classstencil_1_1IOKernel.html#a955fdf621e6dc75836c75afdb719aef2',1,'stencil::IOKernel']]],
-  ['run_43',['run',['../classstencil_1_1StencilExecutor.html#ab8c99a16a4307919216b9ee4028c89ce',1,'stencil::StencilExecutor']]],
-  ['runtimesample_44',['RuntimeSample',['../classstencil_1_1RuntimeSample.html#ae9d0802d349124bee3dc01f010310be8',1,'stencil::RuntimeSample::RuntimeSample()'],['../classstencil_1_1RuntimeSample.html',1,'stencil::RuntimeSample']]]
+  ['operator_28_29_48',['operator()',['../classstencil_1_1monotile_1_1ExecutionKernel.html#a75bd84f4e1cf933c7ae1be318b201ee1',1,'stencil::monotile::ExecutionKernel::operator()()'],['../classstencil_1_1tiling_1_1ExecutionKernel.html#a2b8c27b7ba79fffbc1b13364b95cae53',1,'stencil::tiling::ExecutionKernel::operator()()']]],
+  ['operator_2b_2b_49',['operator++',['../classstencil_1_1CounterID.html#ae7ea98dd397e1a435d672dc9ec4c14d3',1,'stencil::CounterID::operator++()'],['../classstencil_1_1CounterID.html#a6bb749bfb250c4d9d3e979d0419f6c0a',1,'stencil::CounterID::operator++(int)']]],
+  ['operator_2d_2d_50',['operator--',['../classstencil_1_1CounterID.html#a904bb4df7e45a9417953abe47f69910e',1,'stencil::CounterID::operator--()'],['../classstencil_1_1CounterID.html#a50e0a4c3ed457a07161005e36b63380d',1,'stencil::CounterID::operator--(int)']]],
+  ['operator_3d_3d_51',['operator==',['../classstencil_1_1GenericID.html#a56f29c35be0f87a5eb18cd55d4d35873',1,'stencil::GenericID']]],
+  ['operator_5b_5d_52',['operator[]',['../classstencil_1_1Stencil.html#a6b9376e079e826068c7ccb32ddd0e11b',1,'stencil::Stencil::operator[](ID id) const'],['../classstencil_1_1Stencil.html#a1f29fe164893f3e11890ae864198d968',1,'stencil::Stencil::operator[](ID id)'],['../classstencil_1_1Stencil.html#aebdc61a170b4c0078d737105e5196ff0',1,'stencil::Stencil::operator[](UID id) const'],['../classstencil_1_1Stencil.html#ac0b8d463c8af2f0cdc706cc912a1f1b2',1,'stencil::Stencil::operator[](UID id)'],['../classstencil_1_1tiling_1_1Tile.html#ad107f81cbbcaa71bbafc7ba4dcee940c',1,'stencil::tiling::Tile::operator[]()']]]
 ];

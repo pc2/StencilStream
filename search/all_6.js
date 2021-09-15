@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['make_5foutput_5fgrid_31',['make_output_grid',['../classstencil_1_1Grid.html#a185b1b8d02edfe870a457a8e4e3cf8e7',1,'stencil::Grid']]]
+  ['halo_5fradius_34',['halo_radius',['../classstencil_1_1StencilExecutor.html#a026905e54000d91fcd5a181492481252',1,'stencil::StencilExecutor']]]
 ];

@@ -1,0 +1,4 @@
+<map id="stencil::SingleQueueExecutor&lt; T, stencil_radius, TransFunc &gt;" name="stencil::SingleQueueExecutor&lt; T, stencil_radius, TransFunc &gt;">
+<area shape="rect" id="node1" title="An abstract executor with common code for executors that work with a single SYCL queue." alt="" coords="5,95,213,136"/>
+<area shape="rect" id="node2" href="$classstencil_1_1AbstractExecutor.html" title="Base class for all execution managers." alt="" coords="5,5,213,47"/>
+</map>

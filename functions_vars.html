@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">StencilStream
-   &#160;<span id="projectnumber">v2.0.0</span>
+   &#160;<span id="projectnumber">v2.1.0</span>
    </div>
    <div id="projectbrief">Generic Stencil Simulation Library for FPGAs.</div>
   </td>
@@ -65,7 +65,10 @@ $(function() {
 <div class="contents">
 &#160;<ul>
 <li>all_parts
-: <a class="el" href="classstencil_1_1Tile.html#aa19f7edcbd6f9e4bbbeaa95080334a58">stencil::Tile&lt; T, width, height, halo_radius, burst_length &gt;</a>
+: <a class="el" href="classstencil_1_1tiling_1_1Tile.html#a7a58d8e724482f7bf74b268f9dcb0c8b">stencil::tiling::Tile&lt; T, width, height, halo_radius, burst_length &gt;</a>
+</li>
+<li>burst_length
+: <a class="el" href="classstencil_1_1StencilExecutor.html#aa0f873043f88eac3fb7d05361e01ee59">stencil::StencilExecutor&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;</a>
 </li>
 <li>c
 : <a class="el" href="classstencil_1_1GenericID.html#a3bfb826d3051950dac5ae91e9871b0d2">stencil::GenericID&lt; T &gt;</a>
@@ -79,23 +82,35 @@ $(function() {
 <li>grid_range
 : <a class="el" href="classstencil_1_1Stencil.html#a0c959054b0f45795d564b9f24bf8dac1">stencil::Stencil&lt; T, radius &gt;</a>
 </li>
+<li>halo_radius
+: <a class="el" href="classstencil_1_1StencilExecutor.html#a026905e54000d91fcd5a181492481252">stencil::StencilExecutor&lt; T, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height, burst_size &gt;</a>
+</li>
 <li>id
 : <a class="el" href="classstencil_1_1Stencil.html#a785936fff224b3d16b0039d07540ddc9">stencil::Stencil&lt; T, radius &gt;</a>
 </li>
 <li>input_tile_height
-: <a class="el" href="classstencil_1_1ExecutionKernel.html#a507df120323433fc90be06655c42f07e">stencil::ExecutionKernel&lt; TransFunc, T, stencil_radius, pipeline_length, output_tile_width, output_tile_height, in_pipe, out_pipe &gt;</a>
+: <a class="el" href="classstencil_1_1tiling_1_1ExecutionKernel.html#a2377e10913dbf5816e8c13982e7851a9">stencil::tiling::ExecutionKernel&lt; TransFunc, T, stencil_radius, pipeline_length, output_tile_width, output_tile_height, in_pipe, out_pipe &gt;</a>
 </li>
 <li>input_tile_width
-: <a class="el" href="classstencil_1_1ExecutionKernel.html#abb86ead22063efe4b67ecca08faf5e43">stencil::ExecutionKernel&lt; TransFunc, T, stencil_radius, pipeline_length, output_tile_width, output_tile_height, in_pipe, out_pipe &gt;</a>
+: <a class="el" href="classstencil_1_1tiling_1_1ExecutionKernel.html#a9fe22a30771bafbfa5b81083de187da3">stencil::tiling::ExecutionKernel&lt; TransFunc, T, stencil_radius, pipeline_length, output_tile_width, output_tile_height, in_pipe, out_pipe &gt;</a>
 </li>
 <li>n_buffers
-: <a class="el" href="classstencil_1_1IOKernel.html#a8bdece85037fda6a4c7e61c2cf5769a0">stencil::IOKernel&lt; T, halo_height, core_height, burst_length, pipe, n_halo_height_buffers, access_mode, access_target &gt;</a>
+: <a class="el" href="classstencil_1_1tiling_1_1IOKernel.html#a2735af2c1f310b4ec49e5d6dc51f3cb8">stencil::tiling::IOKernel&lt; T, halo_height, core_height, burst_length, pipe, n_halo_height_buffers, access_mode, access_target &gt;</a>
+</li>
+<li>n_cells
+: <a class="el" href="classstencil_1_1monotile_1_1ExecutionKernel.html#ab4b0ce881ab5d14630450901a824477b">stencil::monotile::ExecutionKernel&lt; TransFunc, T, stencil_radius, pipeline_length, tile_width, tile_height, in_pipe, out_pipe &gt;</a>
 </li>
 <li>n_input_cells
-: <a class="el" href="classstencil_1_1ExecutionKernel.html#ab3da80b930132d7cf013f1f7bc8420d1">stencil::ExecutionKernel&lt; TransFunc, T, stencil_radius, pipeline_length, output_tile_width, output_tile_height, in_pipe, out_pipe &gt;</a>
+: <a class="el" href="classstencil_1_1tiling_1_1ExecutionKernel.html#a1904ba41eaf9d89523f158943ca246b6">stencil::tiling::ExecutionKernel&lt; TransFunc, T, stencil_radius, pipeline_length, output_tile_width, output_tile_height, in_pipe, out_pipe &gt;</a>
+</li>
+<li>n_iterations
+: <a class="el" href="classstencil_1_1monotile_1_1ExecutionKernel.html#a8504c0bedbd839c775d986f6794ce1a4">stencil::monotile::ExecutionKernel&lt; TransFunc, T, stencil_radius, pipeline_length, tile_width, tile_height, in_pipe, out_pipe &gt;</a>
 </li>
 <li>n_rows
-: <a class="el" href="classstencil_1_1IOKernel.html#a28404970fdb4ab5c356dd0fb1a2a48ff">stencil::IOKernel&lt; T, halo_height, core_height, burst_length, pipe, n_halo_height_buffers, access_mode, access_target &gt;</a>
+: <a class="el" href="classstencil_1_1tiling_1_1IOKernel.html#a47f7730160f6c0c419f0cdb8f9a703fa">stencil::tiling::IOKernel&lt; T, halo_height, core_height, burst_length, pipe, n_halo_height_buffers, access_mode, access_target &gt;</a>
+</li>
+<li>pipeline_latency
+: <a class="el" href="classstencil_1_1monotile_1_1ExecutionKernel.html#a57f7a878fbc7aac2258b933e735b0426">stencil::monotile::ExecutionKernel&lt; TransFunc, T, stencil_radius, pipeline_length, tile_width, tile_height, in_pipe, out_pipe &gt;</a>
 </li>
 <li>r
 : <a class="el" href="classstencil_1_1GenericID.html#aec43f7ef1ae03330b4cd5c6d09138e60">stencil::GenericID&lt; T &gt;</a>
@@ -103,8 +118,12 @@ $(function() {
 <li>stage
 : <a class="el" href="classstencil_1_1Stencil.html#a8093140b6072d63855f7853a34b12991">stencil::Stencil&lt; T, radius &gt;</a>
 </li>
+<li>stage_latency
+: <a class="el" href="classstencil_1_1monotile_1_1ExecutionKernel.html#ae9e93836eca1cced46de68a6c90b1031">stencil::monotile::ExecutionKernel&lt; TransFunc, T, stencil_radius, pipeline_length, tile_width, tile_height, in_pipe, out_pipe &gt;</a>
+</li>
 <li>stencil_diameter
-: <a class="el" href="classstencil_1_1ExecutionKernel.html#a47e5d209000fb8ff22b26fa83f6d998b">stencil::ExecutionKernel&lt; TransFunc, T, stencil_radius, pipeline_length, output_tile_width, output_tile_height, in_pipe, out_pipe &gt;</a>
+: <a class="el" href="classstencil_1_1monotile_1_1ExecutionKernel.html#aa7e66d629801d32e82dec3e9101bb339">stencil::monotile::ExecutionKernel&lt; TransFunc, T, stencil_radius, pipeline_length, tile_width, tile_height, in_pipe, out_pipe &gt;</a>
+, <a class="el" href="classstencil_1_1tiling_1_1ExecutionKernel.html#ad81826faee1b9091bd4944a34300b155">stencil::tiling::ExecutionKernel&lt; TransFunc, T, stencil_radius, pipeline_length, output_tile_width, output_tile_height, in_pipe, out_pipe &gt;</a>
 </li>
 </ul>
 </div><!-- contents -->
