@@ -1,11 +1,21 @@
 /*
- * Copyright © 2020-2021 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn University
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * Copyright © 2020-2021 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
+ * University
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the “Software”), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
 #include <CL/sycl/INTEL/fpga_extensions.hpp>
@@ -46,12 +56,7 @@ constexpr float sqrt_2 = 1.4142135623730951;
 constexpr uindex_t tile_height = 512;
 constexpr uindex_t tile_width = 512;
 constexpr uindex_t stencil_radius = 1;
-
-#ifdef HARDWARE
-constexpr uindex_t pipeline_length = 128;
-#else
 constexpr uindex_t pipeline_length = 16;
-#endif
 
 std::string description = "\
 This application simulates a nano-photonic disk cavity.\n\
@@ -83,98 +88,79 @@ Operation Parameters:\n\
 -i <float>: Write a snapshot of the magnetic field to the output directory every x multiples of tau (default: disabled).\n\
 ";
 
-struct FDTDCell
-{
+struct FDTDCell {
     float ex, ey, hz, hz_sum, distance, pad0, pad1, pad2;
 };
 
 // The coefficients that describe the properties of a material.
-struct Material
-{
+struct Material {
     float ca;
     float cb;
     float da;
     float db;
 };
 
-struct Parameters
-{
-    Parameters(int argc, char **argv) : t_cutoff_factor(7.0),
-    t_detect_factor(14.0),
-    t_max_factor(15.0),
-    frequency(120e12),
-    t_0_factor(3.0),
-    disk_radius(800e-9),
-    dx(10e-9),
-    tau(100e-15),
-    out_dir("."),
-    interval_factor(std::nullopt)
-    {
+struct Parameters {
+    Parameters(int argc, char **argv)
+        : t_cutoff_factor(7.0), t_detect_factor(14.0), t_max_factor(15.0), frequency(120e12),
+          t_0_factor(3.0), disk_radius(800e-9), dx(10e-9), tau(100e-15), out_dir("."),
+          interval_factor(std::nullopt) {
         int c;
-        while ((c = getopt(argc, argv, "hc:d:e:f:p:r:s:t:o:i:")) != -1)
-        {
-            switch (c)
-            {
+        while ((c = getopt(argc, argv, "hc:d:e:f:p:r:s:t:o:i:")) != -1) {
+            switch (c) {
             case 'c':
                 t_cutoff_factor = stof(optarg);
-                if (t_cutoff_factor < 0.0)
-                {
+                if (t_cutoff_factor < 0.0) {
                     cerr << "Error: t_cutoff may not be negative!" << std::endl;
                     exit(1);
                 }
                 break;
             case 'd':
                 t_detect_factor = stof(optarg);
-                if (t_detect_factor < 0.0)
-                {
+                if (t_detect_factor < 0.0) {
                     cerr << "Error: t_detect may not be negative!" << std::endl;
                     exit(1);
                 }
                 break;
             case 'e':
                 t_max_factor = stof(optarg);
-                if (t_max_factor < 0.0)
-                {
+                if (t_max_factor < 0.0) {
                     cerr << "Error: t_max may not not be negative!" << std::endl;
                     exit(1);
                 }
                 break;
             case 'f':
                 frequency = stof(optarg);
-                if (frequency < 0.0)
-                {
-                    cerr << "Error: The frequency of the source wave may not be negative" << std::endl;
+                if (frequency < 0.0) {
+                    cerr << "Error: The frequency of the source wave may not be negative"
+                         << std::endl;
                     exit(1);
                 }
                 break;
             case 'p':
                 t_0_factor = stof(optarg);
-                if (t_0_factor < 0.0)
-                {
+                if (t_0_factor < 0.0) {
                     cerr << "Error: The phase of the source wave may not be negative" << std::endl;
                     exit(1);
                 }
                 break;
             case 'r':
                 disk_radius = stof(optarg);
-                if (disk_radius < 0.0)
-                {
+                if (disk_radius < 0.0) {
                     cerr << "Error: The disk radius wave may not be negative" << std::endl;
                     exit(1);
                 }
                 break;
             case 's':
                 dx = stof(optarg);
-                if (dx < 0.0)
-                {
+                if (dx < 0.0) {
                     cerr << "Error: The spatial resolution may not be negative" << std::endl;
                     exit(1);
                 }
                 break;
             case 't':
                 tau = stof(optarg);
-                if (tau < 0.0)
-                {
+                if (tau < 0.0) {
                     cerr << "Error: Tau may not be negative" << std::endl;
                     exit(1);
                 }
@@ -214,81 +200,57 @@ struct Parameters
 
     std::optional<float> interval_factor;
 
-    float t_cutoff() const
-    {
-        return t_cutoff_factor * tau;
-    }
+    float t_cutoff() const { return t_cutoff_factor * tau; }
 
-    float t_detect() const
-    {
-        return t_detect_factor * tau;
-    }
+    float t_detect() const { return t_detect_factor * tau; }
 
-    float t_max() const
-    {
-        return t_max_factor * tau;
-    }
+    float t_max() const { return t_max_factor * tau; }
 
-    float t_0() const
-    {
-        return t_0_factor * tau;
-    }
+    float t_0() const { return t_0_factor * tau; }
 
-    float dt() const
-    {
-        return (dx / float(c0 * sqrt_2)) * 0.99;
-    }
+    float dt() const { return (dx / float(c0 * sqrt_2)) * 0.99; }
 
-    uindex_t n_timesteps() const
-    {
-        return 2 * uindex_t(std::ceil(t_max() / dt()));
-    }
+    uindex_t n_timesteps() const { return 2 * uindex_t(std::ceil(t_max() / dt())); }
 
     // Omega (?) in Hz.
-    float omega() const
-    {
-        return 2.0 * M_PI * frequency;
-    }
+    float omega() const { return 2.0 * M_PI * frequency; }
 
-    cl::sycl::range<2> grid_range() const
-    {
+    cl::sycl::range<2> grid_range() const {
         uindex_t width = uindex_t(std::ceil((2 * disk_radius / dx) + 2));
         uindex_t height = width;
         return cl::sycl::range<2>(width, height);
     }
 
-    Material vacuum() const
-    {
+    Material vacuum() const {
         const Material vacuum{
-            (1 - (sigma * dt()) / (2 * eps_0 * eps_r)) / (1 + (sigma * dt()) / (2 * eps_0 * eps_r)), // ca
-            (dt() / (eps_0 * eps_r * dx)) / (1 + (sigma * dt()) / (2 * eps_0 * eps_r)),              // cb
-            (1 - (sigma * dt()) / (2 * mu_0)) / (1 + (sigma * dt()) / (2 * mu_0)),                   // da
-            (dt() / (mu_0 * dx)) / (1 + (sigma * dt()) / (2 * mu_0)),                                // db
+            (1 - (sigma * dt()) / (2 * eps_0 * eps_r)) /
+                (1 + (sigma * dt()) / (2 * eps_0 * eps_r)),                             // ca
+            (dt() / (eps_0 * eps_r * dx)) / (1 + (sigma * dt()) / (2 * eps_0 * eps_r)), // cb
+            (1 - (sigma * dt()) / (2 * mu_0)) / (1 + (sigma * dt()) / (2 * mu_0)),      // da
+            (dt() / (mu_0 * dx)) / (1 + (sigma * dt()) / (2 * mu_0)),                   // db
         };
         return vacuum;
     }
 
-    std::optional<uindex_t> interval() const
-    {
-        if (interval_factor.has_value())
-        {
+    std::optional<uindex_t> interval() const {
+        if (interval_factor.has_value()) {
             return uindex_t(std::ceil((*interval_factor * tau) / dt()));
-        }
-        else
-        {
+        } else {
             return std::nullopt;
         }
     }
 
-    void print_configuration() const
-    {
+    void print_configuration() const {
         std::cout << "Simulation Configuration:" << std::endl;
         std::cout << std::endl;
         std::cout << "# Timing" << std::endl;
         std::cout << "tau           = " << tau << " s" << std::endl;
-        std::cout << "t_cutoff      = " << t_cutoff_factor << " tau = " << t_cutoff() << " s" << std::endl;
-        std::cout << "t_detect      = " << t_detect_factor << " tau = " << t_detect() << " s" << std::endl;
-        std::cout << "t_max         = " << t_max_factor << " tau = " << t_max() << " s" << std::endl;
+        std::cout << "t_cutoff      = " << t_cutoff_factor << " tau = " << t_cutoff() << " s"
+                  << std::endl;
+        std::cout << "t_detect      = " << t_detect_factor << " tau = " << t_detect() << " s"
+                  << std::endl;
+        std::cout << "t_max         = " << t_max_factor << " tau = " << t_max() << " s"
+                  << std::endl;
         std::cout << std::endl;
         std::cout << "# Source Wave" << std::endl;
         std::cout << "phase         = " << t_0_factor << " tau = " << t_0() << " s" << std::endl;

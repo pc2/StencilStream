@@ -45,26 +45,22 @@ Next are some important definitions: The cell type, the value of cells in the gr
 This is everything we need to define the transition function, so let's do it now:
 
 ``` C++
-auto conway = [](stencil::Stencil<Cell, stencil_radius> const &stencil, stencil::StencilInfo const &info)
-{
+auto conway = [](stencil::Stencil<Cell, stencil_radius> const &stencil) {
 ``` 
 
 As you can see, a transition function is just an invocable object. In this case, we have chosen a lambda expression, but more complicated applications may define their transition function as a class with an `operator()` method.
 
-The first argument is the stencil buffer itself and the second argument is a struct with useful information about the current invocation, like the coordinates of the central cell of the stencil buffer. This is the cell we are going to replace.
+The only argument is the stencil buffer itself. It also contains useful information about the current invocation, like the coordinates of the central cell of the stencil buffer. This is the cell we are going to replace.
 
 ``` C++
-    stencil::ID idx = info.center_cell_id;
+    stencil::ID idx = stencil.id;
 
     uint8_t alive_neighbours = 0;
 #pragma unroll
-    for (stencil::index_t c = -stencil_radius; c <= stencil::index_t(stencil_radius); c++)
-    {
+    for (stencil::index_t c = -stencil_radius; c <= stencil::index_t(stencil_radius); c++) {
 #pragma unroll
-        for (stencil::index_t r = -stencil_radius; r <= stencil::index_t(stencil_radius); r++)
-        {
-            if (stencil[stencil::ID(c, r)] && !(c == 0 && r == 0))
-            {
+        for (stencil::index_t r = -stencil_radius; r <= stencil::index_t(stencil_radius); r++) {
+            if (stencil[stencil::ID(c, r)] && !(c == 0 && r == 0)) {
                 alive_neighbours += 1;
             }
         }
@@ -74,12 +70,9 @@ The first argument is the stencil buffer itself and the second argument is a str
 First, we count the living neighbors since their numbers decides the fate of our cell. The `for`-loops for that are completely unrolled, which means that these evaluations will be carried out in parallel.
 
 ``` C++
-    if (stencil[stencil::ID(0, 0)])
-    {
+    if (stencil[stencil::ID(0, 0)]) {
         return alive_neighbours == 2 || alive_neighbours == 3;
-    }
-    else
-    {
+    } else {
         return alive_neighbours == 3;
     }
 };
@@ -88,15 +81,12 @@ First, we count the living neighbors since their numbers decides the fate of our
 Now we know how many of our neighbors are alive and can therefore return the new cell value according to [the rules of the game](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life#Rules).
 
 ``` C++
-cl::sycl::buffer<Cell, 2> read(stencil::uindex_t width, stencil::uindex_t height)
-{
+cl::sycl::buffer<Cell, 2> read(stencil::uindex_t width, stencil::uindex_t height) {
     cl::sycl::buffer<Cell, 2> input_buffer(cl::sycl::range<2>(width, height));
     auto buffer_ac = input_buffer.get_access<cl::sycl::access::mode::write>();
 
-    for (stencil::uindex_t r = 0; r < height; r++)
-    {
-        for (stencil::uindex_t c = 0; c < width; c++)
-        {
+    for (stencil::uindex_t r = 0; r < height; r++) {
+        for (stencil::uindex_t c = 0; c < width; c++) {
             char Cell;
             std::cin >> Cell;
             assert(Cell == 'X' || Cell == '.');
@@ -107,23 +97,17 @@ cl::sycl::buffer<Cell, 2> read(stencil::uindex_t width, stencil::uindex_t height
     return input_buffer;
 }
 
-void write(cl::sycl::buffer<Cell, 2> output_buffer)
-{
+void write(cl::sycl::buffer<Cell, 2> output_buffer) {
     auto buffer_ac = output_buffer.get_access<cl::sycl::access::mode::read>();
 
     stencil::uindex_t width = output_buffer.get_range()[0];
     stencil::uindex_t height = output_buffer.get_range()[1];
 
-    for (stencil::uindex_t r = 0; r < height; r++)
-    {
-        for (stencil::uindex_t c = 0; c < width; c++)
-        {
-            if (buffer_ac[c][r])
-            {
+    for (stencil::uindex_t r = 0; r < height; r++) {
+        for (stencil::uindex_t c = 0; c < width; c++) {
+            if (buffer_ac[c][r]) {
                 std::cout << "X";
-            }
-            else
-            {
+            } else {
                 std::cout << ".";
             }
         }
@@ -132,15 +116,13 @@ void write(cl::sycl::buffer<Cell, 2> output_buffer)
 }
 ```
 
-The next part is some boilerplate code to read the input from stdin and write the output to stdout. Nothing to spectacular.
+The next part is some boilerplate code to read the input from stdin and write the output to stdout. Nothing too spectacular.
 
 The only thing left is to run the calculations. We do this like this:
 
 ``` C++
-int main(int argc, char **argv)
-{
-    if (argc != 4)
-    {
+int main(int argc, char **argv) {
+    if (argc != 4) {
         std::cerr << "Usage: " << argv[0] << " <width> <height> <n_generations>" << std::endl;
         return 1;
     }
@@ -156,7 +138,7 @@ int main(int argc, char **argv)
     executor.set_input(grid_buffer);
 ```
 
-After checking and parsing the arguments, we read the input data and initialize the executor. This is the central API facade to control the calculations. In it's simplest form, it only requires cell type, the radius of the stencil and the type of the transition function as template arguments. It has more template arguments, but these are performance parameters. We are looking into them later. The actual constructor arguments are only the initial data, the halo value and an instance of the transition function.
+After checking and parsing the arguments, we read the input data. Then, we pick and initialize an executor. Executors are the user-facing facades of StencilStream and the library offers different executors that are optimized for different scenarios. In this case, we pick the `StencilExecutor`, which is the most universal executor. The static operation and performance parameters are defined as template parameters to an executor. In it's simplest form, it only requires our cell type, the radius of the stencil and the type of the transition function. 
 
 ``` C++
 #ifdef HARDWARE
@@ -199,15 +181,17 @@ ifdef AOCL_BOARD_PACKAGE_ROOT
 endif
 
 EMU_ARGS = $(ARGS)
-HW_ARGS = $(ARGS) -DHARDWARE -Xshardware 
+HW_ARGS = $(ARGS) -DHARDWARE -Xshardware
 
-conway_emu: conway.cpp Makefile
+RESOURCES = conway.cpp $(wildcard StencilStream/*) Makefile
+
+conway_emu: $(RESOURCES)
 	$(CC) $(EMU_ARGS) conway.cpp -o conway_emu
 
-conway_hw: conway.cpp Makefile
+conway_hw: $(RESOURCES)
 	$(CC) $(HW_ARGS) conway.cpp -o conway_hw
 
-conway_hw.report.tar.gz: conway.cpp Makefile
+conway_hw.report.tar.gz: $(RESOURCES)
 	rm -f conway_hw
 	$(CC) $(HW_ARGS) -fsycl-link conway.cpp -o conway_hw
 	tar -caf conway_hw.report.tar.gz conway_hw.prj/reports

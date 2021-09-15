@@ -18,19 +18,37 @@ ifdef AOCL_BOARD_PACKAGE_ROOT
 	ARGS += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
 endif
 
-EMU_ARGS = $(ARGS)
-HW_ARGS = $(ARGS) -DHARDWARE -Xshardware 
+EMU =
+HW = -DHARDWARE -Xshardware 
+MONOTILE = -DMONOTILE
+TILING =
 
-hotspot_emu: hotspot.cpp Makefile
-	$(CC) $(EMU_ARGS) hotspot.cpp -o hotspot_emu
+SOURCES = hotspot.cpp
+RESOURCES = $(wildcard StencilStream/*) Makefile
 
-hotspot_hw: hotspot.cpp Makefile
-	$(CC) $(HW_ARGS) hotspot.cpp -o hotspot_hw
+all: hotspot_mono_emu hotspot_tiling_emu hotspot_mono_hw hotspot_tiling_hw hotspot_rodinia
 
-hotspot_hw.report.tar.gz: hotspot.cpp Makefile
-	rm -f hotspot_hw
-	$(CC) $(HW_ARGS) -fsycl-link hotspot.cpp -o hotspot_hw
-	tar -caf hotspot_hw.report.tar.gz hotspot_hw.prj/reports
+hotspot_mono_emu: $(SOURCES) $(RESOURCES)
+	$(CC) $(ARGS) $(MONOTILE) $(EMU) $(SOURCES) -o hotspot_mono_emu
+
+hotspot_tiling_emu: $(SOURCES) $(RESOURCES)
+	$(CC) $(ARGS) $(TILING) $(EMU) $(SOURCES) -o hotspot_tiling_emu
+
+hotspot_mono_hw: $(SOURCES) $(RESOURCES)
+	$(CC) $(ARGS) $(MONOTILE) $(HW) $(SOURCES) -o hotspot_mono_hw
+
+hotspot_mono_hw.report.tar.gz: $(SOURCES) $(RESOURCES)
+	rm -f hotspot_mono_hw
+	$(CC) $(ARGS) $(MONOTILE) $(HW) -fsycl-link $(SOURCES) -o hotspot_mono_hw
+	tar -caf hotspot_mono_hw.report.tar.gz hotspot_mono_hw.prj/reports
+
+hotspot_tiling_hw: $(SOURCES) $(RESOURCES)
+	$(CC) $(ARGS) $(TILING) $(HW) $(SOURCES) -o hotspot_tiling_hw
+
+hotspot_tiling_hw.report.tar.gz: $(SOURCES) $(RESOURCES)
+	rm -f hotspot_tiling_hw
+	$(CC) $(ARGS) $(TILING) $(HW) -fsycl-link $(SOURCES) -o hotspot_tiling_hw
+	tar -caf hotspot_tiling_hw.report.tar.gz hotspot_tiling_hw.prj/reports
 
 hotspot_rodinia: Makefile
 	./scripts/build_rodinia.sh

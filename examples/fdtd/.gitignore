@@ -1,6 +1,5 @@
 # executables
-fdtd_emu
-fdtd_hw
+fdtd_*
 
 # Output
 *.csv

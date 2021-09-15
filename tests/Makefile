@@ -8,7 +8,7 @@
 CC = dpcpp
 STENCIL_PATH = ../
 
-ARGS = -std=c++17 -g -I$(STENCIL_PATH) -fintelfpga -DSTENCIL_INDEX_WIDTH=32
+ARGS = -std=c++17 -g -I$(STENCIL_PATH) -Isrc/ -fintelfpga -DSTENCIL_INDEX_WIDTH=32
 
 ifdef OPTIMIZE
 	ARGS += -O3
@@ -19,7 +19,8 @@ ifdef EBROOTGCC
 endif
 
 UNIT_ARGS = $(ARGS)
-UNIT_OBJECTS = $(patsubst %.cpp,%.o,$(wildcard src/units/*.cpp))
+UNIT_SOURCES = $(wildcard src/units/*.cpp src/units/*/*.cpp)
+UNIT_OBJECTS = $(patsubst %.cpp,%.o,$(UNIT_SOURCES))
 RESOURCES = src/res/*.hpp ../StencilStream/* Makefile
 
 SYNTH_ARGS = $(ARGS) -Xsv

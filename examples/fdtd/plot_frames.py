@@ -16,8 +16,11 @@ assert(output_dir.is_dir())
 
 def plot_frame(path):
     with open(path) as frame:
-        array = np.asarray([[float(cell) for cell in row] for row in csv.reader(frame)], dtype=np.float32)
+        array = np.asarray([[abs(float(cell)) for cell in row] for row in csv.reader(frame)], dtype=np.float32)
     pyplot.pcolormesh(array)
+    ax = pyplot.gca()
+    ax.set_ylim(ax.get_ylim()[::-1])
+    ax.xaxis.tick_top()
     path = path.with_suffix(".png")
     pyplot.savefig(path, format="png")
 

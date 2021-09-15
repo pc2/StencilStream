@@ -19,15 +19,17 @@ ifdef AOCL_BOARD_PACKAGE_ROOT
 endif
 
 EMU_ARGS = $(ARGS)
-HW_ARGS = $(ARGS) -DHARDWARE -Xshardware 
+HW_ARGS = $(ARGS) -DHARDWARE -Xshardware
 
-conway_emu: conway.cpp Makefile
+RESOURCES = conway.cpp $(wildcard StencilStream/*) Makefile
+
+conway_emu: $(RESOURCES)
 	$(CC) $(EMU_ARGS) conway.cpp -o conway_emu
 
-conway_hw: conway.cpp Makefile
+conway_hw: $(RESOURCES)
 	$(CC) $(HW_ARGS) conway.cpp -o conway_hw
 
-conway_hw.report.tar.gz: conway.cpp Makefile
+conway_hw.report.tar.gz: $(RESOURCES)
 	rm -f conway_hw
 	$(CC) $(HW_ARGS) -fsycl-link conway.cpp -o conway_hw
 	tar -caf conway_hw.report.tar.gz conway_hw.prj/reports
