@@ -21,7 +21,7 @@ endif
 UNIT_ARGS = $(ARGS)
 UNIT_SOURCES = $(wildcard src/units/*.cpp src/units/*/*.cpp)
 UNIT_OBJECTS = $(patsubst %.cpp,%.o,$(UNIT_SOURCES))
-RESOURCES = src/res/*.hpp ../StencilStream/* Makefile
+RESOURCES = src/res/*.hpp ../StencilStream/* ../StencilStream/*/* Makefile
 
 SYNTH_ARGS = $(ARGS) -Xsv
 
