@@ -54,9 +54,9 @@ const uindex_t tile_height = 1024;
 const uindex_t burst_size = 1024;
 
 #ifdef HARDWARE
-using selector = INTEL::fpga_selector;
+using selector = ext::intel::fpga_selector;
 #else
-using selector = INTEL::fpga_emulator_selector;
+using selector = ext::intel::fpga_emulator_selector;
 #endif
 
 using Cell = vec<FLOAT, 2>;

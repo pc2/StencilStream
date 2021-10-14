@@ -8,25 +8,25 @@
 CC = dpcpp
 STENCIL_STREAM_PATH = ./
 
-ARGS = -fintelfpga -Xsv -Xsprofile -std=c++17 -I$(STENCIL_STREAM_PATH) -O3
+ARGS = -fintelfpga -std=c++17 -I$(STENCIL_STREAM_PATH) -O3
 
 ifdef EBROOTGCC
 	ARGS += --gcc-toolchain=$(EBROOTGCC)
 endif
 
-ifdef AOCL_BOARD_PACKAGE_ROOT
-	ARGS += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
-endif
-
 EMU =
-HW = -DHARDWARE -Xshardware 
+HW = -DHARDWARE -Xshardware -Xsv -Xsprofile 
 MONOTILE = -DMONOTILE
 TILING =
+
+ifdef AOCL_BOARD_PACKAGE_ROOT
+	HW += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
+endif
 
 SOURCES = hotspot.cpp
 RESOURCES = $(wildcard StencilStream/*) Makefile
 
-all: hotspot_mono_emu hotspot_tiling_emu hotspot_mono_hw hotspot_tiling_hw hotspot_rodinia
+all: hotspot_mono_emu hotspot_tiling_emu hotspot_rodinia hotspot_mono_hw hotspot_tiling_hw
 
 hotspot_mono_emu: $(SOURCES) $(RESOURCES)
 	$(CC) $(ARGS) $(MONOTILE) $(EMU) $(SOURCES) -o hotspot_mono_emu

@@ -133,7 +133,7 @@ class SingleQueueExecutor : public AbstractExecutor<T, stencil_radius, TransFunc
      * \param runtime_analysis Enable event-level runtime analysis.
      */
     void select_emulator(bool runtime_analysis) {
-        this->queue = cl::sycl::queue(cl::sycl::INTEL::fpga_emulator_selector(),
+        this->queue = cl::sycl::queue(cl::sycl::ext::intel::fpga_emulator_selector(),
                                       get_queue_properties(runtime_analysis));
     }
 
@@ -147,7 +147,7 @@ class SingleQueueExecutor : public AbstractExecutor<T, stencil_radius, TransFunc
      * \param runtime_analysis Enable event-level runtime analysis.
      */
     void select_fpga(bool runtime_analysis) {
-        this->queue = cl::sycl::queue(cl::sycl::INTEL::fpga_selector(),
+        this->queue = cl::sycl::queue(cl::sycl::ext::intel::fpga_selector(),
                                       get_queue_properties(runtime_analysis));
     }
 

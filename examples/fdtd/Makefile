@@ -9,20 +9,19 @@ CC = dpcpp
 STENCIL_STREAM_PATH = ./
 
 ARGS = -fintelfpga -std=c++17 -DSTENCIL_INDEX_WIDTH=64 -DFDTD_BURST_SIZE=1024 -I$(STENCIL_STREAM_PATH) -O3
-HWARGS =
 
 ifdef EBROOTGCC
 	ARGS += --gcc-toolchain=$(EBROOTGCC)
 endif
 
-ifdef AOCL_BOARD_PACKAGE_ROOT
-	HWARGS += -Xsv -Xsprofile -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
-endif
-
 EMU =
-HW = -DHARDWARE -Xshardware 
+HW = -DHARDWARE -Xshardware -Xsv -Xsprofile 
 MONOTILE = -DMONOTILE
 TILING =
+
+ifdef AOCL_BOARD_PACKAGE_ROOT
+	HW += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
+endif
 
 SOURCES = $(wildcard src/*.cpp)
 RESOURCES = $(wildcard src/*.hpp) $(wildcard StencilStream/*) Makefile
@@ -36,19 +35,19 @@ fdtd_tiling_emu: $(SOURCES) $(RESOURCES)
 	$(CC) $(ARGS) $(TILING) $(EMU) $(SOURCES) -o fdtd_tiling_emu
 
 fdtd_mono_hw: $(SOURCES) $(RESOURCES)
-	$(CC) $(ARGS) $(HWARGS) $(MONOTILE) $(HW) $(SOURCES) -o fdtd_mono_hw
+	$(CC) $(ARGS) $(MONOTILE) $(HW) $(SOURCES) -o fdtd_mono_hw
 
 fdtd_mono_hw.report.tar.gz: $(SOURCES) $(RESOURCES)
 	rm -f fdtd_mono_hw
-	$(CC) $(ARGS) $(HWARGS) $(MONOTILE) $(HW) -fsycl-link $(SOURCES) -o fdtd_mono_hw
+	$(CC) $(ARGS) $(MONOTILE) $(HW) -fsycl-link $(SOURCES) -o fdtd_mono_hw
 	tar -caf fdtd_mono_hw.report.tar.gz fdtd_mono_hw.prj/reports
 
 fdtd_tiling_hw: $(SOURCES) $(RESOURCES)
-	$(CC) $(ARGS) $(HWARGS) $(TILING) $(HW) $(SOURCES) -o fdtd_tiling_hw
+	$(CC) $(ARGS) $(TILING) $(HW) $(SOURCES) -o fdtd_tiling_hw
 
 fdtd_tiling_hw.report.tar.gz: $(SOURCES) $(RESOURCES)
 	rm -f fdtd_tiling_hw
-	$(CC) $(ARGS) $(HWARGS) $(TILING) $(HW) -fsycl-link $(SOURCES) -o fdtd_tiling_hw
+	$(CC) $(ARGS) $(TILING) $(HW) -fsycl-link $(SOURCES) -o fdtd_tiling_hw
 	tar -caf fdtd_tiling_hw.report.tar.gz fdtd_tiling_hw.prj/reports
 
 clean:

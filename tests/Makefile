@@ -23,10 +23,10 @@ UNIT_SOURCES = $(wildcard src/units/*.cpp src/units/*/*.cpp)
 UNIT_OBJECTS = $(patsubst %.cpp,%.o,$(UNIT_SOURCES))
 RESOURCES = src/res/*.hpp ../StencilStream/* ../StencilStream/*/* Makefile
 
-SYNTH_ARGS = $(ARGS) -Xsv
+SYNTH_ARGS = $(ARGS)
 
 unit_test: $(UNIT_OBJECTS) $(RESOURCES)
-	$(CC) $(UNIT_ARGS) -Xsv $(UNIT_OBJECTS) -o unit_test
+	$(CC) $(UNIT_ARGS) $(UNIT_OBJECTS) -o unit_test
 
 src/units/%.o: src/units/%.cpp $(RESOURCES)
 	$(CC) $(UNIT_ARGS) -c $< -o $@
@@ -38,11 +38,11 @@ synthesis_emu: src/synthesis/main.cpp $(RESOURCES)
 	$(CC) $(SYNTH_ARGS) src/synthesis/main.cpp -o synthesis_emu
 
 synthesis_hw: src/synthesis/main.cpp $(RESOURCES)
-	$(CC) $(SYNTH_ARGS) -DHARDWARE -Xshardware src/synthesis/main.cpp -o synthesis_hw
+	$(CC) $(SYNTH_ARGS) -Xsv -DHARDWARE -Xshardware src/synthesis/main.cpp -o synthesis_hw
 
 synthesis_hw.report.tar.gz: src/synthesis/main.cpp $(RESOURCES)
 	rm -f synthesis_hw
-	$(CC) $(SYNTH_ARGS) -DHARDWARE -fsycl-link -Xshardware src/synthesis/main.cpp -o synthesis_hw
+	$(CC) $(SYNTH_ARGS) -Xsv -DHARDWARE -fsycl-link -Xshardware src/synthesis/main.cpp -o synthesis_hw
 	tar -caf synthesis_hw.report.tar.gz synthesis_hw.prj/reports
 
 clean:
