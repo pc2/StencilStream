@@ -292,7 +292,7 @@ class Grid {
                 buffer[4].template get_access<cl::sycl::access::mode::read>(cgh),
             };
 
-            cgh.single_task<class InputKernelLambda>(
+            cgh.single_task<class TilingInputKernel>(
                 [=]() { InputKernel(accessor, buffer_width).read(); });
         });
     }
@@ -310,7 +310,7 @@ class Grid {
                 buffer[2].template get_access<cl::sycl::access::mode::discard_write>(cgh),
             };
 
-            cgh.single_task<class OutputKernelLambda>(
+            cgh.single_task<class TilingOutputKernel>(
                 [=]() { OutputKernel(accessor, buffer_width).write(); });
         });
     }

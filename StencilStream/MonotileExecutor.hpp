@@ -126,9 +126,9 @@ class MonotileExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc
                 auto out_ac =
                     out_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
 
-                cgh.single_task(ExecutionKernelImpl(in_ac, out_ac, this->get_trans_func(),
-                                                    this->get_i_generation(), target_i_generation,
-                                                    this->get_halo_value()));
+                cgh.single_task<class MonotileExecutionKernel>(ExecutionKernelImpl(
+                    in_ac, out_ac, this->get_trans_func(), this->get_i_generation(),
+                    target_i_generation, this->get_halo_value()));
             });
 
             tile_buffer = out_buffer;
