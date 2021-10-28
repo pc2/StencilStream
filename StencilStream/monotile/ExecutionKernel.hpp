@@ -22,7 +22,6 @@
 #include "../Helpers.hpp"
 #include "../Index.hpp"
 #include "../Stencil.hpp"
-#include <CL/sycl/accessor.hpp>
 #include <optional>
 
 namespace stencil {
@@ -45,29 +44,14 @@ namespace monotile {
  * factor for a loop. \tparam output_tile_width The number of columns in a grid tile. \tparam
  * output_tile_height The number of rows in a grid tile. \tparam in_pipe The pipe to read from.
  * \tparam out_pipe The pipe to write to.
- * \tparam access_target The target/location were the input and output buffers are stored. The
- * default is `global_buffer`, which is the normal global memory of a SYCL device. If the kernel
- * should is used by the host, the access target should be `host_buffer`.
  */
 template <typename TransFunc, typename T, uindex_t stencil_radius, uindex_t pipeline_length,
-          uindex_t tile_width, uindex_t tile_height,
-          cl::sycl::access::target access_target = cl::sycl::access::target::global_buffer>
+          uindex_t tile_width, uindex_t tile_height, typename in_pipe, typename out_pipe>
 class ExecutionKernel {
   public:
     static_assert(
         std::is_invocable_r<T, TransFunc const, Stencil<T, stencil_radius> const &>::value);
     static_assert(stencil_radius >= 1);
-
-    /**
-     * \brief Type of the input buffer accessor.
-     */
-    using InAccessor = cl::sycl::accessor<T, 2, cl::sycl::access::mode::read, access_target>;
-
-    /**
-     * \brief Type of the output buffer accessor.
-     */
-    using OutAccessor =
-        cl::sycl::accessor<T, 2, cl::sycl::access::mode::discard_write, access_target>;
 
     /**
      * \brief The width and height of the stencil buffer.
@@ -99,46 +83,39 @@ class ExecutionKernel {
     /**
      * \brief Create and configure the execution kernel.
      *
-     * \param in_accessor The grid buffer of the input. The grid width/height is derived from this
-     * accessor; It may not exceed the tile width/height. \param out_accessor The grid buffer of the
-     * output. It has to have the same range as the `in_accessor`. \param trans_func The instance of
-     * the transition function to use. \param i_generation The generation index of the input cells.
+     * \param trans_func The instance of the transition function to use.
+     * \param i_generation The generation index of the input cells.
      * \param n_generations The number of generations to compute. If this number is bigger than
      * `pipeline_length`, only `pipeline_length` generations will be computed.
+     * \param grid_width The number of cell columns in the grid.
+     * \param grid_height The number of cell rows in the grid.
      * \param halo_value The value of cells outside the grid.
      */
-    ExecutionKernel(InAccessor in_accessor, OutAccessor out_accessor, TransFunc trans_func,
-                    uindex_t i_generation, uindex_t n_generations, T halo_value)
-        : in_accessor(in_accessor), out_accessor(out_accessor), trans_func(trans_func),
-          i_generation(i_generation), n_generations(n_generations),
-          grid_width(in_accessor.get_range()[0]), grid_height(in_accessor.get_range()[1]),
-          halo_value(halo_value) {
-#ifndef __SYCL_DEVICE_ONLY__
-        assert(grid_width <= tile_width);
-        assert(grid_height <= tile_height);
-        assert(in_accessor.get_range()[0] == in_accessor.get_range()[0]);
-        assert(out_accessor.get_range()[1] == out_accessor.get_range()[1]);
-#endif
-    }
+    ExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t n_generations,
+                    uindex_t grid_width, uindex_t grid_height, T halo_value)
+        : trans_func(trans_func), i_generation(i_generation), n_generations(n_generations),
+          grid_width(grid_width), grid_height(grid_height), halo_value(halo_value) {}
 
     /**
      * \brief Execute the kernel.
      */
-    [[intel::kernel_args_restrict]] void operator()() const {
-        [[intel::fpga_register]] index_t c[pipeline_length + 1];
-        [[intel::fpga_register]] index_t r[pipeline_length + 1];
+    void operator()() const {
+        [[intel::fpga_register]] index_t c[pipeline_length];
+        [[intel::fpga_register]] index_t r[pipeline_length];
 
         // Initializing (output) column and row counters.
-        c[0] = 0;
-        r[0] = 0;
+        index_t prev_c = 0;
+        index_t prev_r = 0;
 #pragma unroll
-        for (uindex_t i = 1; i < pipeline_length + 1; i++) {
-            c[i] = c[i - 1] - stencil_radius;
-            r[i] = r[i - 1] - stencil_radius;
+        for (uindex_t i = 0; i < pipeline_length; i++) {
+            c[i] = prev_c - stencil_radius;
+            r[i] = prev_r - stencil_radius;
             if (r[i] < index_t(0)) {
                 r[i] += tile_height;
                 c[i] -= 1;
             }
+            prev_c = c[i];
+            prev_r = r[i];
         }
 
         /*
@@ -153,10 +130,10 @@ class ExecutionKernel {
         [[intel::fpga_register]] T stencil_buffer[pipeline_length][stencil_diameter]
                                                  [stencil_diameter];
 
-        for (uindex_t i_iteration = 0; i_iteration < n_iterations; i_iteration++) {
+        for (uindex_t i = 0; i < n_iterations; i++) {
             T value;
-            if (c[0] < index_t(grid_width) && r[0] < index_t(grid_height)) {
-                value = in_accessor[c[0]][r[0]];
+            if (i < n_cells) {
+                value = in_pipe::read();
             } else {
                 value = halo_value;
             }
@@ -179,18 +156,18 @@ class ExecutionKernel {
                     if (cache_c == stencil_diameter - 1) {
                         new_value = value;
                     } else {
-                        new_value = cache[c[stage + 1] & 0b1][r[stage + 1]][stage][cache_c];
+                        new_value = cache[c[stage] & 0b1][r[stage]][stage][cache_c];
                     }
 
                     stencil_buffer[stage][cache_c][stencil_diameter - 1] = new_value;
                     if (cache_c > 0) {
-                        cache[(~c[stage + 1]) & 0b1][r[stage + 1]][stage][cache_c - 1] = new_value;
+                        cache[(~c[stage]) & 0b1][r[stage]][stage][cache_c - 1] = new_value;
                     }
                 }
 
                 if (i_generation + stage < n_generations) {
-                    if (id_in_grid(c[stage + 1], r[stage + 1])) {
-                        Stencil<T, stencil_radius> stencil(ID(c[stage + 1], r[stage + 1]),
+                    if (id_in_grid(c[stage], r[stage])) {
+                        Stencil<T, stencil_radius> stencil(ID(c[stage], r[stage]),
                                                            i_generation + stage, stage,
                                                            UID(grid_width, grid_height));
 
@@ -200,7 +177,7 @@ class ExecutionKernel {
 #pragma unroll
                             for (index_t cell_r = -stencil_radius;
                                  cell_r <= index_t(stencil_radius); cell_r++) {
-                                if (id_in_grid(cell_c + c[stage + 1], cell_r + r[stage + 1])) {
+                                if (id_in_grid(cell_c + c[stage], cell_r + r[stage])) {
                                     stencil[ID(cell_c, cell_r)] =
                                         stencil_buffer[stage][cell_c + stencil_radius]
                                                       [cell_r + stencil_radius];
@@ -217,20 +194,16 @@ class ExecutionKernel {
                 } else {
                     value = stencil_buffer[stage][stencil_radius][stencil_radius];
                 }
-            }
 
-            if (c[pipeline_length] >= index_t(0) && c[pipeline_length] < index_t(grid_width) &&
-                r[pipeline_length] < index_t(grid_height)) {
-                out_accessor[c[pipeline_length]][r[pipeline_length]] = value;
-            }
-
-#pragma unroll
-            for (uindex_t i = 0; i < pipeline_length + 1; i++) {
-                r[i] += 1;
-                if (r[i] == tile_height) {
-                    r[i] = 0;
-                    c[i] += 1;
+                r[stage] += 1;
+                if (r[stage] == tile_height) {
+                    r[stage] = 0;
+                    c[stage] += 1;
                 }
+            }
+
+            if (i >= pipeline_latency) {
+                out_pipe::write(value);
             }
         }
     }
@@ -241,8 +214,6 @@ class ExecutionKernel {
                r < index_t(grid_height);
     }
 
-    InAccessor in_accessor;
-    OutAccessor out_accessor;
     TransFunc trans_func;
     uindex_t i_generation;
     uindex_t n_generations;

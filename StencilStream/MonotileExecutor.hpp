@@ -108,11 +108,15 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
     }
 
     void run(uindex_t n_generations) override {
+        using in_pipe = cl::sycl::pipe<class monotile_in_pipe, T>;
+        using out_pipe = cl::sycl::pipe<class monotile_out_pipe, T>;
         using ExecutionKernelImpl =
             monotile::ExecutionKernel<TransFunc, T, stencil_radius, pipeline_length, tile_width,
-                                      tile_height>;
+                                      tile_height, in_pipe, out_pipe>;
 
-        cl::sycl::queue queue = this->new_queue(true);
+        cl::sycl::queue input_queue = this->new_queue(true);
+        cl::sycl::queue work_queue = this->new_queue(true);
+        cl::sycl::queue output_queue = this->new_queue(true);
 
         uindex_t target_i_generation = this->get_i_generation() + n_generations;
         uindex_t grid_width = tile_buffer.get_range()[0];
@@ -121,14 +125,47 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
         while (this->get_i_generation() < target_i_generation) {
             cl::sycl::buffer<T, 2> out_buffer(tile_buffer.get_range());
 
-            cl::sycl::event computation_event = queue.submit([&](cl::sycl::handler &cgh) {
-                auto in_ac = tile_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
-                auto out_ac =
-                    out_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
+            input_queue.submit([&](cl::sycl::handler &cgh) {
+                auto ac = tile_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
+                T halo_value = this->get_halo_value();
 
-                cgh.single_task(ExecutionKernelImpl(in_ac, out_ac, this->get_trans_func(),
-                                                    this->get_i_generation(), target_i_generation,
-                                                    this->get_halo_value()));
+                cgh.single_task<class MonotileInputKernel>([=]() {
+                    [[intel::loop_coalesce(2)]] for (uindex_t c = 0; c < tile_width; c++) {
+                        for (uindex_t r = 0; r < tile_height; r++) {
+                            T value;
+                            if (c < grid_width && r < grid_height) {
+                                value = ac[c][r];
+                            } else {
+                                value = halo_value;
+                            }
+
+                            in_pipe::write(value);
+                        }
+                    }
+                });
+            });
+
+            cl::sycl::event computation_event = work_queue.submit([&](cl::sycl::handler &cgh) {
+                cgh.single_task<class MonotileExecutionKernel>(ExecutionKernelImpl(
+                    this->get_trans_func(), this->get_i_generation(), target_i_generation,
+                    grid_width, grid_height, this->get_halo_value()));
+            });
+
+            output_queue.submit([&](cl::sycl::handler &cgh) {
+                auto ac =
+                    out_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
+                T halo_value = this->get_halo_value();
+
+                cgh.single_task<class MonotileOutputKernel>([=]() {
+                    [[intel::loop_coalesce(2)]] for (uindex_t c = 0; c < tile_width; c++) {
+                        for (uindex_t r = 0; r < tile_height; r++) {
+                            T value = out_pipe::read();
+                            if (c < grid_width && r < grid_height) {
+                                ac[c][r] = value;
+                            }
+                        }
+                    }
+                });
             });
 
             tile_buffer = out_buffer;

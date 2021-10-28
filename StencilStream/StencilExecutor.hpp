@@ -110,7 +110,7 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
                     input_grid.template submit_tile_input<in_pipe>(input_queue, UID(c, r));
 
                     cl::sycl::event computation_event = work_queue.submit([&](cl::sycl::handler &cgh) {
-                        cgh.single_task(ExecutionKernelImpl(
+                        cgh.single_task<class TilingExecutionKernel>(ExecutionKernelImpl(
                             this->get_trans_func(), this->get_i_generation(), target_i_generation,
                             c * tile_width, r * tile_height, grid_width, grid_height,
                             this->get_halo_value()));
