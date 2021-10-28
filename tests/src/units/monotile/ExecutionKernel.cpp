@@ -29,33 +29,38 @@ using namespace cl::sycl;
 
 void test_monotile_kernel(uindex_t n_generations) {
     using TransFunc = HostTransFunc<stencil_radius>;
+    using in_pipe = HostPipe<class MonotileExecutionKernelInPipeID, Cell>;
+    using out_pipe = HostPipe<class MonotileExecutionKernelOutPipeID, Cell>;
     using TestExecutionKernel =
         monotile::ExecutionKernel<TransFunc, Cell, stencil_radius, pipeline_length, tile_width,
-                                  tile_height, access::target::host_buffer>;
+                                tile_height, in_pipe, out_pipe>;
 
-    buffer<Cell, 2> in_buffer(range<2>(tile_width, tile_height));
-    buffer<Cell, 2> out_buffer(in_buffer.get_range());
+    for (uindex_t c = 0; c < tile_width; c++) {
+        for (uindex_t r = 0; r < tile_height; r++) {
+            in_pipe::write(Cell{index_t(c), index_t(r), 0, CellStatus::Normal});
+        }
+    }
+
+    TestExecutionKernel(TransFunc(), 0, n_generations, tile_width, tile_height, Cell::halo())();
+
+    buffer<Cell, 2> output_buffer(range<2>(tile_width, tile_height));
 
     {
-        auto ac = in_buffer.get_access<access::mode::discard_write>();
+        auto output_buffer_ac = output_buffer.get_access<access::mode::discard_write>();
         for (uindex_t c = 0; c < tile_width; c++) {
             for (uindex_t r = 0; r < tile_height; r++) {
-                ac[c][r] = Cell{index_t(c), index_t(r), 0, CellStatus::Normal};
+                output_buffer_ac[c][r] = out_pipe::read();
             }
         }
     }
 
-    {
-        auto in_ac = in_buffer.get_access<access::mode::read>();
-        auto out_ac = out_buffer.get_access<access::mode::discard_write>();
+    REQUIRE(in_pipe::empty());
+    REQUIRE(out_pipe::empty());
 
-        TestExecutionKernel(in_ac, out_ac, TransFunc(), 0, n_generations, Cell::halo())();
-    }
-
-    auto ac = out_buffer.get_access<access::mode::read>();
-    for (uindex_t c = 0; c < tile_width; c++) {
-        for (uindex_t r = 0; r < tile_height; r++) {
-            Cell cell = ac[c][r];
+    auto output_buffer_ac = output_buffer.get_access<access::mode::read>();
+    for (uindex_t c = 1; c < tile_width; c++) {
+        for (uindex_t r = 1; r < tile_height; r++) {
+            Cell cell = output_buffer_ac[c][r];
             REQUIRE(cell.c == c);
             REQUIRE(cell.r == r);
             REQUIRE(cell.i_generation == n_generations);
@@ -82,31 +87,27 @@ TEST_CASE("monotile::ExecutionKernel: Incomplete Pipeline with i_generation != 0
     using Cell = uint8_t;
     auto trans_func = [](Stencil<Cell, 1> const &stencil) { return stencil[ID(0, 0)] + 1; };
 
-    using TestExecutionKernel = monotile::ExecutionKernel<decltype(trans_func), Cell, 1, 16, 64, 64,
-                                                          access::target::host_buffer>;
+    using in_pipe = HostPipe<class IncompletePipelineInPipeID, Cell>;
+    using out_pipe = HostPipe<class IncompletePipelineOutPipeID, Cell>;
+    using TestExecutionKernel =
+        monotile::ExecutionKernel<decltype(trans_func), Cell, 1, 16, 64, 64, in_pipe, out_pipe>;
 
-    buffer<Cell, 2> in_buffer(range<2>(64, 64));
-    buffer<Cell, 2> out_buffer(range<2>(64, 64));
-    {
-        auto in_ac = in_buffer.get_access<access::mode::discard_write>();
-        for (int c = 0; c < 64; c++) {
-            for (int r = 0; r < 64; r++) {
-                in_ac[c][r] = 0;
-            }
-        }
-    }
-
-    {
-        auto in_ac = in_buffer.get_access<access::mode::read>();
-        auto out_ac = out_buffer.get_access<access::mode::discard_write>();
-        TestExecutionKernel kernel(in_ac, out_ac, trans_func, 16, 20, 0);
-        kernel.operator()();
-    }
-
-    auto out_ac = out_buffer.get_access<access::mode::read>();
     for (int c = 0; c < 64; c++) {
         for (int r = 0; r < 64; r++) {
-            REQUIRE(out_ac[c][r] == 4);
+            in_pipe::write(0);
         }
     }
+
+    TestExecutionKernel kernel(trans_func, 16, 20, 64, 64, 0);
+    kernel.operator()();
+
+    REQUIRE(in_pipe::empty());
+
+    for (int c = 0; c < 64; c++) {
+        for (int r = 0; r < 64; r++) {
+            REQUIRE(out_pipe::read() == 4);
+        }
+    }
+
+    REQUIRE(out_pipe::empty());
 }
