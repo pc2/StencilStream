@@ -127,10 +127,6 @@ int main(int argc, char **argv) {
     }
 #endif
 
-    selector device_selector;
-    cl::sycl::queue fpga_queue(device_selector, exception_handler,
-                               {property::queue::enable_profiling{}});
-
     cl::sycl::buffer<FDTDCell, 2> grid_buffer(parameters.grid_range());
     {
         auto init_ac = grid_buffer.get_access<cl::sycl::access::mode::discard_write>();
@@ -147,7 +143,11 @@ int main(int argc, char **argv) {
 
     Executor executor(FDTDKernel::halo(), FDTDKernel(parameters));
     executor.set_input(grid_buffer);
-    executor.set_queue(fpga_queue);
+#ifdef HARDWARE
+    executor.select_fpga();
+#else
+    executor.select_emulator();
+#endif
 
     uindex_t n_timesteps = parameters.n_timesteps();
 

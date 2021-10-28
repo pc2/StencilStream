@@ -21,7 +21,7 @@
  * SOFTWARE.
  */
 #pragma once
-#include "SingleQueueExecutor.hpp"
+#include "SingleContextExecutor.hpp"
 #include "monotile/ExecutionKernel.hpp"
 
 namespace stencil {
@@ -44,12 +44,12 @@ template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipe
  * \tparam tile_height The number of rows in a tile and maximum number of rows in a grid. Defaults
  * to 1024.
  */
-class MonotileExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc> {
+class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc> {
   public:
     /**
      * \brief Shorthand for the parent class.
      */
-    using Parent = SingleQueueExecutor<T, stencil_radius, TransFunc>;
+    using Parent = SingleContextExecutor<T, stencil_radius, TransFunc>;
 
     /**
      * \brief Create a new executor.
@@ -112,7 +112,7 @@ class MonotileExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc
             monotile::ExecutionKernel<TransFunc, T, stencil_radius, pipeline_length, tile_width,
                                       tile_height>;
 
-        cl::sycl::queue &queue = this->get_queue();
+        cl::sycl::queue queue = this->new_queue(true);
 
         uindex_t target_i_generation = this->get_i_generation() + n_generations;
         uindex_t grid_width = tile_buffer.get_range()[0];
@@ -133,9 +133,7 @@ class MonotileExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc
 
             tile_buffer = out_buffer;
 
-            if (this->is_runtime_analysis_enabled()) {
-                this->get_runtime_sample().add_pass(computation_event);
-            }
+            this->get_runtime_sample().add_pass(computation_event);
 
             this->inc_i_generation(
                 std::min(target_i_generation - this->get_i_generation(), pipeline_length));

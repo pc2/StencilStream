@@ -18,7 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "SingleQueueExecutor.hpp"
+#include "SingleContextExecutor.hpp"
 #include "tiling/ExecutionKernel.hpp"
 #include "tiling/Grid.hpp"
 
@@ -46,7 +46,7 @@ namespace stencil {
  */
 template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipeline_length = 1,
           uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024>
-class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc> {
+class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc> {
   public:
     /**
      * \brief The number of cells that can be transfered in a single burst.
@@ -62,7 +62,7 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc>
     /**
      * \brief Shorthand for the parent class.
      */
-    using Parent = SingleQueueExecutor<T, stencil_radius, TransFunc>;
+    using Parent = SingleContextExecutor<T, stencil_radius, TransFunc>;
 
     /**
      * \brief Create a new stencil executor.
@@ -91,7 +91,9 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc>
             tiling::ExecutionKernel<TransFunc, T, stencil_radius, pipeline_length, tile_width,
                                     tile_height, in_pipe, out_pipe>;
 
-        cl::sycl::queue &queue = this->get_queue();
+        cl::sycl::queue input_queue = this->new_queue(true);
+        cl::sycl::queue work_queue = this->new_queue(true);
+        cl::sycl::queue output_queue = this->new_queue(true);
 
         uindex_t target_i_generation = this->get_i_generation() + n_generations;
         uindex_t grid_width = input_grid.get_grid_range().c;
@@ -105,9 +107,9 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc>
 
             for (uindex_t c = 0; c < input_grid.get_tile_range().c; c++) {
                 for (uindex_t r = 0; r < input_grid.get_tile_range().r; r++) {
-                    input_grid.template submit_tile_input<in_pipe>(queue, UID(c, r));
+                    input_grid.template submit_tile_input<in_pipe>(input_queue, UID(c, r));
 
-                    cl::sycl::event computation_event = queue.submit([&](cl::sycl::handler &cgh) {
+                    cl::sycl::event computation_event = work_queue.submit([&](cl::sycl::handler &cgh) {
                         cgh.single_task(ExecutionKernelImpl(
                             this->get_trans_func(), this->get_i_generation(), target_i_generation,
                             c * tile_width, r * tile_height, grid_width, grid_height,
@@ -115,22 +117,20 @@ class StencilExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc>
                     });
                     events.push_back(computation_event);
 
-                    output_grid.template submit_tile_output<out_pipe>(queue, UID(c, r));
+                    output_grid.template submit_tile_output<out_pipe>(output_queue, UID(c, r));
                 }
             }
 
             input_grid = output_grid;
 
-            if (this->is_runtime_analysis_enabled()) {
-                double earliest_start = std::numeric_limits<double>::max();
-                double latest_end = std::numeric_limits<double>::min();
+            double earliest_start = std::numeric_limits<double>::max();
+            double latest_end = std::numeric_limits<double>::min();
 
-                for (cl::sycl::event event : events) {
-                    earliest_start = std::min(earliest_start, RuntimeSample::start_of_event(event));
-                    latest_end = std::max(latest_end, RuntimeSample::end_of_event(event));
-                }
-                this->get_runtime_sample().add_pass(latest_end - earliest_start);
+            for (cl::sycl::event event : events) {
+                earliest_start = std::min(earliest_start, RuntimeSample::start_of_event(event));
+                latest_end = std::max(latest_end, RuntimeSample::end_of_event(event));
             }
+            this->get_runtime_sample().add_pass(latest_end - earliest_start);
 
             this->inc_i_generation(
                 std::min(target_i_generation - this->get_i_generation(), pipeline_length));

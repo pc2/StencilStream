@@ -211,9 +211,9 @@ double run_simulation(cl::sycl::queue working_queue, buffer<Cell, 2> temp, uinde
     executor.set_input(temp);
 
 #ifdef HARDWARE
-    executor.select_fpga(true);
+    executor.select_fpga();
 #else
-    executor.select_emulator(true);
+    executor.select_emulator();
 #endif
 
     executor.run(sim_time);
