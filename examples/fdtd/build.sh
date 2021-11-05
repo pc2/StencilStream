@@ -35,6 +35,7 @@ fi
 
 function run_build {
     EXEC_NAME=$1
+    rm -f $EXEC_NAME
 
     ARGS="-fintelfpga -std=c++17 -DSTENCIL_INDEX_WIDTH=64 -DFDTD_BURST_SIZE=1024 -I./ -O3"
 
