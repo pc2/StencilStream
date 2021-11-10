@@ -30,44 +30,39 @@ using namespace stencil::tiling;
 using namespace stencil;
 using namespace std;
 
-constexpr uindex_t n_bursts = 10;
-constexpr uindex_t n_halo_cells = 10;
-static_assert(burst_length > n_halo_cells);
-
 TEST_CASE("IOKernel::read()", "[IOKernel]") {
-    buffer<UID, 2> in_buffer[5] = {buffer<UID, 2>(range<2>(corner_bursts, burst_length)),
-                                   buffer<UID, 2>(range<2>(corner_bursts, burst_length)),
-                                   buffer<UID, 2>(range<2>(vertical_border_bursts, burst_length)),
-                                   buffer<UID, 2>(range<2>(corner_bursts, burst_length)),
-                                   buffer<UID, 2>(range<2>(corner_bursts, burst_length))};
+    buffer<UID, 1> in_buffer[5] = {buffer<UID, 1>(range<1>(halo_radius * halo_radius)),
+                                   buffer<UID, 1>(range<1>(halo_radius * halo_radius)),
+                                   buffer<UID, 1>(range<1>(halo_radius * core_height)),
+                                   buffer<UID, 1>(range<1>(halo_radius * halo_radius)),
+                                   buffer<UID, 1>(range<1>(halo_radius * halo_radius))};
 
     {
-        accessor<UID, 2, access::mode::discard_write, access::target::host_buffer> in_buffer_ac[5] =
+        accessor<UID, 1, access::mode::discard_write, access::target::host_buffer> in_buffer_ac[5] =
             {in_buffer[0].get_access<access::mode::discard_write>(),
              in_buffer[1].get_access<access::mode::discard_write>(),
              in_buffer[2].get_access<access::mode::discard_write>(),
              in_buffer[3].get_access<access::mode::discard_write>(),
              in_buffer[4].get_access<access::mode::discard_write>()};
 
-        for (uindex_t burst_i = 0; burst_i < corner_bursts; burst_i++) {
-            for (uindex_t cell_i = 0; cell_i < burst_length; cell_i++) {
-                in_buffer_ac[0][burst_i][cell_i] = UID(burst_i, cell_i);
-                in_buffer_ac[1][burst_i][cell_i] = UID(burst_i, cell_i);
-                in_buffer_ac[3][burst_i][cell_i] = UID(burst_i, cell_i);
-                in_buffer_ac[4][burst_i][cell_i] = UID(burst_i, cell_i);
+        for (uindex_t c = 0; c < halo_radius; c++) {
+            for (uindex_t r = 0; r < halo_radius; r++) {
+                in_buffer_ac[0][c*halo_radius + r] = UID(c, r);
+                in_buffer_ac[1][c*halo_radius + r] = UID(c, r);
+                in_buffer_ac[3][c*halo_radius + r] = UID(c, r);
+                in_buffer_ac[4][c*halo_radius + r] = UID(c, r);
             }
         }
 
-        for (uindex_t burst_i = 0; burst_i < vertical_border_bursts; burst_i++) {
-            for (uindex_t cell_i = 0; cell_i < burst_length; cell_i++) {
-                in_buffer_ac[2][burst_i][cell_i] = UID(burst_i, cell_i);
+        for (uindex_t c = 0; c < halo_radius; c++) {
+            for (uindex_t r = 0; r < core_height; r++) {
+                in_buffer_ac[2][c*core_height + r] = UID(c, r);
             }
         }
     }
 
     using in_pipe = HostPipe<class BufferedInputKernelPipeID, UID>;
-    using InputKernel = IOKernel<UID, halo_radius, core_height, burst_length, in_pipe, 2,
-                                 access::mode::read, access::target::host_buffer>;
+    using InputKernel = IOKernel<UID, halo_radius, core_height, in_pipe, 2, access::mode::read, access::target::host_buffer>;
 
     {
         array<InputKernel::Accessor, 5> accessors = {in_buffer[0].get_access<access::mode::read>(),
@@ -89,27 +84,23 @@ TEST_CASE("IOKernel::read()", "[IOKernel]") {
     }
     REQUIRE(in_pipe::empty());
 
-    CounterID<uindex_t> counter(0, 0, corner_bursts, burst_length);
     for (uindex_t c = 0; c < halo_radius; c++) {
         for (uindex_t r = 0; r < halo_radius; r++) {
-            REQUIRE(out_buffer_ac[c][r].c == counter.c);
-            REQUIRE(out_buffer_ac[c][r].r == counter.r);
-            REQUIRE(out_buffer_ac[c][r + halo_radius].c == counter.c);
-            REQUIRE(out_buffer_ac[c][r + halo_radius].r == counter.r);
-            REQUIRE(out_buffer_ac[c][r + 2 * halo_radius + core_height].c == counter.c);
-            REQUIRE(out_buffer_ac[c][r + 2 * halo_radius + core_height].r == counter.r);
-            REQUIRE(out_buffer_ac[c][r + 3 * halo_radius + core_height].c == counter.c);
-            REQUIRE(out_buffer_ac[c][r + 3 * halo_radius + core_height].r == counter.r);
-            counter++;
+            REQUIRE(out_buffer_ac[c][r].c == c);
+            REQUIRE(out_buffer_ac[c][r].r == r);
+            REQUIRE(out_buffer_ac[c][r + halo_radius].c == c);
+            REQUIRE(out_buffer_ac[c][r + halo_radius].r == r);
+            REQUIRE(out_buffer_ac[c][r + 2 * halo_radius + core_height].c == c);
+            REQUIRE(out_buffer_ac[c][r + 2 * halo_radius + core_height].r == r);
+            REQUIRE(out_buffer_ac[c][r + 3 * halo_radius + core_height].c == c);
+            REQUIRE(out_buffer_ac[c][r + 3 * halo_radius + core_height].r == r);
         }
     }
 
-    counter = CounterID<uindex_t>(0, 0, vertical_border_bursts, burst_length);
     for (uindex_t c = 0; c < halo_radius; c++) {
         for (uindex_t r = 0; r < core_height; r++) {
-            REQUIRE(out_buffer_ac[c][r + 2 * halo_radius].c == counter.c);
-            REQUIRE(out_buffer_ac[c][r + 2 * halo_radius].r == counter.r);
-            counter++;
+            REQUIRE(out_buffer_ac[c][r + 2 * halo_radius].c == c);
+            REQUIRE(out_buffer_ac[c][r + 2 * halo_radius].r == r);
         }
     }
 }
@@ -118,37 +109,25 @@ TEST_CASE("IOKernel::write()", "[IOKernel]") {
     buffer<UID, 2> in_buffer(range<2>(halo_radius, tile_height));
     auto in_buffer_ac = in_buffer.get_access<access::mode::read_write>();
 
-    CounterID<uindex_t> counter(0, 0, corner_bursts, burst_length);
-    for (uindex_t c = 0; c < halo_radius; c++) {
-        for (uindex_t r = 0; r < halo_radius; r++) {
-            in_buffer_ac[c][r] = counter;
-            in_buffer_ac[c][r + halo_radius + core_height] = counter;
-            counter++;
-        }
-    }
-
-    counter = CounterID<uindex_t>(0, 0, vertical_border_bursts, burst_length);
-    for (uindex_t c = 0; c < halo_radius; c++) {
-        for (uindex_t r = 0; r < core_height; r++) {
-            in_buffer_ac[c][r + halo_radius] = counter;
-            counter++;
-        }
-    }
-
     using out_pipe = HostPipe<class BufferedOutputKernelPipeID, UID>;
 
     for (uindex_t c = 0; c < halo_radius; c++) {
         for (uindex_t r = 0; r < tile_height; r++) {
-            out_pipe::write(in_buffer_ac[c][r]);
+            if (r < halo_radius) {
+                out_pipe::write(UID(c, r));
+            } else if (r < halo_radius + core_height) {
+                out_pipe::write(UID(c, r - halo_radius));
+            } else {
+                out_pipe::write(UID(c, r - halo_radius - core_height));
+            }
         }
     }
 
-    buffer<UID, 2> out_buffer[3] = {buffer<UID, 2>(range<2>(corner_bursts, burst_length)),
-                                    buffer<UID, 2>(range<2>(vertical_border_bursts, burst_length)),
-                                    buffer<UID, 2>(range<2>(corner_bursts, burst_length))};
+    buffer<UID, 1> out_buffer[3] = {buffer<UID, 1>(range<1>(halo_radius * halo_radius)),
+                                    buffer<UID, 1>(range<1>(halo_radius * core_height)),
+                                    buffer<UID, 1>(range<1>(halo_radius * halo_radius))};
 
-    using OutputKernel = IOKernel<UID, halo_radius, core_height, burst_length, out_pipe, 1,
-                                  access::mode::read_write, access::target::host_buffer>;
+    using OutputKernel = IOKernel<UID, halo_radius, core_height, out_pipe, 1, access::mode::read_write, access::target::host_buffer>;
 
     array<OutputKernel::Accessor, 3> out_buffer_ac = {
         out_buffer[0].get_access<access::mode::read_write>(),
@@ -160,23 +139,19 @@ TEST_CASE("IOKernel::write()", "[IOKernel]") {
 
     REQUIRE(out_pipe::empty());
 
-    counter = CounterID<uindex_t>(0, 0, corner_bursts, burst_length);
     for (uindex_t c = 0; c < halo_radius; c++) {
         for (uindex_t r = 0; r < halo_radius; r++) {
-            REQUIRE(in_buffer_ac[c][r].c == counter.c);
-            REQUIRE(in_buffer_ac[c][r].r == counter.r);
-            REQUIRE(in_buffer_ac[c][r + halo_radius + core_height].c == counter.c);
-            REQUIRE(in_buffer_ac[c][r + halo_radius + core_height].r == counter.r);
-            counter++;
+            REQUIRE(out_buffer_ac[0][c * halo_radius + r].c == c);
+            REQUIRE(out_buffer_ac[0][c * halo_radius + r].r == r);
+            REQUIRE(out_buffer_ac[2][c * halo_radius + r].c == c);
+            REQUIRE(out_buffer_ac[2][c * halo_radius + r].r == r);
         }
     }
 
-    counter = CounterID<uindex_t>(0, 0, vertical_border_bursts, burst_length);
     for (uindex_t c = 0; c < halo_radius; c++) {
         for (uindex_t r = 0; r < core_height; r++) {
-            REQUIRE(in_buffer_ac[c][r + halo_radius].c == counter.c);
-            REQUIRE(in_buffer_ac[c][r + halo_radius].r == counter.r);
-            counter++;
+            REQUIRE(out_buffer_ac[1][c * core_height + r].c == c);
+            REQUIRE(out_buffer_ac[1][c * core_height + r].r == r);
         }
     }
 }

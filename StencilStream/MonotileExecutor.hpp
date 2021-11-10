@@ -26,7 +26,7 @@
 
 namespace stencil {
 template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipeline_length = 1,
-          uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024>
+          uindex_t tile_width = 1024, uindex_t tile_height = 1024>
 /**
  * \brief An executor that follows \ref monotile.
  *

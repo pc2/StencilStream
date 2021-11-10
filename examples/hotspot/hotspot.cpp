@@ -48,14 +48,9 @@ const FLOAT amb_temp = 80.0;
 
 /* stencil parameters */
 const uindex_t stencil_radius = 1;
-#ifdef MONOTILE
-const uindex_t pipeline_length = 100;
-#else
-const uindex_t pipeline_length = 32;
-#endif
+const uindex_t pipeline_length = 200;
 const uindex_t tile_width = 1024;
 const uindex_t tile_height = 1024;
-const uindex_t burst_size = 1024;
 
 #ifdef HARDWARE
 using selector = ext::intel::fpga_selector;
@@ -145,9 +140,36 @@ auto exception_handler = [](cl::sycl::exception_list exceptions) {
     }
 };
 
-double run_simulation(cl::sycl::queue working_queue, buffer<Cell, 2> temp, uindex_t sim_time) {
-    uindex_t n_columns = temp.get_range()[0];
-    uindex_t n_rows = temp.get_range()[1];
+int main(int argc, char **argv) {
+    int n_rows, n_columns, sim_time;
+    char *tfile, *pfile, *ofile;
+    bool benchmark_mode = false;
+
+    /* check validity of inputs	*/
+    if (argc != 7)
+        usage(argc, argv);
+    if ((n_rows = atoi(argv[1])) <= 0)
+        usage(argc, argv);
+    if ((n_columns = atoi(argv[2])) <= 0)
+        usage(argc, argv);
+    if ((sim_time = atoi(argv[3])) <= 0)
+        usage(argc, argv);
+
+#ifdef MONOTILE
+    if (n_columns > tile_width || n_rows > tile_height) {
+        std::cerr << "Error: The grid may not exceed the size of the tile (" << tile_width << " by "
+                  << tile_height << " cells) when using the monotile architecture." << std::endl;
+        exit(1);
+    }
+#endif
+
+    /* read initial temperatures and input power	*/
+    tfile = argv[4];
+    pfile = argv[5];
+    ofile = argv[6];
+    buffer<Cell, 2> temp = read_input(string(tfile), string(pfile), range<2>(n_columns, n_rows));
+
+    printf("Start computing the transient temperature\n");
 
     FLOAT grid_height = chip_height / n_rows;
     FLOAT grid_width = chip_width / n_columns;
@@ -204,7 +226,7 @@ double run_simulation(cl::sycl::queue working_queue, buffer<Cell, 2> temp, uinde
                                       tile_width, tile_height>;
 #else
     using Executor = StencilExecutor<Cell, stencil_radius, decltype(kernel), pipeline_length,
-                                     tile_width, tile_height, burst_size>;
+                                     tile_width, tile_height>;
 #endif
 
     Executor executor(Cell(0.0, 0.0), kernel);
@@ -220,48 +242,8 @@ double run_simulation(cl::sycl::queue working_queue, buffer<Cell, 2> temp, uinde
 
     executor.copy_output(temp);
 
-    return executor.get_runtime_sample().get_total_runtime();
-}
-
-int main(int argc, char **argv) {
-    int n_rows, n_columns, sim_time;
-    char *tfile, *pfile, *ofile;
-    bool benchmark_mode = false;
-
-    selector device_selector;
-    cl::sycl::queue working_queue(device_selector, exception_handler,
-                                  {property::queue::enable_profiling{}});
-
-    /* check validity of inputs	*/
-    if (argc != 7)
-        usage(argc, argv);
-    if ((n_rows = atoi(argv[1])) <= 0)
-        usage(argc, argv);
-    if ((n_columns = atoi(argv[2])) <= 0)
-        usage(argc, argv);
-    if ((sim_time = atoi(argv[3])) <= 0)
-        usage(argc, argv);
-
-#ifdef MONOTILE
-    if (n_columns > tile_width || n_rows > tile_height) {
-        std::cerr << "Error: The grid may not exceed the size of the tile (" << tile_width << " by "
-                  << tile_height << " cells) when using the monotile architecture." << std::endl;
-        exit(1);
-    }
-#endif
-
-    /* read initial temperatures and input power	*/
-    tfile = argv[4];
-    pfile = argv[5];
-    ofile = argv[6];
-    buffer<Cell, 2> temp = read_input(string(tfile), string(pfile), range<2>(n_columns, n_rows));
-
-    printf("Start computing the transient temperature\n");
-
-    double runtime = run_simulation(working_queue, temp, sim_time);
-
     printf("Ending simulation\n");
-    std::cout << "Total time: " << runtime << " s" << std::endl;
+    std::cout << "Total time: " << executor.get_runtime_sample().get_total_runtime() << " s" << std::endl;
     write_output(temp, string(ofile));
 
     return 0;

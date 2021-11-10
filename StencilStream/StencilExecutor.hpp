@@ -42,17 +42,11 @@ namespace stencil {
  * Defaults to 1024.
  * \tparam tile_height The number of rows in a tile and maximum number of rows in a grid. Defaults
  * to 1024.
- * \tparam burst_size The number of bytes to load/store in one burst. Defaults to 1024.
  */
 template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipeline_length = 1,
-          uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024>
+          uindex_t tile_width = 1024, uindex_t tile_height = 1024>
 class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc> {
   public:
-    /**
-     * \brief The number of cells that can be transfered in a single burst.
-     */
-    static constexpr uindex_t burst_length = std::min<uindex_t>(1, burst_size / sizeof(T));
-
     /**
      * \brief The number of cells that have be added to the tile in every direction to form the
      * complete input.
@@ -138,7 +132,7 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
     }
 
   private:
-    using GridImpl = tiling::Grid<T, tile_width, tile_height, halo_radius, burst_length>;
+    using GridImpl = tiling::Grid<T, tile_width, tile_height, halo_radius>;
     GridImpl input_grid;
 };
 } // namespace stencil
