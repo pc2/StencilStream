@@ -30,15 +30,5 @@ const stencil::uindex_t halo_radius = pipeline_length * stencil_radius;
 const stencil::uindex_t core_width = tile_width - 2 * halo_radius;
 const stencil::uindex_t core_height = tile_height - 2 * halo_radius;
 
-const stencil::uindex_t burst_length = 32;
-const stencil::uindex_t corner_bursts =
-    stencil::burst_partitioned_range(halo_radius, halo_radius, burst_length)[0];
-const stencil::uindex_t horizontal_border_bursts =
-    stencil::burst_partitioned_range(core_width, halo_radius, burst_length)[0];
-const stencil::uindex_t vertical_border_bursts =
-    stencil::burst_partitioned_range(halo_radius, core_height, burst_length)[0];
-const stencil::uindex_t core_bursts =
-    stencil::burst_partitioned_range(core_width, core_height, burst_length)[0];
-
 const stencil::uindex_t grid_width = 128;
 const stencil::uindex_t grid_height = 64;

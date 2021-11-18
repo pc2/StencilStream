@@ -28,7 +28,7 @@ using namespace cl::sycl;
 using namespace stencil::tiling;
 using namespace std;
 
-using TileImpl = Tile<ID, tile_width, tile_height, halo_radius, burst_length>;
+using TileImpl = Tile<ID, tile_width, tile_height, halo_radius>;
 
 TEST_CASE("Tile::operator[]", "[Tile]") {
     TileImpl tile;
@@ -36,12 +36,8 @@ TEST_CASE("Tile::operator[]", "[Tile]") {
     for (TileImpl::Part part_type : TileImpl::all_parts) {
         auto part = tile[part_type];
 
-        REQUIRE(part.get_range()[1] == burst_length);
-
         cl::sycl::id<2> required_range = TileImpl::get_part_range(part_type);
-        uindex_t required_size = required_range[0] * required_range[1];
-        uindex_t actual_size = part.get_range()[0] * part.get_range()[1];
-        REQUIRE(actual_size >= required_size);
+        REQUIRE(required_range[0] * required_range[1] == part.get_range()[0]);
     }
 }
 
@@ -64,21 +60,12 @@ void copy_from_test_impl(uindex_t tile_width, uindex_t tile_height) {
         auto true_range = TileImpl::get_part_range(part);
         auto content_offset = TileImpl::get_part_offset(part);
         auto part_ac = tile[part].get_access<access::mode::read>();
-        uindex_t i_cell = 0;
-        uindex_t i_burst = 0;
 
         for (uindex_t c = 0; c < true_range[0]; c++) {
             for (uindex_t r = 0; r < true_range[1]; r++) {
                 if (c + content_offset[0] < tile_width && r + content_offset[1] < tile_height) {
-                    REQUIRE(part_ac[i_burst][i_cell].c == c + content_offset[0]);
-                    REQUIRE(part_ac[i_burst][i_cell].r == r + content_offset[1]);
-                }
-
-                if (i_cell == burst_length - 1) {
-                    i_cell = 0;
-                    i_burst++;
-                } else {
-                    i_cell++;
+                    REQUIRE(part_ac[c * true_range[1] + r].c == c + content_offset[0]);
+                    REQUIRE(part_ac[c * true_range[1] + r].r == r + content_offset[1]);
                 }
             }
         }
@@ -99,19 +86,10 @@ void copy_to_test_impl(uindex_t tile_width, uindex_t tile_height) {
         auto true_range = TileImpl::get_part_range(part);
         auto content_offset = TileImpl::get_part_offset(part);
         auto part_ac = tile[part].get_access<access::mode::read_write>();
-        uindex_t i_cell = 0;
-        uindex_t i_burst = 0;
 
         for (uindex_t c = 0; c < true_range[0]; c++) {
             for (uindex_t r = 0; r < true_range[1]; r++) {
-                part_ac[i_burst][i_cell] = ID(c + content_offset[0], r + content_offset[1]);
-
-                if (i_cell == burst_length - 1) {
-                    i_cell = 0;
-                    i_burst++;
-                } else {
-                    i_cell++;
-                }
+                part_ac[c * true_range[1] + r] = ID(c + content_offset[0], r + content_offset[1]);
             }
         }
     }

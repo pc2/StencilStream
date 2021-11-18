@@ -26,7 +26,7 @@
 
 namespace stencil {
 template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipeline_length = 1,
-          uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 1024>
+          uindex_t tile_width = 1024, uindex_t tile_height = 1024>
 /**
  * \brief An executor that follows \ref monotile.
  *
@@ -58,9 +58,9 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
      * \param trans_func An instance of the transition function type.
      */
     MonotileExecutor(T halo_value, TransFunc trans_func)
-        : Parent(halo_value, trans_func), tile_buffer(cl::sycl::range<2>(tile_width, tile_height)) {
+        : Parent(halo_value, trans_func), tile_buffer(cl::sycl::range<1>(tile_width * tile_height)), grid_range(1, 1) {
         auto ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
-        ac[0][0] = halo_value;
+        ac[0] = halo_value;
     }
 
     /**
@@ -80,31 +80,37 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
                                    "requires that grid ranges are smaller or equal to the tile "
                                    "range");
         }
+        grid_range.c = input_buffer.get_range()[0];
+        grid_range.r = input_buffer.get_range()[1];
+
         auto in_ac = input_buffer.template get_access<cl::sycl::access::mode::read>();
-        tile_buffer = cl::sycl::buffer<T, 2>(input_buffer.get_range());
         auto tile_ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
-        for (uindex_t c = 0; c < input_buffer.get_range()[0]; c++) {
-            for (uindex_t r = 0; r < input_buffer.get_range()[1]; r++) {
-                tile_ac[c][r] = in_ac[c][r];
+        for (uindex_t c = 0; c < tile_width; c++) {
+            for (uindex_t r = 0; r < tile_height; r++) {
+                if (c < grid_range.c && r < grid_range.r) {
+                    tile_ac[c * tile_height + r] = in_ac[c][r];
+                } else {
+                    tile_ac[c * tile_height + r] = this->get_halo_value();
+                }
             }
         }
     }
 
     void copy_output(cl::sycl::buffer<T, 2> output_buffer) override {
-        if (output_buffer.get_range() != tile_buffer.get_range()) {
+        if (output_buffer.get_range()[0] != grid_range.c || output_buffer.get_range()[1] != grid_range.r) {
             throw std::range_error("The output buffer is not the same size as the grid");
         }
         auto in_ac = tile_buffer.template get_access<cl::sycl::access::mode::read>();
         auto out_ac = output_buffer.template get_access<cl::sycl::access::mode::discard_write>();
-        for (uindex_t c = 0; c < tile_buffer.get_range()[0]; c++) {
-            for (uindex_t r = 0; r < tile_buffer.get_range()[1]; r++) {
-                out_ac[c][r] = in_ac[c][r];
+        for (uindex_t c = 0; c < output_buffer.get_range()[0]; c++) {
+            for (uindex_t r = 0; r < output_buffer.get_range()[1]; r++) {
+                out_ac[c][r] = in_ac[c*tile_height + r];
             }
         }
     }
 
     UID get_grid_range() const override {
-        return UID(tile_buffer.get_range()[0], tile_buffer.get_range()[1]);
+        return this->grid_range;
     }
 
     void run(uindex_t n_generations) override {
@@ -119,28 +125,18 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
         cl::sycl::queue output_queue = this->new_queue(true);
 
         uindex_t target_i_generation = this->get_i_generation() + n_generations;
-        uindex_t grid_width = tile_buffer.get_range()[0];
-        uindex_t grid_height = tile_buffer.get_range()[1];
+        uindex_t grid_width = grid_range.c;
+        uindex_t grid_height = grid_range.r;
 
         while (this->get_i_generation() < target_i_generation) {
-            cl::sycl::buffer<T, 2> out_buffer(tile_buffer.get_range());
+            cl::sycl::buffer<T, 1> out_buffer(cl::sycl::range<1>(tile_width * tile_height));
 
             input_queue.submit([&](cl::sycl::handler &cgh) {
                 auto ac = tile_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
-                T halo_value = this->get_halo_value();
 
                 cgh.single_task<class MonotileInputKernel>([=]() {
-                    [[intel::loop_coalesce(2)]] for (uindex_t c = 0; c < tile_width; c++) {
-                        for (uindex_t r = 0; r < tile_height; r++) {
-                            T value;
-                            if (c < grid_width && r < grid_height) {
-                                value = ac[c][r];
-                            } else {
-                                value = halo_value;
-                            }
-
-                            in_pipe::write(value);
-                        }
+                    for (uindex_t i = 0; i < tile_width * tile_height; i++) {
+                        in_pipe::write(ac[i]);
                     }
                 });
             });
@@ -157,13 +153,8 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
                 T halo_value = this->get_halo_value();
 
                 cgh.single_task<class MonotileOutputKernel>([=]() {
-                    [[intel::loop_coalesce(2)]] for (uindex_t c = 0; c < tile_width; c++) {
-                        for (uindex_t r = 0; r < tile_height; r++) {
-                            T value = out_pipe::read();
-                            if (c < grid_width && r < grid_height) {
-                                ac[c][r] = value;
-                            }
-                        }
+                    for (uindex_t i = 0; i < tile_width * tile_height; i++) {
+                        ac[i] = out_pipe::read();
                     }
                 });
             });
@@ -178,7 +169,7 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
     }
 
   private:
-    cl::sycl::buffer<T, 2> tile_buffer;
+    cl::sycl::buffer<T, 1> tile_buffer;
     UID grid_range;
 };
 } // namespace stencil

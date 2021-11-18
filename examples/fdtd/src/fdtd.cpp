@@ -27,7 +27,7 @@ using Executor = MonotileExecutor<FDTDCell, stencil_radius, FDTDKernel, pipeline
                                   tile_height>;
 #else
 using Executor = StencilExecutor<FDTDCell, stencil_radius, FDTDKernel, pipeline_length, tile_width,
-                                 tile_height, FDTD_BURST_SIZE>;
+                                 tile_height>;
 #endif
 
 #ifdef HARDWARE
