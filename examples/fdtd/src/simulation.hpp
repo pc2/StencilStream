@@ -19,9 +19,11 @@
  */
 #pragma once
 #include "defines.hpp"
+#include "Material.hpp"
 #include <StencilStream/Stencil.hpp>
+#include "Parameters.hpp"
 
-class FDTDKernel {
+class LUTKernel {
     float disk_radius;
     float tau;
     float omega;
@@ -30,49 +32,62 @@ class FDTDKernel {
     float t_detect;
     float dx;
     float dt;
-    Material vacuum;
+    CoefMaterial materials[2];
 
   public:
-    FDTDKernel(Parameters const &parameters)
+
+    struct Cell {
+        float ex, ey, hz, hz_sum;
+        uint8_t material_index;
+    };
+
+    LUTKernel(Parameters const &parameters)
         : disk_radius(parameters.disk_radius), tau(parameters.tau), omega(parameters.omega()),
           t_0(parameters.t_0()), t_cutoff(parameters.t_cutoff()), t_detect(parameters.t_detect()),
-          dx(parameters.dx), dt(parameters.dt()), vacuum(parameters.vacuum()) {}
+          dx(parameters.dx), dt(parameters.dt()), materials{} {
+        materials[0] = CoefMaterial::from_relative(RelMaterial { std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(), 0.0}, dx, dt);
+        materials[1] = CoefMaterial::from_relative(RelMaterial { 1.0, 1.0, 0.0}, dx, dt);
+    }
 
-    static FDTDCell halo() {
-        FDTDCell new_cell;
+    static Cell halo() {
+        Cell new_cell;
         new_cell.ex = 0;
         new_cell.ey = 0;
         new_cell.hz = 0;
         new_cell.hz_sum = 0;
-        new_cell.distance = INFINITY;
+        new_cell.material_index = 0;
         return new_cell;
     }
 
-    FDTDCell operator()(Stencil<FDTDCell, stencil_radius> const &stencil) const {
-        FDTDCell cell = stencil[ID(0, 0)];
+    Cell operator()(Stencil<Cell, stencil_radius> const &stencil) const {
+        Cell cell = stencil[ID(0, 0)];
 
-        if (cell.distance < disk_radius) {
-            if ((stencil.stage & 0b1) == 0) {
-                cell.ex *= vacuum.ca;
-                cell.ex += vacuum.cb * (stencil[ID(0, 0)].hz - stencil[ID(0, -1)].hz);
+        if ((stencil.stage & 0b1) == 0) {
+            float ca = materials[cell.material_index].ca;
+            float cb = materials[cell.material_index].cb;
 
-                cell.ey *= vacuum.ca;
-                cell.ey += vacuum.cb * (stencil[ID(-1, 0)].hz - stencil[ID(0, 0)].hz);
-            } else {
-                cell.hz *= vacuum.da;
-                cell.hz += vacuum.db * (stencil[ID(0, 1)].ex - stencil[ID(0, 0)].ex +
-                                        stencil[ID(0, 0)].ey - stencil[ID(1, 0)].ey);
+            cell.ex *= ca;
+            cell.ex += cb * (stencil[ID(0, 0)].hz - stencil[ID(0, -1)].hz);
 
-                float current_time = (stencil.generation >> 1) * dt;
-                if (cell.distance < dx && current_time < t_cutoff) {
-                    float wave_progress = (current_time - t_0) / tau;
-                    cell.hz += cl::sycl::cos(omega * current_time) *
-                               cl::sycl::exp(-1 * wave_progress * wave_progress);
-                }
+            cell.ey *= ca;
+            cell.ey += cb * (stencil[ID(-1, 0)].hz - stencil[ID(0, 0)].hz);
+        } else {
+            float da = materials[cell.material_index].da;
+            float db = materials[cell.material_index].db;
 
-                if (current_time > t_detect) {
-                    cell.hz_sum += cell.hz * cell.hz;
-                }
+            cell.hz *= da;
+            cell.hz += db * (stencil[ID(0, 1)].ex - stencil[ID(0, 0)].ex +
+                                    stencil[ID(0, 0)].ey - stencil[ID(1, 0)].ey);
+
+            float current_time = (stencil.generation >> 1) * dt;
+            if (stencil.id.c == stencil.grid_range.c / 2 && stencil.id.r == stencil.grid_range.r / 2 && current_time < t_cutoff) {
+                float wave_progress = (current_time - t_0) / tau;
+                cell.hz += cl::sycl::cos(omega * current_time) *
+                           cl::sycl::exp(-1 * wave_progress * wave_progress);
+            }
+
+            if (current_time > t_detect) {
+                cell.hz_sum += cell.hz * cell.hz;
             }
         }
         return cell;

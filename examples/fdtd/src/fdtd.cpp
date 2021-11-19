@@ -22,11 +22,15 @@
 #include <StencilStream/StencilExecutor.hpp>
 #include <deque>
 
+using Kernel = LUTKernel;
+
+using Cell = Kernel::Cell;
+
 #ifdef MONOTILE
-using Executor = MonotileExecutor<FDTDCell, stencil_radius, FDTDKernel, pipeline_length, tile_width,
+using Executor = MonotileExecutor<Cell, stencil_radius, Kernel, pipeline_length, tile_width,
                                   tile_height>;
 #else
-using Executor = StencilExecutor<FDTDCell, stencil_radius, FDTDKernel, pipeline_length, tile_width,
+using Executor = StencilExecutor<Cell, stencil_radius, Kernel, pipeline_length, tile_width,
                                  tile_height, FDTD_BURST_SIZE>;
 #endif
 
@@ -52,10 +56,9 @@ enum class CellField {
     EY,
     HZ,
     HZ_SUM,
-    DISTANCE,
 };
 
-void save_frame(cl::sycl::buffer<FDTDCell, 2> frame_buffer, uindex_t generation_index,
+void save_frame(cl::sycl::buffer<Cell, 2> frame_buffer, uindex_t generation_index,
                 CellField field, Parameters const &parameters) {
     auto frame = frame_buffer.get_access<access::mode::read>();
 
@@ -73,9 +76,6 @@ void save_frame(cl::sycl::buffer<FDTDCell, 2> frame_buffer, uindex_t generation_
         break;
     case CellField::HZ_SUM:
         frame_path << "hz_sum";
-        break;
-    case CellField::DISTANCE:
-        frame_path << "distance";
         break;
     default:
         break;
@@ -97,9 +97,6 @@ void save_frame(cl::sycl::buffer<FDTDCell, 2> frame_buffer, uindex_t generation_
                 break;
             case CellField::HZ_SUM:
                 out << frame[c][r].hz_sum;
-                break;
-            case CellField::DISTANCE:
-                out << frame[c][r].distance;
                 break;
             default:
                 break;
@@ -131,21 +128,25 @@ int main(int argc, char **argv) {
     cl::sycl::queue fpga_queue(device_selector, exception_handler,
                                {property::queue::enable_profiling{}});
 
-    cl::sycl::buffer<FDTDCell, 2> grid_buffer(parameters.grid_range());
+    cl::sycl::buffer<Cell, 2> grid_buffer(parameters.grid_range());
     {
         auto init_ac = grid_buffer.get_access<cl::sycl::access::mode::discard_write>();
         for (uindex_t c = 0; c < parameters.grid_range()[0]; c++) {
             for (uindex_t r = 0; r < parameters.grid_range()[1]; r++) {
-                init_ac[c][r] = FDTDKernel::halo();
+                init_ac[c][r] = Kernel::halo();
 
                 float a = float(c) - float(parameters.grid_range()[0]) / 2.0;
                 float b = float(r) - float(parameters.grid_range()[1]) / 2.0;
-                init_ac[c][r].distance = parameters.dx * std::sqrt(a * a + b * b);
+                if (parameters.dx * sqrt(a*a + b*b) <= parameters.disk_radius) {
+                    init_ac[c][r].material_index = 1;
+                } else {
+                    init_ac[c][r].material_index = 0;
+                }
             }
         }
     }
 
-    Executor executor(FDTDKernel::halo(), FDTDKernel(parameters));
+    Executor executor(Kernel::halo(), Kernel(parameters));
     executor.set_input(grid_buffer);
     executor.set_queue(fpga_queue);
 
@@ -165,7 +166,6 @@ int main(int argc, char **argv) {
             save_frame(grid_buffer, i_generation, CellField::EY, parameters);
             save_frame(grid_buffer, i_generation, CellField::HZ, parameters);
             save_frame(grid_buffer, i_generation, CellField::HZ_SUM, parameters);
-            save_frame(grid_buffer, i_generation, CellField::DISTANCE, parameters);
 
             runtime += executor.get_runtime_sample().get_total_runtime();
             double progress = 100.0 * (double(i_generation) / double(n_timesteps));
