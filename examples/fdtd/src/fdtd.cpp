@@ -31,7 +31,7 @@ using Executor = MonotileExecutor<Cell, stencil_radius, Kernel, pipeline_length,
                                   tile_height>;
 #else
 using Executor = StencilExecutor<Cell, stencil_radius, Kernel, pipeline_length, tile_width,
-                                 tile_height, FDTD_BURST_SIZE>;
+                                 tile_height>;
 #endif
 
 #ifdef HARDWARE
@@ -124,10 +124,6 @@ int main(int argc, char **argv) {
     }
 #endif
 
-    selector device_selector;
-    cl::sycl::queue fpga_queue(device_selector, exception_handler,
-                               {property::queue::enable_profiling{}});
-
     cl::sycl::buffer<Cell, 2> grid_buffer(parameters.grid_range());
     {
         auto init_ac = grid_buffer.get_access<cl::sycl::access::mode::discard_write>();
@@ -148,7 +144,11 @@ int main(int argc, char **argv) {
 
     Executor executor(Kernel::halo(), Kernel(parameters));
     executor.set_input(grid_buffer);
-    executor.set_queue(fpga_queue);
+#ifdef HARDWARE
+    executor.select_fpga();
+#else
+    executor.select_emulator();
+#endif
 
     uindex_t n_timesteps = parameters.n_timesteps();
 

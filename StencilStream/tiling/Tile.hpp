@@ -43,9 +43,8 @@ namespace tiling {
  * \tparam width The number of columns of the tile.
  * \tparam height The number of rows of the tile.
  * \tparam halo_radius The radius (aka width and height) of the tile halo.
- * \tparam burst_length The number of elements that can be read or written in a burst.
  */
-template <typename T, uindex_t width, uindex_t height, uindex_t halo_radius, uindex_t burst_length>
+template <typename T, uindex_t width, uindex_t height, uindex_t halo_radius>
 class Tile {
     static_assert(width > 2 * halo_radius);
     static_assert(height > 2 * halo_radius);
@@ -153,7 +152,7 @@ class Tile {
      * \param tile_part The part to access.
      * \return The buffer of the part.
      */
-    cl::sycl::buffer<T, 2> operator[](Part tile_part) {
+    cl::sycl::buffer<T, 1> operator[](Part tile_part) {
         uindex_t part_column, part_row;
         switch (tile_part) {
         case Part::NORTH_WEST_CORNER:
@@ -201,8 +200,8 @@ class Tile {
         uindex_t part_height = part_range[1];
 
         if (!part[part_column][part_row].has_value()) {
-            auto part_range = burst_partitioned_range(part_width, part_height, burst_length);
-            cl::sycl::buffer<T, 2> new_part(part_range);
+            auto part_range = cl::sycl::range<1>(part_width * part_height);
+            cl::sycl::buffer<T, 1> new_part(part_range);
             part[part_column][part_row] = new_part;
         }
         return *part[part_column][part_row];
@@ -274,30 +273,21 @@ class Tile {
         auto part_ac = (*this)[part].template get_access<cl::sycl::access::mode::read_write>();
         auto part_range = get_part_range(part);
 
-        uindex_t i_burst = 0;
-        uindex_t i_cell = 0;
         for (uindex_t c = 0; c < part_range[0]; c++) {
             for (uindex_t r = 0; r < part_range[1]; r++) {
                 if (c + offset[0] < accessor.get_range()[0] &&
                     r + offset[1] < accessor.get_range()[1]) {
                     if (buffer_to_part) {
-                        part_ac[i_burst][i_cell] = accessor[c + offset[0]][r + offset[1]];
+                        part_ac[c * part_range[1] + r] = accessor[c + offset[0]][r + offset[1]];
                     } else {
-                        accessor[c + offset[0]][r + offset[1]] = part_ac[i_burst][i_cell];
+                        accessor[c + offset[0]][r + offset[1]] = part_ac[c * part_range[1] + r];
                     }
-                }
-
-                if (i_cell == burst_length - 1) {
-                    i_cell = 0;
-                    i_burst++;
-                } else {
-                    i_cell++;
                 }
             }
         }
     }
 
-    std::optional<cl::sycl::buffer<T, 2>> part[3][3];
+    std::optional<cl::sycl::buffer<T, 1>> part[3][3];
 };
 
 } // namespace tiling

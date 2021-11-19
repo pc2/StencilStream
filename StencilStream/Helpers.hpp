@@ -23,15 +23,6 @@
 #include <CL/sycl/id.hpp>
 
 namespace stencil {
-inline cl::sycl::range<2> burst_partitioned_range(uindex_t width, uindex_t height,
-                                                  uindex_t burst_length) {
-    uindex_t nCells = width * height;
-    cl::sycl::range<2> range(nCells / burst_length, burst_length);
-    if (nCells % burst_length != 0) {
-        range[0] += 1;
-    }
-    return range;
-}
 
 inline constexpr bool is_mode_readable(cl::sycl::access::mode access_mode) {
     return access_mode == cl::sycl::access::mode::read ||

@@ -29,11 +29,11 @@ using namespace stencil;
 using namespace cl::sycl;
 
 using TransFunc = FPGATransFunc<stencil_radius>;
-using SingleQueueExecutorImpl = SingleQueueExecutor<Cell, stencil_radius, TransFunc>;
+using SingleContextExecutorImpl = SingleContextExecutor<Cell, stencil_radius, TransFunc>;
 using StencilExecutorImpl = StencilExecutor<Cell, stencil_radius, TransFunc, pipeline_length>;
 using MonotileExecutorImpl = MonotileExecutor<Cell, stencil_radius, TransFunc, pipeline_length>;
 
-void test_executor_set_input_copy_output(SingleQueueExecutorImpl *executor, uindex_t grid_width,
+void test_executor_set_input_copy_output(SingleContextExecutorImpl *executor, uindex_t grid_width,
                                          uindex_t grid_height) {
     buffer<Cell, 2> in_buffer(range<2>(grid_width, grid_height));
     {
@@ -71,7 +71,7 @@ TEST_CASE("MonotileExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[MonotileExe
     test_executor_set_input_copy_output(&executor, tile_width - 1, tile_height - 1);
 }
 
-void test_executor_run(SingleQueueExecutorImpl *executor, uindex_t grid_width,
+void test_executor_run(SingleContextExecutorImpl *executor, uindex_t grid_width,
                        uindex_t grid_height) {
     uindex_t n_generations = 2 * pipeline_length + 1;
 

@@ -18,33 +18,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
+#include "AbstractExecutor.hpp"
+#include "RuntimeSample.hpp"
 #include <CL/sycl/INTEL/fpga_extensions.hpp>
-#include <StencilStream/Index.hpp>
-#include <fstream>
-#include <iostream>
-#include <unistd.h>
+#include <optional>
 
-using namespace std;
-using namespace cl::sycl;
-using namespace stencil;
+namespace stencil {
 
-//////////////////////////////////////////////
-// Needed physical constants for simulation //
-//////////////////////////////////////////////
-// velocity of light in m/s
-constexpr float c0 = 299792458.0;
+template <typename T, uindex_t stencil_radius, typename TransFunc>
+class RuntimeSampleExecutor : public AbstractExecutor<T, stencil_radius, TransFunc> {
+public:
+    using Parent = AbstractExecutor<T, stencil_radius, TransFunc>;
 
-// Square root of two
-constexpr float sqrt_2 = 1.4142135623730951;
+    RuntimeSampleExecutor(T halo_value, TransFunc trans_func) : Parent(halo_value, trans_func), runtime_sample(), analysis_enabled(true) {}
 
-constexpr float pi = 3.1415926535897932384626433;
+    /**
+     * \brief Return a reference to the runtime information struct.
+     *
+     * \return The collected runtime information.
+     */
+    RuntimeSample &get_runtime_sample() { return runtime_sample; }
+private:
+    RuntimeSample runtime_sample;
+    bool analysis_enabled;
+};
 
-/* stencil parameters */
-constexpr uindex_t tile_height = 512;
-constexpr uindex_t tile_width = 512;
-constexpr uindex_t stencil_radius = 1;
-#ifdef MONOTILE
-constexpr uindex_t pipeline_length = 100;
-#else
-constexpr uindex_t pipeline_length = 16;
-#endif
+}
