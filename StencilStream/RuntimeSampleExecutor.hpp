@@ -30,7 +30,10 @@ class RuntimeSampleExecutor : public AbstractExecutor<T, stencil_radius, TransFu
 public:
     using Parent = AbstractExecutor<T, stencil_radius, TransFunc>;
 
+    [[deprecated("Use RuntimeSampleExecutor(T) instead")]]
     RuntimeSampleExecutor(T halo_value, TransFunc trans_func) : Parent(halo_value, trans_func), runtime_sample(), analysis_enabled(true) {}
+
+    RuntimeSampleExecutor(T halo_value) : Parent(halo_value), runtime_sample(), analysis_enabled(true) {}
 
     /**
      * \brief Return a reference to the runtime information struct.

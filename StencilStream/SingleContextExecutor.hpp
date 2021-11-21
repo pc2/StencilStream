@@ -46,9 +46,12 @@ class SingleContextExecutor : public RuntimeSampleExecutor<T, stencil_radius, Tr
      * \param trans_func The instance of the transition function that should be used to calculate
      * new generations.
      */
+    [[deprecated("use SingleContextExecutor(T) instead")]]
     SingleContextExecutor(T halo_value, TransFunc trans_func)
         : RuntimeSampleExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func), device(std::nullopt),
           context(std::nullopt) {}
+
+    SingleContextExecutor(T halo_value) : RuntimeSampleExecutor<T, stencil_radius, TransFunc>(halo_value), device(std::nullopt), context(std::nullopt) {}
 
     /**
      * \brief Return the configured queue.

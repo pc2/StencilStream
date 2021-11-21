@@ -57,8 +57,14 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
      * \param halo_value The value of cells in the grid halo.
      * \param trans_func An instance of the transition function type.
      */
+    [[deprecated("Use MonotileExecutor(T) instead")]]
     MonotileExecutor(T halo_value, TransFunc trans_func)
         : Parent(halo_value, trans_func), tile_buffer(cl::sycl::range<1>(tile_width * tile_height)), grid_range(1, 1) {
+        auto ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
+        ac[0] = halo_value;
+    }
+
+    MonotileExecutor(T halo_value) : Parent(halo_value), tile_buffer(cl::sycl::range<1>(tile_width * tile_height)), grid_range(1, 1) {
         auto ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
         ac[0] = halo_value;
     }
@@ -113,7 +119,19 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
         return this->grid_range;
     }
 
+    [[deprecated("Use run(uindex_t, std::function<TransFunc(cl::sycl::handler &)>) instead")]]
     void run(uindex_t n_generations) override {
+        run(
+            n_generations,
+            std::function([&](cl::sycl::handler &cgh) {return this->get_trans_func();})
+        );
+    }
+
+    void run(uindex_t n_generations, TransFunc trans_func) override {
+        run(n_generations, std::function([=](cl::sycl::handler &cgh) { return trans_func; }));
+    }
+
+    void run(uindex_t n_generations, std::function<TransFunc(cl::sycl::handler &)> trans_func_builder) override {
         using in_pipe = cl::sycl::pipe<class monotile_in_pipe, T>;
         using out_pipe = cl::sycl::pipe<class monotile_out_pipe, T>;
         using ExecutionKernelImpl =
@@ -142,8 +160,9 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
             });
 
             cl::sycl::event computation_event = work_queue.submit([&](cl::sycl::handler &cgh) {
+                TransFunc trans_func = trans_func_builder(cgh);
                 cgh.single_task<class MonotileExecutionKernel>(ExecutionKernelImpl(
-                    this->get_trans_func(), this->get_i_generation(), target_i_generation,
+                    trans_func, this->get_i_generation(), target_i_generation,
                     grid_width, grid_height, this->get_halo_value()));
             });
 

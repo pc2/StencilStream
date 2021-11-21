@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    Executor executor(Kernel::halo(), Kernel(parameters));
+    Executor executor(Kernel::halo());
     executor.set_input(grid_buffer);
 #ifdef HARDWARE
     executor.select_fpga();
@@ -151,6 +151,7 @@ int main(int argc, char **argv) {
 #endif
 
     uindex_t n_timesteps = parameters.n_timesteps();
+    Kernel trans_func(parameters);
 
     std::cout << "Simulating..." << std::endl;
     if (parameters.interval().has_value()) {
@@ -158,7 +159,7 @@ int main(int argc, char **argv) {
         double runtime = 0.0;
 
         while (executor.get_i_generation() + interval < n_timesteps) {
-            executor.run(interval);
+            executor.run(interval, trans_func);
             executor.copy_output(grid_buffer);
 
             uindex_t i_generation = executor.get_i_generation();
@@ -178,10 +179,10 @@ int main(int argc, char **argv) {
         }
 
         if (n_timesteps % interval != 0) {
-            executor.run(n_timesteps % interval);
+            executor.run(n_timesteps % interval, trans_func);
         }
     } else {
-        executor.run(n_timesteps);
+        executor.run(n_timesteps, trans_func);
     }
     std::cout << "Simulation complete!" << std::endl;
 

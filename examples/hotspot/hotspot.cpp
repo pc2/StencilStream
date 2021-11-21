@@ -229,7 +229,7 @@ int main(int argc, char **argv) {
                                      tile_width, tile_height>;
 #endif
 
-    Executor executor(Cell(0.0, 0.0), kernel);
+    Executor executor(Cell(0.0, 0.0));
     executor.set_input(temp);
 
 #ifdef HARDWARE
@@ -238,7 +238,7 @@ int main(int argc, char **argv) {
     executor.select_emulator();
 #endif
 
-    executor.run(sim_time);
+    executor.run(sim_time, kernel);
 
     executor.copy_output(temp);
 

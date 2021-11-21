@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
     cl::sycl::buffer<Cell, 2> grid_buffer = read(width, height);
 
     using Executor = stencil::StencilExecutor<Cell, stencil_radius, decltype(conway)>;
-    Executor executor(halo_value, conway);
+    Executor executor(halo_value);
     executor.set_input(grid_buffer);
 
 #ifdef HARDWARE
@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
     executor.select_emulator();
 #endif
 
-    executor.run(n_generations);
+    executor.run(n_generations, conway);
 
     executor.copy_output(grid_buffer);
     write(grid_buffer);
