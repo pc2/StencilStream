@@ -32,13 +32,13 @@ class LUTKernel {
     float t_detect;
     float dx;
     float dt;
-    CoefMaterial materials[2];
+    CoefMaterial materials[max_materials];
 
   public:
 
     struct Cell {
         float ex, ey, hz, hz_sum;
-        uint8_t material_index;
+        uint32_t material_index;
     };
 
     LUTKernel(Parameters const &parameters)
@@ -62,22 +62,27 @@ class LUTKernel {
     Cell operator()(Stencil<Cell, stencil_radius> const &stencil) const {
         Cell cell = stencil[ID(0, 0)];
 
+        uint32_t material_index = cell.material_index;
+        if (material_index >= max_materials) {
+            material_index = 0;
+        }
+
         if ((stencil.stage & 0b1) == 0) {
-            float ca = materials[cell.material_index].ca;
-            float cb = materials[cell.material_index].cb;
+            cell.ex *= materials[material_index].ca;
+            cell.ex += materials[material_index].cb * (
+                stencil[ID(0, 0)].hz - stencil[ID(0, -1)].hz
+            );
 
-            cell.ex *= ca;
-            cell.ex += cb * (stencil[ID(0, 0)].hz - stencil[ID(0, -1)].hz);
-
-            cell.ey *= ca;
-            cell.ey += cb * (stencil[ID(-1, 0)].hz - stencil[ID(0, 0)].hz);
+            cell.ey *= materials[material_index].ca;
+            cell.ey += materials[material_index].cb * (
+                stencil[ID(-1, 0)].hz - stencil[ID(0, 0)].hz
+            );
         } else {
-            float da = materials[cell.material_index].da;
-            float db = materials[cell.material_index].db;
-
-            cell.hz *= da;
-            cell.hz += db * (stencil[ID(0, 1)].ex - stencil[ID(0, 0)].ex +
-                                    stencil[ID(0, 0)].ey - stencil[ID(1, 0)].ey);
+            cell.hz *= materials[material_index].da;
+            cell.hz += materials[material_index].db * (
+                stencil[ID(0, 1)].ex - stencil[ID(0, 0)].ex +
+                stencil[ID(0, 0)].ey - stencil[ID(1, 0)].ey
+            );
 
             float current_time = (stencil.generation >> 1) * dt;
             if (stencil.id.c == stencil.grid_range.c / 2 && stencil.id.r == stencil.grid_range.r / 2 && current_time < t_cutoff) {

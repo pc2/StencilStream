@@ -35,7 +35,7 @@ struct RelMaterial {
     }
 
     float cb(float dx, float dt) const {
-        if (std::isinf(eps_r)) {
+        if (cl::sycl::isinf(eps_r)) {
             return 0.0;
         } else {
             return (dt / (eps_0 * eps_r * dx)) / (1 + (sigma * dt) / (2 * eps_0 * eps_r));
@@ -47,7 +47,7 @@ struct RelMaterial {
     }
 
     float db(float dx, float dt) const {
-        if (std::isinf(mu_r)) {
+        if (cl::sycl::isinf(mu_r)) {
             return 0.0;
         } else {
             return (dt / (mu_0 * mu_r * dx)) / (1 + (sigma * dt) / (2 * mu_0 * mu_r));
