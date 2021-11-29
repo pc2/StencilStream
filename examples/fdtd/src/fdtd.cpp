@@ -142,6 +142,22 @@ int main(int argc, char **argv) {
         }
     }
 
+    cl::sycl::buffer<CoefMaterial, 1> materials(cl::sycl::range<1>(2));
+    {
+        auto materials_ac = materials.get_access<cl::sycl::access::mode::discard_write>();
+        materials_ac[0] =
+            CoefMaterial::from_relative(RelMaterial{std::numeric_limits<float>::infinity(),
+                                                    std::numeric_limits<float>::infinity(), 0.0},
+                                        parameters.dx, parameters.dt());
+        materials_ac[1] =
+            CoefMaterial::from_relative(RelMaterial{11.5, 1.0, 0.0}, parameters.dx, parameters.dt());
+    }
+
+    auto trans_func_builder = std::function([&](cl::sycl::handler &cgh) {
+        auto materials_ac = materials.get_access<cl::sycl::access::mode::read>(cgh);
+        return Kernel(parameters, materials_ac);
+    });
+
     Executor executor(Kernel::halo());
     executor.set_input(grid_buffer);
 #ifdef HARDWARE
@@ -151,7 +167,6 @@ int main(int argc, char **argv) {
 #endif
 
     uindex_t n_timesteps = parameters.n_timesteps();
-    Kernel trans_func(parameters);
 
     std::cout << "Simulating..." << std::endl;
     if (parameters.interval().has_value()) {
@@ -159,7 +174,7 @@ int main(int argc, char **argv) {
         double runtime = 0.0;
 
         while (executor.get_i_generation() + interval < n_timesteps) {
-            executor.run(interval, trans_func);
+            executor.run(interval, trans_func_builder);
             executor.copy_output(grid_buffer);
 
             uindex_t i_generation = executor.get_i_generation();
@@ -179,10 +194,10 @@ int main(int argc, char **argv) {
         }
 
         if (n_timesteps % interval != 0) {
-            executor.run(n_timesteps % interval, trans_func);
+            executor.run(n_timesteps % interval, trans_func_builder);
         }
     } else {
-        executor.run(n_timesteps, trans_func);
+        executor.run(n_timesteps, trans_func_builder);
     }
     std::cout << "Simulation complete!" << std::endl;
 

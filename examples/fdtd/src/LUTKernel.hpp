@@ -24,32 +24,17 @@
 #include <StencilStream/Stencil.hpp>
 
 class LUTKernel {
-    float disk_radius;
-    float tau;
-    float omega;
-    float t_0;
-    float t_cutoff;
-    float t_detect;
-    float dx;
-    float dt;
-    CoefMaterial materials[max_materials];
-
   public:
     struct Cell {
         float ex, ey, hz, hz_sum;
         uint32_t material_index;
     };
+    using MaterialAC = cl::sycl::accessor<CoefMaterial, 1, cl::sycl::access::mode::read>;
 
-    LUTKernel(Parameters const &parameters)
+    LUTKernel(Parameters const &parameters, MaterialAC materials)
         : disk_radius(parameters.disk_radius), tau(parameters.tau), omega(parameters.omega()),
           t_0(parameters.t_0()), t_cutoff(parameters.t_cutoff()), t_detect(parameters.t_detect()),
-          dx(parameters.dx), dt(parameters.dt()), materials{} {
-        materials[0] =
-            CoefMaterial::from_relative(RelMaterial{std::numeric_limits<float>::infinity(),
-                                                    std::numeric_limits<float>::infinity(), 0.0},
-                                        dx, dt);
-        materials[1] = CoefMaterial::from_relative(RelMaterial{1.0, 1.0, 0.0}, dx, dt);
-    }
+          dx(parameters.dx), dt(parameters.dt()), materials(materials) {}
 
     static Cell halo() {
         Cell new_cell;
@@ -65,22 +50,26 @@ class LUTKernel {
         Cell cell = stencil[ID(0, 0)];
 
         uint32_t material_index = cell.material_index;
-        if (material_index >= max_materials) {
+        if (material_index >= materials.get_range()[0]) {
             material_index = 0;
         }
+        using cached_lsu = cl::sycl::ext::intel::lsu<
+            cl::sycl::ext::intel::cache<0>,
+            cl::sycl::ext::intel::burst_coalesce<false>,
+            cl::sycl::ext::intel::prefetch<true>
+        >;
+        CoefMaterial material = cached_lsu::load(materials.get_pointer() + material_index);
 
         if ((stencil.stage & 0b1) == 0) {
-            cell.ex *= materials[material_index].ca;
-            cell.ex +=
-                materials[material_index].cb * (stencil[ID(0, 0)].hz - stencil[ID(0, -1)].hz);
+            cell.ex *= material.ca;
+            cell.ex += material.cb * (stencil[ID(0, 0)].hz - stencil[ID(0, -1)].hz);
 
-            cell.ey *= materials[material_index].ca;
-            cell.ey +=
-                materials[material_index].cb * (stencil[ID(-1, 0)].hz - stencil[ID(0, 0)].hz);
+            cell.ey *= material.ca;
+            cell.ey += material.cb * (stencil[ID(-1, 0)].hz - stencil[ID(0, 0)].hz);
         } else {
-            cell.hz *= materials[material_index].da;
-            cell.hz += materials[material_index].db * (stencil[ID(0, 1)].ex - stencil[ID(0, 0)].ex +
-                                                       stencil[ID(0, 0)].ey - stencil[ID(1, 0)].ey);
+            cell.hz *= material.da;
+            cell.hz += material.db * (stencil[ID(0, 1)].ex - stencil[ID(0, 0)].ex +
+                                      stencil[ID(0, 0)].ey - stencil[ID(1, 0)].ey);
 
             float current_time = (stencil.generation >> 1) * dt;
             if (stencil.id.c == stencil.grid_range.c / 2 &&
@@ -96,4 +85,15 @@ class LUTKernel {
         }
         return cell;
     }
+
+  private:
+    float disk_radius;
+    float tau;
+    float omega;
+    float t_0;
+    float t_cutoff;
+    float t_detect;
+    float dx;
+    float dt;
+    MaterialAC materials;
 };
