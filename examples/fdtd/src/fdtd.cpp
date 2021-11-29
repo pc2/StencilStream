@@ -27,11 +27,11 @@ using Kernel = LUTKernel;
 using Cell = Kernel::Cell;
 
 #ifdef MONOTILE
-using Executor = MonotileExecutor<Cell, stencil_radius, Kernel, pipeline_length, tile_width,
-                                  tile_height>;
+using Executor =
+    MonotileExecutor<Cell, stencil_radius, Kernel, pipeline_length, tile_width, tile_height>;
 #else
-using Executor = StencilExecutor<Cell, stencil_radius, Kernel, pipeline_length, tile_width,
-                                 tile_height>;
+using Executor =
+    StencilExecutor<Cell, stencil_radius, Kernel, pipeline_length, tile_width, tile_height>;
 #endif
 
 #ifdef HARDWARE
@@ -58,8 +58,8 @@ enum class CellField {
     HZ_SUM,
 };
 
-void save_frame(cl::sycl::buffer<Cell, 2> frame_buffer, uindex_t generation_index,
-                CellField field, Parameters const &parameters) {
+void save_frame(cl::sycl::buffer<Cell, 2> frame_buffer, uindex_t generation_index, CellField field,
+                Parameters const &parameters) {
     auto frame = frame_buffer.get_access<access::mode::read>();
 
     ostringstream frame_path;
@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
 
                 float a = float(c) - float(parameters.grid_range()[0]) / 2.0;
                 float b = float(r) - float(parameters.grid_range()[1]) / 2.0;
-                if (parameters.dx * sqrt(a*a + b*b) <= parameters.disk_radius) {
+                if (parameters.dx * sqrt(a * a + b * b) <= parameters.disk_radius) {
                     init_ac[c][r].material_index = 1;
                 } else {
                     init_ac[c][r].material_index = 0;

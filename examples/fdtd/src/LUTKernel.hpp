@@ -18,10 +18,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "defines.hpp"
 #include "Material.hpp"
-#include <StencilStream/Stencil.hpp>
 #include "Parameters.hpp"
+#include "defines.hpp"
+#include <StencilStream/Stencil.hpp>
 
 class LUTKernel {
     float disk_radius;
@@ -35,7 +35,6 @@ class LUTKernel {
     CoefMaterial materials[max_materials];
 
   public:
-
     struct Cell {
         float ex, ey, hz, hz_sum;
         uint32_t material_index;
@@ -45,8 +44,11 @@ class LUTKernel {
         : disk_radius(parameters.disk_radius), tau(parameters.tau), omega(parameters.omega()),
           t_0(parameters.t_0()), t_cutoff(parameters.t_cutoff()), t_detect(parameters.t_detect()),
           dx(parameters.dx), dt(parameters.dt()), materials{} {
-        materials[0] = CoefMaterial::from_relative(RelMaterial { std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(), 0.0}, dx, dt);
-        materials[1] = CoefMaterial::from_relative(RelMaterial { 1.0, 1.0, 0.0}, dx, dt);
+        materials[0] =
+            CoefMaterial::from_relative(RelMaterial{std::numeric_limits<float>::infinity(),
+                                                    std::numeric_limits<float>::infinity(), 0.0},
+                                        dx, dt);
+        materials[1] = CoefMaterial::from_relative(RelMaterial{1.0, 1.0, 0.0}, dx, dt);
     }
 
     static Cell halo() {
@@ -69,23 +71,20 @@ class LUTKernel {
 
         if ((stencil.stage & 0b1) == 0) {
             cell.ex *= materials[material_index].ca;
-            cell.ex += materials[material_index].cb * (
-                stencil[ID(0, 0)].hz - stencil[ID(0, -1)].hz
-            );
+            cell.ex +=
+                materials[material_index].cb * (stencil[ID(0, 0)].hz - stencil[ID(0, -1)].hz);
 
             cell.ey *= materials[material_index].ca;
-            cell.ey += materials[material_index].cb * (
-                stencil[ID(-1, 0)].hz - stencil[ID(0, 0)].hz
-            );
+            cell.ey +=
+                materials[material_index].cb * (stencil[ID(-1, 0)].hz - stencil[ID(0, 0)].hz);
         } else {
             cell.hz *= materials[material_index].da;
-            cell.hz += materials[material_index].db * (
-                stencil[ID(0, 1)].ex - stencil[ID(0, 0)].ex +
-                stencil[ID(0, 0)].ey - stencil[ID(1, 0)].ey
-            );
+            cell.hz += materials[material_index].db * (stencil[ID(0, 1)].ex - stencil[ID(0, 0)].ex +
+                                                       stencil[ID(0, 0)].ey - stencil[ID(1, 0)].ey);
 
             float current_time = (stencil.generation >> 1) * dt;
-            if (stencil.id.c == stencil.grid_range.c / 2 && stencil.id.r == stencil.grid_range.r / 2 && current_time < t_cutoff) {
+            if (stencil.id.c == stencil.grid_range.c / 2 &&
+                stencil.id.r == stencil.grid_range.r / 2 && current_time < t_cutoff) {
                 float wave_progress = (current_time - t_0) / tau;
                 cell.hz += cl::sycl::cos(omega * current_time) *
                            cl::sycl::exp(-1 * wave_progress * wave_progress);

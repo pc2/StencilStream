@@ -30,9 +30,7 @@ struct RelMaterial {
     // permittivity (transmissibility of the material for electric fields) in vacuum
     static constexpr float eps_0 = 1.0 / (c0 * c0 * mu_0);
 
-    float ca(float dx, float dt) const {
-        return (1 - (sigma * dt)) / (1 + (sigma * dt));
-    }
+    float ca(float dx, float dt) const { return (1 - (sigma * dt)) / (1 + (sigma * dt)); }
 
     float cb(float dx, float dt) const {
         if (cl::sycl::isinf(eps_r)) {
@@ -42,9 +40,7 @@ struct RelMaterial {
         }
     }
 
-    float da(float dx, float dt) const {
-        return (1 - (sigma * dt)) / (1 + (sigma * dt));
-    }
+    float da(float dx, float dt) const { return (1 - (sigma * dt)) / (1 + (sigma * dt)); }
 
     float db(float dx, float dt) const {
         if (cl::sycl::isinf(mu_r)) {
@@ -63,7 +59,7 @@ struct CoefMaterial {
     float db;
 
     static CoefMaterial from_relative(RelMaterial material, float dx, float dt) {
-        return CoefMaterial {
+        return CoefMaterial{
             material.ca(dx, dt),
             material.cb(dx, dt),
             material.da(dx, dt),
