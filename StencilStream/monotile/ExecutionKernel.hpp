@@ -108,14 +108,16 @@ class ExecutionKernel {
         index_1d_t prev_r = 0;
 #pragma unroll
         for (uindex_1d_t i = 0; i < pipeline_length; i++) {
-            c[i] = prev_c - stencil_radius;
+            /*c[i] = prev_c - stencil_radius;
             r[i] = prev_r - stencil_radius;
             if (r[i] < index_1d_t(0)) {
                 r[i] += tile_height;
                 c[i] -= 1;
             }
             prev_c = c[i];
-            prev_r = r[i];
+            prev_r = r[i];*/
+            c[i] = - (i+1) * stencil_radius;
+            r[i] = - (i+1) * stencil_radius;
         }
 
         /*
