@@ -53,8 +53,8 @@ namespace tiling {
  * \tparam access_mode The access mode to expect for the buffer accessor.
  * \tparam access_target The access target to expect for the buffer accessor.
  */
-template <typename T, uindex_t halo_height, uindex_t core_height, typename pipe,
-          uindex_t n_halo_height_buffers, cl::sycl::access::mode access_mode,
+template <typename T, uindex_1d_t halo_height, uindex_1d_t core_height, typename pipe,
+          uindex_min_t n_halo_height_buffers, cl::sycl::access::mode access_mode,
           cl::sycl::access::target access_target, uindex_t burst_buffer_length>
 class IOKernel {
   public:
@@ -66,11 +66,11 @@ class IOKernel {
     /**
      * \brief The total number of buffers in a slice/column.
      */
-    static constexpr uindex_t n_buffers = 2 * n_halo_height_buffers + 1;
+    static constexpr uindex_min_t n_buffers = 2 * n_halo_height_buffers + 1;
     /**
      * \brief The total number of cell rows in the (logical) slice/column.
      */
-    static constexpr uindex_t n_rows = 2 * n_halo_height_buffers * halo_height + core_height;
+    static constexpr uindex_1d_t n_rows = 2 * n_halo_height_buffers * halo_height + core_height;
 
     /**
      * \brief Get the height of a buffer.
@@ -78,7 +78,7 @@ class IOKernel {
      * As described in the description, the first and last n buffers are `halo_height` cells high,
      * while the middle buffer is `core_height` cells high.
      */
-    static constexpr uindex_t get_buffer_height(uindex_t index) {
+    static constexpr uindex_1d_t get_buffer_height(uindex_t index) {
         if (index == n_halo_height_buffers) {
             return core_height;
         } else {
@@ -98,7 +98,7 @@ class IOKernel {
     IOKernel(std::array<Accessor, n_buffers> accessor, uindex_t n_columns)
         : accessor(accessor), n_columns(n_columns) {
 #ifndef __SYCL_DEVICE_ONLY__
-        for (uindex_t i = 0; i < n_buffers; i++) {
+        for (uindex_min_t i = 0; i < n_buffers; i++) {
             assert(get_buffer_height(i) * n_columns <=
                    accessor[i].get_range()[0] * burst_buffer_length);
         }
@@ -112,7 +112,7 @@ class IOKernel {
         static_assert(access_mode == cl::sycl::access::mode::read ||
                       access_mode == cl::sycl::access::mode::read_write);
 
-        run<>([](Accessor &accessor, uindex_t burst_i, uindex_t cell_i) {
+        run<>([](Accessor &accessor, uindex_2d_t burst_i, uindex_min_t cell_i) {
             pipe::write(accessor[burst_i][cell_i]);
         });
     }
@@ -125,42 +125,31 @@ class IOKernel {
                       access_mode == cl::sycl::access::mode::discard_write ||
                       access_mode == cl::sycl::access::mode::read_write ||
                       access_mode == cl::sycl::access::mode::discard_read_write);
-
-        run<>([](Accessor &accessor, uindex_t burst_i, uindex_t cell_i) {
-            accessor[burst_i][cell_i] = pipe::read();
+        run([](Accessor &accessor, uindex_2d_t i) {
+            accessor[i] = pipe::read();
         });
     }
 
   private:
-    template<typename F>
-    void run(F operation) {
-        static_assert(std::is_invocable<F, Accessor&, uindex_t, uindex_t>::value);
+    template <typename Action> void run(Action action) {
+        static_assert(std::is_invocable<Action, Accessor &, uindex_2d_t>::value);
 
-        uindex_t burst_i[n_buffers];
-        uindex_t cell_i[n_buffers];
-#pragma unroll
-        for (uindex_t buffer_i = 0; buffer_i < n_buffers; buffer_i++) {
-            burst_i[buffer_i] = 0;
-            cell_i[buffer_i] = 0;
-        }
+        uindex_2d_t i[n_buffers] = {0};
 
-        [[intel::loop_coalesce]]
-        for (uindex_t c = 0; c < n_columns; c++) {
-            for (uindex_t buffer_i = 0; buffer_i < n_buffers; buffer_i++) {
-                for (uindex_t r = 0; r < get_buffer_height(buffer_i); r++) {
-                    operation(accessor[buffer_i], burst_i[buffer_i], cell_i[buffer_i]);
-                    if (cell_i[buffer_i] == burst_buffer_length - 1) {
-                        burst_i[buffer_i]++;
-                        cell_i[buffer_i] = 0;
-                    } else {
-                        cell_i[buffer_i]++;
-                    }
+        for (uindex_1d_t c = 0; c < n_columns; c++) {
+            uindex_min_t buffer_i = 0;
+            uindex_1d_t next_bound = get_buffer_height(0);
+            for (uindex_1d_t r = 0; r < n_rows; r++) {
+                if (r == next_bound) {
+                    buffer_i++;
+                    next_bound += get_buffer_height(buffer_i);
                 }
             }
         }
     }
-    std::array<Accessor, n_buffers> accessor;
-    uindex_t n_columns;
+
+    [[intel::fpga_register]] std::array<Accessor, n_buffers> accessor;
+    uindex_1d_t n_columns;
 };
 
 } // namespace tiling

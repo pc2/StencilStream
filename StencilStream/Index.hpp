@@ -22,6 +22,15 @@
 #include <cstdint>
 
 namespace stencil {
+#ifndef STENCIL_INDEX_MIN_WIDTH
+    #define STENCIL_INDEX_MIN_WIDTH 8
+#endif
+#ifndef STENCIL_INDEX_1D_WIDTH
+    #define STENCIL_INDEX_1D_WIDTH 16
+#endif
+#ifndef STENCIL_INDEX_2D_WIDTH
+    #define STENCIL_INDEX_2D_WIDTH 32
+#endif
 #ifndef STENCIL_INDEX_WIDTH
     #define STENCIL_INDEX_WIDTH 64
 #endif
@@ -36,6 +45,12 @@ namespace stencil {
  * Static asserts throughout the library ensure that the index type is wide enough. Therefore, you
  * can decrease the until you get compilation errors.
  */
+typedef BOOST_PP_CAT(BOOST_PP_CAT(uint, STENCIL_INDEX_MIN_WIDTH), _t) uindex_min_t;
+typedef BOOST_PP_CAT(BOOST_PP_CAT(int, STENCIL_INDEX_MIN_WIDTH), _t) index_min_t;
+typedef BOOST_PP_CAT(BOOST_PP_CAT(uint, STENCIL_INDEX_1D_WIDTH), _t) uindex_1d_t;
+typedef BOOST_PP_CAT(BOOST_PP_CAT(int, STENCIL_INDEX_1D_WIDTH), _t) index_1d_t;
+typedef BOOST_PP_CAT(BOOST_PP_CAT(uint, STENCIL_INDEX_2D_WIDTH), _t) uindex_2d_t;
+typedef BOOST_PP_CAT(BOOST_PP_CAT(int, STENCIL_INDEX_2D_WIDTH), _t) index_2d_t;
 typedef BOOST_PP_CAT(BOOST_PP_CAT(uint, STENCIL_INDEX_WIDTH), _t) uindex_t;
 typedef BOOST_PP_CAT(BOOST_PP_CAT(int, STENCIL_INDEX_WIDTH), _t) index_t;
 } // namespace stencil
