@@ -45,8 +45,8 @@ namespace monotile {
  * output_tile_height The number of rows in a grid tile. \tparam in_pipe The pipe to read from.
  * \tparam out_pipe The pipe to write to.
  */
-template <typename TransFunc, typename T, uindex_t stencil_radius, uindex_t pipeline_length,
-          uindex_t tile_width, uindex_t tile_height, typename in_pipe, typename out_pipe>
+template <typename TransFunc, typename T, uindex_min_t stencil_radius, uindex_1d_t pipeline_length,
+          uindex_1d_t tile_width, uindex_1d_t tile_height, typename in_pipe, typename out_pipe>
 class ExecutionKernel {
   public:
     static_assert(
@@ -56,29 +56,29 @@ class ExecutionKernel {
     /**
      * \brief The width and height of the stencil buffer.
      */
-    const static uindex_t stencil_diameter = Stencil<T, stencil_radius>::diameter;
+    const static uindex_min_t stencil_diameter = Stencil<T, stencil_radius>::diameter;
 
     /**
      * \brief The number of cells in the tile.
      */
-    const static uindex_t n_cells = tile_width * tile_height;
+    const static uindex_2d_t n_cells = tile_width * tile_height;
 
     /**
      * \brief The number of cells that need to be fed into a stage before it produces correct
      * values.
      */
-    const static uindex_t stage_latency = stencil_radius * (tile_height + 1);
+    const static uindex_1d_t stage_latency = stencil_radius * (tile_height + 1);
 
     /**
      * \brief The number of cells that need to be fed into the pipeline before it produces correct
      * values.
      */
-    const static uindex_t pipeline_latency = pipeline_length * stage_latency;
+    const static uindex_2d_t pipeline_latency = pipeline_length * stage_latency;
 
     /**
      * \brief The total number of loop iterations.
      */
-    const static uindex_t n_iterations = pipeline_latency + n_cells;
+    const static uindex_2d_t n_iterations = pipeline_latency + n_cells;
 
     /**
      * \brief Create and configure the execution kernel.
@@ -92,7 +92,7 @@ class ExecutionKernel {
      * \param halo_value The value of cells outside the grid.
      */
     ExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t n_generations,
-                    uindex_t grid_width, uindex_t grid_height, T halo_value)
+                    uindex_1d_t grid_width, uindex_1d_t grid_height, T halo_value)
         : trans_func(trans_func), i_generation(i_generation), n_generations(n_generations),
           grid_width(grid_width), grid_height(grid_height), halo_value(halo_value) {}
 
@@ -100,17 +100,17 @@ class ExecutionKernel {
      * \brief Execute the kernel.
      */
     void operator()() const {
-        [[intel::fpga_register]] index_t c[pipeline_length];
-        [[intel::fpga_register]] index_t r[pipeline_length];
+        [[intel::fpga_register]] index_1d_t c[pipeline_length];
+        [[intel::fpga_register]] index_1d_t r[pipeline_length];
 
         // Initializing (output) column and row counters.
-        index_t prev_c = 0;
-        index_t prev_r = 0;
+        index_1d_t prev_c = 0;
+        index_1d_t prev_r = 0;
 #pragma unroll
-        for (uindex_t i = 0; i < pipeline_length; i++) {
+        for (uindex_1d_t i = 0; i < pipeline_length; i++) {
             c[i] = prev_c - stencil_radius;
             r[i] = prev_r - stencil_radius;
-            if (r[i] < index_t(0)) {
+            if (r[i] < index_1d_t(0)) {
                 r[i] += tile_height;
                 c[i] -= 1;
             }
@@ -130,7 +130,7 @@ class ExecutionKernel {
         [[intel::fpga_register]] T stencil_buffer[pipeline_length][stencil_diameter]
                                                  [stencil_diameter];
 
-        for (uindex_t i = 0; i < n_iterations; i++) {
+        for (uindex_2d_t i = 0; i < n_iterations; i++) {
             T value;
             if (i < n_cells) {
                 value = in_pipe::read();
@@ -139,11 +139,11 @@ class ExecutionKernel {
             }
 
 #pragma unroll
-            for (uindex_t stage = 0; stage < pipeline_length; stage++) {
+            for (uindex_1d_t stage = 0; stage < pipeline_length; stage++) {
 #pragma unroll
-                for (uindex_t r = 0; r < stencil_diameter - 1; r++) {
+                for (uindex_min_t r = 0; r < stencil_diameter - 1; r++) {
 #pragma unroll
-                    for (uindex_t c = 0; c < stencil_diameter; c++) {
+                    for (uindex_min_t c = 0; c < stencil_diameter; c++) {
                         stencil_buffer[stage][c][r] = stencil_buffer[stage][c][r + 1];
                     }
                 }
@@ -151,12 +151,17 @@ class ExecutionKernel {
                 // Update the stencil buffer and cache with previous cache contents and the new
                 // input cell.
 #pragma unroll
-                for (uindex_t cache_c = 0; cache_c < stencil_diameter; cache_c++) {
+                for (uindex_min_t cache_c = 0; cache_c < stencil_diameter; cache_c++) {
                     T new_value;
                     if (cache_c == stencil_diameter - 1) {
                         new_value = value;
                     } else {
-                        new_value = cache[c[stage] & 0b1][r[stage]][stage][cache_c];
+                        new_value = cache[0][stage][cache_c];
+                        // implement cache as shift register
+#pragma unroll
+                        for (uindex_1d_t r=0; r<tile_height-1; r++) {
+                            cache[r][stage][cache_c] = cache[r+1][stage][cache_c];
+                        }
                     }
 
                     stencil_buffer[stage][cache_c][stencil_diameter - 1] = new_value;
@@ -219,16 +224,16 @@ class ExecutionKernel {
     }
 
   private:
-    bool id_in_grid(index_t c, index_t r) const {
-        return c >= index_t(0) && r >= index_t(0) && c < index_t(grid_width) &&
-               r < index_t(grid_height);
+    bool id_in_grid(index_1d_t c, index_1d_t r) const {
+        return c >= index_1d_t(0) && r >= index_1d_t(0) && c < index_1d_t(grid_width) &&
+               r < index_1d_t(grid_height);
     }
 
     TransFunc trans_func;
     uindex_t i_generation;
     uindex_t n_generations;
-    uindex_t grid_width;
-    uindex_t grid_height;
+    uindex_1d_t grid_width;
+    uindex_1d_t grid_height;
     T halo_value;
 };
 
