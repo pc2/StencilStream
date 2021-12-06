@@ -17,21 +17,28 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "LUTKernel.hpp"
+#include "Kernel.hpp"
 #include <StencilStream/MonotileExecutor.hpp>
 #include <StencilStream/StencilExecutor.hpp>
 #include <deque>
 
-using Kernel = LUTKernel;
+#ifdef MATERIAL_LOOKUP
+    #include "material/LUTResolver.hpp"
+using MaterialResolver = LUTResolver<2>;
+#else
+    #include "material/CoefResolver.hpp"
+using MaterialResolver = CoefResolver;
+#endif
 
-using Cell = Kernel::Cell;
+using KernelImpl = Kernel<MaterialResolver>;
+using CellImpl = KernelImpl::Cell;
 
 #ifdef MONOTILE
-using Executor =
-    MonotileExecutor<Cell, stencil_radius, Kernel, pipeline_length, tile_width, tile_height>;
+using Executor = MonotileExecutor<CellImpl, stencil_radius, KernelImpl, pipeline_length, tile_width,
+                                  tile_height>;
 #else
 using Executor =
-    StencilExecutor<Cell, stencil_radius, Kernel, pipeline_length, tile_width, tile_height>;
+    StencilExecutor<CellImpl, stencil_radius, KernelImpl, pipeline_length, tile_width, tile_height>;
 #endif
 
 #ifdef HARDWARE
@@ -58,8 +65,8 @@ enum class CellField {
     HZ_SUM,
 };
 
-void save_frame(cl::sycl::buffer<Cell, 2> frame_buffer, uindex_t generation_index, CellField field,
-                Parameters const &parameters) {
+void save_frame(cl::sycl::buffer<CellImpl, 2> frame_buffer, uindex_t generation_index,
+                CellField field, Parameters const &parameters) {
     auto frame = frame_buffer.get_access<access::mode::read>();
 
     ostringstream frame_path;
@@ -124,41 +131,30 @@ int main(int argc, char **argv) {
     }
 #endif
 
-    cl::sycl::buffer<Cell, 2> grid_buffer(parameters.grid_range());
+    MaterialResolver mat_resolver(parameters);
+
+    cl::sycl::buffer<CellImpl, 2> grid_buffer(parameters.grid_range());
     {
         auto init_ac = grid_buffer.get_access<cl::sycl::access::mode::discard_write>();
         for (uindex_t c = 0; c < parameters.grid_range()[0]; c++) {
             for (uindex_t r = 0; r < parameters.grid_range()[1]; r++) {
-                init_ac[c][r] = Kernel::halo();
+                init_ac[c][r] = KernelImpl::halo();
 
                 float a = float(c) - float(parameters.grid_range()[0]) / 2.0;
                 float b = float(r) - float(parameters.grid_range()[1]) / 2.0;
                 if (parameters.dx * sqrt(a * a + b * b) <= parameters.disk_radius) {
-                    init_ac[c][r].material_index = 1;
+                    init_ac[c][r].mat_ident = mat_resolver.index_to_identifier(parameters, 1);
                 } else {
-                    init_ac[c][r].material_index = 0;
+                    init_ac[c][r].mat_ident = mat_resolver.index_to_identifier(parameters, 0);
                 }
             }
         }
     }
 
-    cl::sycl::buffer<CoefMaterial, 1> materials(cl::sycl::range<1>(2));
-    {
-        auto materials_ac = materials.get_access<cl::sycl::access::mode::discard_write>();
-        materials_ac[0] =
-            CoefMaterial::from_relative(RelMaterial{std::numeric_limits<float>::infinity(),
-                                                    std::numeric_limits<float>::infinity(), 0.0},
-                                        parameters.dx, parameters.dt());
-        materials_ac[1] =
-            CoefMaterial::from_relative(RelMaterial{11.5, 1.0, 0.0}, parameters.dx, parameters.dt());
-    }
+    auto trans_func_builder =
+        std::function([&](cl::sycl::handler &cgh) { return KernelImpl(parameters, mat_resolver); });
 
-    auto trans_func_builder = std::function([&](cl::sycl::handler &cgh) {
-        auto materials_ac = materials.get_access<cl::sycl::access::mode::read>(cgh);
-        return Kernel(parameters, materials_ac);
-    });
-
-    Executor executor(Kernel::halo());
+    Executor executor(KernelImpl::halo());
     executor.set_input(grid_buffer);
 #ifdef HARDWARE
     executor.select_fpga();

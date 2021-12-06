@@ -18,7 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "defines.hpp"
+#include "../defines.hpp"
 #include <cmath>
 
 struct RelMaterial {

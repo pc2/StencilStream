@@ -18,23 +18,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "Material.hpp"
 #include "Parameters.hpp"
 #include "defines.hpp"
+#include "material/Material.hpp"
 #include <StencilStream/Stencil.hpp>
 
-class LUTKernel {
+template <typename MaterialResolver> class Kernel {
   public:
     struct Cell {
         float ex, ey, hz, hz_sum;
-        uint32_t material_index;
+        typename MaterialResolver::MaterialIdentifier mat_ident;
     };
-    using MaterialAC = cl::sycl::accessor<CoefMaterial, 1, cl::sycl::access::mode::read>;
 
-    LUTKernel(Parameters const &parameters, MaterialAC materials)
+    Kernel(Parameters const &parameters, MaterialResolver mat_resolver)
         : disk_radius(parameters.disk_radius), tau(parameters.tau), omega(parameters.omega()),
           t_0(parameters.t_0()), t_cutoff(parameters.t_cutoff()), t_detect(parameters.t_detect()),
-          dx(parameters.dx), dt(parameters.dt()), materials(materials) {}
+          dx(parameters.dx), dt(parameters.dt()), mat_resolver(mat_resolver) {}
 
     static Cell halo() {
         Cell new_cell;
@@ -42,23 +41,13 @@ class LUTKernel {
         new_cell.ey = 0;
         new_cell.hz = 0;
         new_cell.hz_sum = 0;
-        new_cell.material_index = 0;
         return new_cell;
     }
 
     Cell operator()(Stencil<Cell, stencil_radius> const &stencil) const {
         Cell cell = stencil[ID(0, 0)];
 
-        uint32_t material_index = cell.material_index;
-        if (material_index >= materials.get_range()[0]) {
-            material_index = 0;
-        }
-        using cached_lsu = cl::sycl::ext::intel::lsu<
-            cl::sycl::ext::intel::cache<0>,
-            cl::sycl::ext::intel::burst_coalesce<false>,
-            cl::sycl::ext::intel::prefetch<true>
-        >;
-        CoefMaterial material = cached_lsu::load(materials.get_pointer() + material_index);
+        CoefMaterial material = mat_resolver.identifier_to_material(cell.mat_ident);
 
         if ((stencil.stage & 0b1) == 0) {
             cell.ex *= material.ca;
@@ -95,5 +84,5 @@ class LUTKernel {
     float t_detect;
     float dx;
     float dt;
-    MaterialAC materials;
+    MaterialResolver mat_resolver;
 };

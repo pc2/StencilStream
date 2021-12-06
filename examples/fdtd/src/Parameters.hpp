@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "Material.hpp"
 #include "defines.hpp"
+#include "material/Material.hpp"
 
 std::string description = "\
 This application simulates a nano-photonic disk cavity.\n\

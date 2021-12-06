@@ -18,29 +18,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include <CL/sycl/INTEL/fpga_extensions.hpp>
-#include <StencilStream/Index.hpp>
-#include <fstream>
-#include <iostream>
-#include <unistd.h>
+#include "../Parameters.hpp"
+#include "Material.hpp"
 
-using namespace std;
-using namespace cl::sycl;
-using namespace stencil;
+class CoefResolver {
+  public:
+    using MaterialIdentifier = CoefMaterial;
 
-//////////////////////////////////////////////
-// Needed physical constants for simulation //
-//////////////////////////////////////////////
-// velocity of light in m/s
-constexpr float c0 = 299792458.0;
+    CoefResolver(Parameters const &parameters) {}
 
-// Square root of two
-constexpr float sqrt_2 = 1.4142135623730951;
+    CoefMaterial identifier_to_material(MaterialIdentifier identifier) const { return identifier; }
 
-constexpr float pi = 3.1415926535897932384626433;
-
-/* stencil parameters */
-constexpr uindex_t tile_height = 512;
-constexpr uindex_t tile_width = 512;
-constexpr uindex_t stencil_radius = 1;
-constexpr uindex_t pipeline_length = 15; // 150;
+    MaterialIdentifier index_to_identifier(Parameters const &parameters, uindex_t material_index) {
+        if (material_index == 0) {
+            return CoefMaterial::from_relative(RelMaterial{std::numeric_limits<float>::infinity(),
+                                                           std::numeric_limits<float>::infinity(),
+                                                           0.0},
+                                               parameters.dx, parameters.dt());
+        } else {
+            return CoefMaterial::from_relative(RelMaterial{11.56, 1.0, 0.0}, parameters.dx,
+                                               parameters.dt());
+        }
+    }
+};
