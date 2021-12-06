@@ -51,7 +51,7 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
      */
     using Parent = SingleContextExecutor<T, stencil_radius, TransFunc>;
 
-    static constexpr uindex_t burst_length = sizeof(T) / burst_size + (sizeof(T) % burst_size == 0 ? 0 : 1);
+    static constexpr uindex_t burst_length = burst_size / sizeof(T);
     static constexpr uindex_t n_bursts = tile_width * tile_height / burst_length + (tile_width * tile_height % burst_length == 0 ? 0 : 1);
 
     /**
@@ -143,20 +143,17 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
                 auto ac = read_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
 
                 cgh.single_task<class MonotileInputKernel>([=]() {
-                    [[intel::loop_coalesce]]
-                    for (uindex_t burst_i = 0; burst_i * burst_length < tile_width * tile_height; burst_i++) {
-                        T cache[burst_length];
+                    // Manual prefetching cache
+                    T cache[burst_length];
 
-                        #pragma unroll
-                        for (uindex_t cell_i = 0; cell_i < burst_length; cell_i++) {
-                            cache[cell_i] = ac[burst_i * burst_length + cell_i];
-                        }
-
-                        for (uindex_t cell_i = 0; cell_i < burst_length; cell_i++) {
-                            if (burst_i * burst_length + cell_i < tile_width * tile_height) {
-                                in_pipe::write(cache[cell_i]);
+                    for (uindex_t i = 0; i < tile_width * tile_height; i++) {
+                        if (i % burst_length == 0) {
+                            #pragma unroll
+                            for (uindex_t cell_i = 0; cell_i < burst_length; cell_i++) {
+                                cache[cell_i] = ac[i + cell_i];
                             }
                         }
+                        in_pipe::write(cache[i % burst_length]);
                     }
                 });
             });
@@ -172,19 +169,23 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
                     write_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
 
                 cgh.single_task<class MonotileOutputKernel>([=]() {
-                    [[intel::loop_coalesce]]
-                    for (uindex_t burst_i = 0; burst_i * burst_length < tile_width * tile_height; burst_i++) {
-                        T cache[burst_length];
+                    T cache[burst_length];
 
-                        for (uindex_t cell_i = 0; cell_i < burst_length; cell_i++) {
-                            if (burst_i * burst_length + cell_i < tile_width * tile_height) {
-                                cache[cell_i] = out_pipe::read();
+                    for (uindex_t i = 0; i < tile_width * tile_height; i++) {
+                        cache[i % burst_length] = out_pipe::read();
+                        if (i % burst_length == burst_length - 1) {
+                            #pragma unroll
+                            for (uindex_t cell_i = 0; cell_i < burst_length; cell_i++) {
+                                ac[(i-burst_length+1) + cell_i] = cache[cell_i]; 
                             }
                         }
+                    }
 
+                    if ((tile_width * tile_height) % burst_length != 0) {
+                        uindex_t i = (tile_width * tile_height) / burst_length;
                         #pragma unroll
                         for (uindex_t cell_i = 0; cell_i < burst_length; cell_i++) {
-                            ac[burst_i * burst_length + cell_i] = cache[cell_i]; 
+                            ac[i + cell_i] = cache[cell_i];
                         }
                     }
                 });
