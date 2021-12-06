@@ -146,11 +146,12 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
         uindex_t grid_width = grid_range.c;
         uindex_t grid_height = grid_range.r;
 
-        while (this->get_i_generation() < target_i_generation) {
-            cl::sycl::buffer<T, 1> out_buffer(cl::sycl::range<1>(tile_width * tile_height));
+        cl::sycl::buffer<T, 1> read_buffer = tile_buffer;
+        cl::sycl::buffer<T, 1> write_buffer = cl::sycl::range<1>(tile_width * tile_height);
 
+        while (this->get_i_generation() < target_i_generation) {
             input_queue.submit([&](cl::sycl::handler &cgh) {
-                auto ac = tile_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
+                auto ac = read_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
 
                 cgh.single_task<class MonotileInputKernel>([=]() {
                     for (uindex_t i = 0; i < tile_width * tile_height; i++) {
@@ -168,8 +169,7 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
 
             output_queue.submit([&](cl::sycl::handler &cgh) {
                 auto ac =
-                    out_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
-                T halo_value = this->get_halo_value();
+                    write_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
 
                 cgh.single_task<class MonotileOutputKernel>([=]() {
                     for (uindex_t i = 0; i < tile_width * tile_height; i++) {
@@ -178,13 +178,15 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
                 });
             });
 
-            tile_buffer = out_buffer;
+            std::swap(read_buffer, write_buffer);
 
             this->get_runtime_sample().add_pass(computation_event);
 
             this->inc_i_generation(
                 std::min(target_i_generation - this->get_i_generation(), pipeline_length));
         }
+
+        tile_buffer = read_buffer;
     }
 
   private:
