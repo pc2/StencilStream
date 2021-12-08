@@ -99,8 +99,9 @@ if [[ -n $SUFFIX ]]
 then
     for NAME in "fdtd_coef_mono_" "fdtd_lut_mono_" "fdtd_coef_tiling_" "fdtd_lut_tiling_"
     do
-        run_build "$NAME$SUFFIX"
+        run_build "$NAME$SUFFIX" > "$NAME$SUFFIX.build.log" &
     done
+    wait
 else
     run_build $1
 fi
