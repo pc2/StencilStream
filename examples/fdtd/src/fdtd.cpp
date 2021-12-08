@@ -22,12 +22,13 @@
 #include <StencilStream/StencilExecutor.hpp>
 #include <deque>
 
-#ifdef MATERIAL_LOOKUP
-    #include "material/LUTResolver.hpp"
-using MaterialResolver = LUTResolver<2>;
-#else
+#ifdef COEF_MATERIALS
     #include "material/CoefResolver.hpp"
-using MaterialResolver = CoefResolver;
+    using MaterialResolver = CoefResolver;
+#endif
+#ifdef LUT_MATERIALS
+    #include "material/LUTResolver.hpp"
+    using MaterialResolver = LUTResolver<2>;
 #endif
 
 using KernelImpl = Kernel<MaterialResolver>;

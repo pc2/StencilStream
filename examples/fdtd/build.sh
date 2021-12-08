@@ -15,7 +15,7 @@ Usage: $0 <variant|target>
 This script build variants of the FDTD application. Calling $0 <variant> builds the given variant. 
 The naming scheme of the variants is as follows:
 
-fdtd_<architecture>_<target>
+fdtd_<material_resolver>_<architecture>_<target>
 
 The placeholders may have the following values:
 * architecture:
@@ -26,6 +26,10 @@ The placeholders may have the following values:
     * emu: Compile the device code for emulation
     * hw: Compile the devie code for hardware execution
     * report: Analyse the device code and generate the synthesis report
+
+* material_resolver:
+    * coef: Store the final material coefficients in every cell.
+    * lut: Store a lookup table with all known material coefficients in the kernel and store only an index in the cell.
 
 Alternatively, you can also just give a target instead of a variant. In this case, $0 will build all
 variants for the given target.
@@ -47,6 +51,13 @@ function run_build {
     if [[ "$EXEC_NAME" == *"mono"* ]]
     then
         ARGS="$ARGS -DMONOTILE"
+    fi
+
+    if [[ "$EXEC_NAME" == *"coef"* ]]
+    then
+        ARGS="$ARGS -DCOEF_MATERIALS"
+    else
+        ARGS="$ARGS -DLUT_MATERIALS"
     fi
 
     if [[ "$EXEC_NAME" == *"hw"* || "$EXEC_NAME" == *"report"* ]]
@@ -86,7 +97,7 @@ fi
 
 if [[ -n $SUFFIX ]]
 then
-    for NAME in "fdtd_mono_" "fdtd_tiling_"
+    for NAME in "fdtd_coef_mono_" "fdtd_lut_mono_" "fdtd_coef_tiling_" "fdtd_lut_tiling_"
     do
         run_build "$NAME$SUFFIX"
     done
