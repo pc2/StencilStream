@@ -26,6 +26,7 @@
 #include <CL/sycl/queue.hpp>
 #include <memory>
 #include <vector>
+#include <numeric>
 
 namespace stencil {
 namespace tiling {
@@ -46,12 +47,13 @@ namespace tiling {
  * \tparam tile_height The number of rows of a tile.
  * \tparam halo_radius The radius (aka width and height) of the tile halo.
  */
-template <typename T, uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius>
+template <typename T, uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius, uindex_t burst_size=64>
 class Grid {
-  private:
-    using Tile = Tile<T, tile_width, tile_height, halo_radius>;
-
   public:
+    static constexpr uindex_t burst_buffer_size = std::lcm(sizeof(T), burst_size);
+    static constexpr uindex_t burst_buffer_length = burst_buffer_size / sizeof(T);
+    using Tile = Tile<T, tile_width, tile_height, halo_radius, burst_buffer_length>;
+
     /**
      * \brief Create a grid with undefined contents.
      *
@@ -174,7 +176,7 @@ class Grid {
 
         submit_input_kernel<in_pipe>(
             fpga_queue,
-            std::array<cl::sycl::buffer<T, 1>, 5>{
+            std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 5>{
                 tiles[tile_c - 1][tile_r - 1][Tile::Part::SOUTH_EAST_CORNER],
                 tiles[tile_c - 1][tile_r][Tile::Part::NORTH_EAST_CORNER],
                 tiles[tile_c - 1][tile_r][Tile::Part::EAST_BORDER],
@@ -184,7 +186,7 @@ class Grid {
             halo_radius);
 
         submit_input_kernel<in_pipe>(fpga_queue,
-                                     std::array<cl::sycl::buffer<T, 1>, 5>{
+                                     std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 5>{
                                          tiles[tile_c][tile_r - 1][Tile::Part::SOUTH_WEST_CORNER],
                                          tiles[tile_c][tile_r][Tile::Part::NORTH_WEST_CORNER],
                                          tiles[tile_c][tile_r][Tile::Part::WEST_BORDER],
@@ -194,7 +196,7 @@ class Grid {
                                      halo_radius);
 
         submit_input_kernel<in_pipe>(fpga_queue,
-                                     std::array<cl::sycl::buffer<T, 1>, 5>{
+                                     std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 5>{
                                          tiles[tile_c][tile_r - 1][Tile::Part::SOUTH_BORDER],
                                          tiles[tile_c][tile_r][Tile::Part::NORTH_BORDER],
                                          tiles[tile_c][tile_r][Tile::Part::CORE],
@@ -204,7 +206,7 @@ class Grid {
                                      core_width);
 
         submit_input_kernel<in_pipe>(fpga_queue,
-                                     std::array<cl::sycl::buffer<T, 1>, 5>{
+                                     std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 5>{
                                          tiles[tile_c][tile_r - 1][Tile::Part::SOUTH_EAST_CORNER],
                                          tiles[tile_c][tile_r][Tile::Part::NORTH_EAST_CORNER],
                                          tiles[tile_c][tile_r][Tile::Part::EAST_BORDER],
@@ -215,7 +217,7 @@ class Grid {
 
         submit_input_kernel<in_pipe>(
             fpga_queue,
-            std::array<cl::sycl::buffer<T, 1>, 5>{
+            std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 5>{
                 tiles[tile_c + 1][tile_r - 1][Tile::Part::SOUTH_WEST_CORNER],
                 tiles[tile_c + 1][tile_r][Tile::Part::NORTH_WEST_CORNER],
                 tiles[tile_c + 1][tile_r][Tile::Part::WEST_BORDER],
@@ -247,7 +249,7 @@ class Grid {
         uindex_t tile_r = tile_id.r + 1;
 
         submit_output_kernel<out_pipe>(fpga_queue,
-                                       std::array<cl::sycl::buffer<T, 1>, 3>{
+                                       std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 3>{
                                            tiles[tile_c][tile_r][Tile::Part::NORTH_WEST_CORNER],
                                            tiles[tile_c][tile_r][Tile::Part::WEST_BORDER],
                                            tiles[tile_c][tile_r][Tile::Part::SOUTH_WEST_CORNER],
@@ -255,7 +257,7 @@ class Grid {
                                        halo_radius);
 
         submit_output_kernel<out_pipe>(fpga_queue,
-                                       std::array<cl::sycl::buffer<T, 1>, 3>{
+                                       std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 3>{
                                            tiles[tile_c][tile_r][Tile::Part::NORTH_BORDER],
                                            tiles[tile_c][tile_r][Tile::Part::CORE],
                                            tiles[tile_c][tile_r][Tile::Part::SOUTH_BORDER],
@@ -263,7 +265,7 @@ class Grid {
                                        core_width);
 
         submit_output_kernel<out_pipe>(fpga_queue,
-                                       std::array<cl::sycl::buffer<T, 1>, 3>{
+                                       std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 3>{
                                            tiles[tile_c][tile_r][Tile::Part::NORTH_EAST_CORNER],
                                            tiles[tile_c][tile_r][Tile::Part::EAST_BORDER],
                                            tiles[tile_c][tile_r][Tile::Part::SOUTH_EAST_CORNER],
@@ -277,8 +279,9 @@ class Grid {
 
     template <typename pipe>
     void submit_input_kernel(cl::sycl::queue fpga_queue,
-                             std::array<cl::sycl::buffer<T, 1>, 5> buffer, uindex_t buffer_width) {
-        using InputKernel = IOKernel<T, halo_radius, core_height, pipe, 2, cl::sycl::access::mode::read>;
+                             std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 5> buffer,
+                             uindex_t buffer_width) {
+        using InputKernel = IOKernel<T, halo_radius, core_height, pipe, 2, cl::sycl::access::mode::read, cl::sycl::access::target::global_buffer, burst_buffer_length>;
 
         fpga_queue.submit([&](cl::sycl::handler &cgh) {
             std::array<typename InputKernel::Accessor, 5> accessor{
@@ -296,9 +299,12 @@ class Grid {
 
     template <typename pipe>
     void submit_output_kernel(cl::sycl::queue fpga_queue,
-                              std::array<cl::sycl::buffer<T, 1>, 3> buffer, uindex_t buffer_width) {
+                              std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 3> buffer,
+                              uindex_t buffer_width) {
         using OutputKernel = IOKernel<T, halo_radius, core_height, pipe, 1,
-                                      cl::sycl::access::mode::discard_write>;
+                                      cl::sycl::access::mode::discard_write, 
+                                      cl::sycl::access::target::global_buffer,
+                                      burst_buffer_length>;
 
         fpga_queue.submit([&](cl::sycl::handler &cgh) {
             std::array<typename OutputKernel::Accessor, 3> accessor{

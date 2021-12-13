@@ -53,13 +53,13 @@ namespace tiling {
  * \tparam access_mode The access mode to expect for the buffer accessor.
  * \tparam access_target The access target to expect for the buffer accessor.
  */
-template <typename T, uindex_t halo_height, uindex_t core_height, typename pipe, uindex_t n_halo_height_buffers, cl::sycl::access::mode access_mode, cl::sycl::access::target access_target = cl::sycl::access::target::global_buffer>
+template <typename T, uindex_t halo_height, uindex_t core_height, typename pipe, uindex_t n_halo_height_buffers, cl::sycl::access::mode access_mode, cl::sycl::access::target access_target, uindex_t burst_buffer_length>
 class IOKernel {
   public:
     /**
      * \brief The exact accessor type required by the IO kernel.
      */
-    using Accessor = cl::sycl::accessor<T, 1, access_mode, access_target>;
+    using Accessor = cl::sycl::accessor<T[burst_buffer_length], 1, access_mode, access_target>;
 
     /**
      * \brief The total number of buffers in a slice/column.
@@ -97,7 +97,8 @@ class IOKernel {
         : accessor(accessor), n_columns(n_columns) {
 #ifndef __SYCL_DEVICE_ONLY__
         for (uindex_t i = 0; i < n_buffers; i++) {
-            assert(get_buffer_height(i) * n_columns == accessor[i].get_range()[0]);
+            assert(get_buffer_height(i) * n_columns
+                <= accessor[i].get_range()[0] * burst_buffer_length);
         }
 #endif
     }
@@ -108,9 +109,27 @@ class IOKernel {
     void read() {
         static_assert(access_mode == cl::sycl::access::mode::read ||
                       access_mode == cl::sycl::access::mode::read_write);
-        run([](Accessor &accessor, uindex_t i) {
-            pipe::write(accessor[i]);
-        });
+        uindex_t burst_i[n_buffers] = {0};
+        uindex_t cell_i[n_buffers] = {0};
+
+        [[intel::loop_coalesce]]
+        for (uindex_t c = 0; c < n_columns; c++) {
+            uindex_t buffer_i = 0;
+            uindex_t next_bound = get_buffer_height(0);
+            for (uindex_t r = 0; r < n_rows; r++) {
+                if (r == next_bound) {
+                    buffer_i++;
+                    next_bound += get_buffer_height(buffer_i);
+                }
+
+                if (cell_i[buffer_i] == burst_buffer_length) {
+                    cell_i[buffer_i] = 0;
+                    burst_i[buffer_i]++;
+                }
+                pipe::write(accessor[buffer_i][burst_i[buffer_i]][cell_i[buffer_i]]);
+                cell_i[buffer_i]++;
+            }
+        }
     }
 
     /**
@@ -121,17 +140,10 @@ class IOKernel {
                       access_mode == cl::sycl::access::mode::discard_write ||
                       access_mode == cl::sycl::access::mode::read_write ||
                       access_mode == cl::sycl::access::mode::discard_read_write);
-        run([](Accessor &accessor, uindex_t i) {
-            accessor[i] = pipe::read();
-        });
-    }
+        uindex_t burst_i[n_buffers] = {0};
+        uindex_t cell_i[n_buffers] = {0};
 
-  private:
-    template <typename Action> void run(Action action) {
-        static_assert(std::is_invocable<Action, Accessor &, uindex_t>::value);
-
-        uindex_t i[n_buffers] = {0};
-
+        [[intel::loop_coalesce]]
         for (uindex_t c = 0; c < n_columns; c++) {
             uindex_t buffer_i = 0;
             uindex_t next_bound = get_buffer_height(0);
@@ -141,12 +153,17 @@ class IOKernel {
                     next_bound += get_buffer_height(buffer_i);
                 }
 
-                action(accessor[buffer_i], i[buffer_i]);
-                i[buffer_i]++;
+                if (cell_i[buffer_i] == burst_buffer_length) {
+                    cell_i[buffer_i] = 0;
+                    burst_i[buffer_i]++;
+                }
+                accessor[buffer_i][burst_i[buffer_i]][cell_i[buffer_i]] = pipe::read();
+                cell_i[buffer_i]++;
             }
         }
     }
 
+  private:
     std::array<Accessor, n_buffers> accessor;
     uindex_t n_columns;
 };
