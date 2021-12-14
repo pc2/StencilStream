@@ -114,20 +114,16 @@ class IOKernel {
 
         [[intel::loop_coalesce]]
         for (uindex_t c = 0; c < n_columns; c++) {
-            uindex_t buffer_i = 0;
-            uindex_t next_bound = get_buffer_height(0);
-            for (uindex_t r = 0; r < n_rows; r++) {
-                if (r == next_bound) {
-                    buffer_i++;
-                    next_bound += get_buffer_height(buffer_i);
+            for (uindex_t buffer_i = 0; buffer_i < n_buffers; buffer_i++) {
+                for (uindex_t r = 0; r < get_buffer_height(buffer_i); r++) {
+                    pipe::write(accessor[buffer_i][burst_i[buffer_i]][cell_i[buffer_i]]);
+                    if (cell_i[buffer_i] == burst_buffer_length - 1) {
+                        cell_i[buffer_i] = 0;
+                        burst_i[buffer_i]++;
+                    } else {
+                        cell_i[buffer_i]++;
+                    }
                 }
-
-                if (cell_i[buffer_i] == burst_buffer_length) {
-                    cell_i[buffer_i] = 0;
-                    burst_i[buffer_i]++;
-                }
-                pipe::write(accessor[buffer_i][burst_i[buffer_i]][cell_i[buffer_i]]);
-                cell_i[buffer_i]++;
             }
         }
     }
@@ -145,20 +141,16 @@ class IOKernel {
 
         [[intel::loop_coalesce]]
         for (uindex_t c = 0; c < n_columns; c++) {
-            uindex_t buffer_i = 0;
-            uindex_t next_bound = get_buffer_height(0);
-            for (uindex_t r = 0; r < n_rows; r++) {
-                if (r == next_bound) {
-                    buffer_i++;
-                    next_bound += get_buffer_height(buffer_i);
+            for (uindex_t buffer_i = 0; buffer_i < n_buffers; buffer_i++) {
+                for (uindex_t r = 0; r < get_buffer_height(buffer_i); r++) {
+                    accessor[buffer_i][burst_i[buffer_i]][cell_i[buffer_i]] = pipe::read();
+                    if (cell_i[buffer_i] == burst_buffer_length - 1) {
+                        cell_i[buffer_i] = 0;
+                        burst_i[buffer_i]++;
+                    } else {
+                        cell_i[buffer_i]++;
+                    }
                 }
-
-                if (cell_i[buffer_i] == burst_buffer_length) {
-                    cell_i[buffer_i] = 0;
-                    burst_i[buffer_i]++;
-                }
-                accessor[buffer_i][burst_i[buffer_i]][cell_i[buffer_i]] = pipe::read();
-                cell_i[buffer_i]++;
             }
         }
     }
