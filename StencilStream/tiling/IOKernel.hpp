@@ -53,7 +53,9 @@ namespace tiling {
  * \tparam access_mode The access mode to expect for the buffer accessor.
  * \tparam access_target The access target to expect for the buffer accessor.
  */
-template <typename T, uindex_t halo_height, uindex_t core_height, typename pipe, uindex_t n_halo_height_buffers, cl::sycl::access::mode access_mode, cl::sycl::access::target access_target, uindex_t burst_buffer_length>
+template <typename T, uindex_t halo_height, uindex_t core_height, typename pipe,
+          uindex_t n_halo_height_buffers, cl::sycl::access::mode access_mode,
+          cl::sycl::access::target access_target, uindex_t burst_buffer_length>
 class IOKernel {
   public:
     /**
@@ -97,8 +99,8 @@ class IOKernel {
         : accessor(accessor), n_columns(n_columns) {
 #ifndef __SYCL_DEVICE_ONLY__
         for (uindex_t i = 0; i < n_buffers; i++) {
-            assert(get_buffer_height(i) * n_columns
-                <= accessor[i].get_range()[0] * burst_buffer_length);
+            assert(get_buffer_height(i) * n_columns <=
+                   accessor[i].get_range()[0] * burst_buffer_length);
         }
 #endif
     }
@@ -109,22 +111,33 @@ class IOKernel {
     void read() {
         static_assert(access_mode == cl::sycl::access::mode::read ||
                       access_mode == cl::sycl::access::mode::read_write);
-        uindex_t burst_i[n_buffers] = {0};
-        uindex_t cell_i[n_buffers] = {0};
+        static_assert(n_buffers == 5);
 
-        [[intel::loop_coalesce]]
+        uindex_t burst_i[n_buffers];
+        uindex_t cell_i[n_buffers];
+#pragma unroll
+        for (uindex_t buffer_i = 0; buffer_i < n_buffers; buffer_i++) {
+            burst_i[buffer_i] = 0;
+            cell_i[buffer_i] = burst_buffer_length;
+        }
+
+        std::array<T, burst_buffer_length> burst_buffer_0;
+        std::array<T, burst_buffer_length> burst_buffer_1;
+        std::array<T, burst_buffer_length> burst_buffer_2;
+        std::array<T, burst_buffer_length> burst_buffer_3;
+        std::array<T, burst_buffer_length> burst_buffer_4;
+
         for (uindex_t c = 0; c < n_columns; c++) {
-            for (uindex_t buffer_i = 0; buffer_i < n_buffers; buffer_i++) {
-                for (uindex_t r = 0; r < get_buffer_height(buffer_i); r++) {
-                    pipe::write(accessor[buffer_i][burst_i[buffer_i]][cell_i[buffer_i]]);
-                    if (cell_i[buffer_i] == burst_buffer_length - 1) {
-                        cell_i[buffer_i] = 0;
-                        burst_i[buffer_i]++;
-                    } else {
-                        cell_i[buffer_i]++;
-                    }
-                }
-            }
+            recv_subcolumn(get_buffer_height(0), burst_i[0], cell_i[0], burst_buffer_0,
+                           accessor[0]);
+            recv_subcolumn(get_buffer_height(1), burst_i[1], cell_i[1], burst_buffer_1,
+                           accessor[1]);
+            recv_subcolumn(get_buffer_height(2), burst_i[2], cell_i[2], burst_buffer_2,
+                           accessor[2]);
+            recv_subcolumn(get_buffer_height(3), burst_i[3], cell_i[3], burst_buffer_3,
+                           accessor[3]);
+            recv_subcolumn(get_buffer_height(4), burst_i[4], cell_i[4], burst_buffer_4,
+                           accessor[4]);
         }
     }
 
@@ -136,26 +149,74 @@ class IOKernel {
                       access_mode == cl::sycl::access::mode::discard_write ||
                       access_mode == cl::sycl::access::mode::read_write ||
                       access_mode == cl::sycl::access::mode::discard_read_write);
-        uindex_t burst_i[n_buffers] = {0};
-        uindex_t cell_i[n_buffers] = {0};
+        static_assert(n_buffers == 3);
 
-        [[intel::loop_coalesce]]
-        for (uindex_t c = 0; c < n_columns; c++) {
-            for (uindex_t buffer_i = 0; buffer_i < n_buffers; buffer_i++) {
-                for (uindex_t r = 0; r < get_buffer_height(buffer_i); r++) {
-                    accessor[buffer_i][burst_i[buffer_i]][cell_i[buffer_i]] = pipe::read();
-                    if (cell_i[buffer_i] == burst_buffer_length - 1) {
-                        cell_i[buffer_i] = 0;
-                        burst_i[buffer_i]++;
-                    } else {
-                        cell_i[buffer_i]++;
-                    }
-                }
-            }
+        uindex_t burst_i[n_buffers];
+        uindex_t cell_i[n_buffers];
+#pragma unroll
+        for (uindex_t buffer_i = 0; buffer_i < n_buffers; buffer_i++) {
+            burst_i[buffer_i] = 0;
+            cell_i[buffer_i] = 0;
         }
+
+        std::array<T, burst_buffer_length> burst_buffer_0;
+        std::array<T, burst_buffer_length> burst_buffer_1;
+        std::array<T, burst_buffer_length> burst_buffer_2;
+
+        for (uindex_t c = 0; c < n_columns; c++) {
+            send_subcolumn(get_buffer_height(0), burst_i[0], cell_i[0], burst_buffer_0,
+                           accessor[0]);
+            send_subcolumn(get_buffer_height(1), burst_i[1], cell_i[1], burst_buffer_1,
+                           accessor[1]);
+            send_subcolumn(get_buffer_height(2), burst_i[2], cell_i[2], burst_buffer_2,
+                           accessor[2]);
+        }
+
+        flush_burst_buffer(burst_i[0], cell_i[0], burst_buffer_0, accessor[0]);
+        flush_burst_buffer(burst_i[1], cell_i[1], burst_buffer_1, accessor[1]);
+        flush_burst_buffer(burst_i[2], cell_i[2], burst_buffer_2, accessor[2]);
     }
 
   private:
+    void recv_subcolumn(uindex_t buffer_height, uindex_t &burst_i, uindex_t &cell_i,
+                        std::array<T, burst_buffer_length> &burst_buffer, Accessor &accessor) {
+        for (uindex_t r = 0; r < buffer_height; r++) {
+            if (cell_i == burst_buffer_length) {
+#pragma unroll
+                for (uindex_t store_i = 0; store_i < burst_buffer_length; store_i++) {
+                    burst_buffer[store_i] = accessor[burst_i][store_i];
+                }
+                burst_i++;
+                cell_i = 0;
+            }
+            pipe::write(burst_buffer[cell_i]);
+            cell_i++;
+        }
+    }
+
+    void send_subcolumn(uindex_t buffer_height, uindex_t &burst_i, uindex_t &cell_i,
+                        std::array<T, burst_buffer_length> &burst_buffer, Accessor &accessor) {
+        for (uindex_t r = 0; r < buffer_height; r++) {
+            if (cell_i == burst_buffer_length) {
+#pragma unroll
+                for (uindex_t store_i = 0; store_i < burst_buffer_length; store_i++) {
+                    accessor[burst_i][store_i] = burst_buffer[store_i];
+                }
+                burst_i++;
+                cell_i = 0;
+            }
+            burst_buffer[cell_i] = pipe::read();
+            cell_i++;
+        }
+    }
+
+    void flush_burst_buffer(uindex_t &burst_i, uindex_t &cell_i,
+                            std::array<T, burst_buffer_length> &burst_buffer, Accessor &accessor) {
+        for (uindex_t store_i = 0; store_i < cell_i; store_i++) {
+            accessor[burst_i][store_i] = burst_buffer[store_i];
+        }
+    }
+
     std::array<Accessor, n_buffers> accessor;
     uindex_t n_columns;
 };
