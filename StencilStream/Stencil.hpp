@@ -53,7 +53,7 @@ template <typename T, uindex_t radius> class Stencil {
      * \param grid_range The range of the stencil's grid.
      */
     Stencil(ID id, uindex_t generation, uindex_t stage, UID grid_range)
-        : id(id), generation(generation), stage(stage), internal(), grid_range(grid_range) {}
+        : id(id), generation(generation), stage(stage), grid_range(grid_range), internal() {}
 
     /**
      * \brief Create a new stencil from the raw buffer.
@@ -65,7 +65,7 @@ template <typename T, uindex_t radius> class Stencil {
      * \param grid_range The range of the stencil's grid.
      */
     Stencil(ID id, uindex_t generation, uindex_t stage, T raw[diameter][diameter], UID grid_range)
-        : id(id), generation(generation), stage(stage), internal(), grid_range(grid_range) {
+        : id(id), generation(generation), stage(stage), grid_range(grid_range), internal() {
 #pragma unroll
         for (uindex_t c = 0; c < diameter; c++) {
 #pragma unroll
