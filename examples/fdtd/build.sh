@@ -15,20 +15,16 @@ Usage: $0 <variant|target>
 This script build variants of the FDTD application. Calling $0 <variant> builds the given variant. 
 The naming scheme of the variants is as follows:
 
-fdtd_<architecture>_<target>
+fdtd_<backend>[_report]
 
 The placeholders may have the following values:
-* architecture:
-    * mono: Use the monotile backend of StencilStream
-    * tiling: Use the tiling backend of StencilStream
+* executor:
+    * mono: Use the monotile FPGA backend of StencilStream
+    * tiling: Use the tiling FPGA backend of StencilStream
+    * cpu: Use the testing CPU backend of StencilStream
 
-* target: 
-    * emu: Compile the device code for emulation
-    * hw: Compile the devie code for hardware execution
-    * report: Analyse the device code and generate the synthesis report
-
-Alternatively, you can also just give a target instead of a variant. In this case, $0 will build all
-variants for the given target.
+The FPGA backends also support the report suffix, where a synthesis report is generated that allows
+to make certain predicitions over the resulting performance.
 EOF
 exit 0
 fi
@@ -36,21 +32,18 @@ fi
 function run_build {
     EXEC_NAME=$1
 
-    ARGS="-fintelfpga -std=c++17 -DSTENCIL_INDEX_WIDTH=64 -DFDTD_BURST_SIZE=1024 -I./ -O3"
+    ARGS="-std=c++17 -DSTENCIL_INDEX_WIDTH=64 -DFDTD_BURST_SIZE=1024 -I./ -O3"
 
+    # Noctua-specific options
     if [[ -n "$EBROOTGCC" ]]
     then
         ARGS="$ARGS --gcc-toolchain=$EBROOTGCC"
     fi
 
-    if [[ "$EXEC_NAME" == *"mono"* ]]
+    # FPGA-specific options
+    if [[ "$EXEC_NAME" == *"mono"*  || "$EXEC_NAME" == *"tiling"* ]]
     then
-        ARGS="$ARGS -DMONOTILE"
-    fi
-
-    if [[ "$EXEC_NAME" == *"hw"* || "$EXEC_NAME" == *"report"* ]]
-    then
-        ARGS="$ARGS -DHARDWARE -Xshardware -Xsv -Xsprofile"
+        ARGS="$ARGS -fintelfpga -Xshardware -Xsv"
 
         if [[ -n $AOCL_BOARD_PACKAGE_ROOT ]]
         then
@@ -63,32 +56,20 @@ function run_build {
         fi
     fi
 
+    if [[ "$EXEC_NAME" == *"mono"* ]]
+    then
+        ARGS="$ARGS -DEXECUTOR=MONOTILE"
+    elif [[ "$EXEC_NAME" == *"tiling"* ]]
+    then
+        ARGS="$ARGS -DEXECUTOR=TILING"
+    elif [[ "$EXEC_NAME" == *"cpu"* ]]
+    then
+        ARGS="$ARGS -DEXECUTOR=CPU"
+    fi
+
     COMMAND="dpcpp $ARGS src/*.cpp -o $EXEC_NAME"
     echo $COMMAND
     echo $COMMAND | bash
 }
 
-if [[ $1 == "emu" ]]
-then
-    SUFFIX="emu"
-fi
-
-if [[ $1 == "hw" ]]
-then
-    SUFFIX="hw"
-fi
-
-if [[ $1 == "report" ]]
-then
-    SUFFIX="report"
-fi
-
-if [[ -n $SUFFIX ]]
-then
-    for NAME in "fdtd_mono_" "fdtd_tiling_"
-    do
-        run_build "$NAME$SUFFIX"
-    done
-else
-    run_build $1
-fi
+run_build $1
