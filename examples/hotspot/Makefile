@@ -14,7 +14,7 @@ ifdef EBROOTGCC
 	ARGS += --gcc-toolchain=$(EBROOTGCC)
 endif
 
-HW = $(ARGS) -fintelfpga -Xshardware -Xsv -Xsprofile 
+HW = $(ARGS) -fintelfpga -Xshardware -Xsv
 MONOTILE = $(HW) -DEXECUTOR=MONOTILE
 TILING = $(HW) -DEXECUTOR=TILING
 
