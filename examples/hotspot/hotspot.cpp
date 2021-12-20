@@ -19,9 +19,15 @@
  */
 #include <CL/sycl.hpp>
 #include <CL/sycl/INTEL/fpga_extensions.hpp>
-#include <StencilStream/MonotileExecutor.hpp>
-#include <StencilStream/StencilExecutor.hpp>
 #include <fstream>
+
+#if EXECUTOR == MONOTILE
+#include <StencilStream/MonotileExecutor.hpp>
+#elif EXECUTOR == TILING
+#include <StencilStream/StencilExecutor.hpp>
+#elif EXECUTOR == CPU
+#include <StencilStream/SimpleCPUExecutor.hpp>
+#endif
 
 using namespace std;
 using namespace cl::sycl;
@@ -48,15 +54,9 @@ const FLOAT amb_temp = 80.0;
 
 /* stencil parameters */
 const uindex_t stencil_radius = 1;
-const uindex_t pipeline_length = 200;
+const uindex_t pipeline_length = 20;
 const uindex_t tile_width = 1024;
 const uindex_t tile_height = 1024;
-
-#ifdef HARDWARE
-using selector = ext::intel::fpga_selector;
-#else
-using selector = ext::intel::fpga_emulator_selector;
-#endif
 
 using Cell = vec<FLOAT, 2>;
 
@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
     if ((sim_time = atoi(argv[3])) <= 0)
         usage(argc, argv);
 
-#ifdef MONOTILE
+#if EXECUTOR == MONOTILE
     if (n_columns > tile_width || n_rows > tile_height) {
         std::cerr << "Error: The grid may not exceed the size of the tile (" << tile_width << " by "
                   << tile_height << " cells) when using the monotile architecture." << std::endl;
@@ -221,18 +221,20 @@ int main(int argc, char **argv) {
         return vec(new_temp, power);
     };
 
-#ifdef MONOTILE
+#if EXECUTOR == MONOTILE
     using Executor = MonotileExecutor<Cell, stencil_radius, decltype(kernel), pipeline_length,
                                       tile_width, tile_height>;
-#else
+#elif EXECUTOR == TILING
     using Executor = StencilExecutor<Cell, stencil_radius, decltype(kernel), pipeline_length,
                                      tile_width, tile_height>;
+#elif EXECUTOR == CPU
+    using Executor = SimpleCPUExecutor<Cell, stencil_radius, decltype(kernel)>;
 #endif
 
     Executor executor(Cell(0.0, 0.0), kernel);
     executor.set_input(temp);
 
-#ifdef HARDWARE
+#if EXECUTOR
     executor.select_fpga();
 #else
     executor.select_emulator();
