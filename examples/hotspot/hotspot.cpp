@@ -54,7 +54,7 @@ const FLOAT amb_temp = 80.0;
 
 /* stencil parameters */
 const uindex_t stencil_radius = 1;
-const uindex_t pipeline_length = 20;
+const uindex_t pipeline_length = 200;
 const uindex_t tile_width = 1024;
 const uindex_t tile_height = 1024;
 
