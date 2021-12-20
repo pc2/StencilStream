@@ -8,20 +8,24 @@
 CC = dpcpp
 STENCIL_STREAM_PATH = ./
 
-ARGS = -fintelfpga -std=c++17 -I$(STENCIL_STREAM_PATH) -O3
+ARGS = -std=c++17 -I$(STENCIL_STREAM_PATH) -O3
 
 ifdef EBROOTGCC
 	ARGS += --gcc-toolchain=$(EBROOTGCC)
 endif
 
-EMU_ARGS = $(ARGS)
-HW_ARGS = $(ARGS) -DHARDWARE -Xsv -Xshardware
+CPU_ARGS = $(ARGS) -DCPU
+EMU_ARGS = $(ARGS) -fintelfpga -DEMULATOR
+HW_ARGS = $(ARGS) -fintelfpga -DHARDWARE -Xsv -Xshardware
 
 ifdef AOCL_BOARD_PACKAGE_ROOT
 	HW_ARGS += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
 endif
 
 RESOURCES = conway.cpp $(wildcard StencilStream/*) Makefile
+
+conway_cpu: $(RESOURCES)
+	$(CC) $(CPU_ARGS) conway.cpp -o conway_cpu
 
 conway_emu: $(RESOURCES)
 	$(CC) $(EMU_ARGS) conway.cpp -o conway_emu

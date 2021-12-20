@@ -19,6 +19,7 @@
  */
 #include <CL/sycl/INTEL/fpga_extensions.hpp>
 #include <StencilStream/StencilExecutor.hpp>
+#include <StencilStream/SimpleCPUExecutor.hpp>
 
 using Cell = bool;
 const Cell halo_value = false;
@@ -91,16 +92,25 @@ int main(int argc, char **argv) {
 
     cl::sycl::buffer<Cell, 2> grid_buffer = read(width, height);
 
+#ifdef CPU
+    using Executor = stencil::SimpleCPUExecutor<Cell, stencil_radius, decltype(conway)>;
+#else
     using Executor = stencil::StencilExecutor<Cell, stencil_radius, decltype(conway)>;
+#endif
+
     Executor executor(halo_value, conway);
-    executor.set_input(grid_buffer);
 
 #ifdef HARDWARE
     executor.select_fpga();
-#else
+#endif
+#ifdef EMULATOR
     executor.select_emulator();
 #endif
+#ifdef CPU
+    executor.select_cpu();
+#endif
 
+    executor.set_input(grid_buffer);
     executor.run(n_generations);
 
     executor.copy_output(grid_buffer);

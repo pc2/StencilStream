@@ -8,7 +8,7 @@
 CC = dpcpp
 STENCIL_PATH = ../
 
-ARGS = -std=c++17 -g -I$(STENCIL_PATH) -Isrc/ -fintelfpga -DSTENCIL_INDEX_WIDTH=32
+ARGS = -std=c++17 -g -I$(STENCIL_PATH) -Isrc/ -DSTENCIL_INDEX_WIDTH=32
 
 ifdef OPTIMIZE
 	ARGS += -O3
@@ -18,12 +18,12 @@ ifdef EBROOTGCC
 	ARGS += --gcc-toolchain=$(EBROOTGCC)
 endif
 
-UNIT_ARGS = $(ARGS)
+UNIT_ARGS = $(ARGS) -fintelfpga
 UNIT_SOURCES = $(wildcard src/units/*.cpp src/units/*/*.cpp)
 UNIT_OBJECTS = $(patsubst %.cpp,%.o,$(UNIT_SOURCES))
 RESOURCES = src/res/*.hpp ../StencilStream/* Makefile
 
-SYNTH_ARGS = $(ARGS)
+SYNTH_ARGS = $(ARGS) -fintelfpga
 
 unit_test: $(UNIT_OBJECTS) $(RESOURCES)
 	$(CC) $(UNIT_ARGS) $(UNIT_OBJECTS) -o unit_test
@@ -44,6 +44,9 @@ synthesis_hw.report.tar.gz: src/synthesis/main.cpp $(RESOURCES)
 	rm -f synthesis_hw
 	$(CC) $(SYNTH_ARGS) -Xsv -DHARDWARE -fsycl-link -Xshardware src/synthesis/main.cpp -o synthesis_hw
 	tar -caf synthesis_hw.report.tar.gz synthesis_hw.prj/reports
+
+cpu_executor: src/cpu_executor/main.cpp $(RESOURCES)
+	$(CC) $(ARGS) src/cpu_executor/main.cpp -o cpu_executor
 
 clean:
 	git clean -dXf

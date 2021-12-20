@@ -133,6 +133,10 @@ class SingleContextExecutor : public RuntimeSampleExecutor<T, stencil_radius, Tr
         this->select_fpga();
     }
 
+    void select_cpu() {
+        this->build_context(cl::sycl::cpu_selector().select_device());
+    }
+
     void select_emulator() {
         this->build_context(cl::sycl::ext::intel::fpga_emulator_selector().select_device());
     }
