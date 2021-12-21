@@ -21,11 +21,11 @@
 #include <CL/sycl/INTEL/fpga_extensions.hpp>
 #include <fstream>
 
-#if EXECUTOR == MONOTILE
+#if EXECUTOR == 0
 #include <StencilStream/MonotileExecutor.hpp>
-#elif EXECUTOR == TILING
+#elif EXECUTOR == 1
 #include <StencilStream/StencilExecutor.hpp>
-#elif EXECUTOR == CPU
+#elif EXECUTOR == 2
 #include <StencilStream/SimpleCPUExecutor.hpp>
 #endif
 
@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
     if ((sim_time = atoi(argv[3])) <= 0)
         usage(argc, argv);
 
-#if EXECUTOR == MONOTILE
+#if EXECUTOR == 0
     if (n_columns > tile_width || n_rows > tile_height) {
         std::cerr << "Error: The grid may not exceed the size of the tile (" << tile_width << " by "
                   << tile_height << " cells) when using the monotile architecture." << std::endl;
@@ -221,23 +221,20 @@ int main(int argc, char **argv) {
         return vec(new_temp, power);
     };
 
-#if EXECUTOR == MONOTILE
+#if EXECUTOR == 0
     using Executor = MonotileExecutor<Cell, stencil_radius, decltype(kernel), pipeline_length,
                                       tile_width, tile_height>;
-#elif EXECUTOR == TILING
+#elif EXECUTOR == 1
     using Executor = StencilExecutor<Cell, stencil_radius, decltype(kernel), pipeline_length,
                                      tile_width, tile_height>;
-#elif EXECUTOR == CPU
+#elif EXECUTOR == 2
     using Executor = SimpleCPUExecutor<Cell, stencil_radius, decltype(kernel)>;
 #endif
 
     Executor executor(Cell(0.0, 0.0), kernel);
     executor.set_input(temp);
-
-#if EXECUTOR
+#if EXECUTOR != 2
     executor.select_fpga();
-#else
-    executor.select_emulator();
 #endif
 
     executor.run(sim_time);
