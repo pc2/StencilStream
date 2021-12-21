@@ -15,8 +15,8 @@ ifdef EBROOTGCC
 endif
 
 HW = $(ARGS) -fintelfpga -Xshardware -Xsv
-MONOTILE = $(HW) -DEXECUTOR=MONOTILE
-TILING = $(HW) -DEXECUTOR=TILING
+MONOTILE = $(HW) -DEXECUTOR=0
+TILING = $(HW) -DEXECUTOR=1
 
 ifdef AOCL_BOARD_PACKAGE_ROOT
 	HW += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
@@ -28,10 +28,10 @@ RESOURCES = $(wildcard StencilStream/*) Makefile
 all: hotspot_cpu hotspot_rodinia hotspot_mono hotspot_tiling
 
 hotspot_cpu: $(SOURCES) $(RESOURCES)
-	$(CC) $(ARGS) $(SOURCES) -DEXECUTOR=CPU -o hotspot_cpu
+	$(CC) $(ARGS) $(SOURCES) -DEXECUTOR=2 -o hotspot_cpu
 
 hotspot_mono: $(SOURCES) $(RESOURCES)
-	$(CC) $(MONOTILE) $(SOURCES) -o hotspot_mono
+	$(CC) $(MONOTILE) $(SOURCES) -reuse-exe=hotspot_mono -o hotspot_mono
 
 hotspot_mono.report.tar.gz: $(SOURCES) $(RESOURCES)
 	rm -f hotspot_mono
@@ -39,7 +39,7 @@ hotspot_mono.report.tar.gz: $(SOURCES) $(RESOURCES)
 	tar -caf hotspot_mono.report.tar.gz hotspot_mono.prj/reports
 
 hotspot_tiling: $(SOURCES) $(RESOURCES)
-	$(CC) $(TILING) $(SOURCES) -o hotspot_tiling
+	$(CC) $(TILING) $(SOURCES) -reuse-exe=hotspot_tiling -o hotspot_tiling
 
 hotspot_tiling.report.tar.gz: $(SOURCES) $(RESOURCES)
 	rm -f hotspot_tiling

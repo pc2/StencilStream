@@ -43,7 +43,7 @@ function run_build {
     # FPGA-specific options
     if [[ "$EXEC_NAME" == *"mono"*  || "$EXEC_NAME" == *"tiling"* ]]
     then
-        ARGS="$ARGS -fintelfpga -Xshardware -Xsv"
+        ARGS="$ARGS -fintelfpga -reuse-exe=$1 -Xshardware -Xsv"
 
         if [[ -n $AOCL_BOARD_PACKAGE_ROOT ]]
         then
@@ -58,16 +58,16 @@ function run_build {
 
     if [[ "$EXEC_NAME" == *"mono"* ]]
     then
-        ARGS="$ARGS -DEXECUTOR=MONOTILE"
+        ARGS="$ARGS -DEXECUTOR=0"
     elif [[ "$EXEC_NAME" == *"tiling"* ]]
     then
-        ARGS="$ARGS -DEXECUTOR=TILING"
+        ARGS="$ARGS -DEXECUTOR=1"
     elif [[ "$EXEC_NAME" == *"cpu"* ]]
     then
-        ARGS="$ARGS -DEXECUTOR=CPU"
+        ARGS="$ARGS -DEXECUTOR=2"
     fi
 
-    COMMAND="dpcpp $ARGS src/*.cpp -o $EXEC_NAME"
+    COMMAND="dpcpp src/*.cpp -o $EXEC_NAME $ARGS"
     echo $COMMAND
     echo $COMMAND | bash
 }

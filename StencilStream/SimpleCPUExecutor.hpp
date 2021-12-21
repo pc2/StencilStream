@@ -24,7 +24,7 @@
 namespace stencil
 {
 template <typename T, uindex_t stencil_radius, typename TransFunc>
-class SimpleCPUExecutor : SingleContextExecutor<T, stencil_radius, TransFunc> {
+class SimpleCPUExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc> {
 public:
     using Parent = SingleContextExecutor<T, stencil_radius, TransFunc>;
     SimpleCPUExecutor(T halo_value, TransFunc trans_func) : Parent(halo_value, trans_func), grid(cl::sycl::range<2>(1, 1)) {
@@ -36,10 +36,11 @@ public:
         cl::sycl::buffer<T, 2> in_buffer = grid;
         cl::sycl::buffer<T, 2> out_buffer(grid.get_range());
 
-        for (uindex_t gen = 0; gen < n_generations; gen++) {
-            queue.submit([&](cl::sycl::handler &cgh) {
+        for (uindex_t stage = 0; stage < n_generations; stage++) {
+            cl::sycl::event event = queue.submit([&](cl::sycl::handler &cgh) {
                 auto in_ac = in_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
                 auto out_ac = out_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
+                uindex_t gen = this->get_i_generation() + stage;
                 uindex_t grid_width = in_ac.get_range()[0];
                 uindex_t grid_height = in_ac.get_range()[1];
                 T halo_value = this->get_halo_value();
@@ -48,7 +49,7 @@ public:
                 cgh.parallel_for<class SimpleCPUExecutionKernel>(
                     in_ac.get_range(),
                     [=](cl::sycl::id<2> idx) {
-                        Stencil<T, stencil_radius> stencil(idx, gen, gen, in_ac.get_range());
+                        Stencil<T, stencil_radius> stencil(idx, gen, stage, in_ac.get_range());
                         
                         for (index_t delta_c = -stencil_radius; delta_c <= index_t(stencil_radius); delta_c++) {
                             for (index_t delta_r = -stencil_radius; delta_r <= index_t(stencil_radius); delta_r++) {
@@ -66,11 +67,13 @@ public:
                     }
                 );
             });
+            this->get_runtime_sample().add_pass(event);
             std::swap(in_buffer, out_buffer);
         }
 
         queue.wait_and_throw();
         grid = in_buffer;
+        this->inc_i_generation(n_generations);
     }
 
     virtual void set_input(cl::sycl::buffer<T, 2> input_buffer) override {

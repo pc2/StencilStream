@@ -20,15 +20,15 @@
 #include "simulation.hpp"
 #include <deque>
 
-#if EXECUTOR == MONOTILE
+#if EXECUTOR == 0
 #include <StencilStream/MonotileExecutor.hpp>
 using Executor = MonotileExecutor<FDTDCell, stencil_radius, FDTDKernel, pipeline_length, tile_width,
                                   tile_height>;
-#elif EXECUTOR == TILING
+#elif EXECUTOR == 1
 #include <StencilStream/StencilExecutor.hpp>
 using Executor = StencilExecutor<FDTDCell, stencil_radius, FDTDKernel, pipeline_length, tile_width,
                                  tile_height>;
-#elif EXECUTOR == CPU
+#elif EXECUTOR == 2
 #include <StencilStream/SimpleCPUExecutor.hpp>
 using Executor = SimpleCPUExecutor<FDTDCell, stencil_radius, FDTDKernel>;
 #endif
@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
     Parameters parameters(argc, argv);
     parameters.print_configuration();
 
-#if EXECUTOR == MONOTILE
+#if EXECUTOR == 0
     if (parameters.grid_range()[0] > tile_width || parameters.grid_range()[1] > tile_height) {
         std::cerr << "Error: The grid may not exceed the size of the tile (" << tile_width << " by "
                   << tile_height << " cells) when using the monotile architecture." << std::endl;
@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
 
     Executor executor(FDTDKernel::halo(), FDTDKernel(parameters));
     executor.set_input(grid_buffer);
-#if EXECUTOR != CPU
+#if EXECUTOR != 2
     executor.select_fpga();
 #endif
 
