@@ -20,7 +20,6 @@
 #pragma once
 #include "AbstractExecutor.hpp"
 #include "RuntimeSample.hpp"
-#include <CL/sycl/INTEL/fpga_extensions.hpp>
 #include <optional>
 
 namespace stencil {

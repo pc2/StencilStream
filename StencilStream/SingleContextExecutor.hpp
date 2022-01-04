@@ -19,7 +19,7 @@
  */
 #pragma once
 #include "RuntimeSampleExecutor.hpp"
-#include <CL/sycl/INTEL/fpga_extensions.hpp>
+#include <ext/intel/fpga_extensions.hpp>
 #include <optional>
 
 namespace stencil {
