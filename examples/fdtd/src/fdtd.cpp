@@ -179,6 +179,7 @@ int main(int argc, char **argv) {
         executor.run(n_timesteps);
     }
     std::cout << "Simulation complete!" << std::endl;
+    std::cout << "Makespan: " << executor.get_runtime_sample().get_total_runtime() << " s" << std::endl;
 
     executor.copy_output(grid_buffer);
     save_frame(grid_buffer, n_timesteps, CellField::HZ_SUM, parameters);
