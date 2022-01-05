@@ -18,7 +18,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include <CL/sycl/INTEL/fpga_extensions.hpp>
 #include <StencilStream/Index.hpp>
 #include <fstream>
 #include <iostream>
