@@ -92,9 +92,7 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
 
         using ExecutionKernelImpl =
             tiling::ExecutionKernel<TransFunc, T, stencil_radius, pipeline_length, tile_width,
-                                    tile_height, feed_in_pipe_0, feed_in_pipe_1, feed_in_pipe_2,
-                                    feed_in_pipe_3, feed_in_pipe_4, feed_out_pipe_0,
-                                    feed_out_pipe_1, feed_out_pipe_2>;
+                                    tile_height, in_pipe, out_pipe>;
 
         cl::sycl::queue input_queue[5] = {this->new_queue(true), this->new_queue(true), this->new_queue(true), this->new_queue(true), this->new_queue(true)};
         cl::sycl::queue merge_queue = this->new_queue(true);
@@ -144,6 +142,33 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
                     input_grid.template submit_read<class feed_in_pipe_4_id>(input_queue[4], ID(c, r+1), TileImpl::Part::NORTH_EAST_CORNER);
                     input_grid.template submit_read<class feed_in_pipe_4_id>(input_queue[4], ID(c+1, r+1), TileImpl::Part::NORTH_WEST_CORNER);
 
+                    merge_queue.submit([&](cl::sycl::handler &cgh) {
+                        cgh.single_task<class TilingMergeKernel>([=]() {
+                            uindex_t n_rows[5] = {halo_radius, halo_radius, tile_height - 2*halo_radius, halo_radius, halo_radius};
+
+                            [[intel::loop_coalesce(2)]]
+                            for (uindex_t c = 0; c < 2*halo_radius + tile_width; c++) {
+                                for (uindex_t buffer_i = 0; buffer_i < 5; buffer_i++) {
+                                    for (uindex_t r = 0; r < n_rows[buffer_i]; r++) {
+                                        T value;
+                                        if (buffer_i == 0) {
+                                            value = feed_in_pipe_0::read();
+                                        } else if (buffer_i == 1) {
+                                            value = feed_in_pipe_1::read();
+                                        } else if (buffer_i == 2) {
+                                            value = feed_in_pipe_2::read();
+                                        } else if (buffer_i == 3) {
+                                            value = feed_in_pipe_3::read();
+                                        } else {
+                                            value = feed_in_pipe_4::read();
+                                        }
+                                        in_pipe::write(value);
+                                    }
+                                }
+                            }
+                        });
+                    });
+
                     cl::sycl::event computation_event = work_queue.submit([&](cl::sycl::handler &cgh) {
                         cgh.single_task<class TilingExecutionKernel>(ExecutionKernelImpl(
                             this->get_trans_func(), this->get_i_generation(), target_i_generation,
@@ -151,6 +176,28 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
                             this->get_halo_value()));
                     });
                     events.push_back(computation_event);
+
+                    fork_queue.submit([&](cl::sycl::handler &cgh) {
+                        cgh.single_task<class TilingForkKernel>([=]() {
+                            uindex_t n_rows[3] = {halo_radius, tile_height - 2*halo_radius, halo_radius};
+
+                            [[intel::loop_coalesce(2)]]
+                            for (uindex_t c = 0; c < tile_width; c++) {
+                                for (uindex_t buffer_i = 0; buffer_i < 3; buffer_i++) {
+                                    for (uindex_t r = 0; r < n_rows[buffer_i]; r++) {
+                                        T value = out_pipe::read();
+                                        if (buffer_i == 0) {
+                                            feed_out_pipe_0::write(value);
+                                        } else if (buffer_i == 1) {
+                                            feed_out_pipe_1::write(value);
+                                        } else {
+                                            feed_out_pipe_2::write(value);
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    });
 
                     output_grid.template submit_write<class feed_out_pipe_0_id>(output_queue[0], ID(c, r), TileImpl::Part::NORTH_WEST_CORNER);
                     output_grid.template submit_write<class feed_out_pipe_0_id>(output_queue[0], ID(c, r), TileImpl::Part::NORTH_BORDER);

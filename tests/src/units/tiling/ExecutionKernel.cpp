@@ -30,38 +30,18 @@ using namespace cl::sycl;
 
 void test_tiling_kernel(uindex_t n_generations) {
     using TransFunc = FPGATransFunc<stencil_radius>;
-    using in_pipe_0 = HostPipe<class TilingExecutionKernelInPipe0ID, Cell>;
-    using in_pipe_1 = HostPipe<class TilingExecutionKernelInPipe1ID, Cell>;
-    using in_pipe_2 = HostPipe<class TilingExecutionKernelInPipe2ID, Cell>;
-    using in_pipe_3 = HostPipe<class TilingExecutionKernelInPipe3ID, Cell>;
-    using in_pipe_4 = HostPipe<class TilingExecutionKernelInPipe4ID, Cell>;
-    using out_pipe_0 = HostPipe<class TilingExecutionKernelOutPipe0ID, Cell>;
-    using out_pipe_1 = HostPipe<class TilingExecutionKernelOutPipe1ID, Cell>;
-    using out_pipe_2 = HostPipe<class TilingExecutionKernelOutPipe2ID, Cell>;
+    using in_pipe = HostPipe<class TilingExecutionKernelInPipeID, Cell>;
+    using out_pipe = HostPipe<class TilingExecutionKernelOutPipeID, Cell>;
     using TestExecutionKernel = ExecutionKernel<TransFunc, Cell, stencil_radius, pipeline_length,
-                                                tile_width, tile_height, in_pipe_0, in_pipe_1,
-                                                in_pipe_2, in_pipe_3, in_pipe_4, out_pipe_0,
-                                                out_pipe_1, out_pipe_2>;
+                                                tile_width, tile_height, in_pipe, out_pipe>;
 
     for (index_t c = -halo_radius; c < index_t(halo_radius + tile_width); c++) {
         for (index_t r = -halo_radius; r < index_t(halo_radius + tile_height); r++) {
-            Cell value;
             if (c >= index_t(0) && c < index_t(tile_width) && r >= index_t(0) &&
                 r < index_t(tile_height)) {
-                value = Cell{c, r, 0, CellStatus::Normal};
+                in_pipe::write(Cell{c, r, 0, CellStatus::Normal});
             } else {
-                value = Cell::halo();
-            }
-            if (r < 0) {
-                in_pipe_0::write(value);
-            } else if (r < halo_radius) {
-                in_pipe_1::write(value);
-            } else if (r < halo_radius + core_height) {
-                in_pipe_2::write(value);
-            } else if (r < tile_height) {
-                in_pipe_3::write(value);
-            } else {
-                in_pipe_4::write(value);
+                in_pipe::write(Cell::halo());
             }
         }
     }
@@ -75,27 +55,13 @@ void test_tiling_kernel(uindex_t n_generations) {
         auto output_buffer_ac = output_buffer.get_access<access::mode::discard_write>();
         for (uindex_t c = 0; c < tile_width; c++) {
             for (uindex_t r = 0; r < tile_height; r++) {
-                Cell value;
-                if (r < halo_radius) {
-                    value = out_pipe_0::read();
-                } else if (r < halo_radius + core_height) {
-                    value = out_pipe_1::read();
-                } else {
-                    value = out_pipe_2::read();
-                }
-                output_buffer_ac[c][r] = value;
+                output_buffer_ac[c][r] = out_pipe::read();
             }
         }
     }
 
-    REQUIRE(in_pipe_0::empty());
-    REQUIRE(in_pipe_1::empty());
-    REQUIRE(in_pipe_2::empty());
-    REQUIRE(in_pipe_3::empty());
-    REQUIRE(in_pipe_4::empty());
-    REQUIRE(out_pipe_0::empty());
-    REQUIRE(out_pipe_1::empty());
-    REQUIRE(out_pipe_2::empty());
+    REQUIRE(in_pipe::empty());
+    REQUIRE(out_pipe::empty());
 
     auto output_buffer_ac = output_buffer.get_access<access::mode::read>();
     for (uindex_t c = 1; c < tile_width; c++) {
@@ -139,32 +105,15 @@ TEST_CASE("Halo values inside the pipeline are handled correctly", "[tiling::Exe
         return is_valid;
     };
 
-    using in_pipe_0 = HostPipe<class HaloValueTestInPipe0ID, bool>;
-    using in_pipe_1 = HostPipe<class HaloValueTestInPipe1ID, bool>;
-    using in_pipe_2 = HostPipe<class HaloValueTestInPipe2ID, bool>;
-    using in_pipe_3 = HostPipe<class HaloValueTestInPipe3ID, bool>;
-    using in_pipe_4 = HostPipe<class HaloValueTestInPipe4ID, bool>;
-    using out_pipe_0 = HostPipe<class HaloValueTestOutPipe0ID, bool>;
-    using out_pipe_1 = HostPipe<class HaloValueTestOutPipe1ID, bool>;
-    using out_pipe_2 = HostPipe<class HaloValueTestOutPipe2ID, bool>;
+    using in_pipe = HostPipe<class HaloValueTestInPipeID, bool>;
+    using out_pipe = HostPipe<class HaloValueTestOutPipeID, bool>;
     using TestExecutionKernel =
         ExecutionKernel<decltype(my_kernel), bool, stencil_radius, pipeline_length, tile_width,
-                        tile_height, in_pipe_0, in_pipe_1, in_pipe_2, in_pipe_3, in_pipe_4, 
-                        out_pipe_0, out_pipe_1, out_pipe_2>;
+                        tile_height, in_pipe, out_pipe>;
 
     for (index_t c = -halo_radius; c < index_t(halo_radius + tile_width); c++) {
         for (index_t r = -halo_radius; r < index_t(halo_radius + tile_height); r++) {
-            if (r < 0) {
-                in_pipe_0::write(false);
-            } else if (r < halo_radius) {
-                in_pipe_1::write(false);
-            } else if (r < halo_radius + core_height) {
-                in_pipe_2::write(false);
-            } else if (r < tile_height) {
-                in_pipe_3::write(false);
-            } else {
-                in_pipe_4::write(false);
-            }
+            in_pipe::write(false);
         }
     }
 
@@ -172,80 +121,39 @@ TEST_CASE("Halo values inside the pipeline are handled correctly", "[tiling::Exe
 
     for (uindex_t c = 0; c < tile_width; c++) {
         for (uindex_t r = 0; r < tile_height; r++) {
-            if (r < halo_radius) {
-                REQUIRE(out_pipe_0::read());
-            } else if (r < halo_radius + core_height) {
-                REQUIRE(out_pipe_1::read());
-            } else {
-                REQUIRE(out_pipe_2::read());
-            }
+            REQUIRE(out_pipe::read());
         }
     }
 
-    REQUIRE(in_pipe_0::empty());
-    REQUIRE(in_pipe_1::empty());
-    REQUIRE(in_pipe_2::empty());
-    REQUIRE(in_pipe_3::empty());
-    REQUIRE(in_pipe_4::empty());
-    REQUIRE(out_pipe_0::empty());
-    REQUIRE(out_pipe_1::empty());
-    REQUIRE(out_pipe_2::empty());
+    REQUIRE(in_pipe::empty());
+    REQUIRE(out_pipe::empty());
 }
 
 TEST_CASE("Incomplete Pipeline with i_generation != 0", "[tiling::ExecutionKernel]") {
     using Cell = uint8_t;
     auto trans_func = [](Stencil<Cell, 1> const &stencil) { return stencil[ID(0, 0)] + 1; };
 
-    using in_pipe_0 = HostPipe<class IncompletePipelineInPipe0ID, Cell>;
-    using in_pipe_1 = HostPipe<class IncompletePipelineInPipe1ID, Cell>;
-    using in_pipe_2 = HostPipe<class IncompletePipelineInPipe2ID, Cell>;
-    using in_pipe_3 = HostPipe<class IncompletePipelineInPipe3ID, Cell>;
-    using in_pipe_4 = HostPipe<class IncompletePipelineInPipe4ID, Cell>;
-    using out_pipe_0 = HostPipe<class IncompletePipelineOutPipe0ID, Cell>;
-    using out_pipe_1 = HostPipe<class IncompletePipelineOutPipe1ID, Cell>;
-    using out_pipe_2 = HostPipe<class IncompletePipelineOutPipe2ID, Cell>;
+    using in_pipe = HostPipe<class IncompletePipelineInPipeID, Cell>;
+    using out_pipe = HostPipe<class IncompletePipelineOutPipeID, Cell>;
     using TestExecutionKernel =
-        ExecutionKernel<decltype(trans_func), Cell, 1, 16, 64, 64, in_pipe_0, in_pipe_1, in_pipe_2,
-        in_pipe_3, in_pipe_4, out_pipe_0, out_pipe_1, out_pipe_2>;
+        ExecutionKernel<decltype(trans_func), Cell, 1, 16, 64, 64, in_pipe, out_pipe>;
 
     for (int c = -16; c < 16 + 64; c++) {
         for (int r = -16; r < 16 + 64; r++) {
-            if (r < 0) {
-                in_pipe_0::write(0);
-            } else if (r < 16) {
-                in_pipe_1::write(0);
-            } else if (r < 64 - 16) {
-                in_pipe_2::write(0);
-            } else if (r < 64) {
-                in_pipe_3::write(0);
-            } else {
-                in_pipe_4::write(0);
-            }
+            in_pipe::write(0);
         }
     }
 
     TestExecutionKernel kernel(trans_func, 16, 20, 0, 0, 64, 64, 0);
     kernel.operator()();
 
-    REQUIRE(in_pipe_0::empty());
-    REQUIRE(in_pipe_1::empty());
-    REQUIRE(in_pipe_2::empty());
-    REQUIRE(in_pipe_3::empty());
-    REQUIRE(in_pipe_4::empty());
+    REQUIRE(in_pipe::empty());
 
     for (int c = 0; c < 64; c++) {
         for (int r = 0; r < 64; r++) {
-            if (r < 16) {
-                REQUIRE(out_pipe_0::read() == 4);
-            } else if (r < 64 - 16) {
-                REQUIRE(out_pipe_1::read() == 4);
-            } else {
-                REQUIRE(out_pipe_2::read() == 4);
-            }
+            REQUIRE(out_pipe::read() == 4);
         }
     }
 
-    REQUIRE(out_pipe_0::empty());
-    REQUIRE(out_pipe_1::empty());
-    REQUIRE(out_pipe_2::empty());
+    REQUIRE(out_pipe::empty());
 }

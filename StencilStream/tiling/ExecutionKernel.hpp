@@ -45,9 +45,8 @@ namespace tiling {
  * \tparam out_pipe The pipe to write to.
  */
 template <typename TransFunc, typename T, uindex_t stencil_radius, uindex_t pipeline_length,
-          uindex_t output_tile_width, uindex_t output_tile_height, typename in_pipe_0,
-          typename in_pipe_1, typename in_pipe_2, typename in_pipe_3, typename in_pipe_4,
-          typename out_pipe_0, typename out_pipe_1, typename out_pipe_2>
+          uindex_t output_tile_width, uindex_t output_tile_height, typename in_pipe,
+          typename out_pipe>
 class ExecutionKernel {
   public:
     static_assert(
@@ -59,29 +58,24 @@ class ExecutionKernel {
      */
     const static uindex_t stencil_diameter = Stencil<T, stencil_radius>::diameter;
 
-    const static uindex_t halo_radius = stencil_radius * pipeline_length;
-
-    const static uindex_t core_height = output_tile_height - 2 * halo_radius;
-
-    const static uindex_t core_width = output_tile_width - 2 * halo_radius;
+    /**
+     * \brief The total number of cells to read from the `in_pipe`.
+     */
+    const static uindex_t n_input_cells =
+        (2 * stencil_radius * pipeline_length + output_tile_width) *
+        (2 * stencil_radius * pipeline_length + output_tile_height);
 
     /**
      * \brief The width of the processed tile with the tile halo attached.
      */
     const static uindex_t input_tile_width =
-        2 * halo_radius + output_tile_width;
+        2 * stencil_radius * pipeline_length + output_tile_width;
 
     /**
      * \brief The height of the processed tile with the tile halo attached.
      */
     const static uindex_t input_tile_height =
-        2 * halo_radius + output_tile_height;
-
-    /**
-     * \brief The total number of cells to read from the `in_pipe`.
-     */
-    const static uindex_t n_input_cells = input_tile_width * input_tile_height;
-
+        2 * stencil_radius * pipeline_length + output_tile_height;
 
     /**
      * \brief Create and configure the execution kernel.
@@ -127,18 +121,7 @@ class ExecutionKernel {
                                                  [stencil_diameter];
 
         for (uindex_t i = 0; i < n_input_cells; i++) {
-            T value;
-            if (input_tile_r < halo_radius) {
-                value = in_pipe_0::read();
-            } else if (input_tile_r < 2*halo_radius) {
-                value = in_pipe_1::read();
-            } else if (input_tile_r < 2*halo_radius + core_height) {
-                value = in_pipe_2::read();
-            } else if (input_tile_r < 3*halo_radius + core_height) {
-                value = in_pipe_3::read();
-            } else {
-                value = in_pipe_4::read();
-            }
+            T value = in_pipe::read();
 
 #pragma unroll
             for (uindex_t stage = 0; stage < pipeline_length; stage++) {
@@ -197,17 +180,11 @@ class ExecutionKernel {
                 }
             }
 
-            index_t output_tile_c = input_tile_c - 2 * halo_radius;
-            index_t output_tile_r = input_tile_r - 2 * halo_radius;
+            bool is_valid_output = input_tile_c >= (stencil_diameter - 1) * pipeline_length;
+            is_valid_output &= input_tile_r >= (stencil_diameter - 1) * pipeline_length;
 
-            if (output_tile_c >= 0 && output_tile_r >= 0) {
-                if (output_tile_r < halo_radius) {
-                    out_pipe_0::write(value);
-                } else if (output_tile_r < core_height + halo_radius) {
-                    out_pipe_1::write(value);
-                } else {
-                    out_pipe_2::write(value);
-                }
+            if (is_valid_output) {
+                out_pipe::write(value);
             }
 
             if (input_tile_r == input_tile_height - 1) {
