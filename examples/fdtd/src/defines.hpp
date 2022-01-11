@@ -19,9 +19,8 @@
  */
 #pragma once
 #include <StencilStream/Index.hpp>
-#include <CL/sycl.hpp>
-#include <cmath>
-#include <optional>
+#include <fstream>
+#include <iostream>
 #include <unistd.h>
 
 using namespace std;
