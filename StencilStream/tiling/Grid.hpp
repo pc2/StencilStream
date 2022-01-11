@@ -52,6 +52,8 @@ class Grid {
   public:
     static constexpr uindex_t burst_buffer_size = std::lcm(sizeof(T), burst_size);
     static constexpr uindex_t burst_buffer_length = burst_buffer_size / sizeof(T);
+    static constexpr uindex_t core_height = tile_height - 2 * halo_radius;
+    static constexpr uindex_t core_width = tile_width - 2 * halo_radius;
     using Tile = Tile<T, tile_width, tile_height, halo_radius, burst_buffer_length>;
 
     /**
@@ -143,181 +145,69 @@ class Grid {
      * \throws std::out_of_range Thrown if the tile id is outside the range of tiles, as returned by
      * \ref Grid.get_tile_range.
      */
-    Tile &get_tile(UID tile_id) {
-        if (tile_id.c > get_tile_range().c || tile_id.r > get_tile_range().r) {
-            throw std::out_of_range("Tile index out of range");
-        }
-
+    Tile &get_tile(ID tile_id) {
         uindex_t tile_c = tile_id.c + 1;
         uindex_t tile_r = tile_id.r + 1;
-
-        return tiles[tile_c][tile_r];
+        return tiles.at(tile_c).at(tile_r);
     }
 
-    /**
-     * \brief Submit the input kernels required for one execution of the \ref ExecutionKernel.
-     *
-     * This will submit five \ref IOKernel invocations in total, which are executed in order. Those
-     * kernels write the contents of a tile and it's halo to the `in_pipe`.
-     *
-     * \tparam in_pipe The pipe to write the cells to.
-     * \param fpga_queue The configured SYCL queue for submissions.
-     * \param tile_id The id of the tile to read.
-     * \throws std::out_of_range Thrown if the tile id is outside the range of tiles, as returned by
-     * \ref Grid.get_tile_range.
-     */
-    template <typename in_pipe> void submit_tile_input(cl::sycl::queue fpga_queue, UID tile_id) {
-        if (tile_id.c > get_tile_range().c || tile_id.r > get_tile_range().r) {
-            throw std::out_of_range("Tile index out of range");
-        }
+    template <typename pipe_id> void submit_read(cl::sycl::queue fpga_queue, ID tile_id, typename Tile::Part part) {
+        fpga_queue.submit([&](cl::sycl::handler &cgh) {
+            auto ac = this->get_tile(tile_id)[part].template get_access<cl::sycl::access::mode::read>(cgh);
+            UID range = Tile::get_part_range(part);
 
-        uindex_t tile_c = tile_id.c + 1;
-        uindex_t tile_r = tile_id.r + 1;
+            cgh.single_task<pipe_id>([=]() {
+                T cache[burst_buffer_length];
+                uindex_t burst_i = 0;
+                uindex_t cell_i = burst_buffer_length;
 
-        submit_input_kernel<in_pipe>(
-            fpga_queue,
-            std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 5>{
-                tiles[tile_c - 1][tile_r - 1][Tile::Part::SOUTH_EAST_CORNER],
-                tiles[tile_c - 1][tile_r][Tile::Part::NORTH_EAST_CORNER],
-                tiles[tile_c - 1][tile_r][Tile::Part::EAST_BORDER],
-                tiles[tile_c - 1][tile_r][Tile::Part::SOUTH_EAST_CORNER],
-                tiles[tile_c - 1][tile_r + 1][Tile::Part::NORTH_EAST_CORNER],
-            },
-            halo_radius);
-
-        submit_input_kernel<in_pipe>(fpga_queue,
-                                     std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 5>{
-                                         tiles[tile_c][tile_r - 1][Tile::Part::SOUTH_WEST_CORNER],
-                                         tiles[tile_c][tile_r][Tile::Part::NORTH_WEST_CORNER],
-                                         tiles[tile_c][tile_r][Tile::Part::WEST_BORDER],
-                                         tiles[tile_c][tile_r][Tile::Part::SOUTH_WEST_CORNER],
-                                         tiles[tile_c][tile_r + 1][Tile::Part::NORTH_WEST_CORNER],
-                                     },
-                                     halo_radius);
-
-        submit_input_kernel<in_pipe>(fpga_queue,
-                                     std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 5>{
-                                         tiles[tile_c][tile_r - 1][Tile::Part::SOUTH_BORDER],
-                                         tiles[tile_c][tile_r][Tile::Part::NORTH_BORDER],
-                                         tiles[tile_c][tile_r][Tile::Part::CORE],
-                                         tiles[tile_c][tile_r][Tile::Part::SOUTH_BORDER],
-                                         tiles[tile_c][tile_r + 1][Tile::Part::NORTH_BORDER],
-                                     },
-                                     core_width);
-
-        submit_input_kernel<in_pipe>(fpga_queue,
-                                     std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 5>{
-                                         tiles[tile_c][tile_r - 1][Tile::Part::SOUTH_EAST_CORNER],
-                                         tiles[tile_c][tile_r][Tile::Part::NORTH_EAST_CORNER],
-                                         tiles[tile_c][tile_r][Tile::Part::EAST_BORDER],
-                                         tiles[tile_c][tile_r][Tile::Part::SOUTH_EAST_CORNER],
-                                         tiles[tile_c][tile_r + 1][Tile::Part::NORTH_EAST_CORNER],
-                                     },
-                                     halo_radius);
-
-        submit_input_kernel<in_pipe>(
-            fpga_queue,
-            std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 5>{
-                tiles[tile_c + 1][tile_r - 1][Tile::Part::SOUTH_WEST_CORNER],
-                tiles[tile_c + 1][tile_r][Tile::Part::NORTH_WEST_CORNER],
-                tiles[tile_c + 1][tile_r][Tile::Part::WEST_BORDER],
-                tiles[tile_c + 1][tile_r][Tile::Part::SOUTH_WEST_CORNER],
-                tiles[tile_c + 1][tile_r + 1][Tile::Part::NORTH_WEST_CORNER],
-            },
-            halo_radius);
+                for (uindex_t i = 0; i < range.c * range.r; i++) {
+                    if (cell_i == burst_buffer_length) {
+                        #pragma unroll
+                        for (uindex_t load_i = 0; load_i < burst_buffer_length; load_i++) {
+                            cache[load_i] = ac[burst_i][load_i];
+                        }
+                        burst_i++;
+                        cell_i = 0;
+                    }
+                    cl::sycl::pipe<pipe_id, T>::write(cache[cell_i]);
+                    cell_i++;
+                }
+            });
+        });
     }
 
-    /**
-     * \brief Submit the output kernels required for one execution of the \ref
-     * ExecutionKernel.
-     *
-     * This will submit three \ref IOKernel invocations in total, which are executed in order. Those
-     * kernels will write cells from the `out_pipe` to one of the tiles.
-     *
-     * \tparam out_pipe The pipe to read the cells from.
-     * \param fpga_queue The configured SYCL queue for submissions.
-     * \param tile_id The id of the tile to write to.
-     * \throws std::out_of_range Thrown if the tile id is outside the range of tiles, as returned by
-     * \ref Grid.get_tile_range.
-     */
-    template <typename out_pipe> void submit_tile_output(cl::sycl::queue fpga_queue, UID tile_id) {
-        if (tile_id.c > get_tile_range().c || tile_id.r > get_tile_range().r) {
-            throw std::out_of_range("Tile index out of range");
-        }
+    template <typename pipe_id> void submit_write(cl::sycl::queue fpga_queue, ID tile_id, typename Tile::Part part) {
+        fpga_queue.submit([&](cl::sycl::handler &cgh) {
+            auto ac = this->get_tile(tile_id)[part].template get_access<cl::sycl::access::mode::discard_write>(cgh);
+            UID range = Tile::get_part_range(part);
 
-        uindex_t tile_c = tile_id.c + 1;
-        uindex_t tile_r = tile_id.r + 1;
+            cgh.single_task<pipe_id>([=]() {
+                T cache[burst_buffer_length];
+                uindex_t burst_i = 0;
+                uindex_t cell_i = 0;
 
-        submit_output_kernel<out_pipe>(fpga_queue,
-                                       std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 3>{
-                                           tiles[tile_c][tile_r][Tile::Part::NORTH_WEST_CORNER],
-                                           tiles[tile_c][tile_r][Tile::Part::WEST_BORDER],
-                                           tiles[tile_c][tile_r][Tile::Part::SOUTH_WEST_CORNER],
-                                       },
-                                       halo_radius);
+                for (uindex_t i = 0; i < range.c * range.r; i++) {
+                    if (cell_i == burst_buffer_length) {
+                        #pragma unroll
+                        for (uindex_t store_i = 0; store_i < burst_buffer_length; store_i++) {
+                            ac[burst_i][store_i] = cache[store_i];
+                        }
+                        burst_i++;
+                        cell_i = 0;
+                    }
+                    cache[cell_i] = cl::sycl::pipe<pipe_id, T>::read();
+                    cell_i++;
+                }
 
-        submit_output_kernel<out_pipe>(fpga_queue,
-                                       std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 3>{
-                                           tiles[tile_c][tile_r][Tile::Part::NORTH_BORDER],
-                                           tiles[tile_c][tile_r][Tile::Part::CORE],
-                                           tiles[tile_c][tile_r][Tile::Part::SOUTH_BORDER],
-                                       },
-                                       core_width);
-
-        submit_output_kernel<out_pipe>(fpga_queue,
-                                       std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 3>{
-                                           tiles[tile_c][tile_r][Tile::Part::NORTH_EAST_CORNER],
-                                           tiles[tile_c][tile_r][Tile::Part::EAST_BORDER],
-                                           tiles[tile_c][tile_r][Tile::Part::SOUTH_EAST_CORNER],
-                                       },
-                                       halo_radius);
+                for (uindex_t store_i = 0; store_i < cell_i; store_i++) {
+                    ac[burst_i][store_i] = cache[store_i];
+                }
+            });
+        });
     }
 
   private:
-    static constexpr uindex_t core_height = tile_height - 2 * halo_radius;
-    static constexpr uindex_t core_width = tile_width - 2 * halo_radius;
-
-    template <typename pipe>
-    void submit_input_kernel(cl::sycl::queue fpga_queue,
-                             std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 5> buffer,
-                             uindex_t buffer_width) {
-        using InputKernel = IOKernel<T, halo_radius, core_height, pipe, 2, cl::sycl::access::mode::read, cl::sycl::access::target::global_buffer, burst_buffer_length>;
-
-        fpga_queue.submit([&](cl::sycl::handler &cgh) {
-            std::array<typename InputKernel::Accessor, 5> accessor{
-                buffer[0].template get_access<cl::sycl::access::mode::read>(cgh),
-                buffer[1].template get_access<cl::sycl::access::mode::read>(cgh),
-                buffer[2].template get_access<cl::sycl::access::mode::read>(cgh),
-                buffer[3].template get_access<cl::sycl::access::mode::read>(cgh),
-                buffer[4].template get_access<cl::sycl::access::mode::read>(cgh),
-            };
-
-            cgh.single_task<class TilingInputKernel>(
-                [=]() { InputKernel(accessor, buffer_width).read(); });
-        });
-    }
-
-    template <typename pipe>
-    void submit_output_kernel(cl::sycl::queue fpga_queue,
-                              std::array<cl::sycl::buffer<T[burst_buffer_length], 1>, 3> buffer,
-                              uindex_t buffer_width) {
-        using OutputKernel = IOKernel<T, halo_radius, core_height, pipe, 1,
-                                      cl::sycl::access::mode::discard_write, 
-                                      cl::sycl::access::target::global_buffer,
-                                      burst_buffer_length>;
-
-        fpga_queue.submit([&](cl::sycl::handler &cgh) {
-            std::array<typename OutputKernel::Accessor, 3> accessor{
-                buffer[0].template get_access<cl::sycl::access::mode::discard_write>(cgh),
-                buffer[1].template get_access<cl::sycl::access::mode::discard_write>(cgh),
-                buffer[2].template get_access<cl::sycl::access::mode::discard_write>(cgh),
-            };
-
-            cgh.single_task<class TilingOutputKernel>(
-                [=]() { OutputKernel(accessor, buffer_width).write(); });
-        });
-    }
-
     void copy_from(cl::sycl::buffer<T, 2> in_buffer) {
         if (in_buffer.get_range() != grid_range) {
             throw std::range_error("The target buffer has not the same size as the grid");
