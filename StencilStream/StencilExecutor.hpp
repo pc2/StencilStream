@@ -144,26 +144,22 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
 
                     merge_queue.submit([&](cl::sycl::handler &cgh) {
                         cgh.single_task<class TilingMergeKernel>([=]() {
-                            uindex_t n_rows[5] = {halo_radius, halo_radius, tile_height - 2*halo_radius, halo_radius, halo_radius};
-
                             [[intel::loop_coalesce(2)]]
                             for (uindex_t c = 0; c < 2*halo_radius + tile_width; c++) {
-                                for (uindex_t buffer_i = 0; buffer_i < 5; buffer_i++) {
-                                    for (uindex_t r = 0; r < n_rows[buffer_i]; r++) {
-                                        T value;
-                                        if (buffer_i == 0) {
-                                            value = feed_in_pipe_0::read();
-                                        } else if (buffer_i == 1) {
-                                            value = feed_in_pipe_1::read();
-                                        } else if (buffer_i == 2) {
-                                            value = feed_in_pipe_2::read();
-                                        } else if (buffer_i == 3) {
-                                            value = feed_in_pipe_3::read();
-                                        } else {
-                                            value = feed_in_pipe_4::read();
-                                        }
-                                        in_pipe::write(value);
+                                for (uindex_t r = 0; r < 2*halo_radius + tile_height; r++) {
+                                    T value;
+                                    if (r < halo_radius) {
+                                        value = feed_in_pipe_0::read();
+                                    } else if (r < 2*halo_radius) {
+                                        value = feed_in_pipe_1::read();
+                                    } else if (r < 2*halo_radius + GridImpl::core_height) {
+                                        value = feed_in_pipe_2::read();
+                                    } else if (r < 3*halo_radius + GridImpl::core_height) {
+                                        value = feed_in_pipe_3::read();
+                                    } else {
+                                        value = feed_in_pipe_4::read();
                                     }
+                                    in_pipe::write(value);
                                 }
                             }
                         });
@@ -179,20 +175,16 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
 
                     fork_queue.submit([&](cl::sycl::handler &cgh) {
                         cgh.single_task<class TilingForkKernel>([=]() {
-                            uindex_t n_rows[3] = {halo_radius, tile_height - 2*halo_radius, halo_radius};
-
                             [[intel::loop_coalesce(2)]]
                             for (uindex_t c = 0; c < tile_width; c++) {
-                                for (uindex_t buffer_i = 0; buffer_i < 3; buffer_i++) {
-                                    for (uindex_t r = 0; r < n_rows[buffer_i]; r++) {
-                                        T value = out_pipe::read();
-                                        if (buffer_i == 0) {
-                                            feed_out_pipe_0::write(value);
-                                        } else if (buffer_i == 1) {
-                                            feed_out_pipe_1::write(value);
-                                        } else {
-                                            feed_out_pipe_2::write(value);
-                                        }
+                                for (uindex_t r = 0; r < tile_height; r++) {
+                                    T value = out_pipe::read();
+                                    if (r < halo_radius) {
+                                        feed_out_pipe_0::write(value);
+                                    } else if (r < tile_height - halo_radius) {
+                                        feed_out_pipe_1::write(value);
+                                    } else {
+                                        feed_out_pipe_2::write(value);
                                     }
                                 }
                             }
