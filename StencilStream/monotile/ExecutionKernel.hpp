@@ -118,9 +118,6 @@ class ExecutionKernel {
             prev_r = r[i];
         }
 
-        uindex_t cache_r = 0;
-        uindex_t cache_bank = 0;
-
         /*
          * The intel::numbanks attribute requires a power of two as it's argument and if the
          * pipeline length isn't a power of two, it would produce an error. Therefore, we calculate
@@ -159,12 +156,12 @@ class ExecutionKernel {
                     if (cache_c == stencil_diameter - 1) {
                         new_value = value;
                     } else {
-                        new_value = cache[cache_bank][cache_r][stage][cache_c];
+                        new_value = cache[c[stage] & 0b1][r[stage]][stage][cache_c];
                     }
 
                     stencil_buffer[stage][cache_c][stencil_diameter - 1] = new_value;
                     if (cache_c > 0) {
-                        cache[(~cache_bank) & 0b1][cache_r][stage][cache_c - 1] = new_value;
+                        cache[(~c[stage]) & 0b1][r[stage]][stage][cache_c - 1] = new_value;
                     }
                 }
 
@@ -173,18 +170,32 @@ class ExecutionKernel {
                                                        i_generation + stage, stage,
                                                        UID(grid_width, grid_height));
 
+                    bool h_halo_mask[stencil_diameter];
+                    bool v_halo_mask[stencil_diameter];
+                    #pragma unroll
+                    for (index_t mask_i = 0; mask_i < stencil_diameter; mask_i++) {
+                        // These computation assume that the central cell is in the grid. If it's not,
+                        // the resulting value of this stage will be discarded anyways, so this is safe.
+                        if (mask_i < stencil_radius) {
+                            h_halo_mask[mask_i] = c[stage] >= index_t(stencil_radius) - mask_i;
+                            v_halo_mask[mask_i] = r[stage] >= index_t(stencil_radius) - mask_i;
+                        } else if (mask_i == stencil_radius) {
+                            h_halo_mask[mask_i] = true;
+                            v_halo_mask[mask_i] = true;
+                        } else {
+                            h_halo_mask[mask_i] = c[stage] < index_t(grid_width) + index_t(stencil_radius) - mask_i;
+                            v_halo_mask[mask_i] = r[stage] < index_t(grid_height) + index_t(stencil_radius) - mask_i;
+                        }
+                    }
+
 #pragma unroll
-                    for (index_t cell_c = -stencil_radius; cell_c <= index_t(stencil_radius);
-                         cell_c++) {
+                    for (uindex_t cell_c = 0; cell_c < stencil_diameter; cell_c++) {
 #pragma unroll
-                        for (index_t cell_r = -stencil_radius;
-                             cell_r <= index_t(stencil_radius); cell_r++) {
-                            if (id_in_grid(cell_c + c[stage], cell_r + r[stage])) {
-                                stencil[ID(cell_c, cell_r)] =
-                                    stencil_buffer[stage][cell_c + stencil_radius]
-                                                  [cell_r + stencil_radius];
+                        for (uindex_t cell_r = 0; cell_r < stencil_diameter; cell_r++) {
+                            if (h_halo_mask[cell_c] && v_halo_mask[cell_r]) {
+                                stencil[UID(cell_c, cell_r)] = stencil_buffer[stage][cell_c][cell_r];
                             } else {
-                                stencil[ID(cell_c, cell_r)] = halo_value;
+                                stencil[UID(cell_c, cell_r)] = halo_value;
                             }
                         }
                     }
@@ -199,13 +210,6 @@ class ExecutionKernel {
                     r[stage] = 0;
                     c[stage] += 1;
                 }
-            }
-            
-            if (cache_r == tile_height - 1) {
-                cache_r = 0;
-                cache_bank = (~cache_bank) & 0b1;
-            } else {
-                cache_r++;
             }
 
             if (i >= pipeline_latency) {
