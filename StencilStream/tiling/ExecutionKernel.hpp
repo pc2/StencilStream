@@ -56,7 +56,7 @@ class ExecutionKernel {
     /**
      * \brief The width and height of the stencil buffer.
      */
-    const static uindex_min_t stencil_diameter = Stencil<T, stencil_radius>::diameter;
+    const static uindex_t stencil_diameter = Stencil<T, stencil_radius>::diameter;
 
     /**
      * \brief The total number of cells to read from the `in_pipe`.
@@ -68,13 +68,13 @@ class ExecutionKernel {
     /**
      * \brief The width of the processed tile with the tile halo attached.
      */
-    const static uindex_2d_t input_tile_width =
+    const static uindex_t input_tile_width =
         2 * stencil_radius * pipeline_length + output_tile_width;
 
     /**
      * \brief The height of the processed tile with the tile halo attached.
      */
-    const static uindex_1d_t input_tile_height =
+    const static uindex_t input_tile_height =
         2 * stencil_radius * pipeline_length + output_tile_height;
 
     /**
@@ -94,8 +94,8 @@ class ExecutionKernel {
      * \param halo_value The value of cells in the grid halo.
      */
     ExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t target_i_generation,
-                    uindex_1d_t grid_c_offset, uindex_1d_t grid_r_offset, uindex_1d_t grid_width,
-                    uindex_1d_t grid_height, T halo_value)
+                    uindex_t grid_c_offset, uindex_t grid_r_offset, uindex_t grid_width,
+                    uindex_t grid_height, T halo_value)
         : trans_func(trans_func), i_generation(i_generation),
           target_i_generation(target_i_generation), grid_c_offset(grid_c_offset),
           grid_r_offset(grid_r_offset), grid_width(grid_width), grid_height(grid_height),
@@ -105,8 +105,8 @@ class ExecutionKernel {
      * \brief Execute the configured operations.
      */
     void operator()() const {
-        uindex_1d_t input_tile_c = 0;
-        uindex_1d_t input_tile_r = 0;
+        uindex_t input_tile_c = 0;
+        uindex_t input_tile_r = 0;
 
         /*
          * The intel::numbanks attribute requires a power of two as it's argument and if the
@@ -124,31 +124,31 @@ class ExecutionKernel {
             T value = in_pipe::read();
 
 #pragma unroll
-            for (uindex_1d_t stage = 0; stage < pipeline_length; stage++) {
+            for (uindex_t stage = 0; stage < pipeline_length; stage++) {
                 /*
                  * Shift up every value in the stencil_buffer.
                  * This operation does not touch the values in the bottom row, which will be filled
                  * from the cache and the new input value later.
                  */
 #pragma unroll
-                for (uindex_min_t r = 0; r < stencil_diameter - 1; r++) {
+                for (uindex_t r = 0; r < stencil_diameter - 1; r++) {
 #pragma unroll
-                    for (uindex_min_t c = 0; c < stencil_diameter; c++) {
+                    for (uindex_t c = 0; c < stencil_diameter; c++) {
                         stencil_buffer[stage][c][r] = stencil_buffer[stage][c][r + 1];
                     }
                 }
 
-                index_1d_t input_grid_c = grid_c_offset + index_t(input_tile_c) -
+                index_t input_grid_c = grid_c_offset + index_t(input_tile_c) -
                                        (stencil_diameter - 1) -
                                        (pipeline_length + stage - 2) * stencil_radius;
-                index_1d_t input_grid_r = grid_r_offset + index_t(input_tile_r) -
+                index_t input_grid_r = grid_r_offset + index_t(input_tile_r) -
                                        (stencil_diameter - 1) -
                                        (pipeline_length + stage - 2) * stencil_radius;
 
                 // Update the stencil buffer and cache with previous cache contents and the new
                 // input cell.
 #pragma unroll
-                for (uindex_min_t cache_c = 0; cache_c < stencil_diameter; cache_c++) {
+                for (uindex_t cache_c = 0; cache_c < stencil_diameter; cache_c++) {
                     T new_value;
                     if (cache_c == stencil_diameter - 1) {
                         if (input_grid_c < 0 || input_grid_r < 0 || input_grid_c >= grid_width ||
@@ -167,8 +167,8 @@ class ExecutionKernel {
                     }
                 }
 
-                index_1d_t output_grid_c = input_grid_c - stencil_radius;
-                index_1d_t output_grid_r = input_grid_r - stencil_radius;
+                index_t output_grid_c = input_grid_c - stencil_radius;
+                index_t output_grid_r = input_grid_r - stencil_radius;
                 Stencil<T, stencil_radius> stencil(
                     ID(output_grid_c, output_grid_r), i_generation + stage, stage,
                     stencil_buffer[stage], UID(grid_width, grid_height));
@@ -200,10 +200,10 @@ class ExecutionKernel {
     TransFunc trans_func;
     uindex_t i_generation;
     uindex_t target_i_generation;
-    uindex_1d_t grid_c_offset;
-    uindex_1d_t grid_r_offset;
-    uindex_1d_t grid_width;
-    uindex_1d_t grid_height;
+    uindex_t grid_c_offset;
+    uindex_t grid_r_offset;
+    uindex_t grid_width;
+    uindex_t grid_height;
     T halo_value;
 };
 
