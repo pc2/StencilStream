@@ -64,16 +64,16 @@ void copy_from_test_impl(uindex_t tile_width, uindex_t tile_height) {
         auto content_offset = TileImpl::get_part_offset(part);
         auto part_ac = tile[part].get_access<access::mode::read>();
 
-        for (uindex_t c = 0; c < true_range[0]; c++) {
-            for (uindex_t r = 0; r < true_range[1]; r++) {
+        for (uindex_t c = 0; c < true_range.c; c++) {
+            for (uindex_t r = 0; r < true_range.r; r++) {
                 if (c + content_offset[0] >= tile_width) {
                     continue;
                 }
                 if (r + content_offset[1] >= tile_height) {
                     continue;
                 }
-                uindex_t burst_i = (c * true_range[1] + r) / burst_length;
-                uindex_t cell_i = (c * true_range[1] + r) % burst_length;
+                uindex_t burst_i = (c * true_range.r + r) / burst_length;
+                uindex_t cell_i = (c * true_range.r + r) % burst_length;
                 REQUIRE(part_ac[burst_i][cell_i].c == c + content_offset[0]);
                 REQUIRE(part_ac[burst_i][cell_i].r == r + content_offset[1]);
             }
@@ -96,10 +96,10 @@ void copy_to_test_impl(uindex_t tile_width, uindex_t tile_height) {
         auto content_offset = TileImpl::get_part_offset(part);
         auto part_ac = tile[part].get_access<access::mode::read_write>();
 
-        for (uindex_t c = 0; c < true_range[0]; c++) {
-            for (uindex_t r = 0; r < true_range[1]; r++) {
-                uindex_t burst_i = (c * true_range[1] + r) / burst_length;
-                uindex_t cell_i = (c * true_range[1] + r) % burst_length;
+        for (uindex_t c = 0; c < true_range.c; c++) {
+            for (uindex_t r = 0; r < true_range.r; r++) {
+                uindex_t burst_i = (c * true_range.r + r) / burst_length;
+                uindex_t cell_i = (c * true_range.r + r) % burst_length;
                 part_ac[burst_i][cell_i] = ID(c + content_offset[0], r + content_offset[1]);
             }
         }

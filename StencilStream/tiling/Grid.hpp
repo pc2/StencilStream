@@ -19,14 +19,13 @@
  */
 #pragma once
 #include "../GenericID.hpp"
-#include "IOKernel.hpp"
 #include "Tile.hpp"
 #include <CL/sycl/accessor.hpp>
 #include <CL/sycl/buffer.hpp>
 #include <CL/sycl/queue.hpp>
 #include <memory>
-#include <vector>
 #include <numeric>
+#include <vector>
 
 namespace stencil {
 namespace tiling {
@@ -47,13 +46,19 @@ namespace tiling {
  * \tparam tile_height The number of rows of a tile.
  * \tparam halo_radius The radius (aka width and height) of the tile halo.
  */
-template <typename T, uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius, uindex_t burst_size=64>
+template <typename T, uindex_1d_t tile_width, uindex_1d_t tile_height, uindex_1d_t halo_radius,
+          uindex_1d_t burst_size = 64>
 class Grid {
   public:
-    static constexpr uindex_t burst_buffer_size = std::lcm(sizeof(T), burst_size);
-    static constexpr uindex_t burst_buffer_length = burst_buffer_size / sizeof(T);
-    static constexpr uindex_t core_height = tile_height - 2 * halo_radius;
-    static constexpr uindex_t core_width = tile_width - 2 * halo_radius;
+    static constexpr uindex_1d_t burst_buffer_size =
+        BOUND_CHECK(std::lcm(sizeof(T), burst_size), uindex_1d_t);
+    static constexpr uindex_1d_t burst_buffer_length =
+        BOUND_CHECK(burst_buffer_size / sizeof(T), uindex_1d_t);
+
+    static_assert(2 * halo_radius < tile_height && 2 * halo_radius < tile_width);
+    static constexpr uindex_1d_t core_height = BOUND_CHECK(tile_height - 2 * halo_radius, uindex_1d_t);
+    static constexpr uindex_1d_t core_width = BOUND_CHECK(tile_width - 2 * halo_radius, uindex_1d_t);
+
     using Tile = Tile<T, tile_width, tile_height, halo_radius, burst_buffer_length>;
 
     /**
@@ -125,7 +130,9 @@ class Grid {
      *
      * \return The range of tiles of the grid.
      */
-    UID get_tile_range() const { return UID(tiles.size() - 2, tiles[0].size() - 2); }
+    GenericID<uindex_1d_t> get_tile_range() const {
+        return GenericID<uindex_1d_t>(tiles.size() - 2, tiles[0].size() - 2);
+    }
 
     /**
      * \brief Return the range of the grid in cells.
@@ -135,7 +142,7 @@ class Grid {
      *
      * \return The range of cells of the grid.
      */
-    UID get_grid_range() const { return grid_range; }
+    GenericID<uindex_t> get_grid_range() const { return grid_range; }
 
     /**
      * \brief Get the tile at the given index.
@@ -151,20 +158,23 @@ class Grid {
         return tiles.at(tile_c).at(tile_r);
     }
 
-    template <typename pipe_id> void submit_read(cl::sycl::queue fpga_queue, ID tile_id, typename Tile::Part part) {
+    template <typename pipe_id>
+    void submit_read(cl::sycl::queue fpga_queue, ID tile_id, typename Tile::Part part) {
         fpga_queue.submit([&](cl::sycl::handler &cgh) {
-            auto ac = this->get_tile(tile_id)[part].template get_access<cl::sycl::access::mode::read>(cgh);
-            UID range = Tile::get_part_range(part);
+            auto ac =
+                this->get_tile(tile_id)[part].template get_access<cl::sycl::access::mode::read>(
+                    cgh);
+            GenericID<uindex_1d_t> range = Tile::get_part_range(part);
 
             cgh.single_task<pipe_id>([=]() {
                 T cache[burst_buffer_length];
-                uindex_t burst_i = 0;
-                uindex_t cell_i = burst_buffer_length;
+                uindex_2d_t burst_i = 0;
+                uindex_1d_t cell_i = burst_buffer_length;
 
-                for (uindex_t i = 0; i < range.c * range.r; i++) {
+                for (uindex_2d_t i = 0; i < range.c * range.r; i++) {
                     if (cell_i == burst_buffer_length) {
-                        #pragma unroll
-                        for (uindex_t load_i = 0; load_i < burst_buffer_length; load_i++) {
+#pragma unroll
+                        for (uindex_1d_t load_i = 0; load_i < burst_buffer_length; load_i++) {
                             cache[load_i] = ac[burst_i][load_i];
                         }
                         burst_i++;
@@ -177,20 +187,22 @@ class Grid {
         });
     }
 
-    template <typename pipe_id> void submit_write(cl::sycl::queue fpga_queue, ID tile_id, typename Tile::Part part) {
+    template <typename pipe_id>
+    void submit_write(cl::sycl::queue fpga_queue, ID tile_id, typename Tile::Part part) {
         fpga_queue.submit([&](cl::sycl::handler &cgh) {
-            auto ac = this->get_tile(tile_id)[part].template get_access<cl::sycl::access::mode::discard_write>(cgh);
-            UID range = Tile::get_part_range(part);
+            auto ac = this->get_tile(tile_id)[part]
+                          .template get_access<cl::sycl::access::mode::discard_write>(cgh);
+            GenericID<uindex_1d_t> range = Tile::get_part_range(part);
 
             cgh.single_task<pipe_id>([=]() {
                 T cache[burst_buffer_length];
-                uindex_t burst_i = 0;
-                uindex_t cell_i = 0;
+                uindex_2d_t burst_i = 0;
+                uindex_1d_t cell_i = 0;
 
-                for (uindex_t i = 0; i < range.c * range.r; i++) {
+                for (uindex_2d_t i = 0; i < range.c * range.r; i++) {
                     if (cell_i == burst_buffer_length) {
-                        #pragma unroll
-                        for (uindex_t store_i = 0; store_i < burst_buffer_length; store_i++) {
+#pragma unroll
+                        for (uindex_1d_t store_i = 0; store_i < burst_buffer_length; store_i++) {
                             ac[burst_i][store_i] = cache[store_i];
                         }
                         burst_i++;
@@ -200,7 +212,7 @@ class Grid {
                     cell_i++;
                 }
 
-                for (uindex_t store_i = 0; store_i < cell_i; store_i++) {
+                for (uindex_1d_t store_i = 0; store_i < cell_i; store_i++) {
                     ac[burst_i][store_i] = cache[store_i];
                 }
             });

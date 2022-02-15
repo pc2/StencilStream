@@ -45,8 +45,8 @@ namespace monotile {
  * output_tile_height The number of rows in a grid tile. \tparam in_pipe The pipe to read from.
  * \tparam out_pipe The pipe to write to.
  */
-template <typename TransFunc, typename T, uindex_t stencil_radius, uindex_t pipeline_length,
-          uindex_t tile_width, uindex_t tile_height, typename in_pipe, typename out_pipe>
+template <typename TransFunc, typename T, uindex_min_t stencil_radius, uindex_1d_t pipeline_length,
+          uindex_1d_t tile_width, uindex_1d_t tile_height, typename in_pipe, typename out_pipe>
 class ExecutionKernel {
   public:
     static_assert(
@@ -56,29 +56,33 @@ class ExecutionKernel {
     /**
      * \brief The width and height of the stencil buffer.
      */
-    const static uindex_t stencil_diameter = Stencil<T, stencil_radius>::diameter;
+    static constexpr uindex_min_t stencil_diameter =
+        BOUND_CHECK((Stencil<T, stencil_radius>::diameter), uindex_min_t);
 
     /**
      * \brief The number of cells in the tile.
      */
-    const static uindex_t n_cells = tile_width * tile_height;
+    static constexpr uindex_2d_t n_cells = BOUND_CHECK(tile_width * tile_height, uindex_2d_t);
 
     /**
      * \brief The number of cells that need to be fed into a stage before it produces correct
      * values.
      */
-    const static uindex_t stage_latency = stencil_radius * (tile_height + 1);
+    static constexpr uindex_2d_t stage_latency =
+        BOUND_CHECK(stencil_radius * (tile_height + 1), uindex_2d_t);
 
     /**
      * \brief The number of cells that need to be fed into the pipeline before it produces correct
      * values.
      */
-    const static uindex_t pipeline_latency = pipeline_length * stage_latency;
+    static constexpr uindex_2d_t pipeline_latency =
+        BOUND_CHECK(pipeline_length * stage_latency, uindex_2d_t);
 
     /**
      * \brief The total number of loop iterations.
      */
-    const static uindex_t n_iterations = pipeline_latency + n_cells;
+    static constexpr uindex_2d_t n_iterations =
+        BOUND_CHECK(pipeline_latency + n_cells, uindex_2d_t);
 
     /**
      * \brief Create and configure the execution kernel.
@@ -92,7 +96,7 @@ class ExecutionKernel {
      * \param halo_value The value of cells outside the grid.
      */
     ExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t n_generations,
-                    uindex_t grid_width, uindex_t grid_height, T halo_value)
+                    uindex_1d_t grid_width, uindex_1d_t grid_height, T halo_value)
         : trans_func(trans_func), i_generation(i_generation), n_generations(n_generations),
           grid_width(grid_width), grid_height(grid_height), halo_value(halo_value) {}
 
@@ -100,14 +104,14 @@ class ExecutionKernel {
      * \brief Execute the kernel.
      */
     void operator()() const {
-        [[intel::fpga_register]] index_t c[pipeline_length];
-        [[intel::fpga_register]] index_t r[pipeline_length];
+        [[intel::fpga_register]] index_1d_t c[pipeline_length];
+        [[intel::fpga_register]] index_1d_t r[pipeline_length];
 
         // Initializing (output) column and row counters.
-        index_t prev_c = 0;
-        index_t prev_r = 0;
+        index_1d_t prev_c = 0;
+        index_1d_t prev_r = 0;
 #pragma unroll
-        for (uindex_t i = 0; i < pipeline_length; i++) {
+        for (uindex_1d_t i = 0; i < pipeline_length; i++) {
             c[i] = prev_c - stencil_radius;
             r[i] = prev_r - stencil_radius;
             if (r[i] < index_t(0)) {
@@ -130,7 +134,7 @@ class ExecutionKernel {
         [[intel::fpga_register]] T stencil_buffer[pipeline_length][stencil_diameter]
                                                  [stencil_diameter];
 
-        for (uindex_t i = 0; i < n_iterations; i++) {
+        for (uindex_2d_t i = 0; i < n_iterations; i++) {
             T value;
             if (i < n_cells) {
                 value = in_pipe::read();
@@ -139,11 +143,11 @@ class ExecutionKernel {
             }
 
 #pragma unroll
-            for (uindex_t stage = 0; stage < pipeline_length; stage++) {
+            for (uindex_1d_t stage = 0; stage < pipeline_length; stage++) {
 #pragma unroll
-                for (uindex_t r = 0; r < stencil_diameter - 1; r++) {
+                for (uindex_min_t r = 0; r < stencil_diameter - 1; r++) {
 #pragma unroll
-                    for (uindex_t c = 0; c < stencil_diameter; c++) {
+                    for (uindex_min_t c = 0; c < stencil_diameter; c++) {
                         stencil_buffer[stage][c][r] = stencil_buffer[stage][c][r + 1];
                     }
                 }
@@ -151,7 +155,7 @@ class ExecutionKernel {
                 // Update the stencil buffer and cache with previous cache contents and the new
                 // input cell.
 #pragma unroll
-                for (uindex_t cache_c = 0; cache_c < stencil_diameter; cache_c++) {
+                for (uindex_min_t cache_c = 0; cache_c < stencil_diameter; cache_c++) {
                     T new_value;
                     if (cache_c == stencil_diameter - 1) {
                         new_value = value;
@@ -166,36 +170,41 @@ class ExecutionKernel {
                 }
 
                 if (i_generation + stage < n_generations) {
-                    Stencil<T, stencil_radius> stencil(ID(c[stage], r[stage]),
-                                                       i_generation + stage, stage,
-                                                       UID(grid_width, grid_height));
+                    Stencil<T, stencil_radius> stencil(ID(c[stage], r[stage]), i_generation + stage,
+                                                       stage, UID(grid_width, grid_height));
 
                     bool h_halo_mask[stencil_diameter];
                     bool v_halo_mask[stencil_diameter];
-                    #pragma unroll
-                    for (index_t mask_i = 0; mask_i < stencil_diameter; mask_i++) {
-                        // These computation assume that the central cell is in the grid. If it's not,
-                        // the resulting value of this stage will be discarded anyways, so this is safe.
+#pragma unroll
+                    for (index_1d_t mask_i = 0; mask_i < stencil_diameter; mask_i++) {
+                        // These computation assume that the central cell is in the grid. If it's
+                        // not, the resulting value of this stage will be discarded anyways, so this
+                        // is safe.
                         if (mask_i < stencil_radius) {
-                            h_halo_mask[mask_i] = c[stage] >= index_t(stencil_radius) - mask_i;
-                            v_halo_mask[mask_i] = r[stage] >= index_t(stencil_radius) - mask_i;
+                            h_halo_mask[mask_i] = c[stage] >= index_1d_t(stencil_radius) - mask_i;
+                            v_halo_mask[mask_i] = r[stage] >= index_1d_t(stencil_radius) - mask_i;
                         } else if (mask_i == stencil_radius) {
                             h_halo_mask[mask_i] = true;
                             v_halo_mask[mask_i] = true;
                         } else {
-                            h_halo_mask[mask_i] = c[stage] < index_t(grid_width) + index_t(stencil_radius) - mask_i;
-                            v_halo_mask[mask_i] = r[stage] < index_t(grid_height) + index_t(stencil_radius) - mask_i;
+                            h_halo_mask[mask_i] = c[stage] < index_1d_t(grid_width) +
+                                                                 index_1d_t(stencil_radius) -
+                                                                 mask_i;
+                            v_halo_mask[mask_i] = r[stage] < index_1d_t(grid_height) +
+                                                                 index_1d_t(stencil_radius) -
+                                                                 mask_i;
                         }
                     }
 
 #pragma unroll
-                    for (uindex_t cell_c = 0; cell_c < stencil_diameter; cell_c++) {
+                    for (uindex_min_t cell_c = 0; cell_c < stencil_diameter; cell_c++) {
 #pragma unroll
-                        for (uindex_t cell_r = 0; cell_r < stencil_diameter; cell_r++) {
+                        for (uindex_min_t cell_r = 0; cell_r < stencil_diameter; cell_r++) {
                             if (h_halo_mask[cell_c] && v_halo_mask[cell_r]) {
-                                stencil[UID(cell_c, cell_r)] = stencil_buffer[stage][cell_c][cell_r];
+                                stencil[GenericID<uindex_min_t>(cell_c, cell_r)] =
+                                    stencil_buffer[stage][cell_c][cell_r];
                             } else {
-                                stencil[UID(cell_c, cell_r)] = halo_value;
+                                stencil[GenericID<uindex_min_t>(cell_c, cell_r)] = halo_value;
                             }
                         }
                     }
@@ -219,11 +228,6 @@ class ExecutionKernel {
     }
 
   private:
-    bool id_in_grid(index_t c, index_t r) const {
-        return c >= index_t(0) && r >= index_t(0) && c < index_t(grid_width) &&
-               r < index_t(grid_height);
-    }
-
     TransFunc trans_func;
     uindex_t i_generation;
     uindex_t n_generations;

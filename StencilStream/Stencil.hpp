@@ -20,6 +20,7 @@
 #pragma once
 #include "GenericID.hpp"
 #include "Index.hpp"
+#include "Helpers.hpp"
 
 namespace stencil {
 
@@ -34,14 +35,13 @@ namespace stencil {
  * points to the central cell. `UID` is unsigned and the column and row axes are within the range of
  * [0 : 2*radius + 1). Therefore, (0,0) points to the north-western corner of the stencil.
  */
-template <typename T, uindex_t radius> class Stencil {
+template <typename T, uindex_min_t radius>
+class Stencil {
   public:
     /**
      * \brief The diameter (aka width and height) of the stencil buffer.
      */
-    static constexpr uindex_t diameter = 2 * radius + 1;
-
-    static_assert(diameter < std::numeric_limits<uindex_t>::max());
+    static constexpr uindex_min_t diameter = BOUND_CHECK(2 * radius + 1, uindex_min_t);
     static_assert(diameter >= 3);
 
     /**
@@ -80,14 +80,39 @@ template <typename T, uindex_t radius> class Stencil {
      *
      * Since the indices in `id` are signed, the origin of this index operator is the central cell.
      */
-    T const &operator[](ID id) const { return internal[id.c + radius][id.r + radius]; }
+    T const &operator[](GenericID<index_min_t> id) const {
+        return internal[id.c + radius][id.r + radius];
+    }
 
     /**
      * \brief Access a cell in the stencil.
      *
      * Since the indices in `id` are signed, the origin of this index operator is the central cell.
      */
-    T &operator[](ID id) { return internal[id.c + radius][id.r + radius]; }
+    T &operator[](GenericID<index_min_t> id) { return internal[id.c + radius][id.r + radius]; }
+
+    /**
+     * \brief Access a cell in the stencil.
+     *
+     * Since the indices in `id` are signed, the origin of this index operator is the central cell.
+     */
+    [[deprecated(
+        "Use the GenericID<index_min_t> version instead as it uses narrower index types")]] T const
+        &
+        operator[](ID id) const {
+        return internal[id.c + radius][id.r + radius];
+    }
+
+    /**
+     * \brief Access a cell in the stencil.
+     *
+     * Since the indices in `id` are signed, the origin of this index operator is the central cell.
+     */
+    [[deprecated(
+        "Use the GenericID<index_min_t> version instead as it uses narrower index types")]] T &
+    operator[](ID id) {
+        return internal[id.c + radius][id.r + radius];
+    }
 
     /**
      * \brief Access a cell in the stencil.
@@ -95,7 +120,7 @@ template <typename T, uindex_t radius> class Stencil {
      * Since the indices in `id` are unsigned, the origin of this index operator is the
      * north-western corner.
      */
-    T const &operator[](UID id) const { return internal[id.c][id.r]; }
+    T const &operator[](GenericID<uindex_min_t> id) const { return internal[id.c][id.r]; }
 
     /**
      * \brief Access a cell in the stencil.
@@ -103,7 +128,32 @@ template <typename T, uindex_t radius> class Stencil {
      * Since the indices in `id` are unsigned, the origin of this index operator is the
      * north-western corner.
      */
-    T &operator[](UID id) { return internal[id.c][id.r]; }
+    T &operator[](GenericID<uindex_min_t> id) { return internal[id.c][id.r]; }
+
+    /**
+     * \brief Access a cell in the stencil.
+     *
+     * Since the indices in `id` are unsigned, the origin of this index operator is the
+     * north-western corner.
+     */
+    [[deprecated(
+        "Use the GenericID<uindex_min_t> version instead as it uses narrower index types")]] T const
+        &
+        operator[](UID id) const {
+        return internal[id.c][id.r];
+    }
+
+    /**
+     * \brief Access a cell in the stencil.
+     *
+     * Since the indices in `id` are unsigned, the origin of this index operator is the
+     * north-western corner.
+     */
+    [[deprecated(
+        "Use the GenericID<uindex_min_t> version instead as it uses narrower index types")]] T &
+    operator[](UID id) {
+        return internal[id.c][id.r];
+    }
 
     /**
      * \brief The position of the central cell in the global grid.

@@ -43,15 +43,16 @@ namespace stencil {
  * \tparam tile_height The number of rows in a tile and maximum number of rows in a grid. Defaults
  * to 1024.
  */
-template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipeline_length = 1,
-          uindex_t tile_width = 1024, uindex_t tile_height = 1024>
+template <typename T, uindex_min_t stencil_radius, typename TransFunc, uindex_1d_t pipeline_length = 1,
+          uindex_1d_t tile_width = 1024, uindex_1d_t tile_height = 1024>
 class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc> {
   public:
     /**
      * \brief The number of cells that have be added to the tile in every direction to form the
      * complete input.
      */
-    static constexpr uindex_t halo_radius = stencil_radius * pipeline_length;
+    static constexpr uindex_1d_t halo_radius = stencil_radius * pipeline_length;
+    static_assert(stencil_radius * pipeline_length <= std::numeric_limits<uindex_1d_t>::max());
 
     /**
      * \brief Shorthand for the parent class.
@@ -145,8 +146,8 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
                     merge_queue.submit([&](cl::sycl::handler &cgh) {
                         cgh.single_task<class TilingMergeKernel>([=]() {
                             [[intel::loop_coalesce(2)]]
-                            for (uindex_t c = 0; c < 2*halo_radius + tile_width; c++) {
-                                for (uindex_t r = 0; r < 2*halo_radius + tile_height; r++) {
+                            for (uindex_1d_t c = 0; c < 2*halo_radius + tile_width; c++) {
+                                for (uindex_1d_t r = 0; r < 2*halo_radius + tile_height; r++) {
                                     T value;
                                     if (r < halo_radius) {
                                         value = feed_in_pipe_0::read();
@@ -176,8 +177,8 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
                     fork_queue.submit([&](cl::sycl::handler &cgh) {
                         cgh.single_task<class TilingForkKernel>([=]() {
                             [[intel::loop_coalesce(2)]]
-                            for (uindex_t c = 0; c < tile_width; c++) {
-                                for (uindex_t r = 0; r < tile_height; r++) {
+                            for (uindex_1d_t c = 0; c < tile_width; c++) {
+                                for (uindex_1d_t r = 0; r < tile_height; r++) {
                                     T value = out_pipe::read();
                                     if (r < halo_radius) {
                                         feed_out_pipe_0::write(value);
@@ -217,7 +218,7 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
             this->get_runtime_sample().add_pass(latest_end - earliest_start);
 
             this->inc_i_generation(
-                std::min(target_i_generation - this->get_i_generation(), pipeline_length));
+                std::min(target_i_generation - this->get_i_generation(), uindex_t(pipeline_length)));
         }
     }
 

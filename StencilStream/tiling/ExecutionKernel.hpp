@@ -44,8 +44,8 @@ namespace tiling {
  * \tparam in_pipe The pipe to read from.
  * \tparam out_pipe The pipe to write to.
  */
-template <typename TransFunc, typename T, uindex_t stencil_radius, uindex_t pipeline_length,
-          uindex_t output_tile_width, uindex_t output_tile_height, typename in_pipe,
+template <typename TransFunc, typename T, uindex_min_t stencil_radius, uindex_1d_t pipeline_length,
+          uindex_1d_t output_tile_width, uindex_1d_t output_tile_height, typename in_pipe,
           typename out_pipe>
 class ExecutionKernel {
   public:
@@ -56,26 +56,25 @@ class ExecutionKernel {
     /**
      * \brief The width and height of the stencil buffer.
      */
-    const static uindex_t stencil_diameter = Stencil<T, stencil_radius>::diameter;
-
-    /**
-     * \brief The total number of cells to read from the `in_pipe`.
-     */
-    const static uindex_t n_input_cells =
-        (2 * stencil_radius * pipeline_length + output_tile_width) *
-        (2 * stencil_radius * pipeline_length + output_tile_height);
+    static constexpr uindex_min_t stencil_diameter = Stencil<T, stencil_radius>::diameter;
 
     /**
      * \brief The width of the processed tile with the tile halo attached.
      */
-    const static uindex_t input_tile_width =
-        2 * stencil_radius * pipeline_length + output_tile_width;
+    static constexpr uindex_1d_t input_tile_width =
+        BOUND_CHECK(2 * stencil_radius * pipeline_length + output_tile_width, uindex_1d_t);
 
     /**
      * \brief The height of the processed tile with the tile halo attached.
      */
-    const static uindex_t input_tile_height =
-        2 * stencil_radius * pipeline_length + output_tile_height;
+    static constexpr uindex_1d_t input_tile_height =
+        BOUND_CHECK(2 * stencil_radius * pipeline_length + output_tile_height, uindex_1d_t);
+
+    /**
+     * \brief The total number of cells to read from the `in_pipe`.
+     */
+    static constexpr uindex_2d_t n_input_cells =
+        BOUND_CHECK(input_tile_width * input_tile_height, uindex_2d_t);
 
     /**
      * \brief Create and configure the execution kernel.
@@ -105,8 +104,8 @@ class ExecutionKernel {
      * \brief Execute the configured operations.
      */
     void operator()() const {
-        uindex_t input_tile_c = 0;
-        uindex_t input_tile_r = 0;
+        uindex_1d_t input_tile_c = 0;
+        uindex_1d_t input_tile_r = 0;
 
         /*
          * The intel::numbanks attribute requires a power of two as it's argument and if the
@@ -120,20 +119,20 @@ class ExecutionKernel {
         [[intel::fpga_register]] T stencil_buffer[pipeline_length][stencil_diameter]
                                                  [stencil_diameter];
 
-        for (uindex_t i = 0; i < n_input_cells; i++) {
+        for (uindex_2d_t i = 0; i < n_input_cells; i++) {
             T value = in_pipe::read();
 
 #pragma unroll
-            for (uindex_t stage = 0; stage < pipeline_length; stage++) {
+            for (uindex_1d_t stage = 0; stage < pipeline_length; stage++) {
                 /*
                  * Shift up every value in the stencil_buffer.
                  * This operation does not touch the values in the bottom row, which will be filled
                  * from the cache and the new input value later.
                  */
 #pragma unroll
-                for (uindex_t r = 0; r < stencil_diameter - 1; r++) {
+                for (uindex_min_t r = 0; r < stencil_diameter - 1; r++) {
 #pragma unroll
-                    for (uindex_t c = 0; c < stencil_diameter; c++) {
+                    for (uindex_min_t c = 0; c < stencil_diameter; c++) {
                         stencil_buffer[stage][c][r] = stencil_buffer[stage][c][r + 1];
                     }
                 }
@@ -148,7 +147,7 @@ class ExecutionKernel {
                 // Update the stencil buffer and cache with previous cache contents and the new
                 // input cell.
 #pragma unroll
-                for (uindex_t cache_c = 0; cache_c < stencil_diameter; cache_c++) {
+                for (uindex_min_t cache_c = 0; cache_c < stencil_diameter; cache_c++) {
                     T new_value;
                     if (cache_c == stencil_diameter - 1) {
                         if (input_grid_c < 0 || input_grid_r < 0 || input_grid_c >= grid_width ||

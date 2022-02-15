@@ -20,6 +20,7 @@
  */
 #include <StencilStream/MonotileExecutor.hpp>
 #include <StencilStream/StencilExecutor.hpp>
+#include <StencilStream/SimpleCPUExecutor.hpp>
 #include <res/TransFuncs.hpp>
 #include <res/catch.hpp>
 #include <res/constants.hpp>
@@ -32,6 +33,7 @@ using TransFunc = FPGATransFunc<stencil_radius>;
 using SingleContextExecutorImpl = SingleContextExecutor<Cell, stencil_radius, TransFunc>;
 using StencilExecutorImpl = StencilExecutor<Cell, stencil_radius, TransFunc, pipeline_length>;
 using MonotileExecutorImpl = MonotileExecutor<Cell, stencil_radius, TransFunc, pipeline_length>;
+using SimpleCPUExecutorImpl = SimpleCPUExecutor<Cell, stencil_radius, TransFunc>;
 
 void test_executor_set_input_copy_output(SingleContextExecutorImpl *executor, uindex_t grid_width,
                                          uindex_t grid_height) {
@@ -71,8 +73,15 @@ TEST_CASE("MonotileExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[MonotileExe
     test_executor_set_input_copy_output(&executor, tile_width - 1, tile_height - 1);
 }
 
+TEST_CASE("SimpleCPUExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[SimpleCPUExecutor]") {
+    SimpleCPUExecutorImpl executor(Cell::halo(), TransFunc());
+    test_executor_set_input_copy_output(&executor, tile_width - 1, tile_height - 1);
+}
+
 void test_executor_run(SingleContextExecutorImpl *executor, uindex_t grid_width,
                        uindex_t grid_height) {
+    executor->select_emulator();
+    
     uindex_t n_generations = 2 * pipeline_length + 1;
 
     buffer<Cell, 2> in_buffer(range<2>(grid_width, grid_height));
@@ -134,5 +143,10 @@ TEST_CASE("StencilExecutor::run", "[StencilExecutor]") {
 
 TEST_CASE("MonotileExecutor::run", "[MonotileExecutor]") {
     MonotileExecutorImpl executor(Cell::halo(), TransFunc());
+    test_executor_run(&executor, grid_width, grid_height);
+}
+
+TEST_CASE("SimpleCPUExecutor::run", "[SimpleCPUExecutor]") {
+    SimpleCPUExecutorImpl executor(Cell::halo(), TransFunc());
     test_executor_run(&executor, grid_width, grid_height);
 }

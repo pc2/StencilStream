@@ -21,6 +21,7 @@
 #include "Index.hpp"
 #include <CL/sycl/access/access.hpp>
 #include <CL/sycl/id.hpp>
+#include <numeric>
 
 namespace stencil {
 
@@ -43,4 +44,7 @@ inline constexpr uindex_t next_power_of_two(uindex_t value) {
     }
     return next_power_of_two;
 }
+
+#define BOUND_CHECK(expr, Type) (expr); static_assert((expr) <= std::numeric_limits<Type>::max());
+
 } // namespace stencil

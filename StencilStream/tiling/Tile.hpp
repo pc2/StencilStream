@@ -44,7 +44,7 @@ namespace tiling {
  * \tparam height The number of rows of the tile.
  * \tparam halo_radius The radius (aka width and height) of the tile halo.
  */
-template <typename T, uindex_t width, uindex_t height, uindex_t halo_radius, uindex_t burst_buffer_length>
+template <typename T, uindex_1d_t width, uindex_1d_t height, uindex_1d_t halo_radius, uindex_1d_t burst_buffer_length>
 class Tile {
     static_assert(width > 2 * halo_radius);
     static_assert(height > 2 * halo_radius);
@@ -88,21 +88,21 @@ class Tile {
      * \param part The part to calculate the range for.
      * \return The range of the part, used for example to allocate it.
      */
-    static cl::sycl::range<2> get_part_range(Part part) {
+    static GenericID<uindex_1d_t> get_part_range(Part part) {
         switch (part) {
         case Part::NORTH_WEST_CORNER:
         case Part::SOUTH_WEST_CORNER:
         case Part::SOUTH_EAST_CORNER:
         case Part::NORTH_EAST_CORNER:
-            return cl::sycl::range<2>(halo_radius, halo_radius);
+            return GenericID<uindex_1d_t>(halo_radius, halo_radius);
         case Part::NORTH_BORDER:
         case Part::SOUTH_BORDER:
-            return cl::sycl::range<2>(width - 2 * halo_radius, halo_radius);
+            return GenericID<uindex_1d_t>(width - 2 * halo_radius, halo_radius);
         case Part::WEST_BORDER:
         case Part::EAST_BORDER:
-            return cl::sycl::range<2>(halo_radius, height - 2 * halo_radius);
+            return GenericID<uindex_1d_t>(halo_radius, height - 2 * halo_radius);
         case Part::CORE:
-            return cl::sycl::range<2>(width - 2 * halo_radius, height - 2 * halo_radius);
+            return GenericID<uindex_1d_t>(width - 2 * halo_radius, height - 2 * halo_radius);
         default:
             throw std::invalid_argument("Invalid grid tile part specified");
         }
@@ -140,9 +140,9 @@ class Tile {
         }
     }
 
-    static uindex_t get_part_bursts(Part part) {
-        cl::sycl::range<2> range = get_part_range(part);
-        uindex_t n_cells = range[0] * range[1];
+    static uindex_2d_t get_part_bursts(Part part) {
+        GenericID<uindex_1d_t> range = get_part_range(part);
+        uindex_t n_cells = range.c * range.r;
         return (n_cells / burst_buffer_length) + (n_cells % burst_buffer_length == 0 ? 0 : 1);
     }
 
@@ -159,7 +159,7 @@ class Tile {
      * \return The buffer of the part.
      */
     cl::sycl::buffer<T[burst_buffer_length], 1> operator[](Part tile_part) {
-        uindex_t part_column, part_row;
+        uindex_min_t part_column, part_row;
         switch (tile_part) {
         case Part::NORTH_WEST_CORNER:
             part_column = 0;
@@ -273,13 +273,13 @@ class Tile {
         }
 
         auto part_ac = (*this)[part].template get_access<cl::sycl::access::mode::read_write>();
-        uindex_t part_width = get_part_range(part)[0];
-        uindex_t part_height = get_part_range(part)[1];
+        uindex_1d_t part_width = get_part_range(part).c;
+        uindex_1d_t part_height = get_part_range(part).r;
 
-        for (uindex_t c = 0; c < part_width; c++) {
-            for (uindex_t r = 0; r < part_height; r++) {
-                uindex_t burst_i = (c * part_height + r) / burst_buffer_length;
-                uindex_t cell_i = (c * part_height + r) % burst_buffer_length;
+        for (uindex_1d_t c = 0; c < part_width; c++) {
+            for (uindex_1d_t r = 0; r < part_height; r++) {
+                uindex_2d_t burst_i = (c * part_height + r) / burst_buffer_length;
+                uindex_1d_t cell_i = (c * part_height + r) % burst_buffer_length;
                 uindex_t global_c = offset[0] + c;
                 uindex_t global_r = offset[1] + r;
 

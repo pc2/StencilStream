@@ -54,7 +54,7 @@ namespace stencil {
  * \tparam stencil_radius The radius of the stencil buffer supplied to the transition function.
  * \tparam TransFunc The type of the transition function.
  */
-template <typename T, uindex_t stencil_radius, typename TransFunc> class AbstractExecutor {
+template <typename T, uindex_min_t stencil_radius, typename TransFunc> class AbstractExecutor {
   public:
     /**
      * \brief Create a new abstract executor.

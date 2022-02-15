@@ -49,19 +49,19 @@ class FDTDKernel {
     }
 
     FDTDCell operator()(Stencil<FDTDCell, stencil_radius> const &stencil) const {
-        FDTDCell cell = stencil[ID(0, 0)];
+        FDTDCell cell = stencil[StencilID(0, 0)];
 
         if (cell.distance < disk_radius) {
             if ((stencil.stage & 0b1) == 0) {
                 cell.ex *= vacuum.ca;
-                cell.ex += vacuum.cb * (stencil[ID(0, 0)].hz - stencil[ID(0, -1)].hz);
+                cell.ex += vacuum.cb * (stencil[StencilID(0, 0)].hz - stencil[StencilID(0, -1)].hz);
 
                 cell.ey *= vacuum.ca;
-                cell.ey += vacuum.cb * (stencil[ID(-1, 0)].hz - stencil[ID(0, 0)].hz);
+                cell.ey += vacuum.cb * (stencil[StencilID(-1, 0)].hz - stencil[StencilID(0, 0)].hz);
             } else {
                 cell.hz *= vacuum.da;
-                cell.hz += vacuum.db * (stencil[ID(0, 1)].ex - stencil[ID(0, 0)].ex +
-                                        stencil[ID(0, 0)].ey - stencil[ID(1, 0)].ey);
+                cell.hz += vacuum.db * (stencil[StencilID(0, 1)].ex - stencil[StencilID(0, 0)].ex +
+                                        stencil[StencilID(0, 0)].ey - stencil[StencilID(1, 0)].ey);
 
                 float current_time = (stencil.generation >> 1) * dt;
                 if (cell.distance < dx && current_time < t_cutoff) {

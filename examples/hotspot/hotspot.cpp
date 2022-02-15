@@ -193,12 +193,12 @@ int main(int argc, char **argv) {
         uindex_t width = temp.grid_range.c;
         uindex_t height = temp.grid_range.r;
 
-        FLOAT power = temp[ID(0, 0)][1];
-        FLOAT old = temp[ID(0, 0)][0];
-        FLOAT left = temp[ID(-1, 0)][0];
-        FLOAT right = temp[ID(1, 0)][0];
-        FLOAT top = temp[ID(0, -1)][0];
-        FLOAT bottom = temp[ID(0, 1)][0];
+        FLOAT power = temp[StencilID(0, 0)][1];
+        FLOAT old = temp[StencilID(0, 0)][0];
+        FLOAT left = temp[StencilID(-1, 0)][0];
+        FLOAT right = temp[StencilID(1, 0)][0];
+        FLOAT top = temp[StencilID(0, -1)][0];
+        FLOAT bottom = temp[StencilID(0, 1)][0];
 
         if (c == 0) {
             left = old;

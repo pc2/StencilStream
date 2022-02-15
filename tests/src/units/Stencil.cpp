@@ -35,13 +35,13 @@ TEST_CASE("Stencil::operator[](ID)", "[Stencil]") {
 
     for (index_t c = -stencil_radius; c <= index_t(stencil_radius); c++) {
         for (index_t r = -stencil_radius; r <= index_t(stencil_radius); r++) {
-            stencil[ID(c, r)] = c + r;
+            stencil[StencilID(c, r)] = c + r;
         }
     }
 
     for (uindex_t c = 0; c < stencil.diameter; c++) {
         for (uindex_t r = 0; r < stencil.diameter; r++) {
-            REQUIRE(stencil[UID(c, r)] == index_t(c) + index_t(r) - 2 * stencil_radius);
+            REQUIRE(stencil[UStencilID(c, r)] == index_t(c) + index_t(r) - 2 * stencil_radius);
         }
     }
 };
@@ -51,13 +51,13 @@ TEST_CASE("Stencil::operator[](UID)", "[Stencil]") {
 
     for (uindex_t c = 0; c < stencil.diameter; c++) {
         for (uindex_t r = 0; r < stencil.diameter; r++) {
-            stencil[UID(c, r)] = c + r;
+            stencil[UStencilID(c, r)] = c + r;
         }
     }
 
     for (index_t c = -stencil_radius; c <= stencil_radius; c++) {
         for (index_t r = -stencil_radius; r <= stencil_radius; r++) {
-            REQUIRE(stencil[ID(c, r)] == index_t(c) + index_t(r) + 2 * stencil_radius);
+            REQUIRE(stencil[StencilID(c, r)] == index_t(c) + index_t(r) + 2 * stencil_radius);
         }
     }
 };
