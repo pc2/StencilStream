@@ -96,9 +96,9 @@ class ExecutionKernel {
                     uindex_t grid_c_offset, uindex_t grid_r_offset, uindex_t grid_width,
                     uindex_t grid_height, T halo_value)
         : trans_func(trans_func), i_generation(i_generation),
-          target_i_generation(target_i_generation), grid_c_offset(grid_c_offset),
-          grid_r_offset(grid_r_offset), grid_width(grid_width), grid_height(grid_height),
-          halo_value(halo_value) {}
+          n_generations(std::min(uindex_t(pipeline_length), target_i_generation - i_generation)),
+          grid_c_offset(grid_c_offset), grid_r_offset(grid_r_offset), grid_width(grid_width),
+          grid_height(grid_height), halo_value(halo_value) {}
 
     /**
      * \brief Execute the configured operations.
@@ -172,7 +172,7 @@ class ExecutionKernel {
                     ID(output_grid_c, output_grid_r), i_generation + stage, stage,
                     stencil_buffer[stage], UID(grid_width, grid_height));
 
-                if (i_generation + stage < target_i_generation) {
+                if (stage < n_generations) {
                     value = trans_func(stencil);
                 } else {
                     value = stencil_buffer[stage][stencil_radius][stencil_radius];
@@ -198,7 +198,7 @@ class ExecutionKernel {
   private:
     TransFunc trans_func;
     uindex_t i_generation;
-    uindex_t target_i_generation;
+    uindex_1d_t n_generations;
     uindex_t grid_c_offset;
     uindex_t grid_r_offset;
     uindex_t grid_width;
