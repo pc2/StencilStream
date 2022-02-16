@@ -98,7 +98,10 @@ class ExecutionKernel {
         : trans_func(trans_func), i_generation(i_generation),
           n_generations(std::min(uindex_t(pipeline_length), target_i_generation - i_generation)),
           grid_c_offset(grid_c_offset), grid_r_offset(grid_r_offset), grid_width(grid_width),
-          grid_height(grid_height), halo_value(halo_value) {}
+          grid_height(grid_height), halo_value(halo_value) {
+        assert(grid_c_offset % output_tile_width == 0);
+        assert(grid_r_offset % output_tile_height == 0);
+    }
 
     /**
      * \brief Execute the configured operations.
@@ -137,12 +140,14 @@ class ExecutionKernel {
                     }
                 }
 
-                index_t input_grid_c = grid_c_offset + index_t(input_tile_c) -
+                index_1d_t rel_input_grid_c = index_1d_t(input_tile_c) -
                                        (stencil_diameter - 1) -
                                        (pipeline_length + stage - 2) * stencil_radius;
-                index_t input_grid_r = grid_r_offset + index_t(input_tile_r) -
+                index_t input_grid_c = grid_c_offset + rel_input_grid_c;
+                index_1d_t rel_input_grid_r = index_1d_t(input_tile_r) -
                                        (stencil_diameter - 1) -
                                        (pipeline_length + stage - 2) * stencil_radius;
+                index_t input_grid_r = grid_r_offset + rel_input_grid_r;
 
                 // Update the stencil buffer and cache with previous cache contents and the new
                 // input cell.
@@ -150,12 +155,11 @@ class ExecutionKernel {
                 for (uindex_min_t cache_c = 0; cache_c < stencil_diameter; cache_c++) {
                     T new_value;
                     if (cache_c == stencil_diameter - 1) {
-                        if (input_grid_c < 0 || input_grid_r < 0 || input_grid_c >= grid_width ||
-                            input_grid_r >= grid_height) {
-                            new_value = halo_value;
-                        } else {
-                            new_value = value;
-                        }
+                        bool is_halo = (grid_c_offset == 0 && rel_input_grid_c < 0);
+                        is_halo |= (grid_r_offset == 0 && rel_input_grid_r < 0);
+                        is_halo |= input_grid_c >= grid_width || input_grid_r >= grid_height;
+
+                        new_value = is_halo ? halo_value : value;
                     } else {
                         new_value = cache[input_tile_c & 0b1][input_tile_r][stage][cache_c];
                     }
