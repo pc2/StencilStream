@@ -56,7 +56,11 @@ constexpr float sqrt_2 = 1.4142135623730951;
 constexpr uindex_t tile_height = 512;
 constexpr uindex_t tile_width = 512;
 constexpr uindex_t stencil_radius = 1;
-constexpr uindex_t pipeline_length = 150;
+#if EXECUTOR == 1
+constexpr uindex_t pipeline_length = 172; // tiling
+#else
+constexpr uindex_t pipeline_length = 284; // mono & cpu
+#endif
 
 std::string description = "\
 This application simulates a nano-photonic disk cavity.\n\
