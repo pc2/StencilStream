@@ -58,7 +58,6 @@ const uindex_t pipeline_length = 280; // tiling
 #else
 const uindex_t pipeline_length = 520; // monotile & cpu
 #endif
-const uindex_t pipeline_length = 300;
 const uindex_t tile_width = 1024;
 const uindex_t tile_height = 1024;
 
