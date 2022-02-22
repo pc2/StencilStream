@@ -59,7 +59,7 @@ constexpr uindex_t stencil_radius = 1;
 #if EXECUTOR == 1
 constexpr uindex_t pipeline_length = 172; // tiling
 #else
-constexpr uindex_t pipeline_length = 284; // mono & cpu
+constexpr uindex_t pipeline_length = 250; // mono & cpu
 #endif
 
 std::string description = "\
