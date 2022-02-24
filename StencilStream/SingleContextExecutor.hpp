@@ -19,7 +19,7 @@
  */
 #pragma once
 #include "RuntimeSampleExecutor.hpp"
-#include <CL/sycl/INTEL/fpga_extensions.hpp>
+#include <ext/intel/fpga_extensions.hpp>
 #include <optional>
 
 namespace stencil {
@@ -131,6 +131,10 @@ class SingleContextExecutor : public RuntimeSampleExecutor<T, stencil_radius, Tr
      */
     [[deprecated("Use select_fpga() instead")]] void select_fpga(bool runtime_analysis) {
         this->select_fpga();
+    }
+
+    void select_cpu() {
+        this->build_context(cl::sycl::cpu_selector().select_device());
     }
 
     void select_emulator() {

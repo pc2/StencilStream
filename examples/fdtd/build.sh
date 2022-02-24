@@ -10,29 +10,24 @@
 if [[ $@ == *"-h"* || $@ == *"--help"* || -z $1 ]]
 then
 cat <<EOF
-Usage: $0 <variant|target>
+Usage: $0 variant
 
-This script build variants of the FDTD application. Calling $0 <variant> builds the given variant. 
-The naming scheme of the variants is as follows:
+This script build variants of the FDTD application. The naming scheme of the variants is as follows:
 
-fdtd_<material_resolver>_<architecture>_<target>
+fdtd_<material_resolver>_<backend>[_report]
 
 The placeholders may have the following values:
-* architecture:
-    * mono: Use the monotile backend of StencilStream
-    * tiling: Use the tiling backend of StencilStream
-
-* target: 
-    * emu: Compile the device code for emulation
-    * hw: Compile the devie code for hardware execution
-    * report: Analyse the device code and generate the synthesis report
-
 * material_resolver:
     * coef: Store the final material coefficients in every cell.
     * lut: Store a lookup table with all known material coefficients in the kernel and store only an index in the cell.
 
-Alternatively, you can also just give a target instead of a variant. In this case, $0 will build all
-variants for the given target.
+* backend:
+    * mono: Use the monotile FPGA backend of StencilStream
+    * tiling: Use the tiling FPGA backend of StencilStream
+    * cpu: Use the testing CPU backend of StencilStream
+
+The FPGA backends also support the report suffix, where a synthesis report is generated that allows
+to make certain predicitions over the resulting performance.
 EOF
 exit 0
 fi
@@ -41,18 +36,15 @@ function run_build {
     EXEC_NAME=$1
     rm -f $EXEC_NAME
 
-    ARGS="-fintelfpga -std=c++17 -DSTENCIL_INDEX_WIDTH=64 -DFDTD_BURST_SIZE=1024 -I./ -O3"
+    ARGS="-std=c++17 -DSTENCIL_INDEX_WIDTH=64 -DFDTD_BURST_SIZE=1024 -I./ -O3"
 
+    # Noctua-specific options
     if [[ -n "$EBROOTGCC" ]]
     then
         ARGS="$ARGS --gcc-toolchain=$EBROOTGCC"
     fi
 
-    if [[ "$EXEC_NAME" == *"mono"* ]]
-    then
-        ARGS="$ARGS -DMONOTILE"
-    fi
-
+    # Material resolvers
     if [[ "$EXEC_NAME" == *"coef"* ]]
     then
         ARGS="$ARGS -DCOEF_MATERIALS"
@@ -60,9 +52,10 @@ function run_build {
         ARGS="$ARGS -DLUT_MATERIALS"
     fi
 
-    if [[ "$EXEC_NAME" == *"hw"* || "$EXEC_NAME" == *"report"* ]]
+    # FPGA-specific options
+    if [[ "$EXEC_NAME" == *"mono"*  || "$EXEC_NAME" == *"tiling"* ]]
     then
-        ARGS="$ARGS -DHARDWARE -Xshardware -Xsv -Xsprofile"
+        ARGS="$ARGS -fintelfpga -reuse-exe=$1 -Xshardware -Xsv"
 
         if [[ -n $AOCL_BOARD_PACKAGE_ROOT ]]
         then
@@ -75,33 +68,20 @@ function run_build {
         fi
     fi
 
-    COMMAND="dpcpp $ARGS src/*.cpp -o $EXEC_NAME"
+    if [[ "$EXEC_NAME" == *"mono"* ]]
+    then
+        ARGS="$ARGS -DEXECUTOR=0"
+    elif [[ "$EXEC_NAME" == *"tiling"* ]]
+    then
+        ARGS="$ARGS -DEXECUTOR=1"
+    elif [[ "$EXEC_NAME" == *"cpu"* ]]
+    then
+        ARGS="$ARGS -DEXECUTOR=2"
+    fi
+
+    COMMAND="dpcpp src/*.cpp -o $EXEC_NAME $ARGS"
     echo $COMMAND
     echo $COMMAND | bash
 }
 
-if [[ $1 == "emu" ]]
-then
-    SUFFIX="emu"
-fi
-
-if [[ $1 == "hw" ]]
-then
-    SUFFIX="hw"
-fi
-
-if [[ $1 == "report" ]]
-then
-    SUFFIX="report"
-fi
-
-if [[ -n $SUFFIX ]]
-then
-    for NAME in "fdtd_coef_mono_" "fdtd_lut_mono_" "fdtd_coef_tiling_" "fdtd_lut_tiling_"
-    do
-        run_build "$NAME$SUFFIX" > "$NAME$SUFFIX.build.log" &
-    done
-    wait
-else
-    run_build $1
-fi
+run_build $1

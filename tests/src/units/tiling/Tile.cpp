@@ -28,7 +28,10 @@ using namespace cl::sycl;
 using namespace stencil::tiling;
 using namespace std;
 
-using TileImpl = Tile<ID, tile_width, tile_height, halo_radius>;
+constexpr uindex_t burst_length = std::lcm(sizeof(ID), 64);
+
+using TileImpl = Tile<ID, tile_width, tile_height, halo_radius, burst_length>;
+
 
 TEST_CASE("Tile::operator[]", "[Tile]") {
     TileImpl tile;
@@ -36,8 +39,8 @@ TEST_CASE("Tile::operator[]", "[Tile]") {
     for (TileImpl::Part part_type : TileImpl::all_parts) {
         auto part = tile[part_type];
 
-        cl::sycl::id<2> required_range = TileImpl::get_part_range(part_type);
-        REQUIRE(required_range[0] * required_range[1] == part.get_range()[0]);
+        uindex_t required_bursts = TileImpl::get_part_bursts(part_type);
+        REQUIRE(required_bursts == part.get_range()[0]);
     }
 }
 
@@ -63,10 +66,16 @@ void copy_from_test_impl(uindex_t tile_width, uindex_t tile_height) {
 
         for (uindex_t c = 0; c < true_range[0]; c++) {
             for (uindex_t r = 0; r < true_range[1]; r++) {
-                if (c + content_offset[0] < tile_width && r + content_offset[1] < tile_height) {
-                    REQUIRE(part_ac[c * true_range[1] + r].c == c + content_offset[0]);
-                    REQUIRE(part_ac[c * true_range[1] + r].r == r + content_offset[1]);
+                if (c + content_offset[0] >= tile_width) {
+                    continue;
                 }
+                if (r + content_offset[1] >= tile_height) {
+                    continue;
+                }
+                uindex_t burst_i = (c * true_range[1] + r) / burst_length;
+                uindex_t cell_i = (c * true_range[1] + r) % burst_length;
+                REQUIRE(part_ac[burst_i][cell_i].c == c + content_offset[0]);
+                REQUIRE(part_ac[burst_i][cell_i].r == r + content_offset[1]);
             }
         }
     }
@@ -89,7 +98,9 @@ void copy_to_test_impl(uindex_t tile_width, uindex_t tile_height) {
 
         for (uindex_t c = 0; c < true_range[0]; c++) {
             for (uindex_t r = 0; r < true_range[1]; r++) {
-                part_ac[c * true_range[1] + r] = ID(c + content_offset[0], r + content_offset[1]);
+                uindex_t burst_i = (c * true_range[1] + r) / burst_length;
+                uindex_t cell_i = (c * true_range[1] + r) % burst_length;
+                part_ac[burst_i][cell_i] = ID(c + content_offset[0], r + content_offset[1]);
             }
         }
     }

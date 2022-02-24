@@ -8,16 +8,15 @@
 CC = dpcpp
 STENCIL_STREAM_PATH = ./
 
-ARGS = -fintelfpga -std=c++17 -I$(STENCIL_STREAM_PATH) -O3
+ARGS = -std=c++17 -I$(STENCIL_STREAM_PATH) -O3
 
 ifdef EBROOTGCC
 	ARGS += --gcc-toolchain=$(EBROOTGCC)
 endif
 
-EMU =
-HW = -DHARDWARE -Xshardware -Xsv -Xsprofile 
-MONOTILE = -DMONOTILE
-TILING =
+HW = $(ARGS) -fintelfpga -Xshardware -Xsv
+MONOTILE = $(HW) -DEXECUTOR=0
+TILING = $(HW) -DEXECUTOR=1
 
 ifdef AOCL_BOARD_PACKAGE_ROOT
 	HW += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
@@ -26,29 +25,26 @@ endif
 SOURCES = hotspot.cpp
 RESOURCES = $(wildcard StencilStream/*) Makefile
 
-all: hotspot_mono_emu hotspot_tiling_emu hotspot_rodinia hotspot_mono_hw hotspot_tiling_hw
+all: hotspot_cpu hotspot_rodinia hotspot_mono hotspot_tiling
 
-hotspot_mono_emu: $(SOURCES) $(RESOURCES)
-	$(CC) $(ARGS) $(MONOTILE) $(EMU) $(SOURCES) -o hotspot_mono_emu
+hotspot_cpu: $(SOURCES) $(RESOURCES)
+	$(CC) $(ARGS) $(SOURCES) -DEXECUTOR=2 -o hotspot_cpu
 
-hotspot_tiling_emu: $(SOURCES) $(RESOURCES)
-	$(CC) $(ARGS) $(TILING) $(EMU) $(SOURCES) -o hotspot_tiling_emu
+hotspot_mono: $(SOURCES) $(RESOURCES)
+	$(CC) $(MONOTILE) $(SOURCES) -reuse-exe=hotspot_mono -o hotspot_mono
 
-hotspot_mono_hw: $(SOURCES) $(RESOURCES)
-	$(CC) $(ARGS) $(MONOTILE) $(HW) $(SOURCES) -o hotspot_mono_hw
+hotspot_mono.report.tar.gz: $(SOURCES) $(RESOURCES)
+	rm -f hotspot_mono
+	$(CC) $(MONOTILE) -fsycl-link $(SOURCES) -o hotspot_mono
+	tar -caf hotspot_mono.report.tar.gz hotspot_mono.prj/reports
 
-hotspot_mono_hw.report.tar.gz: $(SOURCES) $(RESOURCES)
-	rm -f hotspot_mono_hw
-	$(CC) $(ARGS) $(MONOTILE) $(HW) -fsycl-link $(SOURCES) -o hotspot_mono_hw
-	tar -caf hotspot_mono_hw.report.tar.gz hotspot_mono_hw.prj/reports
+hotspot_tiling: $(SOURCES) $(RESOURCES)
+	$(CC) $(TILING) $(SOURCES) -reuse-exe=hotspot_tiling -o hotspot_tiling
 
-hotspot_tiling_hw: $(SOURCES) $(RESOURCES)
-	$(CC) $(ARGS) $(TILING) $(HW) $(SOURCES) -o hotspot_tiling_hw
-
-hotspot_tiling_hw.report.tar.gz: $(SOURCES) $(RESOURCES)
-	rm -f hotspot_tiling_hw
-	$(CC) $(ARGS) $(TILING) $(HW) -fsycl-link $(SOURCES) -o hotspot_tiling_hw
-	tar -caf hotspot_tiling_hw.report.tar.gz hotspot_tiling_hw.prj/reports
+hotspot_tiling.report.tar.gz: $(SOURCES) $(RESOURCES)
+	rm -f hotspot_tiling
+	$(CC) $(TILING) -fsycl-link $(SOURCES) -o hotspot_tiling
+	tar -caf hotspot_tiling.report.tar.gz hotspot_tiling.prj/reports
 
 hotspot_rodinia: Makefile
 	./scripts/build_rodinia.sh

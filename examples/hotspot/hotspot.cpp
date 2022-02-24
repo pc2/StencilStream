@@ -18,10 +18,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <CL/sycl.hpp>
-#include <CL/sycl/INTEL/fpga_extensions.hpp>
-#include <StencilStream/MonotileExecutor.hpp>
-#include <StencilStream/StencilExecutor.hpp>
 #include <fstream>
+
+#if EXECUTOR == 0
+#include <StencilStream/MonotileExecutor.hpp>
+#elif EXECUTOR == 1
+#include <StencilStream/StencilExecutor.hpp>
+#elif EXECUTOR == 2
+#include <StencilStream/SimpleCPUExecutor.hpp>
+#endif
 
 using namespace std;
 using namespace cl::sycl;
@@ -51,12 +56,6 @@ const uindex_t stencil_radius = 1;
 const uindex_t pipeline_length = 200;
 const uindex_t tile_width = 1024;
 const uindex_t tile_height = 1024;
-
-#ifdef HARDWARE
-using selector = ext::intel::fpga_selector;
-#else
-using selector = ext::intel::fpga_emulator_selector;
-#endif
 
 using Cell = vec<FLOAT, 2>;
 
@@ -155,7 +154,7 @@ int main(int argc, char **argv) {
     if ((sim_time = atoi(argv[3])) <= 0)
         usage(argc, argv);
 
-#ifdef MONOTILE
+#if EXECUTOR == 0
     if (n_columns > tile_width || n_rows > tile_height) {
         std::cerr << "Error: The grid may not exceed the size of the tile (" << tile_width << " by "
                   << tile_height << " cells) when using the monotile architecture." << std::endl;
@@ -221,21 +220,20 @@ int main(int argc, char **argv) {
         return vec(new_temp, power);
     };
 
-#ifdef MONOTILE
+#if EXECUTOR == 0
     using Executor = MonotileExecutor<Cell, stencil_radius, decltype(kernel), pipeline_length,
                                       tile_width, tile_height>;
-#else
+#elif EXECUTOR == 1
     using Executor = StencilExecutor<Cell, stencil_radius, decltype(kernel), pipeline_length,
                                      tile_width, tile_height>;
+#elif EXECUTOR == 2
+    using Executor = SimpleCPUExecutor<Cell, stencil_radius, decltype(kernel)>;
 #endif
 
     Executor executor(Cell(0.0, 0.0), kernel);
     executor.set_input(temp);
-
-#ifdef HARDWARE
+#if EXECUTOR != 2
     executor.select_fpga();
-#else
-    executor.select_emulator();
 #endif
 
     executor.run(sim_time);

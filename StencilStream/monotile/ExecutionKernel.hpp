@@ -118,6 +118,9 @@ class ExecutionKernel {
             prev_r = r[i];
         }
 
+        uindex_t cache_r = 0;
+        uindex_t cache_bank = 0;
+
         /*
          * The intel::numbanks attribute requires a power of two as it's argument and if the
          * pipeline length isn't a power of two, it would produce an error. Therefore, we calculate
@@ -156,41 +159,37 @@ class ExecutionKernel {
                     if (cache_c == stencil_diameter - 1) {
                         new_value = value;
                     } else {
-                        new_value = cache[c[stage] & 0b1][r[stage]][stage][cache_c];
+                        new_value = cache[cache_bank][cache_r][stage][cache_c];
                     }
 
                     stencil_buffer[stage][cache_c][stencil_diameter - 1] = new_value;
                     if (cache_c > 0) {
-                        cache[(~c[stage]) & 0b1][r[stage]][stage][cache_c - 1] = new_value;
+                        cache[(~cache_bank) & 0b1][cache_r][stage][cache_c - 1] = new_value;
                     }
                 }
 
                 if (i_generation + stage < n_generations) {
-                    if (id_in_grid(c[stage], r[stage])) {
-                        Stencil<T, stencil_radius> stencil(ID(c[stage], r[stage]),
-                                                           i_generation + stage, stage,
-                                                           UID(grid_width, grid_height));
+                    Stencil<T, stencil_radius> stencil(ID(c[stage], r[stage]),
+                                                       i_generation + stage, stage,
+                                                       UID(grid_width, grid_height));
 
 #pragma unroll
-                        for (index_t cell_c = -stencil_radius; cell_c <= index_t(stencil_radius);
-                             cell_c++) {
+                    for (index_t cell_c = -stencil_radius; cell_c <= index_t(stencil_radius);
+                         cell_c++) {
 #pragma unroll
-                            for (index_t cell_r = -stencil_radius;
-                                 cell_r <= index_t(stencil_radius); cell_r++) {
-                                if (id_in_grid(cell_c + c[stage], cell_r + r[stage])) {
-                                    stencil[ID(cell_c, cell_r)] =
-                                        stencil_buffer[stage][cell_c + stencil_radius]
-                                                      [cell_r + stencil_radius];
-                                } else {
-                                    stencil[ID(cell_c, cell_r)] = halo_value;
-                                }
+                        for (index_t cell_r = -stencil_radius;
+                             cell_r <= index_t(stencil_radius); cell_r++) {
+                            if (id_in_grid(cell_c + c[stage], cell_r + r[stage])) {
+                                stencil[ID(cell_c, cell_r)] =
+                                    stencil_buffer[stage][cell_c + stencil_radius]
+                                                  [cell_r + stencil_radius];
+                            } else {
+                                stencil[ID(cell_c, cell_r)] = halo_value;
                             }
                         }
-
-                        value = trans_func(stencil);
-                    } else {
-                        value = halo_value;
                     }
+
+                    value = trans_func(stencil);
                 } else {
                     value = stencil_buffer[stage][stencil_radius][stencil_radius];
                 }
@@ -200,6 +199,13 @@ class ExecutionKernel {
                     r[stage] = 0;
                     c[stage] += 1;
                 }
+            }
+            
+            if (cache_r == tile_height - 1) {
+                cache_r = 0;
+                cache_bank = (~cache_bank) & 0b1;
+            } else {
+                cache_r++;
             }
 
             if (i >= pipeline_latency) {

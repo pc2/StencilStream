@@ -34,18 +34,17 @@
 using KernelImpl = Kernel<MaterialResolver>;
 using CellImpl = KernelImpl::Cell;
 
-#ifdef MONOTILE
+#if EXECUTOR == 0
+#include <StencilStream/MonotileExecutor.hpp>
 using Executor = MonotileExecutor<CellImpl, stencil_radius, KernelImpl, pipeline_length, tile_width,
                                   tile_height>;
-#else
-using Executor =
-    StencilExecutor<CellImpl, stencil_radius, KernelImpl, pipeline_length, tile_width, tile_height>;
-#endif
-
-#ifdef HARDWARE
-using selector = ext::intel::fpga_selector;
-#else
-using selector = ext::intel::fpga_emulator_selector;
+#elif EXECUTOR == 1
+#include <StencilStream/StencilExecutor.hpp>
+using Executor = StencilExecutor<CellImpl, stencil_radius, KernelImpl, pipeline_length, tile_width,
+                                 tile_height>;
+#elif EXECUTOR == 2
+#include <StencilStream/SimpleCPUExecutor.hpp>
+using Executor = SimpleCPUExecutor<CellImpl, stencil_radius, KernelImpl>;
 #endif
 
 auto exception_handler = [](cl::sycl::exception_list exceptions) {
@@ -124,7 +123,7 @@ int main(int argc, char **argv) {
     Parameters parameters(argc, argv);
     parameters.print_configuration();
 
-#ifdef MONOTILE
+#if EXECUTOR == 0
     if (parameters.grid_range()[0] > tile_width || parameters.grid_range()[1] > tile_height) {
         std::cerr << "Error: The grid may not exceed the size of the tile (" << tile_width << " by "
                   << tile_height << " cells) when using the monotile architecture." << std::endl;
@@ -154,10 +153,8 @@ int main(int argc, char **argv) {
 
     Executor executor(KernelImpl::halo(), KernelImpl(parameters, mat_resolver));
     executor.set_input(grid_buffer);
-#ifdef HARDWARE
+#if EXECUTOR != 2
     executor.select_fpga();
-#else
-    executor.select_emulator();
 #endif
 
     uindex_t n_timesteps = parameters.n_timesteps();
@@ -194,6 +191,7 @@ int main(int argc, char **argv) {
         executor.run(n_timesteps);
     }
     std::cout << "Simulation complete!" << std::endl;
+    std::cout << "Makespan: " << executor.get_runtime_sample().get_total_runtime() << " s" << std::endl;
 
     executor.copy_output(grid_buffer);
     save_frame(grid_buffer, n_timesteps, CellField::HZ_SUM, parameters);

@@ -79,15 +79,26 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
     UID get_grid_range() const override { return input_grid.get_grid_range(); }
 
     void run(uindex_t n_generations) override {
+        using feed_in_pipe_0 = cl::sycl::pipe<class feed_in_pipe_0_id, T>;
+        using feed_in_pipe_1 = cl::sycl::pipe<class feed_in_pipe_1_id, T>;
+        using feed_in_pipe_2 = cl::sycl::pipe<class feed_in_pipe_2_id, T>;
+        using feed_in_pipe_3 = cl::sycl::pipe<class feed_in_pipe_3_id, T>;
+        using feed_in_pipe_4 = cl::sycl::pipe<class feed_in_pipe_4_id, T>;
         using in_pipe = cl::sycl::pipe<class tiling_in_pipe, T>;
         using out_pipe = cl::sycl::pipe<class tiling_out_pipe, T>;
+        using feed_out_pipe_0 = cl::sycl::pipe<class feed_out_pipe_0_id, T>;
+        using feed_out_pipe_1 = cl::sycl::pipe<class feed_out_pipe_1_id, T>;
+        using feed_out_pipe_2 = cl::sycl::pipe<class feed_out_pipe_2_id, T>;
+
         using ExecutionKernelImpl =
             tiling::ExecutionKernel<TransFunc, T, stencil_radius, pipeline_length, tile_width,
                                     tile_height, in_pipe, out_pipe>;
 
-        cl::sycl::queue input_queue = this->new_queue(true);
+        cl::sycl::queue input_queue[5] = {this->new_queue(true), this->new_queue(true), this->new_queue(true), this->new_queue(true), this->new_queue(true)};
+        cl::sycl::queue merge_queue = this->new_queue(true);
         cl::sycl::queue work_queue = this->new_queue(true);
-        cl::sycl::queue output_queue = this->new_queue(true);
+        cl::sycl::queue fork_queue = this->new_queue(true);
+        cl::sycl::queue output_queue[3] = {this->new_queue(true), this->new_queue(true), this->new_queue(true)};
 
         uindex_t target_i_generation = this->get_i_generation() + n_generations;
         uindex_t grid_width = input_grid.get_grid_range().c;
@@ -101,7 +112,58 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
 
             for (uindex_t c = 0; c < input_grid.get_tile_range().c; c++) {
                 for (uindex_t r = 0; r < input_grid.get_tile_range().r; r++) {
-                    input_grid.template submit_tile_input<in_pipe>(input_queue, UID(c, r));
+                    input_grid.template submit_read<class feed_in_pipe_0_id>(input_queue[0], ID(c-1, r-1), TileImpl::Part::SOUTH_EAST_CORNER);
+                    input_grid.template submit_read<class feed_in_pipe_0_id>(input_queue[0], ID(c, r-1), TileImpl::Part::SOUTH_WEST_CORNER);
+                    input_grid.template submit_read<class feed_in_pipe_0_id>(input_queue[0], ID(c, r-1), TileImpl::Part::SOUTH_BORDER);
+                    input_grid.template submit_read<class feed_in_pipe_0_id>(input_queue[0], ID(c, r-1), TileImpl::Part::SOUTH_EAST_CORNER);
+                    input_grid.template submit_read<class feed_in_pipe_0_id>(input_queue[0], ID(c+1, r-1), TileImpl::Part::SOUTH_WEST_CORNER);
+
+                    input_grid.template submit_read<class feed_in_pipe_1_id>(input_queue[1], ID(c-1, r), TileImpl::Part::NORTH_EAST_CORNER);
+                    input_grid.template submit_read<class feed_in_pipe_1_id>(input_queue[1], ID(c, r), TileImpl::Part::NORTH_WEST_CORNER);
+                    input_grid.template submit_read<class feed_in_pipe_1_id>(input_queue[1], ID(c, r), TileImpl::Part::NORTH_BORDER);
+                    input_grid.template submit_read<class feed_in_pipe_1_id>(input_queue[1], ID(c, r), TileImpl::Part::NORTH_EAST_CORNER);
+                    input_grid.template submit_read<class feed_in_pipe_1_id>(input_queue[1], ID(c+1, r), TileImpl::Part::NORTH_WEST_CORNER);
+
+                    input_grid.template submit_read<class feed_in_pipe_2_id>(input_queue[2], ID(c-1, r), TileImpl::Part::EAST_BORDER);
+                    input_grid.template submit_read<class feed_in_pipe_2_id>(input_queue[2], ID(c, r), TileImpl::Part::WEST_BORDER);
+                    input_grid.template submit_read<class feed_in_pipe_2_id>(input_queue[2], ID(c, r), TileImpl::Part::CORE);
+                    input_grid.template submit_read<class feed_in_pipe_2_id>(input_queue[2], ID(c, r), TileImpl::Part::EAST_BORDER);
+                    input_grid.template submit_read<class feed_in_pipe_2_id>(input_queue[2], ID(c+1, r), TileImpl::Part::WEST_BORDER);
+
+                    input_grid.template submit_read<class feed_in_pipe_3_id>(input_queue[3], ID(c-1, r), TileImpl::Part::SOUTH_EAST_CORNER);
+                    input_grid.template submit_read<class feed_in_pipe_3_id>(input_queue[3], ID(c, r), TileImpl::Part::SOUTH_WEST_CORNER);
+                    input_grid.template submit_read<class feed_in_pipe_3_id>(input_queue[3], ID(c, r), TileImpl::Part::SOUTH_BORDER);
+                    input_grid.template submit_read<class feed_in_pipe_3_id>(input_queue[3], ID(c, r), TileImpl::Part::SOUTH_EAST_CORNER);
+                    input_grid.template submit_read<class feed_in_pipe_3_id>(input_queue[3], ID(c+1, r), TileImpl::Part::SOUTH_WEST_CORNER);
+
+                    input_grid.template submit_read<class feed_in_pipe_4_id>(input_queue[4], ID(c-1, r+1), TileImpl::Part::NORTH_EAST_CORNER);
+                    input_grid.template submit_read<class feed_in_pipe_4_id>(input_queue[4], ID(c, r+1), TileImpl::Part::NORTH_WEST_CORNER);
+                    input_grid.template submit_read<class feed_in_pipe_4_id>(input_queue[4], ID(c, r+1), TileImpl::Part::NORTH_BORDER);
+                    input_grid.template submit_read<class feed_in_pipe_4_id>(input_queue[4], ID(c, r+1), TileImpl::Part::NORTH_EAST_CORNER);
+                    input_grid.template submit_read<class feed_in_pipe_4_id>(input_queue[4], ID(c+1, r+1), TileImpl::Part::NORTH_WEST_CORNER);
+
+                    merge_queue.submit([&](cl::sycl::handler &cgh) {
+                        cgh.single_task<class TilingMergeKernel>([=]() {
+                            [[intel::loop_coalesce(2)]]
+                            for (uindex_t c = 0; c < 2*halo_radius + tile_width; c++) {
+                                for (uindex_t r = 0; r < 2*halo_radius + tile_height; r++) {
+                                    T value;
+                                    if (r < halo_radius) {
+                                        value = feed_in_pipe_0::read();
+                                    } else if (r < 2*halo_radius) {
+                                        value = feed_in_pipe_1::read();
+                                    } else if (r < 2*halo_radius + GridImpl::core_height) {
+                                        value = feed_in_pipe_2::read();
+                                    } else if (r < 3*halo_radius + GridImpl::core_height) {
+                                        value = feed_in_pipe_3::read();
+                                    } else {
+                                        value = feed_in_pipe_4::read();
+                                    }
+                                    in_pipe::write(value);
+                                }
+                            }
+                        });
+                    });
 
                     cl::sycl::event computation_event = work_queue.submit([&](cl::sycl::handler &cgh) {
                         cgh.single_task<class TilingExecutionKernel>(ExecutionKernelImpl(
@@ -111,7 +173,35 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
                     });
                     events.push_back(computation_event);
 
-                    output_grid.template submit_tile_output<out_pipe>(output_queue, UID(c, r));
+                    fork_queue.submit([&](cl::sycl::handler &cgh) {
+                        cgh.single_task<class TilingForkKernel>([=]() {
+                            [[intel::loop_coalesce(2)]]
+                            for (uindex_t c = 0; c < tile_width; c++) {
+                                for (uindex_t r = 0; r < tile_height; r++) {
+                                    T value = out_pipe::read();
+                                    if (r < halo_radius) {
+                                        feed_out_pipe_0::write(value);
+                                    } else if (r < tile_height - halo_radius) {
+                                        feed_out_pipe_1::write(value);
+                                    } else {
+                                        feed_out_pipe_2::write(value);
+                                    }
+                                }
+                            }
+                        });
+                    });
+
+                    output_grid.template submit_write<class feed_out_pipe_0_id>(output_queue[0], ID(c, r), TileImpl::Part::NORTH_WEST_CORNER);
+                    output_grid.template submit_write<class feed_out_pipe_0_id>(output_queue[0], ID(c, r), TileImpl::Part::NORTH_BORDER);
+                    output_grid.template submit_write<class feed_out_pipe_0_id>(output_queue[0], ID(c, r), TileImpl::Part::NORTH_EAST_CORNER);
+
+                    output_grid.template submit_write<class feed_out_pipe_1_id>(output_queue[1], ID(c, r), TileImpl::Part::WEST_BORDER);
+                    output_grid.template submit_write<class feed_out_pipe_1_id>(output_queue[1], ID(c, r), TileImpl::Part::CORE);
+                    output_grid.template submit_write<class feed_out_pipe_1_id>(output_queue[1], ID(c, r), TileImpl::Part::EAST_BORDER);
+
+                    output_grid.template submit_write<class feed_out_pipe_2_id>(output_queue[2], ID(c, r), TileImpl::Part::SOUTH_WEST_CORNER);
+                    output_grid.template submit_write<class feed_out_pipe_2_id>(output_queue[2], ID(c, r), TileImpl::Part::SOUTH_BORDER);
+                    output_grid.template submit_write<class feed_out_pipe_2_id>(output_queue[2], ID(c, r), TileImpl::Part::SOUTH_EAST_CORNER);
                 }
             }
 
@@ -132,7 +222,9 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
     }
 
   private:
+
     using GridImpl = tiling::Grid<T, tile_width, tile_height, halo_radius>;
+    using TileImpl = typename GridImpl::Tile;
     GridImpl input_grid;
 };
 } // namespace stencil
