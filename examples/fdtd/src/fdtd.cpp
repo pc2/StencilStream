@@ -26,7 +26,7 @@
 #endif
 #ifdef LUT_MATERIALS
     #include "material/LUTResolver.hpp"
-    using MaterialResolver = LUTResolver<2>;
+    using MaterialResolver = LUTResolver;
 #endif
 
 using KernelImpl = Kernel<MaterialResolver>;

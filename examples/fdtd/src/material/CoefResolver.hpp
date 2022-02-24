@@ -36,8 +36,9 @@ class CoefResolver {
                                                            0.0},
                                                parameters.dx, parameters.dt());
         } else {
-            return CoefMaterial::from_relative(RelMaterial{11.56, 1.0, 0.0}, parameters.dx,
-                                               parameters.dt());
+            return CoefMaterial::from_relative(
+                RelMaterial{parameters.mu_r, parameters.eps_r, parameters.sigma}, parameters.dx,
+                parameters.dt());
         }
     }
 };
