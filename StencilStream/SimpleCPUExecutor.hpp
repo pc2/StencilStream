@@ -79,25 +79,29 @@ public:
     virtual void set_input(cl::sycl::buffer<T, 2> input_buffer) override {
         grid = input_buffer.get_range();
 
-        cl::sycl::queue queue = this->new_queue();
-        queue.submit([&](cl::sycl::handler &cgh) {
-            auto in_ac = input_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
-            auto out_ac = grid.template get_access<cl::sycl::access::mode::discard_write>(cgh);
-            cgh.copy(in_ac, out_ac);
-        }).wait();
+        auto in_ac = input_buffer.template get_access<cl::sycl::access::mode::read>();
+        auto out_ac = grid.template get_access<cl::sycl::access::mode::discard_write>();
+
+        for (uindex_t c = 0; c < input_buffer.get_range()[0]; c++) {
+            for (uindex_t r = 0; r < input_buffer.get_range()[1]; r++) {
+                out_ac[c][r] = in_ac[c][r];
+            }
+        }
     }
 
     virtual void copy_output(cl::sycl::buffer<T, 2> output_buffer) override {
         if (grid.get_range() != output_buffer.get_range()) {
             throw std::range_error("The given output buffer doesn't have the same range as the grid.");
         }
+        
+        auto in_ac = grid.template get_access<cl::sycl::access::mode::read>();
+        auto out_ac = output_buffer.template get_access<cl::sycl::access::mode::discard_write>();
 
-        cl::sycl::queue queue = this->new_queue();
-        queue.submit([&](cl::sycl::handler &cgh) {
-            auto in_ac = grid.template get_access<cl::sycl::access::mode::read>(cgh);
-            auto out_ac = output_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
-            cgh.copy(in_ac, out_ac);
-        }).wait();
+        for (uindex_t c = 0; c < output_buffer.get_range()[0]; c++) {
+            for (uindex_t r = 0; r < output_buffer.get_range()[1]; r++) {
+                out_ac[c][r] = in_ac[c][r];
+            }
+        }
     }
 
     virtual UID get_grid_range() const override {

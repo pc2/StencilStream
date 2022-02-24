@@ -18,8 +18,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Kernel.hpp"
-#include <StencilStream/MonotileExecutor.hpp>
-#include <StencilStream/StencilExecutor.hpp>
 #include <deque>
 
 #ifdef COEF_MATERIALS
