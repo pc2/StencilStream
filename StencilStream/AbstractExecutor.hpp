@@ -21,7 +21,6 @@
 #include "GenericID.hpp"
 #include "Index.hpp"
 #include <CL/sycl.hpp>
-#include <functional>
 
 namespace stencil {
 /**
@@ -63,11 +62,8 @@ template <typename T, uindex_t stencil_radius, typename TransFunc> class Abstrac
      * \param trans_func The instance of the transition function that should be used to calculate
      * new generations.
      */
-    [[deprecated("use AbstractExecutor(T) instead")]]
     AbstractExecutor(T halo_value, TransFunc trans_func)
         : halo_value(halo_value), trans_func(trans_func), i_generation(0) {}
-
-    AbstractExecutor(T halo_value) : halo_value(halo_value), trans_func(std::nullopt), i_generation(0) {}
 
     /**
      * \brief Compute the next generations of the grid and store it internally.
@@ -78,12 +74,7 @@ template <typename T, uindex_t stencil_radius, typename TransFunc> class Abstrac
      *
      * \param n_generations The number of generations to calculate.
      */
-    [[deprecated("use run(uindex_t, std::function<TransFunc, const &cl::sycl::handler>) instead")]]
     virtual void run(uindex_t n_generations) = 0;
-
-    virtual void run(uindex_t n_generations, TransFunc trans_func) = 0;
-
-    virtual void run(uindex_t n_generations, std::function<TransFunc(cl::sycl::handler &)> trans_func_builder) = 0;
 
     /**
      * \brief Set the internal state of the grid.
@@ -125,13 +116,11 @@ template <typename T, uindex_t stencil_radius, typename TransFunc> class Abstrac
     /**
      * \brief Get the configured transition function instance.
      */
-    [[deprecated("use run(uindex_t, T) instead")]]
-    TransFunc get_trans_func() const { return *trans_func; }
+    TransFunc get_trans_func() const { return trans_func; }
 
     /**
      * \brief Set the transition function instance.
      */
-    [[deprecated("use run(uindex_t, T) instead")]]
     void set_trans_func(TransFunc trans_func) { this->trans_func = trans_func; }
 
     /**
@@ -151,7 +140,7 @@ template <typename T, uindex_t stencil_radius, typename TransFunc> class Abstrac
 
   private:
     T halo_value;
-    std::optional<TransFunc> trans_func;
+    TransFunc trans_func;
     uindex_t i_generation;
 };
 } // namespace stencil

@@ -62,12 +62,12 @@ void test_executor_set_input_copy_output(SingleContextExecutorImpl *executor, ui
 }
 
 TEST_CASE("StencilExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[StencilExecutor]") {
-    StencilExecutorImpl executor(Cell::halo());
+    StencilExecutorImpl executor(Cell::halo(), TransFunc());
     test_executor_set_input_copy_output(&executor, grid_width, grid_height);
 }
 
 TEST_CASE("MonotileExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[MonotileExecutor]") {
-    MonotileExecutorImpl executor(Cell::halo());
+    MonotileExecutorImpl executor(Cell::halo(), TransFunc());
     test_executor_set_input_copy_output(&executor, tile_width - 1, tile_height - 1);
 }
 
@@ -91,7 +91,7 @@ void test_executor_run(SingleContextExecutorImpl *executor, uindex_t grid_width,
     REQUIRE(executor->get_grid_range().c == grid_width);
     REQUIRE(executor->get_grid_range().r == grid_height);
 
-    executor->run(n_generations, TransFunc());
+    executor->run(n_generations);
     REQUIRE(executor->get_i_generation() == n_generations);
 
     buffer<Cell, 2> out_buffer(range<2>(grid_width, grid_height));
@@ -110,7 +110,7 @@ void test_executor_run(SingleContextExecutorImpl *executor, uindex_t grid_width,
     }
 
     // Now, a second run to show that behavior is still correct when i_generation != 0:
-    executor->run(n_generations, TransFunc());
+    executor->run(n_generations);
     REQUIRE(executor->get_i_generation() == 2 * n_generations);
 
     executor->copy_output(out_buffer);
@@ -128,11 +128,11 @@ void test_executor_run(SingleContextExecutorImpl *executor, uindex_t grid_width,
 }
 
 TEST_CASE("StencilExecutor::run", "[StencilExecutor]") {
-    StencilExecutorImpl executor(Cell::halo());
+    StencilExecutorImpl executor(Cell::halo(), TransFunc());
     test_executor_run(&executor, grid_width, grid_height);
 }
 
 TEST_CASE("MonotileExecutor::run", "[MonotileExecutor]") {
-    MonotileExecutorImpl executor(Cell::halo());
+    MonotileExecutorImpl executor(Cell::halo(), TransFunc());
     test_executor_run(&executor, grid_width, grid_height);
 }

@@ -64,12 +64,9 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
      * \param halo_value The value of cells in the grid halo.
      * \param trans_func An instance of the transition function type.
      */
-    [[deprecated("Use StencilExecutor(T halo_value)")]]
     StencilExecutor(T halo_value, TransFunc trans_func)
         : Parent(halo_value, trans_func),
           input_grid(cl::sycl::buffer<T, 2>(cl::sycl::range<2>(0, 0))) {}
-
-    StencilExecutor(T halo_value) : Parent(halo_value), input_grid(cl::sycl::buffer<T, 2>(cl::sycl::range<2>(0, 0))) {}
 
     void set_input(cl::sycl::buffer<T, 2> input_buffer) override {
         this->input_grid = GridImpl(input_buffer);
@@ -81,19 +78,7 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
 
     UID get_grid_range() const override { return input_grid.get_grid_range(); }
 
-    [[deprecated("Use run(n_generations, std::function<TransFunc(cl::sycl::handler &)>) instead")]]
     void run(uindex_t n_generations) override {
-        auto trans_func_builder = std::function(
-            [&](cl::sycl::handler &cgh) { return this->get_trans_func(); }
-        );
-        run(n_generations, trans_func_builder);
-    }
-
-    void run(uindex_t n_generations, TransFunc trans_func) override {
-        run(n_generations, std::function([=](cl::sycl::handler &cgh) { return trans_func; }));
-    }
-
-    void run(uindex_t n_generations, std::function<TransFunc(cl::sycl::handler &)> trans_func_builder) override {
         using in_pipe = cl::sycl::pipe<class tiling_in_pipe, T>;
         using out_pipe = cl::sycl::pipe<class tiling_out_pipe, T>;
         using ExecutionKernelImpl =
@@ -119,9 +104,8 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
                     input_grid.template submit_tile_input<in_pipe>(input_queue, UID(c, r));
 
                     cl::sycl::event computation_event = work_queue.submit([&](cl::sycl::handler &cgh) {
-                        TransFunc trans_func = trans_func_builder(cgh);
                         cgh.single_task<class TilingExecutionKernel>(ExecutionKernelImpl(
-                            trans_func, this->get_i_generation(), target_i_generation,
+                            this->get_trans_func(), this->get_i_generation(), target_i_generation,
                             c * tile_width, r * tile_height, grid_width, grid_height,
                             this->get_halo_value()));
                     });

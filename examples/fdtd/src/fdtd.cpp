@@ -152,10 +152,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    auto trans_func_builder =
-        std::function([&](cl::sycl::handler &cgh) { return KernelImpl(parameters, mat_resolver); });
-
-    Executor executor(KernelImpl::halo());
+    Executor executor(KernelImpl::halo(), KernelImpl(parameters, mat_resolver));
     executor.set_input(grid_buffer);
 #ifdef HARDWARE
     executor.select_fpga();
@@ -171,7 +168,7 @@ int main(int argc, char **argv) {
         double runtime = 0.0;
 
         while (executor.get_i_generation() + interval < n_timesteps) {
-            executor.run(interval, trans_func_builder);
+            executor.run(interval);
             executor.copy_output(grid_buffer);
 
             uindex_t i_generation = executor.get_i_generation();
@@ -191,10 +188,10 @@ int main(int argc, char **argv) {
         }
 
         if (n_timesteps % interval != 0) {
-            executor.run(n_timesteps % interval, trans_func_builder);
+            executor.run(n_timesteps % interval);
         }
     } else {
-        executor.run(n_timesteps, trans_func_builder);
+        executor.run(n_timesteps);
     }
     std::cout << "Simulation complete!" << std::endl;
 
