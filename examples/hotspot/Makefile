@@ -8,7 +8,7 @@
 CC = dpcpp
 STENCIL_STREAM_PATH = ./
 
-ARGS = -std=c++17 -I$(STENCIL_STREAM_PATH) -O3
+ARGS = -std=c++20 -I$(STENCIL_STREAM_PATH) -O3 -qactypes
 
 ifdef EBROOTGCC
 	ARGS += --gcc-toolchain=$(EBROOTGCC)

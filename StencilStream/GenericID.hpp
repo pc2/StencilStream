@@ -73,12 +73,10 @@ template <typename T> class GenericID {
  * \brief A signed, two-dimensional index.
  */
 typedef GenericID<index_t> ID;
-typedef GenericID<index_min_t> StencilID;
 
 /**
  * \brief An unsigned, two-dimensional index.
  */
 typedef GenericID<uindex_t> UID;
-typedef GenericID<uindex_min_t> UStencilID;
 
 } // namespace stencil

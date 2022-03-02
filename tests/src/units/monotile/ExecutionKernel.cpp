@@ -70,6 +70,8 @@ void test_monotile_kernel(uindex_t n_generations) {
 }
 
 TEST_CASE("monotile::ExecutionKernel", "[monotile::ExecutionKernel]") {
+    ac_int<8> my_int = 42;
+    REQUIRE(my_int[1] == 1);
     test_monotile_kernel(pipeline_length);
 }
 
@@ -85,7 +87,7 @@ TEST_CASE("monotile::ExecutionKernel (noop)", "[monotile::ExecutionKernel]") {
 TEST_CASE("monotile::ExecutionKernel: Incomplete Pipeline with i_generation != 0",
           "[monotile::ExecutionKernel]") {
     using Cell = uint8_t;
-    auto trans_func = [](Stencil<Cell, 1> const &stencil) { return stencil[StencilID(0, 0)] + 1; };
+    auto trans_func = [](Stencil<Cell, 1> const &stencil) { return stencil[ID(0, 0)] + 1; };
 
     using in_pipe = HostPipe<class IncompletePipelineInPipeID, Cell>;
     using out_pipe = HostPipe<class IncompletePipelineOutPipeID, Cell>;

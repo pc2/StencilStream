@@ -26,9 +26,9 @@
 #include <numeric>
 
 namespace stencil {
-template <typename T, uindex_min_t stencil_radius, typename TransFunc,
-          uindex_1d_t pipeline_length = 1, uindex_1d_t tile_width = 1024,
-          uindex_1d_t tile_height = 1024, uindex_1d_t burst_size = 64>
+template <typename T, uindex_t stencil_radius, typename TransFunc,
+          uindex_t pipeline_length = 1, uindex_t tile_width = 1024,
+          uindex_t tile_height = 1024, uindex_t burst_size = 64>
 /**
  * \brief An executor that follows \ref monotile.
  *
@@ -53,14 +53,18 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
      */
     using Parent = SingleContextExecutor<T, stencil_radius, TransFunc>;
 
-    static constexpr uindex_1d_t burst_buffer_size =
-        BOUND_CHECK(std::lcm(sizeof(T), burst_size), uindex_1d_t);
-    static constexpr uindex_1d_t burst_buffer_length =
-        BOUND_CHECK(burst_buffer_size / sizeof(T), uindex_1d_t);
-    static constexpr uindex_2d_t n_bursts =
-        BOUND_CHECK(tile_width * tile_height / burst_buffer_length +
-                        (tile_width * tile_height % burst_buffer_length == 0 ? 0 : 1),
-                    uindex_2d_t);
+    static constexpr uindex_t burst_buffer_size = std::lcm(sizeof(T), burst_size);
+    static constexpr uindex_t burst_buffer_length = burst_buffer_size / sizeof(T);
+    static constexpr uindex_t n_bursts = tile_width * tile_height / burst_buffer_length +
+                        (tile_width * tile_height % burst_buffer_length == 0 ? 0 : 1);
+
+    static constexpr unsigned long bits_cell = std::bit_width(burst_buffer_length);
+    using index_cell_t = ac_int<bits_cell + 1, true>;
+    using uindex_cell_t = ac_int<bits_cell, false>;
+
+    static constexpr unsigned long bits_burst = std::bit_width(n_bursts);
+    using index_burst_t = ac_int<bits_burst + 1, true>;
+    using uindex_burst_t = ac_int<bits_burst, false>;
 
     /**
      * \brief Create a new executor.
@@ -97,10 +101,10 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
 
         auto in_ac = input_buffer.template get_access<cl::sycl::access::mode::read>();
         auto tile_ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
-        for (uindex_1d_t c = 0; c < tile_width; c++) {
-            for (uindex_1d_t r = 0; r < tile_height; r++) {
-                uindex_2d_t burst_i = (c * tile_width + r) / burst_buffer_length;
-                uindex_1d_t cell_i = (c * tile_width + r) % burst_buffer_length;
+        for (uindex_t c = 0; c < tile_width; c++) {
+            for (uindex_t r = 0; r < tile_height; r++) {
+                uindex_t burst_i = (c * tile_width + r) / burst_buffer_length;
+                uindex_t cell_i = (c * tile_width + r) % burst_buffer_length;
                 if (c < grid_range.c && r < grid_range.r) {
                     tile_ac[burst_i][cell_i] = in_ac[c][r];
                 } else {
@@ -117,10 +121,10 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
         }
         auto in_ac = tile_buffer.template get_access<cl::sycl::access::mode::read>();
         auto out_ac = output_buffer.template get_access<cl::sycl::access::mode::discard_write>();
-        for (uindex_1d_t c = 0; c < output_buffer.get_range()[0]; c++) {
-            for (uindex_1d_t r = 0; r < output_buffer.get_range()[1]; r++) {
-                uindex_2d_t burst_i = (c * tile_width + r) / burst_buffer_length;
-                uindex_1d_t cell_i = (c * tile_width + r) % burst_buffer_length;
+        for (uindex_t c = 0; c < output_buffer.get_range()[0]; c++) {
+            for (uindex_t r = 0; r < output_buffer.get_range()[1]; r++) {
+                uindex_t burst_i = (c * tile_width + r) / burst_buffer_length;
+                uindex_t cell_i = (c * tile_width + r) % burst_buffer_length;
                 out_ac[c][r] = in_ac[burst_i][cell_i];
             }
         }
@@ -134,14 +138,15 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
         using ExecutionKernelImpl =
             monotile::ExecutionKernel<TransFunc, T, stencil_radius, pipeline_length, tile_width,
                                       tile_height, in_pipe, out_pipe>;
+        using uindex_2d_t = typename ExecutionKernelImpl::uindex_2d_t;
 
         cl::sycl::queue input_queue = this->new_queue(true);
         cl::sycl::queue work_queue = this->new_queue(true);
         cl::sycl::queue output_queue = this->new_queue(true);
 
         uindex_t target_i_generation = this->get_i_generation() + n_generations;
-        uindex_1d_t grid_width = grid_range.c;
-        uindex_1d_t grid_height = grid_range.r;
+        uindex_t grid_width = grid_range.c;
+        uindex_t grid_height = grid_range.r;
 
         cl::sycl::buffer<T[burst_buffer_length], 1> read_buffer = tile_buffer;
         cl::sycl::buffer<T[burst_buffer_length], 1> write_buffer = cl::sycl::range<1>(n_bursts);
@@ -154,13 +159,13 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
                     // Manual prefetching cache
                     T cache[burst_buffer_length];
 
-                    uindex_2d_t burst_i = 0;
-                    uindex_1d_t cell_i = burst_buffer_length;
-                    for (uindex_2d_t i = 0; i < tile_width * tile_height; i++) {
-                        if (cell_i == burst_buffer_length) {
+                    uindex_burst_t burst_i = 0;
+                    uindex_cell_t cell_i = burst_buffer_length;
+                    for (uindex_2d_t i = 0; i < uindex_2d_t(tile_width * tile_height); i++) {
+                        if (cell_i == uindex_cell_t(burst_buffer_length)) {
 #pragma unroll
-                            for (uindex_1d_t load_i = 0; load_i < burst_buffer_length; load_i++) {
-                                cache[load_i] = ac[burst_i][load_i];
+                            for (uindex_cell_t load_i = 0; load_i < burst_buffer_length; load_i++) {
+                                cache[load_i] = ac[burst_i.to_uint64()][load_i.to_uint64()];
                             }
                             burst_i++;
                             cell_i = 0;
@@ -184,27 +189,28 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
                 cgh.single_task<class MonotileOutputKernel>([=]() {
                     T cache[burst_buffer_length];
 
-                    uindex_2d_t burst_i = 0;
-                    uindex_1d_t cell_i = 0;
-                    for (uindex_2d_t i = 0; i < tile_width * tile_height; i++) {
+                    uindex_burst_t burst_i = 0;
+                    uindex_cell_t cell_i = 0;
+                    for (uindex_2d_t i = 0; i < uindex_2d_t(tile_width * tile_height); i++) {
                         cache[cell_i] = out_pipe::read();
                         cell_i++;
-                        if (cell_i == burst_buffer_length) {
+                        if (cell_i == uindex_cell_t(burst_buffer_length)) {
 #pragma unroll
-                            for (uindex_1d_t store_i = 0; store_i < burst_buffer_length;
-                                 store_i++) {
-                                ac[burst_i][store_i] = cache[store_i];
+                            for (uindex_cell_t store_i = 0;
+                                 store_i < uindex_cell_t(burst_buffer_length); store_i++) {
+                                ac[burst_i.to_uint64()][store_i.to_uint64()] = cache[store_i];
                             }
                             cell_i = 0;
                             burst_i++;
                         }
                     }
 
-                    const uindex_1d_t n_extra_cells =
+                    const uindex_cell_t n_extra_cells =
                         (tile_width * tile_height) % burst_buffer_length;
 #pragma unroll
-                    for (uindex_1d_t store_i = 0; store_i < n_extra_cells; store_i++) {
-                        ac[burst_i][store_i] = cache[store_i];
+                    for (uindex_cell_t store_i = 0; store_i < uindex_cell_t(n_extra_cells);
+                         store_i++) {
+                        ac[burst_i.to_uint64()][store_i.to_uint64()] = cache[store_i];
                     }
                 });
             });

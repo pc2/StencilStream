@@ -36,7 +36,7 @@ using TestGrid = Grid<ID, tile_width, tile_height, halo_radius>;
 TEST_CASE("Grid::Grid(uindex_t, uindex_t, T)", "[Grid]") {
     TestGrid grid(add_grid_width, add_grid_height);
 
-    GenericID<uindex_1d_t> tile_range = grid.get_tile_range();
+    GenericID<uindex_t> tile_range = grid.get_tile_range();
     REQUIRE(tile_range.c == add_grid_width / tile_width + 1);
     REQUIRE(tile_range.r == add_grid_height / tile_height + 1);
 }
@@ -54,7 +54,7 @@ TEST_CASE("Grid::Grid(cl::sycl::buffer<T, 2>, T)", "[Grid]") {
 
     TestGrid grid(in_buffer);
 
-    GenericID<uindex_1d_t> tile_range = grid.get_tile_range();
+    GenericID<uindex_t> tile_range = grid.get_tile_range();
     REQUIRE(tile_range.c == add_grid_width / tile_width + 1);
     REQUIRE(tile_range.r == add_grid_height / tile_height + 1);
 

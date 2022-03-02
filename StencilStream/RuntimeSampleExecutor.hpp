@@ -24,7 +24,7 @@
 
 namespace stencil {
 
-template <typename T, uindex_min_t stencil_radius, typename TransFunc>
+template <typename T, uindex_t stencil_radius, typename TransFunc>
 class RuntimeSampleExecutor : public AbstractExecutor<T, stencil_radius, TransFunc> {
   public:
     using Parent = AbstractExecutor<T, stencil_radius, TransFunc>;

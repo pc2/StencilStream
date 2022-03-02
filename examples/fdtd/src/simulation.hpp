@@ -32,6 +32,9 @@ class FDTDKernel {
     float dt;
     Material vacuum;
 
+    using StencilImpl = Stencil<FDTDCell, stencil_radius>;
+    using StencilID = typename StencilImpl::StencilID;
+
   public:
     FDTDKernel(Parameters const &parameters)
         : disk_radius(parameters.disk_radius), tau(parameters.tau), omega(parameters.omega()),
@@ -48,7 +51,7 @@ class FDTDKernel {
         return new_cell;
     }
 
-    FDTDCell operator()(Stencil<FDTDCell, stencil_radius> const &stencil) const {
+    FDTDCell operator()(StencilImpl const &stencil) const {
         FDTDCell cell = stencil[StencilID(0, 0)];
 
         if (cell.distance < disk_radius) {

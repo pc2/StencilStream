@@ -191,6 +191,8 @@ int main(int argc, char **argv) {
     FLOAT Cap_1 = step / Cap;
 
     auto kernel = [=](Stencil<Cell, stencil_radius> const &temp) {
+        using StencilID = typename Stencil<Cell, stencil_radius>::StencilID;
+
         ID idx = temp.id;
         index_t c = idx.c;
         index_t r = idx.r;

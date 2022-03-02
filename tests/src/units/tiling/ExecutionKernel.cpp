@@ -91,15 +91,15 @@ TEST_CASE("Halo values inside the pipeline are handled correctly", "[tiling::Exe
         ID idx = stencil.id;
         bool is_valid = true;
         if (idx.c == 0) {
-            is_valid &= stencil[StencilID(-1, -1)] && stencil[StencilID(-1, 0)] && stencil[StencilID(-1, 1)];
+            is_valid &= stencil[ID(-1, -1)] && stencil[ID(-1, 0)] && stencil[ID(-1, 1)];
         } else if (idx.c == tile_width - 1) {
-            is_valid &= stencil[StencilID(1, -1)] && stencil[StencilID(1, 0)] && stencil[StencilID(1, 1)];
+            is_valid &= stencil[ID(1, -1)] && stencil[ID(1, 0)] && stencil[ID(1, 1)];
         }
 
         if (idx.r == 0) {
-            is_valid &= stencil[StencilID(-1, -1)] && stencil[StencilID(0, -1)] && stencil[StencilID(1, -1)];
+            is_valid &= stencil[ID(-1, -1)] && stencil[ID(0, -1)] && stencil[ID(1, -1)];
         } else if (idx.r == tile_height - 1) {
-            is_valid &= stencil[StencilID(-1, 1)] && stencil[StencilID(0, 1)] && stencil[StencilID(1, 1)];
+            is_valid &= stencil[ID(-1, 1)] && stencil[ID(0, 1)] && stencil[ID(1, 1)];
         }
 
         return is_valid;
@@ -131,7 +131,7 @@ TEST_CASE("Halo values inside the pipeline are handled correctly", "[tiling::Exe
 
 TEST_CASE("Incomplete Pipeline with i_generation != 0", "[tiling::ExecutionKernel]") {
     using Cell = uint8_t;
-    auto trans_func = [](Stencil<Cell, 1> const &stencil) { return stencil[StencilID(0, 0)] + 1; };
+    auto trans_func = [](Stencil<Cell, 1> const &stencil) { return stencil[ID(0, 0)] + 1; };
 
     using in_pipe = HostPipe<class IncompletePipelineInPipeID, Cell>;
     using out_pipe = HostPipe<class IncompletePipelineOutPipeID, Cell>;

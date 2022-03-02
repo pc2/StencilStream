@@ -22,7 +22,7 @@
 #include "Stencil.hpp"
 
 namespace stencil {
-template <typename T, uindex_min_t stencil_radius, typename TransFunc>
+template <typename T, uindex_t stencil_radius, typename TransFunc>
 class SimpleCPUExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc> {
   public:
     using Parent = SingleContextExecutor<T, stencil_radius, TransFunc>;
@@ -49,18 +49,18 @@ class SimpleCPUExecutor : public SingleContextExecutor<T, stencil_radius, TransF
 
                 cgh.parallel_for<class SimpleCPUExecutionKernel>(
                     in_ac.get_range(), [=](cl::sycl::id<2> idx) {
-                        Stencil<T, stencil_radius> stencil(idx, gen, stage, in_ac.get_range());
+                        Stencil<T, stencil_radius> stencil(idx, in_ac.get_range(), gen, stage);
 
-                        for (index_min_t delta_c = -stencil_radius;
-                             delta_c <= index_min_t(stencil_radius); delta_c++) {
-                            for (index_min_t delta_r = -stencil_radius;
-                                 delta_r <= index_min_t(stencil_radius); delta_r++) {
+                        for (index_t delta_c = -stencil_radius;
+                             delta_c <= index_t(stencil_radius); delta_c++) {
+                            for (index_t delta_r = -stencil_radius;
+                                 delta_r <= index_t(stencil_radius); delta_r++) {
                                 index_t c = index_t(idx[0]) + delta_c;
                                 index_t r = index_t(idx[1]) + delta_r;
                                 if (c < 0 || r < 0 || c >= grid_width || r >= grid_height) {
-                                    stencil[StencilID(delta_c, delta_r)] = halo_value;
+                                    stencil[ID(delta_c, delta_r)] = halo_value;
                                 } else {
-                                    stencil[StencilID(delta_c, delta_r)] = in_ac[c][r];
+                                    stencil[ID(delta_c, delta_r)] = in_ac[c][r];
                                 }
                             }
                         }

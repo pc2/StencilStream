@@ -37,7 +37,7 @@ class FPGATransFunc
 public:
     Cell operator()(stencil::Stencil<Cell, radius> const &stencil) const
     {
-        Cell new_cell = stencil[stencil::StencilID(0, 0)];
+        Cell new_cell = stencil[stencil::ID(0, 0)];
 
         bool is_valid = true;
 #pragma unroll
@@ -46,7 +46,7 @@ public:
 #pragma unroll
             for (stencil::index_t r = -stencil::index_t(radius); r <= stencil::index_t(radius); r++)
             {
-                Cell old_cell = stencil[stencil::StencilID(c, r)];
+                Cell old_cell = stencil[stencil::ID(c, r)];
                 stencil::index_t cell_c = stencil.id.c + c;
                 stencil::index_t cell_r = stencil.id.r + r;
                 if (cell_c >= 0 && cell_r >= 0 && cell_c < stencil.grid_range.c && cell_r < stencil.grid_range.r)
@@ -79,7 +79,7 @@ class HostTransFunc
 public:
     Cell operator()(stencil::Stencil<Cell, radius> const &stencil) const
     {
-        Cell new_cell = stencil[stencil::StencilID(0, 0)];
+        Cell new_cell = stencil[stencil::ID(0, 0)];
 
         if (stencil.id.c < 0 || stencil.id.r < 0 || stencil.id.c > stencil.grid_range.c || stencil.id.r > stencil.grid_range.r) {
             // Things may be weird in this (illegal) situation, we should not do anything with effects.
@@ -92,7 +92,7 @@ public:
 #pragma unroll
             for (stencil::index_t r = -stencil::index_t(radius); r <= stencil::index_t(radius); r++)
             {
-                Cell old_cell = stencil[stencil::StencilID(c, r)];
+                Cell old_cell = stencil[stencil::ID(c, r)];
                 stencil::index_t cell_c = stencil.id.c + c;
                 stencil::index_t cell_r = stencil.id.r + r;
                 if (cell_c >= 0 && cell_r >= 0 && cell_c < stencil.grid_range.c && cell_r < stencil.grid_range.r)
