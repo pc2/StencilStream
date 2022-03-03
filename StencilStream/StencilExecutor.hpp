@@ -145,17 +145,22 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
 
                     merge_queue.submit([&](cl::sycl::handler &cgh) {
                         cgh.single_task<class TilingMergeKernel>([=]() {
+                            constexpr unsigned long bits_width = std::bit_width(2*halo_radius + tile_width);
+                            constexpr unsigned long bits_height = std::bit_width(2*halo_radius + tile_height);
+                            using uindex_width_t = ac_int<bits_width, false>;
+                            using uindex_height_t = ac_int<bits_height, false>;
+
                             [[intel::loop_coalesce(2)]]
-                            for (uindex_t c = 0; c < 2*halo_radius + tile_width; c++) {
-                                for (uindex_t r = 0; r < 2*halo_radius + tile_height; r++) {
+                            for (uindex_width_t c = 0; c < uindex_width_t(2*halo_radius + tile_width); c++) {
+                                for (uindex_height_t r = 0; r < uindex_height_t(2*halo_radius + tile_height); r++) {
                                     T value;
-                                    if (r < halo_radius) {
+                                    if (r < uindex_height_t(halo_radius)) {
                                         value = feed_in_pipe_0::read();
-                                    } else if (r < 2*halo_radius) {
+                                    } else if (r < uindex_height_t(2*halo_radius)) {
                                         value = feed_in_pipe_1::read();
-                                    } else if (r < 2*halo_radius + GridImpl::core_height) {
+                                    } else if (r < uindex_height_t(2*halo_radius + GridImpl::core_height)) {
                                         value = feed_in_pipe_2::read();
-                                    } else if (r < 3*halo_radius + GridImpl::core_height) {
+                                    } else if (r < uindex_height_t(3*halo_radius + GridImpl::core_height)) {
                                         value = feed_in_pipe_3::read();
                                     } else {
                                         value = feed_in_pipe_4::read();
@@ -176,13 +181,18 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
 
                     fork_queue.submit([&](cl::sycl::handler &cgh) {
                         cgh.single_task<class TilingForkKernel>([=]() {
+                            constexpr unsigned long bits_width = std::bit_width(tile_width);
+                            constexpr unsigned long bits_height = std::bit_width(tile_height);
+                            using uindex_width_t = ac_int<bits_width, false>;
+                            using uindex_height_t = ac_int<bits_height, false>;
+
                             [[intel::loop_coalesce(2)]]
-                            for (uindex_t c = 0; c < tile_width; c++) {
-                                for (uindex_t r = 0; r < tile_height; r++) {
+                            for (uindex_width_t c = 0; c < uindex_width_t(tile_width); c++) {
+                                for (uindex_height_t r = 0; r < uindex_height_t(tile_height); r++) {
                                     T value = out_pipe::read();
-                                    if (r < halo_radius) {
+                                    if (r < uindex_height_t(halo_radius)) {
                                         feed_out_pipe_0::write(value);
-                                    } else if (r < tile_height - halo_radius) {
+                                    } else if (r < uindex_height_t(tile_height - halo_radius)) {
                                         feed_out_pipe_1::write(value);
                                     } else {
                                         feed_out_pipe_2::write(value);
