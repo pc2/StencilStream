@@ -53,10 +53,12 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
      */
     using Parent = SingleContextExecutor<T, stencil_radius, TransFunc>;
 
-    static constexpr uindex_t burst_buffer_size = std::lcm(sizeof(T), burst_size);
-    static constexpr uindex_t burst_buffer_length = burst_buffer_size / sizeof(T);
+    static constexpr uindex_t burst_buffer_size = std::lcm(sizeof(Padded<T>), burst_size);
+    static constexpr uindex_t burst_buffer_length = burst_buffer_size / sizeof(Padded<T>);
     static constexpr uindex_t n_bursts = tile_width * tile_height / burst_buffer_length +
                         (tile_width * tile_height % burst_buffer_length == 0 ? 0 : 1);
+    
+    using BurstBuffer = std::array<Padded<T>, burst_buffer_length>;
 
     static constexpr unsigned long bits_cell = std::bit_width(burst_buffer_length);
     using index_cell_t = ac_int<bits_cell + 1, true>;
@@ -76,7 +78,7 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
         : Parent(halo_value, trans_func), tile_buffer(cl::sycl::range<1>(n_bursts)),
           grid_range(1, 1) {
         auto ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
-        ac[0][0] = halo_value;
+        ac[0][0].value = halo_value;
     }
 
     /**
@@ -106,9 +108,9 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
                 uindex_t burst_i = (c * tile_width + r) / burst_buffer_length;
                 uindex_t cell_i = (c * tile_width + r) % burst_buffer_length;
                 if (c < grid_range.c && r < grid_range.r) {
-                    tile_ac[burst_i][cell_i] = in_ac[c][r];
+                    tile_ac[burst_i][cell_i].value = in_ac[c][r];
                 } else {
-                    tile_ac[burst_i][cell_i] = this->get_halo_value();
+                    tile_ac[burst_i][cell_i].value = this->get_halo_value();
                 }
             }
         }
@@ -125,7 +127,7 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
             for (uindex_t r = 0; r < output_buffer.get_range()[1]; r++) {
                 uindex_t burst_i = (c * tile_width + r) / burst_buffer_length;
                 uindex_t cell_i = (c * tile_width + r) % burst_buffer_length;
-                out_ac[c][r] = in_ac[burst_i][cell_i];
+                out_ac[c][r] = in_ac[burst_i][cell_i].value;
             }
         }
     }
@@ -148,29 +150,25 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
         uindex_t grid_width = grid_range.c;
         uindex_t grid_height = grid_range.r;
 
-        cl::sycl::buffer<T[burst_buffer_length], 1> read_buffer = tile_buffer;
-        cl::sycl::buffer<T[burst_buffer_length], 1> write_buffer = cl::sycl::range<1>(n_bursts);
+        cl::sycl::buffer<BurstBuffer, 1> read_buffer = tile_buffer;
+        cl::sycl::buffer<BurstBuffer, 1> write_buffer = cl::sycl::range<1>(n_bursts);
 
         while (this->get_i_generation() < target_i_generation) {
             input_queue.submit([&](cl::sycl::handler &cgh) {
                 auto ac = read_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
 
                 cgh.single_task<class MonotileInputKernel>([=]() {
-                    // Manual prefetching cache
-                    T cache[burst_buffer_length];
+                    [[intel::fpga_memory]] BurstBuffer cache;
 
                     uindex_burst_t burst_i = 0;
                     uindex_cell_t cell_i = burst_buffer_length;
                     for (uindex_2d_t i = 0; i < uindex_2d_t(tile_width * tile_height); i++) {
                         if (cell_i == uindex_cell_t(burst_buffer_length)) {
-#pragma unroll
-                            for (uindex_cell_t load_i = 0; load_i < burst_buffer_length; load_i++) {
-                                cache[load_i] = ac[burst_i.to_uint64()][load_i.to_uint64()];
-                            }
+                            cache = ac[burst_i.to_uint64()];
                             burst_i++;
                             cell_i = 0;
                         }
-                        in_pipe::write(cache[cell_i]);
+                        in_pipe::write(cache[cell_i].value);
                         cell_i++;
                     }
                 });
@@ -187,30 +185,22 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
                     write_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
 
                 cgh.single_task<class MonotileOutputKernel>([=]() {
-                    T cache[burst_buffer_length];
+                    [[intel::fpga_memory]] BurstBuffer cache;
 
                     uindex_burst_t burst_i = 0;
                     uindex_cell_t cell_i = 0;
                     for (uindex_2d_t i = 0; i < uindex_2d_t(tile_width * tile_height); i++) {
-                        cache[cell_i] = out_pipe::read();
+                        cache[cell_i].value = out_pipe::read();
                         cell_i++;
                         if (cell_i == uindex_cell_t(burst_buffer_length)) {
-#pragma unroll
-                            for (uindex_cell_t store_i = 0;
-                                 store_i < uindex_cell_t(burst_buffer_length); store_i++) {
-                                ac[burst_i.to_uint64()][store_i.to_uint64()] = cache[store_i];
-                            }
+                            ac[burst_i.to_uint64()] = cache;
                             cell_i = 0;
                             burst_i++;
                         }
                     }
 
-                    const uindex_cell_t n_extra_cells =
-                        (tile_width * tile_height) % burst_buffer_length;
-#pragma unroll
-                    for (uindex_cell_t store_i = 0; store_i < uindex_cell_t(n_extra_cells);
-                         store_i++) {
-                        ac[burst_i.to_uint64()][store_i.to_uint64()] = cache[store_i];
+                    if ((tile_width * tile_height) % burst_buffer_length != 0) {
+                        ac[burst_i.to_uint64()] = cache;
                     }
                 });
             });
@@ -227,7 +217,7 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
     }
 
   private:
-    cl::sycl::buffer<T[burst_buffer_length], 1> tile_buffer;
+    cl::sycl::buffer<BurstBuffer, 1> tile_buffer;
     UID grid_range;
 };
 } // namespace stencil

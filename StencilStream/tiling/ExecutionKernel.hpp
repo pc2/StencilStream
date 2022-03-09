@@ -22,6 +22,7 @@
 #include "../Helpers.hpp"
 #include "../Index.hpp"
 #include "../Stencil.hpp"
+#include "../Padded.hpp"
 #include <optional>
 
 namespace stencil {
@@ -136,13 +137,13 @@ class ExecutionKernel {
          * see that these additional banks in the cache aren't used and therefore optimizes them
          * away.
          */
-        [[intel::fpga_memory, intel::numbanks(2 * std::bit_ceil(pipeline_length))]] T
+        [[intel::fpga_memory, intel::numbanks(2 * std::bit_ceil(pipeline_length))]] Padded<T>
             cache[2][input_tile_height][std::bit_ceil(pipeline_length)][stencil_diameter - 1];
         [[intel::fpga_register]] T stencil_buffer[pipeline_length][stencil_diameter]
                                                  [stencil_diameter];
 
         for (uindex_2d_t i = 0; i < uindex_2d_t(n_input_cells); i++) {
-            T value = in_pipe::read();
+            [[intel::fpga_register]] T carry = in_pipe::read();
 
 #pragma unroll
             for (uindex_plen_t stage = 0; stage < uindex_plen_t(pipeline_length); stage++) {
@@ -181,14 +182,15 @@ class ExecutionKernel {
                         is_halo |= (grid_r_offset == 0 && rel_input_grid_r < 0);
                         is_halo |= input_grid_c >= grid_width || input_grid_r >= grid_height;
 
-                        new_value = is_halo ? halo_value : value;
+                        new_value = is_halo ? halo_value : carry;
                     } else {
-                        new_value = cache[input_tile_c[0]][input_tile_r][stage][cache_c];
+                        new_value = cache[input_tile_c[0]][input_tile_r][stage][cache_c].value;
                     }
 
                     stencil_buffer[stage][cache_c][stencil_diameter - 1] = new_value;
                     if (cache_c > 0) {
-                        cache[(~input_tile_c)[0]][input_tile_r][stage][cache_c - 1] = new_value;
+                        cache[(~input_tile_c)[0]][input_tile_r][stage][cache_c - 1].value = 
+                            new_value;
                     }
                 }
 
@@ -197,10 +199,11 @@ class ExecutionKernel {
                 StencilImpl stencil(ID(output_grid_c, output_grid_r), UID(grid_width, grid_height),
                                     i_generation + uindex_t(stage), uindex_t(stage), stencil_buffer[stage]);
 
+                
                 if (uindex_t(stage) < n_generations) {
-                    value = trans_func(stencil);
+                    carry = trans_func(stencil);
                 } else {
-                    value = stencil_buffer[stage][stencil_radius][stencil_radius];
+                    carry = stencil_buffer[stage][stencil_radius][stencil_radius];
                 }
             }
 
@@ -210,7 +213,7 @@ class ExecutionKernel {
                 input_tile_r >= uindex_1d_t((stencil_diameter - 1) * pipeline_length);
 
             if (is_valid_output) {
-                out_pipe::write(value);
+                out_pipe::write(carry);
             }
 
             if (input_tile_r == uindex_1d_t(input_tile_height - 1)) {

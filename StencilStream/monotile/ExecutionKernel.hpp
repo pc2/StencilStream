@@ -22,6 +22,7 @@
 #include "../Helpers.hpp"
 #include "../Index.hpp"
 #include "../Stencil.hpp"
+#include "../Padded.hpp"
 #include <optional>
 
 namespace stencil {
@@ -149,17 +150,17 @@ class ExecutionKernel {
          * see that these additional banks in the cache aren't used and therefore optimizes them
          * away.
          */
-        [[intel::fpga_memory, intel::numbanks(2 * std::bit_ceil(pipeline_length))]] T
+        [[intel::fpga_memory, intel::numbanks(2 * std::bit_ceil(pipeline_length))]] Padded<T>
             cache[2][tile_height][std::bit_ceil(pipeline_length)][stencil_diameter - 1];
         [[intel::fpga_register]] T stencil_buffer[pipeline_length][stencil_diameter]
                                                  [stencil_diameter];
 
         for (uindex_n_iterations_t i = 0; i < uindex_n_iterations_t(n_iterations); i++) {
-            T value;
+            T carry;
             if (i < uindex_n_iterations_t(n_cells)) {
-                value = in_pipe::read();
+                carry = in_pipe::read();
             } else {
-                value = halo_value;
+                carry = halo_value;
             }
 
 #pragma unroll
@@ -179,14 +180,14 @@ class ExecutionKernel {
                      cache_c++) {
                     T new_value;
                     if (cache_c == uindex_stencil_t(stencil_diameter - 1)) {
-                        new_value = value;
+                        new_value = carry;
                     } else {
-                        new_value = cache[c[stage][0]][r[stage]][stage][cache_c];
+                        new_value = cache[c[stage][0]][r[stage]][stage][cache_c].value;
                     }
 
                     stencil_buffer[stage][cache_c][stencil_diameter - 1] = new_value;
                     if (cache_c > 0) {
-                        cache[(~c[stage])[0]][r[stage]][stage][cache_c - 1] = new_value;
+                        cache[(~c[stage])[0]][r[stage]][stage][cache_c - 1].value = new_value;
                     }
                 }
 
@@ -232,9 +233,9 @@ class ExecutionKernel {
                         }
                     }
 
-                    value = trans_func(stencil);
+                    carry = trans_func(stencil);
                 } else {
-                    value = stencil_buffer[stage][stencil_radius][stencil_radius];
+                    carry = stencil_buffer[stage][stencil_radius][stencil_radius];
                 }
 
                 r[stage] += 1;
@@ -245,7 +246,7 @@ class ExecutionKernel {
             }
 
             if (i >= uindex_n_iterations_t(pipeline_latency)) {
-                out_pipe::write(value);
+                out_pipe::write(carry);
             }
         }
     }
