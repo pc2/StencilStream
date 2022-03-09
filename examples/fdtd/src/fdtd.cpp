@@ -20,11 +20,10 @@
 #include "Kernel.hpp"
 #include <deque>
 
-#ifdef COEF_MATERIALS
+#if MATERIAL == 0
     #include "material/CoefResolver.hpp"
     using MaterialResolver = CoefResolver;
-#endif
-#ifdef LUT_MATERIALS
+#elif MATERIAL == 1
     #include "material/LUTResolver.hpp"
     using MaterialResolver = LUTResolver;
 #endif
@@ -151,7 +150,7 @@ int main(int argc, char **argv) {
 
     Executor executor(KernelImpl::halo(), KernelImpl(parameters, mat_resolver));
     executor.set_input(grid_buffer);
-#if EXECUTOR != 2
+#ifdef HARDWARE
     executor.select_fpga();
 #endif
 
