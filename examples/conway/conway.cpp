@@ -22,23 +22,23 @@
 
 using Cell = bool;
 const Cell halo_value = false;
-const stencil::uindex_t stencil_radius = 1;
+const stencil::index_min_t stencil_radius = 1;
 
 auto conway = [](stencil::Stencil<Cell, stencil_radius> const &stencil) {
     stencil::ID idx = stencil.id;
 
     uint8_t alive_neighbours = 0;
 #pragma unroll
-    for (stencil::index_t c = -stencil_radius; c <= stencil::index_t(stencil_radius); c++) {
+    for (stencil::index_min_t c = -stencil_radius; c <= stencil_radius; c++) {
 #pragma unroll
-        for (stencil::index_t r = -stencil_radius; r <= stencil::index_t(stencil_radius); r++) {
-            if (stencil[stencil::ID(c, r)] && !(c == 0 && r == 0)) {
+        for (stencil::index_min_t r = -stencil_radius; r <= stencil_radius; r++) {
+            if (stencil[stencil::StencilID(c, r)] && !(c == 0 && r == 0)) {
                 alive_neighbours += 1;
             }
         }
     }
 
-    if (stencil[stencil::ID(0, 0)]) {
+    if (stencil[stencil::StencilID(0, 0)]) {
         return alive_neighbours == 2 || alive_neighbours == 3;
     } else {
         return alive_neighbours == 3;

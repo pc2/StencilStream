@@ -53,7 +53,11 @@ const FLOAT amb_temp = 80.0;
 
 /* stencil parameters */
 const uindex_t stencil_radius = 1;
-const uindex_t pipeline_length = 200;
+#if EXECUTOR == 1
+const uindex_t pipeline_length = 280; // tiling
+#else
+const uindex_t pipeline_length = 350; // monotile & cpu
+#endif
 const uindex_t tile_width = 1024;
 const uindex_t tile_height = 1024;
 
@@ -187,18 +191,20 @@ int main(int argc, char **argv) {
     FLOAT Cap_1 = step / Cap;
 
     auto kernel = [=](Stencil<Cell, stencil_radius> const &temp) {
+        using StencilID = typename Stencil<Cell, stencil_radius>::StencilID;
+
         ID idx = temp.id;
         index_t c = idx.c;
         index_t r = idx.r;
         uindex_t width = temp.grid_range.c;
         uindex_t height = temp.grid_range.r;
 
-        FLOAT power = temp[ID(0, 0)][1];
-        FLOAT old = temp[ID(0, 0)][0];
-        FLOAT left = temp[ID(-1, 0)][0];
-        FLOAT right = temp[ID(1, 0)][0];
-        FLOAT top = temp[ID(0, -1)][0];
-        FLOAT bottom = temp[ID(0, 1)][0];
+        FLOAT power = temp[StencilID(0, 0)][1];
+        FLOAT old = temp[StencilID(0, 0)][0];
+        FLOAT left = temp[StencilID(-1, 0)][0];
+        FLOAT right = temp[StencilID(1, 0)][0];
+        FLOAT top = temp[StencilID(0, -1)][0];
+        FLOAT bottom = temp[StencilID(0, 1)][0];
 
         if (c == 0) {
             left = old;

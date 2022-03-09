@@ -26,10 +26,11 @@ namespace stencil {
 
 template <typename T, uindex_t stencil_radius, typename TransFunc>
 class RuntimeSampleExecutor : public AbstractExecutor<T, stencil_radius, TransFunc> {
-public:
+  public:
     using Parent = AbstractExecutor<T, stencil_radius, TransFunc>;
 
-    RuntimeSampleExecutor(T halo_value, TransFunc trans_func) : Parent(halo_value, trans_func), runtime_sample(), analysis_enabled(true) {}
+    RuntimeSampleExecutor(T halo_value, TransFunc trans_func)
+        : Parent(halo_value, trans_func), runtime_sample(), analysis_enabled(true) {}
 
     /**
      * \brief Return a reference to the runtime information struct.
@@ -37,9 +38,10 @@ public:
      * \return The collected runtime information.
      */
     RuntimeSample &get_runtime_sample() { return runtime_sample; }
-private:
+
+  private:
     RuntimeSample runtime_sample;
     bool analysis_enabled;
 };
 
-}
+} // namespace stencil

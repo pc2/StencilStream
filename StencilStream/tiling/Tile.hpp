@@ -88,21 +88,21 @@ class Tile {
      * \param part The part to calculate the range for.
      * \return The range of the part, used for example to allocate it.
      */
-    static cl::sycl::range<2> get_part_range(Part part) {
+    static UID get_part_range(Part part) {
         switch (part) {
         case Part::NORTH_WEST_CORNER:
         case Part::SOUTH_WEST_CORNER:
         case Part::SOUTH_EAST_CORNER:
         case Part::NORTH_EAST_CORNER:
-            return cl::sycl::range<2>(halo_radius, halo_radius);
+            return UID(halo_radius, halo_radius);
         case Part::NORTH_BORDER:
         case Part::SOUTH_BORDER:
-            return cl::sycl::range<2>(width - 2 * halo_radius, halo_radius);
+            return UID(width - 2 * halo_radius, halo_radius);
         case Part::WEST_BORDER:
         case Part::EAST_BORDER:
-            return cl::sycl::range<2>(halo_radius, height - 2 * halo_radius);
+            return UID(halo_radius, height - 2 * halo_radius);
         case Part::CORE:
-            return cl::sycl::range<2>(width - 2 * halo_radius, height - 2 * halo_radius);
+            return UID(width - 2 * halo_radius, height - 2 * halo_radius);
         default:
             throw std::invalid_argument("Invalid grid tile part specified");
         }
@@ -140,10 +140,24 @@ class Tile {
         }
     }
 
-    static uindex_t get_part_bursts(Part part) {
-        cl::sycl::range<2> range = get_part_range(part);
-        uindex_t n_cells = range[0] * range[1];
+    static constexpr uindex_t n_cells_to_n_bursts(uindex_t n_cells) {
         return (n_cells / burst_buffer_length) + (n_cells % burst_buffer_length == 0 ? 0 : 1);
+    }
+
+    static uindex_t get_part_bursts(Part part) {
+        UID range = get_part_range(part);
+        uindex_t n_cells = range.c * range.r;
+        return n_cells_to_n_bursts(n_cells);
+    }
+
+    static constexpr uindex_t max_n_cells() {
+        uindex_t lhs = halo_radius >= width ? halo_radius : width;
+        uindex_t rhs = halo_radius >= height ? halo_radius : height;
+        return lhs * rhs;
+    }
+
+    static constexpr uindex_t max_n_bursts() {
+        return n_cells_to_n_bursts(max_n_cells());
     }
 
     /**
@@ -273,8 +287,8 @@ class Tile {
         }
 
         auto part_ac = (*this)[part].template get_access<cl::sycl::access::mode::read_write>();
-        uindex_t part_width = get_part_range(part)[0];
-        uindex_t part_height = get_part_range(part)[1];
+        uindex_t part_width = get_part_range(part).c;
+        uindex_t part_height = get_part_range(part).r;
 
         for (uindex_t c = 0; c < part_width; c++) {
             for (uindex_t r = 0; r < part_height; r++) {

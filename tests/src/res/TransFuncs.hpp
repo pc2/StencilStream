@@ -81,6 +81,11 @@ public:
     {
         Cell new_cell = stencil[stencil::ID(0, 0)];
 
+        if (stencil.id.c < 0 || stencil.id.r < 0 || stencil.id.c > stencil.grid_range.c || stencil.id.r > stencil.grid_range.r) {
+            // Things may be weird in this (illegal) situation, we should not do anything with effects.
+            return new_cell;
+        }
+
 #pragma unroll
         for (stencil::index_t c = -stencil::index_t(radius); c <= stencil::index_t(radius); c++)
         {

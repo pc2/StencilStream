@@ -70,6 +70,8 @@ void test_monotile_kernel(uindex_t n_generations) {
 }
 
 TEST_CASE("monotile::ExecutionKernel", "[monotile::ExecutionKernel]") {
+    ac_int<8> my_int = 42;
+    REQUIRE(my_int[1] == 1);
     test_monotile_kernel(pipeline_length);
 }
 

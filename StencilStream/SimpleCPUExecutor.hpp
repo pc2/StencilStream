@@ -21,13 +21,13 @@
 #include "SingleContextExecutor.hpp"
 #include "Stencil.hpp"
 
-namespace stencil
-{
+namespace stencil {
 template <typename T, uindex_t stencil_radius, typename TransFunc>
 class SimpleCPUExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc> {
-public:
+  public:
     using Parent = SingleContextExecutor<T, stencil_radius, TransFunc>;
-    SimpleCPUExecutor(T halo_value, TransFunc trans_func) : Parent(halo_value, trans_func), grid(cl::sycl::range<2>(1, 1)) {
+    SimpleCPUExecutor(T halo_value, TransFunc trans_func)
+        : Parent(halo_value, trans_func), grid(cl::sycl::range<2>(1, 1)) {
         this->select_cpu();
     }
 
@@ -39,7 +39,8 @@ public:
         for (uindex_t stage = 0; stage < n_generations; stage++) {
             cl::sycl::event event = queue.submit([&](cl::sycl::handler &cgh) {
                 auto in_ac = in_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
-                auto out_ac = out_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
+                auto out_ac =
+                    out_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
                 uindex_t gen = this->get_i_generation() + stage;
                 uindex_t grid_width = in_ac.get_range()[0];
                 uindex_t grid_height = in_ac.get_range()[1];
@@ -47,12 +48,13 @@ public:
                 TransFunc trans_func = this->get_trans_func();
 
                 cgh.parallel_for<class SimpleCPUExecutionKernel>(
-                    in_ac.get_range(),
-                    [=](cl::sycl::id<2> idx) {
-                        Stencil<T, stencil_radius> stencil(idx, gen, stage, in_ac.get_range());
-                        
-                        for (index_t delta_c = -stencil_radius; delta_c <= index_t(stencil_radius); delta_c++) {
-                            for (index_t delta_r = -stencil_radius; delta_r <= index_t(stencil_radius); delta_r++) {
+                    in_ac.get_range(), [=](cl::sycl::id<2> idx) {
+                        Stencil<T, stencil_radius> stencil(idx, in_ac.get_range(), gen, stage);
+
+                        for (index_t delta_c = -stencil_radius;
+                             delta_c <= index_t(stencil_radius); delta_c++) {
+                            for (index_t delta_r = -stencil_radius;
+                                 delta_r <= index_t(stencil_radius); delta_r++) {
                                 index_t c = index_t(idx[0]) + delta_c;
                                 index_t r = index_t(idx[1]) + delta_r;
                                 if (c < 0 || r < 0 || c >= grid_width || r >= grid_height) {
@@ -64,8 +66,7 @@ public:
                         }
 
                         out_ac[idx] = trans_func(stencil);
-                    }
-                );
+                    });
             });
             this->get_runtime_sample().add_pass(event);
             std::swap(in_buffer, out_buffer);
@@ -91,7 +92,8 @@ public:
 
     virtual void copy_output(cl::sycl::buffer<T, 2> output_buffer) override {
         if (grid.get_range() != output_buffer.get_range()) {
-            throw std::range_error("The given output buffer doesn't have the same range as the grid.");
+            throw std::range_error(
+                "The given output buffer doesn't have the same range as the grid.");
         }
         
         auto in_ac = grid.template get_access<cl::sycl::access::mode::read>();
@@ -108,7 +110,7 @@ public:
         return UID(grid.get_range()[0], grid.get_range()[1]);
     }
 
-private:
+  private:
     cl::sycl::buffer<T, 2> grid;
 };
-}
+} // namespace stencil

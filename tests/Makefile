@@ -8,7 +8,7 @@
 CC = dpcpp
 STENCIL_PATH = ../
 
-ARGS = -std=c++17 -g -I$(STENCIL_PATH) -Isrc/ -DSTENCIL_INDEX_WIDTH=32
+ARGS = -std=c++20 -g -I$(STENCIL_PATH) -Isrc/ -DSTENCIL_INDEX_WIDTH=32 -qactypes
 
 ifdef OPTIMIZE
 	ARGS += -O3
@@ -33,17 +33,6 @@ src/units/%.o: src/units/%.cpp $(RESOURCES)
 
 src/units/main.o: src/units/main.cpp src/res/*.hpp Makefile
 	$(CC) $(UNIT_ARGS) -c $< -o $@
-
-synthesis_emu: src/synthesis/main.cpp $(RESOURCES)
-	$(CC) $(SYNTH_ARGS) src/synthesis/main.cpp -o synthesis_emu
-
-synthesis_hw: src/synthesis/main.cpp $(RESOURCES)
-	$(CC) $(SYNTH_ARGS) -Xsv -DHARDWARE -Xshardware src/synthesis/main.cpp -o synthesis_hw
-
-synthesis_hw.report.tar.gz: src/synthesis/main.cpp $(RESOURCES)
-	rm -f synthesis_hw
-	$(CC) $(SYNTH_ARGS) -Xsv -DHARDWARE -fsycl-link -Xshardware src/synthesis/main.cpp -o synthesis_hw
-	tar -caf synthesis_hw.report.tar.gz synthesis_hw.prj/reports
 
 cpu_executor: src/cpu_executor/main.cpp $(RESOURCES)
 	$(CC) $(ARGS) src/cpu_executor/main.cpp -o cpu_executor

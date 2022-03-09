@@ -36,7 +36,7 @@ function run_build {
     EXEC_NAME=$1
     rm -f $EXEC_NAME
 
-    ARGS="-std=c++17 -DSTENCIL_INDEX_WIDTH=64 -DFDTD_BURST_SIZE=1024 -I./ -O3"
+    ARGS="-std=c++20 -DSTENCIL_INDEX_WIDTH=64 -DFDTD_BURST_SIZE=1024 -qactypes -I./ -O3"
 
     # Noctua-specific options
     if [[ -n "$EBROOTGCC" ]]
