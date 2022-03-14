@@ -18,46 +18,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include <StencilStream/Index.hpp>
-#include <deque>
-#include <stdexcept>
+#include "../defines.hpp"
+#include "../Parameters.hpp"
 
-template <typename id, typename T> class HostPipe {
-  public:
-    static T read() { return HostPipeImpl::instance().read(); }
+class OnDemandSource {
+public:
+    OnDemandSource(Parameters const &parameters) : tau(parameters.tau), omega(parameters.omega()), t_0(parameters.t_0) {}
 
-    static void write(T new_value) { HostPipeImpl::instance().write(new_value); }
+    float get_source_amplitude(uindex_t stage, float current_time) const {
+        float wave_progress = (current_time - t_0) / tau;
+        return cl::sycl::cos(omega * current_time) * 
+            cl::sycl::exp(-1 * wave_progress * wave_progress);
+    }
 
-    static bool empty() { return HostPipeImpl::instance().empty(); }
-
-  private:
-    class HostPipeImpl {
-      public:
-        static HostPipeImpl &instance() {
-            static HostPipeImpl _instance;
-            return _instance;
-        }
-
-        T read() {
-            if (queue.empty()) {
-                throw std::runtime_error(
-                    "Try to read from empty pipe (blocking is not implemented).");
-            } else {
-                T new_value = queue.back();
-                queue.pop_back();
-                return new_value;
-            }
-        }
-
-        void write(T new_value) { queue.push_front(new_value); }
-
-        bool empty() { return queue.empty(); }
-
-      private:
-        HostPipeImpl() : queue() {}
-        HostPipeImpl(const HostPipeImpl &);
-        HostPipeImpl &operator=(const HostPipeImpl &);
-
-        std::deque<T> queue;
-    };
+private:
+    float tau;
+    float omega;
+    float t_0;
 };

@@ -18,49 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include <StencilStream/Index.hpp>
-#include <CL/sycl.hpp>
-#include <cmath>
-#include <optional>
-#include <unistd.h>
-
-using namespace std;
-using namespace cl::sycl;
-using namespace stencil;
-
-//////////////////////////////////////////////
-// Needed physical constants for simulation //
-//////////////////////////////////////////////
-// velocity of light in m/s
-constexpr float c0 = 299792458.0;
-
-// conductivity sigma in S/m
-constexpr float sigma = 0.0;
-
-// permeability (transmissibility of the material for magnetic fields) in vacuum
-constexpr float mu_0 = 4.0 * M_PI * 1.0e-7;
-
-// permittivity (transmissibility of the material for electric fields) in vacuum
-constexpr float eps_0 = 1.0 / (c0 * c0 * mu_0);
-
-// permittivity SI - unit-less
-constexpr float eps_r = 11.56;
-
-// one nanometer.
-constexpr float nm = 1e-9;
-
-// Square root of two
-constexpr float sqrt_2 = 1.4142135623730951;
-
-/* stencil parameters */
-constexpr uindex_t tile_height = 512;
-constexpr uindex_t tile_width = 512;
-constexpr uindex_t stencil_radius = 1;
-#if EXECUTOR == 1
-constexpr uindex_t pipeline_length = 172; // tiling
-#else
-constexpr uindex_t pipeline_length = 224; // mono & cpu
-#endif
+#include "defines.hpp"
+#include "material/Material.hpp"
 
 std::string description = "\
 This application simulates a nano-photonic disk cavity.\n\
@@ -77,14 +36,15 @@ the passed simulation time measured in multiples of tau.\n\
 The CSV files use commata (\",\") as field separators and new-lines (\"\\n\") as line separators.\n\
 \n\
 Simulation Parameters:\n\
--c <float>: Time instant t_cutoff when the source wave is cut off, measured in multiples of tau (default: 7.0 tau).\n\
--d <float>: Time instant t_detect when the field accumulation starts, measured in multiples of tau (default: 14 tau).\n\
--e <float>: Time instant t_max when the simulation stops, measured in multiples of tau (default: 15 tau).\n\
--f <float>: The frequency of the source wave, measured in Hz (default: 120e12 Hz).\n\
--p <float>: Phase of the source wave, measured in multiples of tau (default: 3.0 tau).\n\
--r <float>: Radius of the cavity, measured in meters (default: 800e-9 m).\n\
--s <float>: The spatial resultion, measured in meters per grid cell (default: 10e-9 m/cell).\n\
--t <float>: Timescale tau for the simulation, measured in in seconds (default: 100e-15 s).\n\
+-c <float>:                 Time instant t_cutoff when the source wave is cut off, measured in multiples of tau (default: 7.0 tau).\n\
+-d <float>:                 Time instant t_detect when the field accumulation starts, measured in multiples of tau (default: 14 tau).\n\
+-e <float>:                 Time instant t_max when the simulation stops, measured in multiples of tau (default: 15 tau).\n\
+-f <float>:                 The frequency of the source wave, measured in Hz (default: 120e12 Hz).\n\
+-p <float>:                 Phase of the source wave, measured in multiples of tau (default: 3.0 tau).\n\
+-m <float>,<float>,<float>: Internal material parameters mu_r, eps_r, and sigma (default: 11.56,1.0,0.0).\n\
+-r <float>:                 Radius of the cavity, measured in meters (default: 800e-9 m).\n\
+-s <float>:                 The spatial resultion, measured in meters per grid cell (default: 10e-9 m/cell).\n\
+-t <float>:                 Timescale tau for the simulation, measured in in seconds (default: 100e-15 s).\n\
 \n\
 Operation Parameters:\n\
 -h:         Print this help message and exit.\n\
@@ -92,49 +52,41 @@ Operation Parameters:\n\
 -i <float>: Write a snapshot of the magnetic field to the output directory every x multiples of tau (default: disabled).\n\
 ";
 
-struct FDTDCell {
-    float ex, ey, hz, hz_sum, distance, pad0, pad1, pad2;
-};
-
-// The coefficients that describe the properties of a material.
-struct Material {
-    float ca;
-    float cb;
-    float da;
-    float db;
-};
-
 struct Parameters {
     Parameters(int argc, char **argv)
         : t_cutoff_factor(7.0), t_detect_factor(14.0), t_max_factor(15.0), frequency(120e12),
-          t_0_factor(3.0), disk_radius(800e-9), dx(10e-9), tau(100e-15), out_dir("."),
-          interval_factor(std::nullopt) {
+          t_0_factor(3.0), disk_radius(800e-9), mu_r(11.5), eps_r(1.0), sigma(0.0), dx(10e-9),
+          tau(100e-15), out_dir("."), interval_factor(std::nullopt) {
         int c;
-        while ((c = getopt(argc, argv, "hc:d:e:f:p:r:s:t:o:i:")) != -1) {
+
+        while ((c = getopt(argc, argv, "hc:d:e:f:p:r:m:s:t:o:i:")) != -1) {
+            std::string arg = std::string(optarg);
+            index_t first_comma, second_comma;
+
             switch (c) {
             case 'c':
-                t_cutoff_factor = stof(optarg);
+                t_cutoff_factor = stof(arg);
                 if (t_cutoff_factor < 0.0) {
                     cerr << "Error: t_cutoff may not be negative!" << std::endl;
                     exit(1);
                 }
                 break;
             case 'd':
-                t_detect_factor = stof(optarg);
+                t_detect_factor = stof(arg);
                 if (t_detect_factor < 0.0) {
                     cerr << "Error: t_detect may not be negative!" << std::endl;
                     exit(1);
                 }
                 break;
             case 'e':
-                t_max_factor = stof(optarg);
+                t_max_factor = stof(arg);
                 if (t_max_factor < 0.0) {
                     cerr << "Error: t_max may not not be negative!" << std::endl;
                     exit(1);
                 }
                 break;
             case 'f':
-                frequency = stof(optarg);
+                frequency = stof(arg);
                 if (frequency < 0.0) {
                     cerr << "Error: The frequency of the source wave may not be negative"
                          << std::endl;
@@ -142,38 +94,57 @@ struct Parameters {
                 }
                 break;
             case 'p':
-                t_0_factor = stof(optarg);
+                t_0_factor = stof(arg);
                 if (t_0_factor < 0.0) {
                     cerr << "Error: The phase of the source wave may not be negative" << std::endl;
                     exit(1);
                 }
                 break;
             case 'r':
-                disk_radius = stof(optarg);
+                disk_radius = stof(arg);
                 if (disk_radius < 0.0) {
                     cerr << "Error: The disk radius wave may not be negative" << std::endl;
                     exit(1);
                 }
                 break;
+            case 'm':
+                first_comma = arg.find(",");
+                if (first_comma == std::string::npos) {
+                    cerr << "Error: Illegal material parameters. Correct form is "
+                            "<float>,<float>,<float>"
+                         << std::endl;
+                    exit(1);
+                }
+                second_comma = arg.find(",", first_comma + 1);
+                if (second_comma == std::string::npos) {
+                    cerr << "Error: Illegal material parameters. Correct form is "
+                            "<float>,<float>,<float>"
+                         << std::endl;
+                    exit(1);
+                }
+                mu_r = stof(arg.substr(0, first_comma));
+                eps_r = stof(arg.substr(first_comma + 1, second_comma - first_comma - 1));
+                sigma = stof(arg.substr(second_comma + 1));
+                break;
             case 's':
-                dx = stof(optarg);
+                dx = stof(arg);
                 if (dx < 0.0) {
                     cerr << "Error: The spatial resolution may not be negative" << std::endl;
                     exit(1);
                 }
                 break;
             case 't':
-                tau = stof(optarg);
+                tau = stof(arg);
                 if (tau < 0.0) {
                     cerr << "Error: Tau may not be negative" << std::endl;
                     exit(1);
                 }
                 break;
             case 'o':
-                out_dir = std::string(optarg);
+                out_dir = std::string(arg);
                 break;
             case 'i':
-                interval_factor = stof(optarg);
+                interval_factor = stof(arg);
                 break;
             case 'h':
             case '?':
@@ -193,6 +164,8 @@ struct Parameters {
     float frequency;
 
     float t_0_factor;
+
+    float mu_r, eps_r, sigma;
 
     float disk_radius;
 
@@ -217,23 +190,12 @@ struct Parameters {
     uindex_t n_timesteps() const { return 2 * uindex_t(std::ceil(t_max() / dt())); }
 
     // Omega (?) in Hz.
-    float omega() const { return 2.0 * M_PI * frequency; }
+    float omega() const { return 2.0 * pi * frequency; }
 
     cl::sycl::range<2> grid_range() const {
         uindex_t width = uindex_t(std::ceil((2 * disk_radius / dx) + 2));
         uindex_t height = width;
         return cl::sycl::range<2>(width, height);
-    }
-
-    Material vacuum() const {
-        const Material vacuum{
-            (1 - (sigma * dt()) / (2 * eps_0 * eps_r)) /
-                (1 + (sigma * dt()) / (2 * eps_0 * eps_r)),                             // ca
-            (dt() / (eps_0 * eps_r * dx)) / (1 + (sigma * dt()) / (2 * eps_0 * eps_r)), // cb
-            (1 - (sigma * dt()) / (2 * mu_0)) / (1 + (sigma * dt()) / (2 * mu_0)),      // da
-            (dt() / (mu_0 * dx)) / (1 + (sigma * dt()) / (2 * mu_0)),                   // db
-        };
-        return vacuum;
     }
 
     std::optional<uindex_t> interval() const {
@@ -259,12 +221,6 @@ struct Parameters {
         std::cout << "# Source Wave" << std::endl;
         std::cout << "phase         = " << t_0_factor << " tau = " << t_0() << " s" << std::endl;
         std::cout << "frequency     = " << frequency << " Hz" << std::endl;
-        std::cout << std::endl;
-        std::cout << "# Vacuum coefficients" << std::endl;
-        std::cout << "ca            = " << vacuum().ca << std::endl;
-        std::cout << "cb            = " << vacuum().cb << std::endl;
-        std::cout << "da            = " << vacuum().da << std::endl;
-        std::cout << "db            = " << vacuum().db << std::endl;
         std::cout << std::endl;
         std::cout << "# Execution parameters" << std::endl;
         std::cout << "dx            = " << dx << " m/cell" << std::endl;
