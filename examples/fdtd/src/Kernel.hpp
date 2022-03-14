@@ -23,17 +23,17 @@
 #include "material/Material.hpp"
 #include <StencilStream/Stencil.hpp>
 
-template <typename MaterialResolver> class Kernel {
+template <typename MaterialResolver, typename Source> class Kernel {
   public:
     struct Cell {
         float ex, ey, hz, hz_sum;
         typename MaterialResolver::MaterialIdentifier mat_ident;
     };
 
-    Kernel(Parameters const &parameters, MaterialResolver mat_resolver)
+    Kernel(Parameters const &parameters, MaterialResolver mat_resolver, Source source)
         : disk_radius(parameters.disk_radius), tau(parameters.tau), omega(parameters.omega()),
           t_0(parameters.t_0()), t_cutoff(parameters.t_cutoff()), t_detect(parameters.t_detect()),
-          dx(parameters.dx), dt(parameters.dt()), mat_resolver(mat_resolver) {}
+          dx(parameters.dx), dt(parameters.dt()), mat_resolver(mat_resolver), source(source) {}
 
     static Cell halo() {
         Cell new_cell;
@@ -61,11 +61,10 @@ template <typename MaterialResolver> class Kernel {
                                       stencil[ID(0, 0)].ey - stencil[ID(1, 0)].ey);
 
             float current_time = (stencil.generation >> 1) * dt;
+
             if (stencil.id.c == stencil.grid_range.c / 2 &&
                 stencil.id.r == stencil.grid_range.r / 2 && current_time < t_cutoff) {
-                float wave_progress = (current_time - t_0) / tau;
-                cell.hz += cl::sycl::cos(omega * current_time) *
-                           cl::sycl::exp(-1 * wave_progress * wave_progress);
+                cell.hz += source.get_source_amplitude(stencil.stage, current_time);
             }
 
             if (current_time > t_detect) {
@@ -85,4 +84,5 @@ template <typename MaterialResolver> class Kernel {
     float dx;
     float dt;
     MaterialResolver mat_resolver;
+    Source source;
 };

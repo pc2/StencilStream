@@ -28,7 +28,15 @@
     using MaterialResolver = LUTResolver;
 #endif
 
-using KernelImpl = Kernel<MaterialResolver>;
+#if SOURCE == 0
+    #include "source/OnDemandSource.hpp"
+    using Source = OnDemandSource;
+#elif SOURCE == 1
+    #include "source/LUTSource.hpp"
+    using Source = LUTSource;
+#endif
+
+using KernelImpl = Kernel<MaterialResolver, Source>;
 using CellImpl = KernelImpl::Cell;
 
 #if EXECUTOR == 0
@@ -148,45 +156,35 @@ int main(int argc, char **argv) {
         }
     }
 
-    Executor executor(KernelImpl::halo(), KernelImpl(parameters, mat_resolver));
+    Source source(parameters, 0);
+    KernelImpl kernel(parameters, mat_resolver, source);
+
+    Executor executor(KernelImpl::halo(), kernel);
     executor.set_input(grid_buffer);
 #ifdef HARDWARE
     executor.select_fpga();
 #endif
 
     uindex_t n_timesteps = parameters.n_timesteps();
+    uindex_t last_saved_generation = 0;
 
     std::cout << "Simulating..." << std::endl;
-    if (parameters.interval().has_value()) {
-        uindex_t interval = 2 * *(parameters.interval());
-        double runtime = 0.0;
 
-        while (executor.get_i_generation() + interval < n_timesteps) {
-            executor.run(interval);
+    while (executor.get_i_generation() < n_timesteps) {
+        source = Source(parameters, executor.get_i_generation());
+        kernel = KernelImpl(parameters, mat_resolver, source);
+        executor.set_trans_func(kernel);
+
+        executor.run(std::min(pipeline_length, n_timesteps - executor.get_i_generation()));
+
+        if (parameters.interval().has_value() && 
+            executor.get_i_generation() - last_saved_generation >= 2 * *(parameters.interval())) {
             executor.copy_output(grid_buffer);
-
-            uindex_t i_generation = executor.get_i_generation();
-            save_frame(grid_buffer, i_generation, CellField::EX, parameters);
-            save_frame(grid_buffer, i_generation, CellField::EY, parameters);
-            save_frame(grid_buffer, i_generation, CellField::HZ, parameters);
-            save_frame(grid_buffer, i_generation, CellField::HZ_SUM, parameters);
-
-            runtime += executor.get_runtime_sample().get_total_runtime();
-            double progress = 100.0 * (double(i_generation) / double(n_timesteps));
-            double speed = double(i_generation) / runtime;
-            double time_remaining = double(n_timesteps - i_generation) / speed;
-
-            std::cout << "Progress: " << i_generation << "/" << n_timesteps;
-            std::cout << " timesteps completed (" << progress << "%)";
-            std::cout << ", ~" << time_remaining << "s left." << std::endl;
+            save_frame(grid_buffer, executor.get_i_generation(), CellField::HZ, parameters);
+            last_saved_generation = executor.get_i_generation();
         }
-
-        if (n_timesteps % interval != 0) {
-            executor.run(n_timesteps % interval);
-        }
-    } else {
-        executor.run(n_timesteps);
     }
+
     std::cout << "Simulation complete!" << std::endl;
     std::cout << "Makespan: " << executor.get_runtime_sample().get_total_runtime() << " s" << std::endl;
 

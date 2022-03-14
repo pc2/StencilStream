@@ -17,12 +17,17 @@ things, which are selected via macro constants and templates throughout the code
 combinations one might want to build are expressed via the passed executable name. The scheme of 
 the variant names is:
 
-fdtd_<material_resolver>_<backend>[_<modifier>]
+fdtd_<material_resolver>_<source>_<backend>[_<modifier>]
 
 The `material_resolver` denotes how the material of a cell is stored in a cell and how the 
 material coefficients are retrieved from it. Possible values are:
-* `coef`: Store the final material coefficients directly in every cell.
-* `lut`: Store a lookup table with all known material coefficients in the kernel and store only an index in the cell.
+* `coef_mat`: Store the final material coefficients directly in every cell.
+* `lut_mat`: Store a lookup table with all known material coefficients in the kernel and store only an index in the cell.
+
+The `source` denotes whether the computations of the source wave amplitude are done by the FPGA or
+the host. If the wave is computed on the host, the amplitudes are simply stored in a look-up table. Possible values are:
+* `oc_src`: Compute the source wave amplitudes on-chip.
+* `lut_src`: Compute the source wave amplitudes on the host and look them up.
 
 StencilStream offers different backends or executors with different architectures or goals. The possible values are:
 * `mono`: Use the monotile FPGA backend of StencilStream. It yields a higher performance for the 
@@ -56,12 +61,21 @@ function run_build {
     fi
 
     # Material resolvers
-    if [[ "$EXEC_NAME" == *"coef"* ]]
+    if [[ "$EXEC_NAME" == *"coef_mat"* ]]
     then
         ARGS="$ARGS -DMATERIAL=0"
-    elif [[ "$EXEC_NAME" == *"lut"* ]]
+    elif [[ "$EXEC_NAME" == *"lut_mat"* ]]
     then
         ARGS="$ARGS -DMATERIAL=1"
+    fi
+
+    # Source wave computation
+    if [[ "$EXEC_NAME" == *"oc_src"* ]]
+    then
+        ARGS="$ARGS -DSOURCE=0"
+    elif [[ "$EXEC_NAME" == *"lut_src"* ]]
+    then
+        ARGS="$ARGS -DSOURCE=1"
     fi
 
     # FPGA-specific options

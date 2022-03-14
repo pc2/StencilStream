@@ -20,15 +20,14 @@
 #pragma once
 #include "../defines.hpp"
 #include "../Parameters.hpp"
+#include "SourceFunction.hpp"
 
 class OnDemandSource {
 public:
-    OnDemandSource(Parameters const &parameters) : tau(parameters.tau), omega(parameters.omega()), t_0(parameters.t_0) {}
+    OnDemandSource(Parameters const &parameters, uindex_t i_generation) : tau(parameters.tau), omega(parameters.omega()), t_0(parameters.t_0()) {}
 
     float get_source_amplitude(uindex_t stage, float current_time) const {
-        float wave_progress = (current_time - t_0) / tau;
-        return cl::sycl::cos(omega * current_time) * 
-            cl::sycl::exp(-1 * wave_progress * wave_progress);
+        return calc_source_amplitude(current_time, t_0, tau, omega);
     }
 
 private:

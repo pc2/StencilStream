@@ -20,17 +20,26 @@
 #pragma once
 #include "../defines.hpp"
 #include "../Parameters.hpp"
+#include "SourceFunction.hpp"
 
 class LUTSource {
 public:
-    LUTSource(Parameters const &parameters) : tau(parameters.tau), omega(parameters.omega()), t_0(parameters.t_0) {}
+    LUTSource(Parameters const &parameters, uindex_t i_generation) : lut() {
+        for (uindex_t i = 0; i < pipeline_length/2; i++) {
+            float current_time = ((i_generation >> 1) + i) * parameters.dt();
+            lut[i] = calc_source_amplitude(
+                current_time,
+                parameters.t_0(),
+                parameters.tau,
+                parameters.omega()
+            );
+        }
+    }
 
     float get_source_amplitude(uindex_t stage, float current_time) const {
-        float wave_progress = (current_time - t_0) / tau;
-        return cl::sycl::cos(omega * current_time) * 
-            cl::sycl::exp(-1 * wave_progress * wave_progress);
+        return lut[stage >> 1];
     }
 
 private:
-    float lut[pipeline_length];
+    float lut[pipeline_length/2];
 };
