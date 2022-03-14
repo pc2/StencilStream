@@ -18,29 +18,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include <StencilStream/Index.hpp>
-#include <CL/sycl.hpp>
-#include <cmath>
-#include <optional>
-#include <unistd.h>
+#include "../defines.hpp"
+#include "../Parameters.hpp"
 
-using namespace std;
-using namespace cl::sycl;
-using namespace stencil;
+class LUTSource {
+public:
+    LUTSource(Parameters const &parameters) : tau(parameters.tau), omega(parameters.omega()), t_0(parameters.t_0) {}
 
-//////////////////////////////////////////////
-// Needed physical constants for simulation //
-//////////////////////////////////////////////
-// velocity of light in m/s
-constexpr float c0 = 299792458.0;
+    float get_source_amplitude(uindex_t stage, float current_time) const {
+        float wave_progress = (current_time - t_0) / tau;
+        return cl::sycl::cos(omega * current_time) * 
+            cl::sycl::exp(-1 * wave_progress * wave_progress);
+    }
 
-// Square root of two
-constexpr float sqrt_2 = 1.4142135623730951;
-
-constexpr float pi = 3.1415926535897932384626433;
-
-/* stencil parameters */
-constexpr uindex_t tile_height = 512;
-constexpr uindex_t tile_width = 512;
-constexpr uindex_t stencil_radius = 1;
-constexpr uindex_t pipeline_length = 16;
+private:
+    float lut[pipeline_length];
+};

@@ -18,29 +18,3 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include <StencilStream/Index.hpp>
-#include <CL/sycl.hpp>
-#include <cmath>
-#include <optional>
-#include <unistd.h>
-
-using namespace std;
-using namespace cl::sycl;
-using namespace stencil;
-
-//////////////////////////////////////////////
-// Needed physical constants for simulation //
-//////////////////////////////////////////////
-// velocity of light in m/s
-constexpr float c0 = 299792458.0;
-
-// Square root of two
-constexpr float sqrt_2 = 1.4142135623730951;
-
-constexpr float pi = 3.1415926535897932384626433;
-
-/* stencil parameters */
-constexpr uindex_t tile_height = 512;
-constexpr uindex_t tile_width = 512;
-constexpr uindex_t stencil_radius = 1;
-constexpr uindex_t pipeline_length = 16;
