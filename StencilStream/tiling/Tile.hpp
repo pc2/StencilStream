@@ -20,6 +20,7 @@
 #pragma once
 #include "../Helpers.hpp"
 #include "../Index.hpp"
+#include "../Padded.hpp"
 #include <CL/sycl.hpp>
 #include <optional>
 #include <stdexcept>
@@ -44,12 +45,16 @@ namespace tiling {
  * \tparam height The number of rows of the tile.
  * \tparam halo_radius The radius (aka width and height) of the tile halo.
  */
-template <typename T, uindex_t width, uindex_t height, uindex_t halo_radius, uindex_t burst_buffer_length>
+template <typename T, uindex_t width, uindex_t height, uindex_t halo_radius, uindex_t burst_size>
 class Tile {
     static_assert(width > 2 * halo_radius);
     static_assert(height > 2 * halo_radius);
 
   public:
+    static constexpr uindex_t burst_buffer_size = std::lcm(sizeof(Padded<T>), burst_size);
+    static constexpr uindex_t burst_buffer_length = burst_buffer_size / sizeof(Padded<T>);
+    using BurstBuffer = std::array<Padded<T>, burst_buffer_length>;
+
     /**
      * \brief Create a new tile.
      *
@@ -172,7 +177,7 @@ class Tile {
      * \param tile_part The part to access.
      * \return The buffer of the part.
      */
-    cl::sycl::buffer<T[burst_buffer_length], 1> operator[](Part tile_part) {
+    cl::sycl::buffer<BurstBuffer, 1> operator[](Part tile_part) {
         uindex_t part_column, part_row;
         switch (tile_part) {
         case Part::NORTH_WEST_CORNER:
@@ -216,7 +221,7 @@ class Tile {
         }
 
         if (!part[part_column][part_row].has_value()) {
-            cl::sycl::buffer<T[burst_buffer_length], 1> new_part
+            cl::sycl::buffer<BurstBuffer, 1> new_part
                 = cl::sycl::range<1>(get_part_bursts(tile_part));
             part[part_column][part_row] = new_part;
         }
@@ -302,15 +307,15 @@ class Tile {
                 }
 
                 if (buffer_to_part) {
-                    part_ac[burst_i][cell_i] = accessor[global_c][global_r];
+                    part_ac[burst_i][cell_i].value = accessor[global_c][global_r];
                 } else {
-                    accessor[global_c][global_r] = part_ac[burst_i][cell_i];
+                    accessor[global_c][global_r] = part_ac[burst_i][cell_i].value;
                 }
             } 
         }
     }
 
-    std::optional<cl::sycl::buffer<T[burst_buffer_length], 1>> part[3][3];
+    std::optional<cl::sycl::buffer<BurstBuffer, 1>> part[3][3];
 };
 
 } // namespace tiling

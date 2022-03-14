@@ -28,9 +28,9 @@ using namespace cl::sycl;
 using namespace stencil::tiling;
 using namespace std;
 
-constexpr uindex_t burst_length = std::lcm(sizeof(ID), 64);
-
-using TileImpl = Tile<ID, tile_width, tile_height, halo_radius, burst_length>;
+using TileImpl = Tile<ID, tile_width, tile_height, halo_radius, 64>;
+constexpr uindex_t burst_length = 8;
+static_assert(burst_length == TileImpl::burst_buffer_length);
 
 
 TEST_CASE("Tile::operator[]", "[Tile]") {
@@ -74,8 +74,8 @@ void copy_from_test_impl(uindex_t tile_width, uindex_t tile_height) {
                 }
                 uindex_t burst_i = (c * true_range.r + r) / burst_length;
                 uindex_t cell_i = (c * true_range.r + r) % burst_length;
-                REQUIRE(part_ac[burst_i][cell_i].c == c + content_offset[0]);
-                REQUIRE(part_ac[burst_i][cell_i].r == r + content_offset[1]);
+                REQUIRE(part_ac[burst_i][cell_i].value.c == c + content_offset[0]);
+                REQUIRE(part_ac[burst_i][cell_i].value.r == r + content_offset[1]);
             }
         }
     }
@@ -100,7 +100,7 @@ void copy_to_test_impl(uindex_t tile_width, uindex_t tile_height) {
             for (uindex_t r = 0; r < true_range.r; r++) {
                 uindex_t burst_i = (c * true_range.r + r) / burst_length;
                 uindex_t cell_i = (c * true_range.r + r) % burst_length;
-                part_ac[burst_i][cell_i] = ID(c + content_offset[0], r + content_offset[1]);
+                part_ac[burst_i][cell_i].value = ID(c + content_offset[0], r + content_offset[1]);
             }
         }
     }

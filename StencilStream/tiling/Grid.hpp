@@ -52,16 +52,13 @@ template <typename T, uindex_t tile_width, uindex_t tile_height, uindex_t halo_r
           uindex_t burst_size = 64>
 class Grid {
   public:
-    static constexpr uindex_t burst_buffer_size = std::lcm(sizeof(T), burst_size);
-    static constexpr uindex_t burst_buffer_length = burst_buffer_size / sizeof(T);
-
     static_assert(2 * halo_radius < tile_height && 2 * halo_radius < tile_width);
     static constexpr uindex_t core_height = tile_height - 2 * halo_radius;
     static constexpr uindex_t core_width = tile_width - 2 * halo_radius;
 
-    using Tile = Tile<T, tile_width, tile_height, halo_radius, burst_buffer_length>;
+    using Tile = Tile<T, tile_width, tile_height, halo_radius, burst_size>;
 
-    static constexpr unsigned long bits_cell = std::bit_width(burst_buffer_length);
+    static constexpr unsigned long bits_cell = std::bit_width(Tile::burst_buffer_length);
     using index_cell_t = ac_int<bits_cell + 1, true>;
     using uindex_cell_t = ac_int<bits_cell, false>;
 
@@ -180,21 +177,17 @@ class Grid {
             uindex_2d_t n_cells = uindex_t(range.c * range.r);
 
             cgh.single_task<pipe_id>([=]() {
-                T cache[burst_buffer_length];
+                [[intel::fpga_register]] typename Tile::BurstBuffer cache;
                 uindex_burst_t burst_i = 0;
-                uindex_cell_t cell_i = burst_buffer_length;
+                uindex_cell_t cell_i = Tile::burst_buffer_length;
 
                 for (uindex_2d_t i = 0; i < n_cells; i++) {
-                    if (cell_i == uindex_cell_t(burst_buffer_length)) {
-#pragma unroll
-                        for (uindex_cell_t load_i = 0; load_i < uindex_cell_t(burst_buffer_length);
-                             load_i++) {
-                            cache[load_i] = ac[burst_i.to_uint64()][load_i.to_uint64()];
-                        }
+                    if (cell_i == uindex_cell_t(Tile::burst_buffer_length)) {
+                        cache = ac[burst_i.to_uint64()];
                         burst_i++;
                         cell_i = 0;
                     }
-                    cl::sycl::pipe<pipe_id, T>::write(cache[cell_i]);
+                    cl::sycl::pipe<pipe_id, T>::write(cache[cell_i].value);
                     cell_i++;
                 }
             });
@@ -210,25 +203,22 @@ class Grid {
             uindex_2d_t n_cells = uindex_t(range.c * range.r);
 
             cgh.single_task<pipe_id>([=]() {
-                T cache[burst_buffer_length];
+                [[intel::fpga_memory]] typename Tile::BurstBuffer cache;
                 uindex_burst_t burst_i = 0;
                 uindex_cell_t cell_i = 0;
 
                 for (uindex_2d_t i = 0; i < n_cells; i++) {
-                    if (cell_i == uindex_cell_t(burst_buffer_length)) {
-#pragma unroll
-                        for (uindex_cell_t store_i = 0; store_i < uindex_cell_t(burst_buffer_length); store_i++) {
-                            ac[burst_i.to_uint64()][store_i.to_uint64()] = cache[store_i];
-                        }
+                    if (cell_i == uindex_cell_t(Tile::burst_buffer_length)) {
+                        ac[burst_i.to_uint64()] = cache;
                         burst_i++;
                         cell_i = 0;
                     }
-                    cache[cell_i] = cl::sycl::pipe<pipe_id, T>::read();
+                    cache[cell_i].value = cl::sycl::pipe<pipe_id, T>::read();
                     cell_i++;
                 }
 
-                for (uindex_cell_t store_i = 0; store_i < cell_i; store_i++) {
-                    ac[burst_i.to_uint64()][store_i.to_uint64()] = cache[store_i];
+                if (cell_i != 0) {
+                    ac[burst_i.to_uint64()] = cache;
                 }
             });
         });
