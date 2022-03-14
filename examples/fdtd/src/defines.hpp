@@ -43,10 +43,6 @@ constexpr float pi = 3.1415926535897932384626433;
 constexpr uindex_t tile_height = 512;
 constexpr uindex_t tile_width = 512;
 constexpr uindex_t stencil_radius = 1;
-#if EXECUTOR == 1
-constexpr uindex_t pipeline_length = 172; // tiling
-#else
-constexpr uindex_t pipeline_length = 224; // mono & cpu
-#endif
+constexpr uindex_t pipeline_length = 100;
 
 static_assert(pipeline_length % 2 == 0);

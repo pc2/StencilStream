@@ -51,23 +51,30 @@ SOURCE=$2
 BACKEND=$3
 MODIFIER=$4
 
-VALID_ARGUMENTS=1
+EXEC_NAME="fdtd_${MATERIAL}_${SOURCE}_${BACKEND}"
+if [[ -n $MODIFIER ]]
+then
+    EXEC_NAME="${EXEC_NAME}_${MODIFIER}"
+fi
 
-ARGS="-std=c++20 -DSTENCIL_INDEX_WIDTH=64 -DFDTD_BURST_SIZE=1024 -qactypes -I./ -O3"
+COMMAND="dpcpp src/*.cpp -o $EXEC_NAME "
+COMMAND="$COMMAND -std=c++20 -DSTENCIL_INDEX_WIDTH=64 -DFDTD_BURST_SIZE=1024 -qactypes -I./ -O3"
+
+VALID_ARGUMENTS=1
 
 # Noctua-specific options
 if [[ -n "$EBROOTGCC" ]]
 then
-    ARGS="$ARGS --gcc-toolchain=$EBROOTGCC"
+    COMMAND="$COMMAND --gcc-toolchain=$EBROOTGCC"
 fi
 
 # Material resolvers
 if [[ "$MATERIAL" == "coef" ]]
 then
-    ARGS="$ARGS -DMATERIAL=0"
+    COMMAND="$COMMAND -DMATERIAL=0"
 elif [[ "$MATERIAL" == "lut" ]]
 then
-    ARGS="$ARGS -DMATERIAL=1"
+    COMMAND="$COMMAND -DMATERIAL=1"
 else
     echo "Unknown material resolver '$MATERIAL'." 1>&2
     VALID_ARGUMENTS=0
@@ -76,10 +83,10 @@ fi
 # Source wave computation
 if [[ "$SOURCE" == "od" ]]
 then
-    ARGS="$ARGS -DSOURCE=0"
+    COMMAND="$COMMAND -DSOURCE=0"
 elif [[ "$SOURCE" == "lut" ]]
 then
-    ARGS="$ARGS -DSOURCE=1"
+    COMMAND="$COMMAND -DSOURCE=1"
 else
     echo "Unknown source type '$SOURCE'." 1>&2
     VALID_ARGUMENTS=0
@@ -88,33 +95,33 @@ fi
 # FPGA-specific options
 if [[ "$BACKEND" == "mono"  || "$BACKEND" == "tiling" ]]
 then
-    ARGS="$ARGS -fintelfpga -Xsv"
+    COMMAND="$COMMAND -fintelfpga -Xsv"
 
     if [[ "$MODIFIER" != "emu" ]]
     then
-        ARGS="$ARGS -DHARDWARE -reuse-exe=$EXEC_NAME -Xshardware"
+        COMMAND="$COMMAND -DHARDWARE -reuse-exe=$EXEC_NAME -Xshardware"
             
         if [[ -n $AOCL_BOARD_PACKAGE_ROOT ]]
         then
-            ARGS="$ARGS -Xsboard=$FPGA_BOARD_NAME -Xsboard-package=$AOCL_BOARD_PACKAGE_ROOT"
+            COMMAND="$COMMAND -Xsboard=$FPGA_BOARD_NAME -Xsboard-package=$AOCL_BOARD_PACKAGE_ROOT"
         fi
 
         if [[ "$MODIFIER" == "report" ]]
         then
-            ARGS="$ARGS -fsycl-link"
+            COMMAND="$COMMAND -fsycl-link"
         fi
     fi
 fi
 
 if [[ "$BACKEND" == "mono" ]]
 then
-    ARGS="$ARGS -DEXECUTOR=0"
+    COMMAND="$COMMAND -DEXECUTOR=0"
 elif [[ "$BACKEND" == "tiling" ]]
 then
-    ARGS="$ARGS -DEXECUTOR=1"
+    COMMAND="$COMMAND -DEXECUTOR=1"
 elif [[ "$BACKEND" == "cpu" ]]
 then
-    ARGS="$ARGS -DEXECUTOR=2"
+    COMMAND="$COMMAND -DEXECUTOR=2"
 else
     echo "Unknown backend '$BACKEND'." 1>&2
     VALID_ARGUMENTS=0
@@ -126,12 +133,5 @@ then
     exit 1
 fi
 
-EXEC_NAME="fdtd_${MATERIAL}_${SOURCE}_${BACKEND}"
-if [[ -n $MODIFIER ]]
-then
-    EXEC_NAME="${EXEC_NAME}_${MODIFIER}"
-fi
-
-COMMAND="dpcpp src/*.cpp -o $EXEC_NAME $ARGS"
 echo $COMMAND
 echo $COMMAND | bash
