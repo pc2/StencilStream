@@ -21,8 +21,8 @@
 #include "../GenericID.hpp"
 #include "../Helpers.hpp"
 #include "../Index.hpp"
-#include "../Stencil.hpp"
 #include "../Padded.hpp"
+#include "../Stencil.hpp"
 #include <optional>
 
 namespace stencil {
@@ -62,27 +62,13 @@ class ExecutionKernel {
      */
     static constexpr uindex_t stencil_diameter = Stencil<T, stencil_radius>::diameter;
 
-    /**
-     * \brief The number of cells in the tile.
-     */
-    static constexpr uindex_t n_cells = tile_width * tile_height;
+    static constexpr uindex_t calc_pipeline_latency(uindex_t grid_height) {
+        return pipeline_length * stencil_radius * (grid_height + 1);
+    }
 
-    /**
-     * \brief The number of cells that need to be fed into a stage before it produces correct
-     * values.
-     */
-    static constexpr uindex_t stage_latency = stencil_radius * (tile_height + 1);
-
-    /**
-     * \brief The number of cells that need to be fed into the pipeline before it produces correct
-     * values.
-     */
-    static constexpr uindex_t pipeline_latency = pipeline_length * stage_latency;
-
-    /**
-     * \brief The total number of loop iterations.
-     */
-    static constexpr uindex_t n_iterations = pipeline_latency + n_cells;
+    static constexpr uindex_t calc_n_iterations(uindex_t grid_width, uindex_t grid_height) {
+        return grid_width * grid_height + calc_pipeline_latency(grid_height);
+    }
 
     using index_stencil_t = typename StencilImpl::index_stencil_t;
     using uindex_stencil_t = typename StencilImpl::uindex_stencil_t;
@@ -101,7 +87,8 @@ class ExecutionKernel {
     using index_plen_t = ac_int<bits_plen + 1, true>;
     using uindex_plen_t = ac_int<bits_plen, false>;
 
-    static constexpr unsigned long bits_n_iterations = std::bit_width(n_iterations);
+    static constexpr unsigned long bits_n_iterations =
+        std::bit_width(calc_n_iterations(tile_width, tile_height));
     using index_n_iterations_t = ac_int<bits_n_iterations + 1, true>;
     using uindex_n_iterations_t = ac_int<bits_n_iterations, false>;
 
@@ -136,7 +123,7 @@ class ExecutionKernel {
             c[i] = prev_c - stencil_radius;
             r[i] = prev_r - stencil_radius;
             if (r[i] < index_plen_t(0)) {
-                r[i] += tile_height;
+                r[i] += grid_height;
                 c[i] -= 1;
             }
             prev_c = c[i];
@@ -155,9 +142,10 @@ class ExecutionKernel {
         [[intel::fpga_register]] T stencil_buffer[pipeline_length][stencil_diameter]
                                                  [stencil_diameter];
 
-        for (uindex_n_iterations_t i = 0; i < uindex_n_iterations_t(n_iterations); i++) {
+        uindex_n_iterations_t n_iterations = calc_n_iterations(grid_width, grid_height);
+        for (uindex_n_iterations_t i = 0; i < n_iterations; i++) {
             T carry;
-            if (i < uindex_n_iterations_t(n_cells)) {
+            if (i < uindex_n_iterations_t(grid_width * grid_height)) {
                 carry = in_pipe::read();
             } else {
                 carry = halo_value;
@@ -239,13 +227,13 @@ class ExecutionKernel {
                 }
 
                 r[stage] += 1;
-                if (r[stage] == uindex_1d_t(tile_height)) {
+                if (r[stage] == index_1d_t(grid_height)) {
                     r[stage] = 0;
                     c[stage] += 1;
                 }
             }
 
-            if (i >= uindex_n_iterations_t(pipeline_latency)) {
+            if (i >= uindex_n_iterations_t(calc_pipeline_latency(grid_height))) {
                 out_pipe::write(carry);
             }
         }

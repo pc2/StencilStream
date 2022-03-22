@@ -27,7 +27,7 @@ using namespace stencil;
 using namespace std;
 using namespace cl::sycl;
 
-void test_monotile_kernel(uindex_t n_generations) {
+void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t n_generations) {
     using TransFunc = HostTransFunc<stencil_radius>;
     using in_pipe = HostPipe<class MonotileExecutionKernelInPipeID, Cell>;
     using out_pipe = HostPipe<class MonotileExecutionKernelOutPipeID, Cell>;
@@ -35,20 +35,20 @@ void test_monotile_kernel(uindex_t n_generations) {
         monotile::ExecutionKernel<TransFunc, Cell, stencil_radius, pipeline_length, tile_width,
                                 tile_height, in_pipe, out_pipe>;
 
-    for (uindex_t c = 0; c < tile_width; c++) {
-        for (uindex_t r = 0; r < tile_height; r++) {
+    for (uindex_t c = 0; c < grid_width; c++) {
+        for (uindex_t r = 0; r < grid_height; r++) {
             in_pipe::write(Cell{index_t(c), index_t(r), 0, CellStatus::Normal});
         }
     }
 
-    TestExecutionKernel(TransFunc(), 0, n_generations, tile_width, tile_height, Cell::halo())();
+    TestExecutionKernel(TransFunc(), 0, n_generations, grid_width, grid_height, Cell::halo())();
 
-    buffer<Cell, 2> output_buffer(range<2>(tile_width, tile_height));
+    buffer<Cell, 2> output_buffer(range<2>(grid_width, grid_height));
 
     {
         auto output_buffer_ac = output_buffer.get_access<access::mode::discard_write>();
-        for (uindex_t c = 0; c < tile_width; c++) {
-            for (uindex_t r = 0; r < tile_height; r++) {
+        for (uindex_t c = 0; c < grid_width; c++) {
+            for (uindex_t r = 0; r < grid_height; r++) {
                 output_buffer_ac[c][r] = out_pipe::read();
             }
         }
@@ -58,8 +58,8 @@ void test_monotile_kernel(uindex_t n_generations) {
     REQUIRE(out_pipe::empty());
 
     auto output_buffer_ac = output_buffer.get_access<access::mode::read>();
-    for (uindex_t c = 1; c < tile_width; c++) {
-        for (uindex_t r = 1; r < tile_height; r++) {
+    for (uindex_t c = 1; c < grid_width; c++) {
+        for (uindex_t r = 1; r < grid_height; r++) {
             Cell cell = output_buffer_ac[c][r];
             REQUIRE(cell.c == c);
             REQUIRE(cell.r == r);
@@ -70,18 +70,20 @@ void test_monotile_kernel(uindex_t n_generations) {
 }
 
 TEST_CASE("monotile::ExecutionKernel", "[monotile::ExecutionKernel]") {
-    ac_int<8> my_int = 42;
-    REQUIRE(my_int[1] == 1);
-    test_monotile_kernel(pipeline_length);
+    test_monotile_kernel(tile_width, tile_height, pipeline_length);
+}
+
+TEST_CASE("monotile::ExecutionKernel (partial tile)", "[monotile::ExecutionKernel]") {
+    test_monotile_kernel(tile_width / 2, tile_height / 2, pipeline_length);
 }
 
 TEST_CASE("monotile::ExecutionKernel (partial pipeline)", "[monotile::ExecutionKernel]") {
     static_assert(pipeline_length != 1);
-    test_monotile_kernel(pipeline_length - 1);
+    test_monotile_kernel(tile_width, tile_height, pipeline_length - 1);
 }
 
 TEST_CASE("monotile::ExecutionKernel (noop)", "[monotile::ExecutionKernel]") {
-    test_monotile_kernel(0);
+    test_monotile_kernel(tile_width, tile_height, 0);
 }
 
 TEST_CASE("monotile::ExecutionKernel: Incomplete Pipeline with i_generation != 0",
