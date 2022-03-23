@@ -41,14 +41,7 @@ constexpr float pi = 3.1415926535897932384626433;
 
 /* stencil parameters */
 constexpr uindex_t tile_height = 512;
-
-#if EXECUTOR == 1 
-// tiling, make tile as wide as possible.
-constexpr uindex_t tile_width = std::numeric_limits<uindex_t>::max();
-#else
-// monotile and CPU. More than a quadratic tile doesn't make sense.
 constexpr uindex_t tile_width = tile_height;
-#endif
 
 constexpr uindex_t stencil_radius = 1;
 
