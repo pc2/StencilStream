@@ -61,22 +61,24 @@ class ExecutionKernel {
      */
     static constexpr uindex_t stencil_diameter = Stencil<T, stencil_radius>::diameter;
 
+    static constexpr uindex_t halo_radius = stencil_radius * pipeline_length;
+
     /**
      * \brief The width of the processed tile with the tile halo attached.
      */
-    static constexpr uindex_t input_tile_width =
-        2 * stencil_radius * pipeline_length + output_tile_width;
+    static constexpr uindex_t max_input_tile_width =
+        2 * halo_radius + output_tile_width;
 
     /**
      * \brief The height of the processed tile with the tile halo attached.
      */
     static constexpr uindex_t input_tile_height =
-        2 * stencil_radius * pipeline_length + output_tile_height;
+        2 * halo_radius + output_tile_height;
 
     /**
      * \brief The total number of cells to read from the `in_pipe`.
      */
-    static constexpr uindex_t n_input_cells = input_tile_width * input_tile_height;
+    static constexpr uindex_t n_input_cells = max_input_tile_width * input_tile_height;
 
     using index_stencil_t = typename StencilImpl::index_stencil_t;
     using uindex_stencil_t = typename StencilImpl::uindex_stencil_t;
@@ -84,7 +86,7 @@ class ExecutionKernel {
     using StencilUID = typename StencilImpl::StencilUID;
 
     static constexpr unsigned long bits_1d =
-        std::bit_width(std::max(input_tile_width, input_tile_height));
+        std::bit_width(std::max(max_input_tile_width, input_tile_height));
     using index_1d_t = ac_int<bits_1d + 1, true>;
     using uindex_1d_t = ac_int<bits_1d, false>;
 
@@ -142,7 +144,12 @@ class ExecutionKernel {
         [[intel::fpga_register]] T stencil_buffer[pipeline_length][stencil_diameter]
                                                  [stencil_diameter];
 
-        for (uindex_2d_t i = 0; i < uindex_2d_t(n_input_cells); i++) {
+        uindex_1d_t tile_section_width = std::min(output_tile_width, grid_width - grid_c_offset);
+        uindex_1d_t tile_section_height = output_tile_height;
+        uindex_2d_t n_iterations = 
+            (tile_section_width + 2 * halo_radius) * (tile_section_height + 2 * halo_radius);
+
+        for (uindex_2d_t i = 0; i < n_iterations; i++) {
             [[intel::fpga_register]] T carry = in_pipe::read();
 
 #pragma unroll

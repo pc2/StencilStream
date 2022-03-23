@@ -28,17 +28,17 @@ using namespace std;
 using namespace stencil::tiling;
 using namespace cl::sycl;
 
-void test_tiling_kernel(uindex_t n_generations) {
+void test_tiling_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t n_generations) {
     using TransFunc = FPGATransFunc<stencil_radius>;
     using in_pipe = HostPipe<class TilingExecutionKernelInPipeID, Cell>;
     using out_pipe = HostPipe<class TilingExecutionKernelOutPipeID, Cell>;
     using TestExecutionKernel = ExecutionKernel<TransFunc, Cell, stencil_radius, pipeline_length,
                                                 tile_width, tile_height, in_pipe, out_pipe>;
 
-    for (index_t c = -halo_radius; c < index_t(halo_radius + tile_width); c++) {
-        for (index_t r = -halo_radius; r < index_t(halo_radius + tile_height); r++) {
-            if (c >= index_t(0) && c < index_t(tile_width) && r >= index_t(0) &&
-                r < index_t(tile_height)) {
+    for (index_t c = -halo_radius; c < index_t(halo_radius + grid_width); c++) {
+        for (index_t r = -halo_radius; r < index_t(halo_radius + grid_height); r++) {
+            if (c >= index_t(0) && c < index_t(grid_width) && r >= index_t(0) &&
+                r < index_t(grid_height)) {
                 in_pipe::write(Cell{c, r, 0, CellStatus::Normal});
             } else {
                 in_pipe::write(Cell::halo());
@@ -46,15 +46,15 @@ void test_tiling_kernel(uindex_t n_generations) {
         }
     }
 
-    TestExecutionKernel(TransFunc(), 0, n_generations, 0, 0, tile_width, tile_height,
+    TestExecutionKernel(TransFunc(), 0, n_generations, 0, 0, grid_width, grid_height,
                         Cell::halo())();
 
-    buffer<Cell, 2> output_buffer(range<2>(tile_width, tile_height));
+    buffer<Cell, 2> output_buffer(range<2>(grid_width, grid_height));
 
     {
         auto output_buffer_ac = output_buffer.get_access<access::mode::discard_write>();
-        for (uindex_t c = 0; c < tile_width; c++) {
-            for (uindex_t r = 0; r < tile_height; r++) {
+        for (uindex_t c = 0; c < grid_width; c++) {
+            for (uindex_t r = 0; r < grid_height; r++) {
                 output_buffer_ac[c][r] = out_pipe::read();
             }
         }
@@ -64,8 +64,8 @@ void test_tiling_kernel(uindex_t n_generations) {
     REQUIRE(out_pipe::empty());
 
     auto output_buffer_ac = output_buffer.get_access<access::mode::read>();
-    for (uindex_t c = 1; c < tile_width; c++) {
-        for (uindex_t r = 1; r < tile_height; r++) {
+    for (uindex_t c = 1; c < grid_width; c++) {
+        for (uindex_t r = 1; r < grid_height; r++) {
             Cell cell = output_buffer_ac[c][r];
             REQUIRE(cell.c == c);
             REQUIRE(cell.r == r);
@@ -76,15 +76,21 @@ void test_tiling_kernel(uindex_t n_generations) {
 }
 
 TEST_CASE("tiling::ExecutionKernel", "[tiling::ExecutionKernel]") {
-    test_tiling_kernel(pipeline_length);
+    test_tiling_kernel(tile_width, tile_height, pipeline_length);
+}
+
+TEST_CASE("tiling::ExecutionKernel (partial tile)", "[tiling::ExecutionKernel]") {
+    test_tiling_kernel(tile_width/2, tile_height, pipeline_length);
 }
 
 TEST_CASE("tiling::ExecutionKernel (partial pipeline)", "[tiling::ExecutionKernel]") {
     static_assert(pipeline_length != 1);
-    test_tiling_kernel(pipeline_length - 1);
+    test_tiling_kernel(tile_width, tile_height, pipeline_length - 1);
 }
 
-TEST_CASE("tiling::ExecutionKernel (noop)", "[tiling::ExecutionKernel]") { test_tiling_kernel(0); }
+TEST_CASE("tiling::ExecutionKernel (noop)", "[tiling::ExecutionKernel]") {
+    test_tiling_kernel(tile_width, tile_height, 0);
+}
 
 TEST_CASE("Halo values inside the pipeline are handled correctly", "[tiling::ExecutionKernel]") {
     auto my_kernel = [=](Stencil<bool, stencil_radius> const &stencil) {
