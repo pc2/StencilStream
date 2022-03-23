@@ -33,7 +33,7 @@ void test_monotile_kernel(uindex_t n_generations) {
     using out_pipe = HostPipe<class MonotileExecutionKernelOutPipeID, Cell>;
     using TestExecutionKernel =
         monotile::ExecutionKernel<TransFunc, Cell, stencil_radius, pipeline_length, tile_width,
-                                tile_height, in_pipe, out_pipe>;
+                                  tile_height, in_pipe, out_pipe>;
 
     for (uindex_t c = 0; c < tile_width; c++) {
         for (uindex_t r = 0; r < tile_height; r++) {

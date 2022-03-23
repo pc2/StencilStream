@@ -21,8 +21,8 @@
 #include "../GenericID.hpp"
 #include "../Helpers.hpp"
 #include "../Index.hpp"
-#include "../Stencil.hpp"
 #include "../Padded.hpp"
+#include "../Stencil.hpp"
 #include <optional>
 
 namespace stencil {
@@ -189,7 +189,7 @@ class ExecutionKernel {
 
                     stencil_buffer[stage][cache_c][stencil_diameter - 1] = new_value;
                     if (cache_c > 0) {
-                        cache[(~input_tile_c)[0]][input_tile_r][stage][cache_c - 1].value = 
+                        cache[(~input_tile_c)[0]][input_tile_r][stage][cache_c - 1].value =
                             new_value;
                     }
                 }
@@ -197,9 +197,9 @@ class ExecutionKernel {
                 index_t output_grid_c = input_grid_c - index_t(stencil_radius);
                 index_t output_grid_r = input_grid_r - index_t(stencil_radius);
                 StencilImpl stencil(ID(output_grid_c, output_grid_r), UID(grid_width, grid_height),
-                                    i_generation + uindex_t(stage), uindex_t(stage), stencil_buffer[stage]);
+                                    i_generation + uindex_t(stage), uindex_t(stage),
+                                    stencil_buffer[stage]);
 
-                
                 if (uindex_t(stage) < n_generations) {
                     carry = trans_func(stencil);
                 } else {

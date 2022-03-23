@@ -22,33 +22,33 @@
 
 #if MATERIAL == 0
     #include "material/CoefResolver.hpp"
-    using MaterialResolver = CoefResolver;
+using MaterialResolver = CoefResolver;
 #elif MATERIAL == 1
     #include "material/LUTResolver.hpp"
-    using MaterialResolver = LUTResolver;
+using MaterialResolver = LUTResolver;
 #endif
 
 #if SOURCE == 0
     #include "source/OnDemandSource.hpp"
-    using Source = OnDemandSource;
+using Source = OnDemandSource;
 #elif SOURCE == 1
     #include "source/LUTSource.hpp"
-    using Source = LUTSource;
+using Source = LUTSource;
 #endif
 
 using KernelImpl = Kernel<MaterialResolver, Source>;
 using CellImpl = KernelImpl::Cell;
 
 #if EXECUTOR == 0
-#include <StencilStream/MonotileExecutor.hpp>
+    #include <StencilStream/MonotileExecutor.hpp>
 using Executor = MonotileExecutor<CellImpl, stencil_radius, KernelImpl, pipeline_length, tile_width,
                                   tile_height>;
 #elif EXECUTOR == 1
-#include <StencilStream/StencilExecutor.hpp>
-using Executor = StencilExecutor<CellImpl, stencil_radius, KernelImpl, pipeline_length, tile_width,
-                                 tile_height>;
+    #include <StencilStream/StencilExecutor.hpp>
+using Executor =
+    StencilExecutor<CellImpl, stencil_radius, KernelImpl, pipeline_length, tile_width, tile_height>;
 #elif EXECUTOR == 2
-#include <StencilStream/SimpleCPUExecutor.hpp>
+    #include <StencilStream/SimpleCPUExecutor.hpp>
 using Executor = SimpleCPUExecutor<CellImpl, stencil_radius, KernelImpl>;
 #endif
 
@@ -177,7 +177,7 @@ int main(int argc, char **argv) {
 
         executor.run(std::min(pipeline_length, n_timesteps - executor.get_i_generation()));
 
-        if (parameters.interval().has_value() && 
+        if (parameters.interval().has_value() &&
             executor.get_i_generation() - last_saved_generation >= 2 * *(parameters.interval())) {
             executor.copy_output(grid_buffer);
             save_frame(grid_buffer, executor.get_i_generation(), CellField::HZ, parameters);
@@ -186,7 +186,8 @@ int main(int argc, char **argv) {
     }
 
     std::cout << "Simulation complete!" << std::endl;
-    std::cout << "Makespan: " << executor.get_runtime_sample().get_total_runtime() << " s" << std::endl;
+    std::cout << "Makespan: " << executor.get_runtime_sample().get_total_runtime() << " s"
+              << std::endl;
 
     executor.copy_output(grid_buffer);
     save_frame(grid_buffer, n_timesteps, CellField::HZ_SUM, parameters);

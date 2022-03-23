@@ -19,8 +19,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <StencilStream/MonotileExecutor.hpp>
-#include <StencilStream/StencilExecutor.hpp>
 #include <StencilStream/SimpleCPUExecutor.hpp>
+#include <StencilStream/StencilExecutor.hpp>
 #include <res/TransFuncs.hpp>
 #include <res/catch.hpp>
 #include <res/constants.hpp>
@@ -81,7 +81,7 @@ TEST_CASE("SimpleCPUExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[SimpleCPUE
 void test_executor_run(SingleContextExecutorImpl *executor, uindex_t grid_width,
                        uindex_t grid_height) {
     executor->select_emulator();
-    
+
     uindex_t n_generations = 2 * pipeline_length + 1;
 
     buffer<Cell, 2> in_buffer(range<2>(grid_width, grid_height));

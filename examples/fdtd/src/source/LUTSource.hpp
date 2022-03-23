@@ -18,28 +18,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../defines.hpp"
 #include "../Parameters.hpp"
+#include "../defines.hpp"
 #include "SourceFunction.hpp"
 
 class LUTSource {
-public:
+  public:
     LUTSource(Parameters const &parameters, uindex_t i_generation) : lut() {
-        for (uindex_t i = 0; i < pipeline_length/2; i++) {
+        for (uindex_t i = 0; i < pipeline_length / 2; i++) {
             float current_time = ((i_generation >> 1) + i) * parameters.dt();
-            lut[i] = calc_source_amplitude(
-                current_time,
-                parameters.t_0(),
-                parameters.tau,
-                parameters.omega()
-            );
+            lut[i] = calc_source_amplitude(current_time, parameters.t_0(), parameters.tau,
+                                           parameters.omega());
         }
     }
 
-    float get_source_amplitude(uindex_t stage, float current_time) const {
-        return lut[stage >> 1];
-    }
+    float get_source_amplitude(uindex_t stage, float current_time) const { return lut[stage >> 1]; }
 
-private:
-    float lut[pipeline_length/2];
+  private:
+    float lut[pipeline_length / 2];
 };

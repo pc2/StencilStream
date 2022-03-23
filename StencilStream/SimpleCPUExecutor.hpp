@@ -51,8 +51,8 @@ class SimpleCPUExecutor : public SingleContextExecutor<T, stencil_radius, TransF
                     in_ac.get_range(), [=](cl::sycl::id<2> idx) {
                         Stencil<T, stencil_radius> stencil(idx, in_ac.get_range(), gen, stage);
 
-                        for (index_t delta_c = -stencil_radius;
-                             delta_c <= index_t(stencil_radius); delta_c++) {
+                        for (index_t delta_c = -stencil_radius; delta_c <= index_t(stencil_radius);
+                             delta_c++) {
                             for (index_t delta_r = -stencil_radius;
                                  delta_r <= index_t(stencil_radius); delta_r++) {
                                 index_t c = index_t(idx[0]) + delta_c;
@@ -95,7 +95,7 @@ class SimpleCPUExecutor : public SingleContextExecutor<T, stencil_radius, TransF
             throw std::range_error(
                 "The given output buffer doesn't have the same range as the grid.");
         }
-        
+
         auto in_ac = grid.template get_access<cl::sycl::access::mode::read>();
         auto out_ac = output_buffer.template get_access<cl::sycl::access::mode::discard_write>();
 

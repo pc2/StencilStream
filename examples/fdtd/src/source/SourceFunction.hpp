@@ -22,6 +22,5 @@
 
 float calc_source_amplitude(float current_time, float t_0, float tau, float omega) {
     float wave_progress = (current_time - t_0) / tau;
-        return cl::sycl::cos(omega * current_time) * 
-            cl::sycl::exp(-1 * wave_progress * wave_progress);
+    return cl::sycl::cos(omega * current_time) * cl::sycl::exp(-1 * wave_progress * wave_progress);
 }

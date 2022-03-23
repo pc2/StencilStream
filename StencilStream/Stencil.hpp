@@ -19,9 +19,10 @@
  */
 #pragma once
 #include "GenericID.hpp"
-#include "Index.hpp"
 #include "Helpers.hpp"
+#include "Index.hpp"
 #include <sycl/ext/intel/ac_types/ac_int.hpp>
+#include <bit>
 
 namespace stencil {
 
@@ -36,8 +37,7 @@ namespace stencil {
  * points to the central cell. `UID` is unsigned and the column and row axes are within the range of
  * [0 : 2*radius + 1). Therefore, (0,0) points to the north-western corner of the stencil.
  */
-template <typename T, uindex_t radius>
-class Stencil {
+template <typename T, uindex_t radius> class Stencil {
   public:
     /**
      * \brief The diameter (aka width and height) of the stencil buffer.
@@ -88,25 +88,21 @@ class Stencil {
      *
      * Since the indices in `id` are signed, the origin of this index operator is the central cell.
      */
-    T const& operator[](ID id) const {
-        return internal[id.c + radius][id.r + radius];
-    }
+    T const &operator[](ID id) const { return internal[id.c + radius][id.r + radius]; }
 
     /**
      * \brief Access a cell in the stencil.
      *
      * Since the indices in `id` are signed, the origin of this index operator is the central cell.
      */
-    T& operator[](ID id) {
-        return internal[id.c + radius][id.r + radius];
-    }
+    T &operator[](ID id) { return internal[id.c + radius][id.r + radius]; }
 
     /**
      * \brief Access a cell in the stencil.
      *
      * Since the indices in `id` are signed, the origin of this index operator is the central cell.
      */
-    T const& operator[](StencilID id) const {
+    T const &operator[](StencilID id) const {
         return internal[id.c + index_stencil_t(radius)][id.r + index_stencil_t(radius)];
     }
 
@@ -115,7 +111,7 @@ class Stencil {
      *
      * Since the indices in `id` are signed, the origin of this index operator is the central cell.
      */
-    T& operator[](StencilID id) {
+    T &operator[](StencilID id) {
         return internal[id.c + index_stencil_t(radius)][id.r + index_stencil_t(radius)];
     }
 
@@ -125,9 +121,7 @@ class Stencil {
      * Since the indices in `id` are unsigned, the origin of this index operator is the
      * north-western corner.
      */
-    T const& operator[](UID id) const {
-        return internal[id.c][id.r];
-    }
+    T const &operator[](UID id) const { return internal[id.c][id.r]; }
 
     /**
      * \brief Access a cell in the stencil.
@@ -135,9 +129,7 @@ class Stencil {
      * Since the indices in `id` are unsigned, the origin of this index operator is the
      * north-western corner.
      */
-    T& operator[](UID id) {
-        return internal[id.c][id.r];
-    }
+    T &operator[](UID id) { return internal[id.c][id.r]; }
 
     /**
      * \brief Access a cell in the stencil.
@@ -145,9 +137,7 @@ class Stencil {
      * Since the indices in `id` are unsigned, the origin of this index operator is the
      * north-western corner.
      */
-    T const& operator[](StencilUID id) const {
-        return internal[id.c][id.r];
-    }
+    T const &operator[](StencilUID id) const { return internal[id.c][id.r]; }
 
     /**
      * \brief Access a cell in the stencil.
@@ -155,9 +145,7 @@ class Stencil {
      * Since the indices in `id` are unsigned, the origin of this index operator is the
      * north-western corner.
      */
-    T& operator[](StencilUID id) {
-        return internal[id.c][id.r];
-    }
+    T &operator[](StencilUID id) { return internal[id.c][id.r]; }
 
     /**
      * \brief The position of the central cell in the global grid.
