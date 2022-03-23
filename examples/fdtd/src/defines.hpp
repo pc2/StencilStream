@@ -41,8 +41,29 @@ constexpr float pi = 3.1415926535897932384626433;
 
 /* stencil parameters */
 constexpr uindex_t tile_height = 512;
-constexpr uindex_t tile_width = 1 << 24;
+
+#if EXECUTOR == 1 
+// tiling, make tile as wide as possible.
+constexpr uindex_t tile_width = std::numeric_limits<uindex_t>::max();
+#else
+// monotile and CPU. More than a quadratic tile doesn't make sense.
+constexpr uindex_t tile_width = tile_height;
+#endif
+
 constexpr uindex_t stencil_radius = 1;
-constexpr uindex_t pipeline_length = 100;
+
+#if MATERIAL == 0 && SOURCE == 1 && EXECUTOR == 0
+// material coefficients in cells, source LUT, monotile
+constexpr uindex_t pipeline_length = 320; 
+
+#elif MATERIAL == 0 && SOURCE == 1 && EXECUTOR == 1
+// material coefficients in cells, source LUT, tiling
+constexpr uindex_t pipeline_length = 186; 
+
+#else
+// fallback
+constexpr uindex_t pipeline_length = 100; 
+
+#endif
 
 static_assert(pipeline_length % 2 == 0);
