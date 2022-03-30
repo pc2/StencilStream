@@ -57,7 +57,7 @@ then
     EXEC_NAME="${EXEC_NAME}_${MODIFIER}"
 fi
 
-COMMAND="dpcpp src/*.cpp -o $EXEC_NAME "
+COMMAND="dpcpp src/*.cpp -g -o $EXEC_NAME "
 COMMAND="$COMMAND -std=c++20 -DSTENCIL_INDEX_WIDTH=64 -DFDTD_BURST_SIZE=1024 -qactypes -I./ -O3"
 
 VALID_ARGUMENTS=1

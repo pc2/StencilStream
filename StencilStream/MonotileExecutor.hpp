@@ -26,9 +26,8 @@
 #include <numeric>
 
 namespace stencil {
-template <typename T, uindex_t stencil_radius, typename TransFunc,
-          uindex_t pipeline_length = 1, uindex_t tile_width = 1024,
-          uindex_t tile_height = 1024, uindex_t burst_size = 64>
+template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipeline_length = 1,
+          uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 64>
 /**
  * \brief An executor that follows \ref monotile.
  *
@@ -55,8 +54,9 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
 
     static constexpr uindex_t burst_buffer_size = std::lcm(sizeof(Padded<T>), burst_size);
     static constexpr uindex_t burst_buffer_length = burst_buffer_size / sizeof(Padded<T>);
-    static constexpr uindex_t n_bursts = n_cells_to_n_bursts(tile_width * tile_height, burst_buffer_length);
-    
+    static constexpr uindex_t n_bursts =
+        n_cells_to_n_bursts(tile_width * tile_height, burst_buffer_length);
+
     using BurstBuffer = std::array<Padded<T>, burst_buffer_length>;
 
     static constexpr unsigned long bits_cell = std::bit_width(burst_buffer_length);
@@ -74,8 +74,7 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
      * \param trans_func An instance of the transition function type.
      */
     MonotileExecutor(T halo_value, TransFunc trans_func)
-        : Parent(halo_value, trans_func), tile_buffer(cl::sycl::range<1>(1)),
-          grid_range(1, 1) {
+        : Parent(halo_value, trans_func), tile_buffer(cl::sycl::range<1>(1)), grid_range(1, 1) {
         auto ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
         ac[0][0].value = halo_value;
     }
@@ -99,7 +98,8 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
         }
         grid_range.c = input_buffer.get_range()[0];
         grid_range.r = input_buffer.get_range()[1];
-        tile_buffer = cl::sycl::range<1>(n_cells_to_n_bursts(grid_range.c * grid_range.r, burst_buffer_length));
+        tile_buffer = cl::sycl::range<1>(
+            n_cells_to_n_bursts(grid_range.c * grid_range.r, burst_buffer_length));
 
         auto in_ac = input_buffer.template get_access<cl::sycl::access::mode::read>();
         auto tile_ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();

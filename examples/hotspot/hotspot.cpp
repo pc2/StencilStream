@@ -21,11 +21,11 @@
 #include <fstream>
 
 #if EXECUTOR == 0
-#include <StencilStream/MonotileExecutor.hpp>
+    #include <StencilStream/MonotileExecutor.hpp>
 #elif EXECUTOR == 1
-#include <StencilStream/StencilExecutor.hpp>
+    #include <StencilStream/StencilExecutor.hpp>
 #elif EXECUTOR == 2
-#include <StencilStream/SimpleCPUExecutor.hpp>
+    #include <StencilStream/SimpleCPUExecutor.hpp>
 #endif
 
 using namespace std;
@@ -247,7 +247,8 @@ int main(int argc, char **argv) {
     executor.copy_output(temp);
 
     printf("Ending simulation\n");
-    std::cout << "Total time: " << executor.get_runtime_sample().get_total_runtime() << " s" << std::endl;
+    std::cout << "Total time: " << executor.get_runtime_sample().get_total_runtime() << " s"
+              << std::endl;
     write_output(temp, string(ofile));
 
     return 0;

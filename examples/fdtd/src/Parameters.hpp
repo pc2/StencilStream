@@ -60,6 +60,11 @@ struct Parameters {
         int c;
 
         while ((c = getopt(argc, argv, "hc:d:e:f:p:r:m:s:t:o:i:")) != -1) {
+            if (c == 'h' || c == '?') {
+                std::cerr << description;
+                exit(1);
+            }
+
             std::string arg = std::string(optarg);
             index_t first_comma, second_comma;
 
@@ -146,11 +151,8 @@ struct Parameters {
             case 'i':
                 interval_factor = stof(arg);
                 break;
-            case 'h':
-            case '?':
             default:
-                cerr << description;
-                exit(1);
+                break;
             }
         }
     }

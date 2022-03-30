@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include <StencilStream/Index.hpp>
 #include <CL/sycl.hpp>
+#include <StencilStream/Index.hpp>
 #include <cmath>
 #include <optional>
 #include <unistd.h>
@@ -42,7 +42,7 @@ constexpr float pi = 3.1415926535897932384626433;
 /* stencil parameters */
 constexpr uindex_t tile_height = 512;
 
-#if EXECUTOR == 1 
+#if EXECUTOR == 1
 // tiling, make tile as wide as possible.
 constexpr uindex_t tile_width = std::numeric_limits<uindex_t>::max();
 #else
@@ -54,15 +54,15 @@ constexpr uindex_t stencil_radius = 1;
 
 #if MATERIAL == 0 && SOURCE == 1 && EXECUTOR == 0
 // material coefficients in cells, source LUT, monotile
-constexpr uindex_t pipeline_length = 320; 
+constexpr uindex_t pipeline_length = 320;
 
 #elif MATERIAL == 0 && SOURCE == 1 && EXECUTOR == 1
 // material coefficients in cells, source LUT, tiling
-constexpr uindex_t pipeline_length = 186; 
+constexpr uindex_t pipeline_length = 186;
 
 #else
 // fallback
-constexpr uindex_t pipeline_length = 100; 
+constexpr uindex_t pipeline_length = 100;
 
 #endif
 
