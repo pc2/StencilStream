@@ -171,12 +171,12 @@ class ExecutionKernel {
                     index_1d_t(input_tile_c) -
                     index_1d_t((stencil_diameter - 1) +
                                (pipeline_length + stage - 2) * stencil_radius);
-                index_t input_grid_c = grid_c_offset + index_t(rel_input_grid_c);
+                index_t input_grid_c = grid_c_offset + rel_input_grid_c.to_int64();
                 index_1d_t rel_input_grid_r =
                     index_1d_t(input_tile_r) -
                     index_1d_t((stencil_diameter - 1) +
                                (pipeline_length + stage - 2) * stencil_radius);
-                index_t input_grid_r = grid_r_offset + index_t(rel_input_grid_r);
+                index_t input_grid_r = grid_r_offset + rel_input_grid_r.to_int64();
 
                 // Update the stencil buffer and cache with previous cache contents and the new
                 // input cell.
@@ -204,10 +204,10 @@ class ExecutionKernel {
                 index_t output_grid_c = input_grid_c - index_t(stencil_radius);
                 index_t output_grid_r = input_grid_r - index_t(stencil_radius);
                 StencilImpl stencil(ID(output_grid_c, output_grid_r), UID(grid_width, grid_height),
-                                    i_generation + uindex_t(stage), uindex_t(stage),
+                                    i_generation + stage.to_uint64(), stage.to_uint64(),
                                     stencil_buffer[stage]);
 
-                if (uindex_t(stage) < n_generations) {
+                if (stage.to_uint64() < n_generations) {
                     carry = trans_func(stencil);
                 } else {
                     carry = stencil_buffer[stage][stencil_radius][stencil_radius];
