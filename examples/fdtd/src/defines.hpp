@@ -39,17 +39,6 @@ constexpr float sqrt_2 = 1.4142135623730951;
 
 constexpr float pi = 3.1415926535897932384626433;
 
-/* stencil parameters */
-constexpr uindex_t tile_height = 512;
-
-#if EXECUTOR == 1
-// tiling, make tile as wide as possible.
-constexpr uindex_t tile_width = std::numeric_limits<uindex_t>::max();
-#else
-// monotile and CPU. More than a quadratic tile doesn't make sense.
-constexpr uindex_t tile_width = tile_height;
-#endif
-
 constexpr uindex_t stencil_radius = 1;
 
 #if MATERIAL == 0 && SOURCE == 1 && EXECUTOR == 0
@@ -67,3 +56,14 @@ constexpr uindex_t pipeline_length = 100;
 #endif
 
 static_assert(pipeline_length % 2 == 0);
+
+/* stencil parameters */
+constexpr uindex_t tile_height = 512;
+
+#if EXECUTOR == 1
+// tiling, make tile as wide as possible.
+constexpr uindex_t tile_width = std::numeric_limits<uindex_t>::max() - 2 * pipeline_length - 1;
+#else
+// monotile and CPU. More than a quadratic tile doesn't make sense.
+constexpr uindex_t tile_width = tile_height;
+#endif
