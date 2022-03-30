@@ -119,16 +119,24 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
                 uindex_t column_offset = c * tile_width;
                 uindex_t n_inner_columns = std::min(tile_width, grid_width - column_offset);
 
-                index_t required_columns[5];
+                uindex_t required_columns[5];
                 required_columns[0] = halo_radius;
+
                 required_columns[1] =
-                    std::clamp<index_t>(index_t(n_inner_columns), 0, index_t(halo_radius));
-                required_columns[2] =
-                    std::clamp<index_t>(index_t(n_inner_columns) - index_t(halo_radius), 0,
-                                        index_t(TileImpl::core_width));
-                required_columns[3] = std::clamp<index_t>(
-                    index_t(n_inner_columns) - index_t(halo_radius + TileImpl::core_width), 0,
-                    index_t(halo_radius));
+                    std::clamp<uindex_t>(n_inner_columns, 0, halo_radius);
+
+                if (n_inner_columns > halo_radius) {
+                    required_columns[2] = std::clamp<uindex_t>(n_inner_columns - halo_radius, 0, TileImpl::core_width);
+                } else {
+                    required_columns[2] = 0;
+                }
+                
+                if (n_inner_columns > halo_radius + TileImpl::core_width) {
+                    required_columns[3] = std::clamp<uindex_t>(n_inner_columns - halo_radius - TileImpl::core_width, 0, halo_radius);
+                } else {
+                    required_columns[3] = 0;
+                }
+                
                 required_columns[4] = halo_radius;
 
                 assert(required_columns[1] + required_columns[2] + required_columns[3] ==
