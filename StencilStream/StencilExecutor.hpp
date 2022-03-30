@@ -51,8 +51,13 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
      * \brief The number of cells that have be added to the tile in every direction to form the
      * complete input.
      */
+    static_assert(pipeline_length <= std::numeric_limits<uindex_t>::max() / stencil_radius);
+
     static constexpr uindex_t halo_radius = stencil_radius * pipeline_length;
-    static_assert(stencil_radius * pipeline_length <= std::numeric_limits<uindex_t>::max());
+    
+    static_assert(halo_radius <= std::numeric_limits<uindex_t>::max() / 2);
+    static_assert(tile_width <= std::numeric_limits<uindex_t>::max() - 2 * halo_radius);
+    static_assert(tile_height <= std::numeric_limits<uindex_t>::max() - 2 * halo_radius);
 
     /**
      * \brief Shorthand for the parent class.
