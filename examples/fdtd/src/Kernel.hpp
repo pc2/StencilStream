@@ -25,29 +25,17 @@
 
 template <typename MaterialResolver, typename Source> class Kernel {
   public:
-    struct Cell {
-        float ex, ey, hz, hz_sum;
-        typename MaterialResolver::MaterialIdentifier mat_ident;
-    };
+    using CellImpl = typename MaterialResolver::CellImpl;
 
     Kernel(Parameters const &parameters, MaterialResolver mat_resolver, Source source)
         : disk_radius(parameters.disk_radius), tau(parameters.tau), omega(parameters.omega()),
           t_0(parameters.t_0()), t_cutoff(parameters.t_cutoff()), t_detect(parameters.t_detect()),
           dx(parameters.dx), dt(parameters.dt()), mat_resolver(mat_resolver), source(source) {}
 
-    static Cell halo() {
-        Cell new_cell;
-        new_cell.ex = 0;
-        new_cell.ey = 0;
-        new_cell.hz = 0;
-        new_cell.hz_sum = 0;
-        return new_cell;
-    }
+    CellImpl operator()(Stencil<CellImpl, stencil_radius> const &stencil) const {
+        CellImpl cell = stencil[ID(0, 0)];
 
-    Cell operator()(Stencil<Cell, stencil_radius> const &stencil) const {
-        Cell cell = stencil[ID(0, 0)];
-
-        CoefMaterial material = mat_resolver.identifier_to_material(cell.mat_ident);
+        CoefMaterial material = mat_resolver.get_material(cell);
 
         if ((stencil.stage & 0b1) == 0) {
             cell.ex *= material.ca;

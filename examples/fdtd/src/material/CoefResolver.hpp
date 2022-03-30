@@ -18,27 +18,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
+#include "../Cell.hpp"
 #include "../Parameters.hpp"
 #include "Material.hpp"
 
-class CoefResolver {
+class CoefCell : public Cell {
   public:
-    using MaterialIdentifier = CoefMaterial;
+    CoefCell() : Cell(), material() {}
 
-    CoefResolver(Parameters const &parameters) {}
-
-    CoefMaterial identifier_to_material(MaterialIdentifier identifier) const { return identifier; }
-
-    MaterialIdentifier index_to_identifier(Parameters const &parameters, uindex_t material_index) {
+    CoefCell(Parameters const &parameters, uindex_t material_index, float ex, float ey, float hz,
+             float hz_sum)
+        : Cell(ex, ey, hz, hz_sum), material() {
         if (material_index == 0) {
-            return CoefMaterial::from_relative(RelMaterial{std::numeric_limits<float>::infinity(),
-                                                           std::numeric_limits<float>::infinity(),
-                                                           0.0},
-                                               parameters.dx, parameters.dt());
+            material = CoefMaterial::from_relative(
+                RelMaterial{std::numeric_limits<float>::infinity(),
+                            std::numeric_limits<float>::infinity(), 0.0},
+                parameters.dx, parameters.dt());
         } else {
-            return CoefMaterial::from_relative(
+            material = CoefMaterial::from_relative(
                 RelMaterial{parameters.mu_r, parameters.eps_r, parameters.sigma}, parameters.dx,
                 parameters.dt());
         }
     }
+
+    CoefMaterial material;
+};
+
+class CoefResolver {
+  public:
+    using CellImpl = CoefCell;
+
+    CoefResolver(Parameters const &parameters) {}
+
+    CoefMaterial get_material(CellImpl cell) const { return cell.material; }
 };
