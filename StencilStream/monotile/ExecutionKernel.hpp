@@ -21,8 +21,8 @@
 #include "../GenericID.hpp"
 #include "../Helpers.hpp"
 #include "../Index.hpp"
-#include "../Stencil.hpp"
 #include "../Padded.hpp"
+#include "../Stencil.hpp"
 #include <optional>
 
 namespace stencil {

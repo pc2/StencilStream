@@ -161,9 +161,7 @@ class Tile {
         return lhs * rhs;
     }
 
-    static constexpr uindex_t max_n_bursts() {
-        return n_cells_to_n_bursts(max_n_cells());
-    }
+    static constexpr uindex_t max_n_bursts() { return n_cells_to_n_bursts(max_n_cells()); }
 
     /**
      * \brief Return the buffer with the contents of the given part.
@@ -221,8 +219,8 @@ class Tile {
         }
 
         if (!part[part_column][part_row].has_value()) {
-            cl::sycl::buffer<BurstBuffer, 1> new_part
-                = cl::sycl::range<1>(get_part_bursts(tile_part));
+            cl::sycl::buffer<BurstBuffer, 1> new_part =
+                cl::sycl::range<1>(get_part_bursts(tile_part));
             part[part_column][part_row] = new_part;
         }
         return *part[part_column][part_row];
@@ -311,7 +309,7 @@ class Tile {
                 } else {
                     accessor[global_c][global_r] = part_ac[burst_i][cell_i].value;
                 }
-            } 
+            }
         }
     }
 

@@ -21,6 +21,8 @@ source /cm/shared/opt/intel_oneapi/{latest-version}/setvars.sh
 module load nalla_pcie compiler/GCC
 ```
 
+Ubuntu 20.04 LTS is not supported since StencilStream uses fairly new C++20 features that aren't available in the long-term release. Be sure to use the current version.
+
 ### A basic stencil kernel
 
 As an example, we are going to implement a simple version of [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life). However, please note that this isn't the most efficient way to do it, just an example.

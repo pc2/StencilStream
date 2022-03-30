@@ -18,19 +18,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../defines.hpp"
 #include "../Parameters.hpp"
+#include "../defines.hpp"
 #include "SourceFunction.hpp"
 
 class OnDemandSource {
-public:
-    OnDemandSource(Parameters const &parameters, uindex_t i_generation) : tau(parameters.tau), omega(parameters.omega()), t_0(parameters.t_0()) {}
+  public:
+    OnDemandSource(Parameters const &parameters, uindex_t i_generation)
+        : tau(parameters.tau), omega(parameters.omega()), t_0(parameters.t_0()) {}
 
     float get_source_amplitude(uindex_t stage, float current_time) const {
         return calc_source_amplitude(current_time, t_0, tau, omega);
     }
 
-private:
+  private:
     float tau;
     float omega;
     float t_0;

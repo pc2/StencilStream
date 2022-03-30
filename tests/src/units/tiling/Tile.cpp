@@ -32,7 +32,6 @@ using TileImpl = Tile<ID, tile_width, tile_height, halo_radius, 64>;
 constexpr uindex_t burst_length = 8;
 static_assert(burst_length == TileImpl::burst_buffer_length);
 
-
 TEST_CASE("Tile::operator[]", "[Tile]") {
     TileImpl tile;
 

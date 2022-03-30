@@ -47,8 +47,8 @@ class SingleContextExecutor : public RuntimeSampleExecutor<T, stencil_radius, Tr
      * new generations.
      */
     SingleContextExecutor(T halo_value, TransFunc trans_func)
-        : RuntimeSampleExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func), device(std::nullopt),
-          context(std::nullopt) {}
+        : RuntimeSampleExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
+          device(std::nullopt), context(std::nullopt) {}
 
     /**
      * \brief Return the configured queue.
@@ -59,7 +59,8 @@ class SingleContextExecutor : public RuntimeSampleExecutor<T, stencil_radius, Tr
     cl::sycl::queue new_queue(bool in_place = false) {
         cl::sycl::property_list queue_properties;
         if (in_place) {
-            queue_properties = {cl::sycl::property::queue::enable_profiling{}, cl::sycl::property::queue::in_order{}};
+            queue_properties = {cl::sycl::property::queue::enable_profiling{},
+                                cl::sycl::property::queue::in_order{}};
         } else {
             queue_properties = {cl::sycl::property::queue::enable_profiling{}};
         }
@@ -133,9 +134,7 @@ class SingleContextExecutor : public RuntimeSampleExecutor<T, stencil_radius, Tr
         this->select_fpga();
     }
 
-    void select_cpu() {
-        this->build_context(cl::sycl::cpu_selector().select_device());
-    }
+    void select_cpu() { this->build_context(cl::sycl::cpu_selector().select_device()); }
 
     void select_emulator() {
         this->build_context(cl::sycl::ext::intel::fpga_emulator_selector().select_device());
@@ -145,7 +144,10 @@ class SingleContextExecutor : public RuntimeSampleExecutor<T, stencil_radius, Tr
         this->build_context(cl::sycl::ext::intel::fpga_selector().select_device());
     }
 
-    void build_context(cl::sycl::device device) { this->device = device; this->context = cl::sycl::context(device); }
+    void build_context(cl::sycl::device device) {
+        this->device = device;
+        this->context = cl::sycl::context(device);
+    }
 
   private:
     std::optional<cl::sycl::device> device;

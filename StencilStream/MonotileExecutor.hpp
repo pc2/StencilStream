@@ -26,9 +26,8 @@
 #include <numeric>
 
 namespace stencil {
-template <typename T, uindex_t stencil_radius, typename TransFunc,
-          uindex_t pipeline_length = 1, uindex_t tile_width = 1024,
-          uindex_t tile_height = 1024, uindex_t burst_size = 64>
+template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipeline_length = 1,
+          uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 64>
 /**
  * \brief An executor that follows \ref monotile.
  *
@@ -55,9 +54,10 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
 
     static constexpr uindex_t burst_buffer_size = std::lcm(sizeof(Padded<T>), burst_size);
     static constexpr uindex_t burst_buffer_length = burst_buffer_size / sizeof(Padded<T>);
-    static constexpr uindex_t n_bursts = tile_width * tile_height / burst_buffer_length +
-                        (tile_width * tile_height % burst_buffer_length == 0 ? 0 : 1);
-    
+    static constexpr uindex_t n_bursts =
+        tile_width * tile_height / burst_buffer_length +
+        (tile_width * tile_height % burst_buffer_length == 0 ? 0 : 1);
+
     using BurstBuffer = std::array<Padded<T>, burst_buffer_length>;
 
     static constexpr unsigned long bits_cell = std::bit_width(burst_buffer_length);
