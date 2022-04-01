@@ -26,7 +26,6 @@
 #include <bit>
 #include <memory>
 #include <numeric>
-#include <sycl/ext/intel/ac_types/ac_int.hpp>
 #include <vector>
 
 namespace stencil {
@@ -44,31 +43,23 @@ namespace tiling {
  * input and output kernel submission for a given tile.
  *
  * \tparam T Cell value type.
- * \tparam tile_width The number of columns of a tile.
+ * \tparam max_tile_width The number of columns of a tile.
  * \tparam tile_height The number of rows of a tile.
  * \tparam halo_radius The radius (aka width and height) of the tile halo.
  */
-template <typename T, uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius,
+template <typename T, uindex_t max_tile_width, uindex_t tile_height, uindex_t halo_radius,
           uindex_t burst_size = 64>
 class Grid {
   public:
-    static_assert(2 * halo_radius < tile_height && 2 * halo_radius < tile_width);
+    static_assert(2 * halo_radius < tile_height);
     static constexpr uindex_t core_height = tile_height - 2 * halo_radius;
-    static constexpr uindex_t core_width = tile_width - 2 * halo_radius;
 
-    using Tile = Tile<T, tile_width, tile_height, halo_radius, burst_size>;
+    using Tile = Tile<T, max_tile_width, tile_height, halo_radius, burst_size>;
 
-    static constexpr unsigned long bits_cell = std::bit_width(Tile::burst_buffer_length);
-    using index_cell_t = ac_int<bits_cell + 1, true>;
-    using uindex_cell_t = ac_int<bits_cell, false>;
-
-    static constexpr unsigned long bits_burst = std::bit_width(Tile::max_n_bursts());
-    using index_burst_t = ac_int<bits_burst + 1, true>;
-    using uindex_burst_t = ac_int<bits_burst, false>;
-
-    static constexpr unsigned long bits_2d = std::bit_width(Tile::max_n_cells());
-    using index_2d_t = ac_int<bits_2d + 1, true>;
-    using uindex_2d_t = ac_int<bits_2d, false>;
+    static constexpr uindex_t bits_width = std::bit_width(max_tile_width);
+    static constexpr uindex_t bits_height = std::bit_width(tile_height);
+    using uindex_width_t = ac_int<bits_width, false>;
+    using uindex_height_t = ac_int<bits_height, false>;
 
     /**
      * \brief Create a grid with undefined contents.
@@ -110,7 +101,7 @@ class Grid {
 
         for (uindex_t tile_column = 1; tile_column < tiles.size() - 1; tile_column++) {
             for (uindex_t tile_row = 1; tile_row < tiles[tile_column].size() - 1; tile_row++) {
-                cl::sycl::id<2> offset((tile_column - 1) * tile_width,
+                cl::sycl::id<2> offset((tile_column - 1) * max_tile_width,
                                        (tile_row - 1) * tile_height);
                 tiles[tile_column][tile_row].copy_to(out_buffer, offset);
             }
@@ -167,71 +158,122 @@ class Grid {
         return tiles.at(tile_c).at(tile_r);
     }
 
-    template <typename pipe_id>
-    void submit_read(cl::sycl::queue fpga_queue, ID tile_id, typename Tile::Part part,
-        uindex_t n_columns) {
-        if (n_columns == 0) {
-            return;
-        }
-        
-        fpga_queue.submit([&](cl::sycl::handler &cgh) {
-            auto ac =
-                this->get_tile(tile_id)[part].template get_access<cl::sycl::access::mode::read>(
-                    cgh);
-            UID range = Tile::get_part_range(part);
-            uindex_2d_t n_cells = uindex_t(n_columns * range.r);
+    template <typename in_pipe> void submit_read(cl::sycl::queue queue, ID tile_id) {
+        using feed_in_pipe_0 = cl::sycl::pipe<class feed_in_pipe_0_id, T>;
+        using feed_in_pipe_1 = cl::sycl::pipe<class feed_in_pipe_1_id, T>;
+        using feed_in_pipe_2 = cl::sycl::pipe<class feed_in_pipe_2_id, T>;
+        using feed_in_pipe_3 = cl::sycl::pipe<class feed_in_pipe_3_id, T>;
+        using feed_in_pipe_4 = cl::sycl::pipe<class feed_in_pipe_4_id, T>;
 
-            cgh.single_task<pipe_id>([=]() {
-                [[intel::fpga_register]] typename Tile::BurstBuffer cache;
-                uindex_burst_t burst_i = 0;
-                uindex_cell_t cell_i = Tile::burst_buffer_length;
+        assert(tile_id.c >= 0 && tile_id.c < get_tile_range().c);
+        assert(tile_id.r >= 0 && tile_id.r < get_tile_range().r);
 
-                for (uindex_2d_t i = 0; i < n_cells; i++) {
-                    if (cell_i == uindex_cell_t(Tile::burst_buffer_length)) {
-                        cache = ac[burst_i.to_uint64()];
-                        burst_i++;
-                        cell_i = 0;
+        uindex_t tile_width = get_tile(tile_id).get_width();
+        queue.submit([&](cl::sycl::handler &cgh) {
+            cgh.single_task<class TilingMergeKernel>([=]() {
+                [[intel::loop_coalesce(2)]] for (uindex_width_t c = 0;
+                                                 c < uindex_width_t(2 * halo_radius + tile_width);
+                                                 c++) {
+                    for (uindex_height_t r = 0; r < uindex_height_t(2 * halo_radius + tile_height);
+                         r++) {
+                        T value;
+                        if (r < uindex_height_t(halo_radius)) {
+                            value = feed_in_pipe_0::read();
+                        } else if (r < uindex_height_t(2 * halo_radius)) {
+                            value = feed_in_pipe_1::read();
+                        } else if (r < uindex_height_t(2 * halo_radius + core_height)) {
+                            value = feed_in_pipe_2::read();
+                        } else if (r < uindex_height_t(3 * halo_radius + core_height)) {
+                            value = feed_in_pipe_3::read();
+                        } else {
+                            value = feed_in_pipe_4::read();
+                        }
+                        in_pipe::write(value);
                     }
-                    cl::sycl::pipe<pipe_id, T>::write(cache[cell_i].value);
-                    cell_i++;
                 }
             });
         });
+
+        get_tile(ID(tile_id.c - 1, tile_id.r - 1))
+            .template submit_read<feed_in_pipe_0>(queue, Tile::Stripe::SOUTH,
+                                                  Tile::StripePart::FOOTER);
+        get_tile(ID(tile_id.c - 1, tile_id.r))
+            .template submit_read<feed_in_pipe_1>(queue, Tile::Stripe::NORTH,
+                                                  Tile::StripePart::FOOTER);
+        get_tile(ID(tile_id.c - 1, tile_id.r))
+            .template submit_read<feed_in_pipe_2>(queue, Tile::Stripe::CORE,
+                                                  Tile::StripePart::FOOTER);
+        get_tile(ID(tile_id.c - 1, tile_id.r))
+            .template submit_read<feed_in_pipe_3>(queue, Tile::Stripe::SOUTH,
+                                                  Tile::StripePart::FOOTER);
+        get_tile(ID(tile_id.c - 1, tile_id.r + 1))
+            .template submit_read<feed_in_pipe_4>(queue, Tile::Stripe::NORTH,
+                                                  Tile::StripePart::FOOTER);
+
+        get_tile(ID(tile_id.c, tile_id.r - 1))
+            .template submit_read<feed_in_pipe_0>(queue, Tile::Stripe::SOUTH,
+                                                  Tile::StripePart::FULL);
+        get_tile(ID(tile_id.c, tile_id.r))
+            .template submit_read<feed_in_pipe_1>(queue, Tile::Stripe::NORTH,
+                                                  Tile::StripePart::FULL);
+        get_tile(ID(tile_id.c, tile_id.r))
+            .template submit_read<feed_in_pipe_2>(queue, Tile::Stripe::CORE,
+                                                  Tile::StripePart::FULL);
+        get_tile(ID(tile_id.c, tile_id.r))
+            .template submit_read<feed_in_pipe_3>(queue, Tile::Stripe::SOUTH,
+                                                  Tile::StripePart::FULL);
+        get_tile(ID(tile_id.c, tile_id.r + 1))
+            .template submit_read<feed_in_pipe_4>(queue, Tile::Stripe::NORTH,
+                                                  Tile::StripePart::FULL);
+
+        get_tile(ID(tile_id.c + 1, tile_id.r - 1))
+            .template submit_read<feed_in_pipe_0>(queue, Tile::Stripe::SOUTH,
+                                                  Tile::StripePart::HEADER);
+        get_tile(ID(tile_id.c + 1, tile_id.r))
+            .template submit_read<feed_in_pipe_1>(queue, Tile::Stripe::NORTH,
+                                                  Tile::StripePart::HEADER);
+        get_tile(ID(tile_id.c + 1, tile_id.r))
+            .template submit_read<feed_in_pipe_2>(queue, Tile::Stripe::CORE,
+                                                  Tile::StripePart::HEADER);
+        get_tile(ID(tile_id.c + 1, tile_id.r))
+            .template submit_read<feed_in_pipe_3>(queue, Tile::Stripe::SOUTH,
+                                                  Tile::StripePart::HEADER);
+        get_tile(ID(tile_id.c + 1, tile_id.r + 1))
+            .template submit_read<feed_in_pipe_4>(queue, Tile::Stripe::NORTH,
+                                                  Tile::StripePart::HEADER);
     }
 
-    template <typename pipe_id>
-    void submit_write(cl::sycl::queue fpga_queue, ID tile_id, typename Tile::Part part,
-        uindex_t n_columns) {
-        if (n_columns == 0) {
-            return;
-        }
+    template <typename out_pipe> void submit_write(cl::sycl::queue queue, ID tile_id) {
+        using feed_out_pipe_0 = cl::sycl::pipe<class feed_out_pipe_0_id, T>;
+        using feed_out_pipe_1 = cl::sycl::pipe<class feed_out_pipe_1_id, T>;
+        using feed_out_pipe_2 = cl::sycl::pipe<class feed_out_pipe_2_id, T>;
 
-        fpga_queue.submit([&](cl::sycl::handler &cgh) {
-            auto ac = this->get_tile(tile_id)[part]
-                          .template get_access<cl::sycl::access::mode::discard_write>(cgh);
-            UID range = Tile::get_part_range(part);
-            uindex_2d_t n_cells = uindex_t(n_columns * range.r);
+        assert(tile_id.c <= get_tile_range().c && tile_id.r <= get_tile_range().r);
 
-            cgh.single_task<pipe_id>([=]() {
-                [[intel::fpga_memory]] typename Tile::BurstBuffer cache;
-                uindex_burst_t burst_i = 0;
-                uindex_cell_t cell_i = 0;
+        Tile &tile = get_tile(tile_id);
+        uindex_t tile_width = tile.get_width();
 
-                for (uindex_2d_t i = 0; i < n_cells; i++) {
-                    if (cell_i == uindex_cell_t(Tile::burst_buffer_length)) {
-                        ac[burst_i.to_uint64()] = cache;
-                        burst_i++;
-                        cell_i = 0;
+        queue.submit([&](cl::sycl::handler &cgh) {
+            cgh.single_task<class TilingForkKernel>([=]() {
+                [[intel::loop_coalesce(2)]] for (uindex_width_t c = 0;
+                                                 c < uindex_width_t(tile_width); c++) {
+                    for (uindex_height_t r = 0; r < uindex_height_t(tile_height); r++) {
+                        T value = out_pipe::read();
+                        if (r < uindex_height_t(halo_radius)) {
+                            feed_out_pipe_0::write(value);
+                        } else if (r < uindex_height_t(tile_height - halo_radius)) {
+                            feed_out_pipe_1::write(value);
+                        } else {
+                            feed_out_pipe_2::write(value);
+                        }
                     }
-                    cache[cell_i].value = cl::sycl::pipe<pipe_id, T>::read();
-                    cell_i++;
-                }
-
-                if (cell_i != 0) {
-                    ac[burst_i.to_uint64()] = cache;
                 }
             });
         });
+
+        tile.template submit_write<feed_out_pipe_0>(queue, Tile::Stripe::NORTH);
+        tile.template submit_write<feed_out_pipe_1>(queue, Tile::Stripe::CORE);
+        tile.template submit_write<feed_out_pipe_2>(queue, Tile::Stripe::SOUTH);
     }
 
   private:
@@ -244,7 +286,7 @@ class Grid {
 
         for (uindex_t tile_column = 1; tile_column < tiles.size() - 1; tile_column++) {
             for (uindex_t tile_row = 1; tile_row < tiles[tile_column].size() - 1; tile_row++) {
-                cl::sycl::id<2> offset((tile_column - 1) * tile_width,
+                cl::sycl::id<2> offset((tile_column - 1) * max_tile_width,
                                        (tile_row - 1) * tile_height);
                 tiles[tile_column][tile_row].copy_from(in_buffer, offset);
             }
@@ -254,8 +296,8 @@ class Grid {
     void allocate_tiles() {
         tiles.clear();
 
-        uindex_t n_tile_columns = grid_range[0] / tile_width;
-        if (grid_range[0] % tile_width != 0) {
+        uindex_t n_tile_columns = grid_range[0] / max_tile_width;
+        if (grid_range[0] % max_tile_width != 0) {
             n_tile_columns++;
         }
         uindex_t n_tile_rows = grid_range[1] / tile_height;
@@ -268,7 +310,14 @@ class Grid {
             std::vector<Tile> column;
             column.reserve(n_tile_rows + 2);
             for (uindex_t i_row = 0; i_row < n_tile_rows + 2; i_row++) {
-                column.push_back(Tile());
+                uindex_t tile_width;
+                if (i_row == 0 || i_row == n_tile_rows + 1) {
+                    tile_width = halo_radius;
+                } else {
+                    tile_width = std::min(max_tile_width,
+                                          uindex_t(grid_range[0] - i_column * max_tile_width));
+                }
+                column.push_back(Tile(tile_width));
             }
             tiles.push_back(column);
         }

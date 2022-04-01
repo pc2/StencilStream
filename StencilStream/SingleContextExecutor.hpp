@@ -56,9 +56,9 @@ class SingleContextExecutor : public RuntimeSampleExecutor<T, stencil_radius, Tr
      * If no queue has been configured yet, this method will configure and return a queue targeting
      * the FPGA emulator, without runtime analysis.
      */
-    cl::sycl::queue new_queue(bool in_place = false) {
+    cl::sycl::queue new_queue(bool in_order = false) {
         cl::sycl::property_list queue_properties;
-        if (in_place) {
+        if (in_order) {
             queue_properties = {cl::sycl::property::queue::enable_profiling{},
                                 cl::sycl::property::queue::in_order{}};
         } else {

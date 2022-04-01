@@ -24,6 +24,7 @@
 #include "../Padded.hpp"
 #include "../Stencil.hpp"
 #include <optional>
+#include <sycl/ext/intel/ac_types/ac_int.hpp>
 
 namespace stencil {
 namespace tiling {
