@@ -25,7 +25,6 @@ class LUTResolver {
   public:
     struct MaterialIdentifier {
         uint8_t index;
-        uint8_t padding[3 + 3 * 4];
     };
 
     LUTResolver(Parameters const &parameters) : materials() {
@@ -48,8 +47,7 @@ class LUTResolver {
 
     MaterialIdentifier index_to_identifier(Parameters const &parameters,
                                            uindex_t material_index) const {
-        return MaterialIdentifier{uint8_t(material_index),
-                                  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
+        return MaterialIdentifier{uint8_t(material_index)};
     }
 
   private:

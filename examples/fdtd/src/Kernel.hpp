@@ -31,9 +31,8 @@ template <typename MaterialResolver, typename Source> class Kernel {
     };
 
     Kernel(Parameters const &parameters, MaterialResolver mat_resolver, Source source)
-        : disk_radius(parameters.disk_radius), tau(parameters.tau), omega(parameters.omega()),
-          t_0(parameters.t_0()), t_cutoff(parameters.t_cutoff()), t_detect(parameters.t_detect()),
-          dx(parameters.dx), dt(parameters.dt()), mat_resolver(mat_resolver), source(source) {}
+        : t_cutoff(parameters.t_cutoff()), t_detect(parameters.t_detect()), dt(parameters.dt()),
+          mat_resolver(mat_resolver), source(source) {}
 
     static Cell halo() {
         Cell new_cell;
@@ -75,13 +74,8 @@ template <typename MaterialResolver, typename Source> class Kernel {
     }
 
   private:
-    float disk_radius;
-    float tau;
-    float omega;
-    float t_0;
     float t_cutoff;
     float t_detect;
-    float dx;
     float dt;
     MaterialResolver mat_resolver;
     Source source;

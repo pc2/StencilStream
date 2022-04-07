@@ -47,15 +47,15 @@ constexpr uindex_t stencil_radius = 1;
 
 #if MATERIAL == 0 && SOURCE == 1 && EXECUTOR == 0
 // material coefficients in cells, source LUT, monotile
-constexpr uindex_t pipeline_length = 320;
+constexpr uindex_t pipeline_length = 10; //320;
 
 #elif MATERIAL == 0 && SOURCE == 1 && EXECUTOR == 1
 // material coefficients in cells, source LUT, tiling
-constexpr uindex_t pipeline_length = 186;
+constexpr uindex_t pipeline_length = 10; //186;
 
 #else
 // fallback
-constexpr uindex_t pipeline_length = 100;
+constexpr uindex_t pipeline_length = 10; //100;
 
 #endif
 
