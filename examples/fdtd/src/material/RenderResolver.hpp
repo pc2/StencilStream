@@ -38,7 +38,30 @@ class RenderResolver {
     /**
      * Derivation of the distance measuring system:
      *
-     * The goal is to reduce the number of operations executed on the FPGA
+     * A cell has the parametrized material iff its distance to the center of the grid is within a
+     * certain radius. Let c be the column index, r be the row index, w be the width or height of
+     * the grid, r be the radius of the disk in meters and dx be the width or height of a cell in
+     * meters. Then, we have:
+     * 
+     *     Cell is in the disk <=> dx * sqrt((c - w/2)^2 + (r - w/2)^2) <= r
+     * 
+     * The goal now is to to reduce the number of computations that have to be repeated and therefore
+     * be executed on the FPGA. The values handled by the FPGA should also be integers since the
+     * column and row indices are given as integers and integer-to-float conversions are expensive.
+     * We have:
+     * 
+     *     Cell is in the disk
+     *     <=> dx * sqrt((c - w/2)^2 + (r - w/2)^2) <= r
+     *     <=> (c - w/2)^2 + (r - w/2)^2 <= (r/dx)^2
+     *     <=> (2c - w)^2 + (2r - w)^2 <= 4*(r/dx)^2
+     *     <=> (4c^2 - 4wc + w^2) + (4r^2 - 4wr + w^2) <= 4*(r/dx)^2
+     *     <=> 4*(c^2 - wc + r^2 - wr) <= 4*(r/dx)^2 - 2w^2
+     *     <=> 2*(c * (c - w) + r * (r - w)) <= 2*(r/dx)^2 - w^2
+     * 
+     * All intermediate values on the left-hand side are integers and the right-hand side expression
+     * can be rounded to the nearest integer to form an approximation. When we therefore precompute
+     * the right-hand side, we have reduced the bound check to six integer operations and one comparison
+     * to a runtime constant.
      */
 
     RenderResolver(Parameters const &parameters) : distance_bound(0.0), materials() {
