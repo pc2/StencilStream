@@ -37,7 +37,7 @@ using Source = LUTSource;
 #endif
 
 using KernelImpl = Kernel<MaterialResolver, Source>;
-using CellImpl = KernelImpl::CellImpl;
+using CellImpl = KernelImpl::Cell;
 
 #if EXECUTOR == 0
     #include <StencilStream/MonotileExecutor.hpp>
@@ -143,12 +143,14 @@ int main(int argc, char **argv) {
         auto init_ac = grid_buffer.get_access<cl::sycl::access::mode::discard_write>();
         for (uindex_t c = 0; c < parameters.grid_range()[0]; c++) {
             for (uindex_t r = 0; r < parameters.grid_range()[1]; r++) {
+                init_ac[c][r] = KernelImpl::halo();
+
                 float a = float(c) - float(parameters.grid_range()[0]) / 2.0;
                 float b = float(r) - float(parameters.grid_range()[1]) / 2.0;
                 if (parameters.dx * sqrt(a * a + b * b) <= parameters.disk_radius) {
-                    init_ac[c][r] = CellImpl(parameters, 1, 0, 0, 0, 0);
+                    init_ac[c][r].mat_ident = mat_resolver.index_to_identifier(parameters, 1);
                 } else {
-                    init_ac[c][r] = CellImpl(parameters, 0, 0, 0, 0, 0);
+                    init_ac[c][r].mat_ident = mat_resolver.index_to_identifier(parameters, 0);
                 }
             }
         }
@@ -157,7 +159,7 @@ int main(int argc, char **argv) {
     Source source(parameters, 0);
     KernelImpl kernel(parameters, mat_resolver, source);
 
-    Executor executor(CellImpl(), kernel);
+    Executor executor(KernelImpl::halo(), kernel);
     executor.set_input(grid_buffer);
 #ifdef HARDWARE
     executor.select_fpga();

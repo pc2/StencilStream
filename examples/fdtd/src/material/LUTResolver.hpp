@@ -20,22 +20,13 @@
 #pragma once
 #include "../Parameters.hpp"
 #include "Material.hpp"
-#include "../Cell.hpp"
-
-class LUTCell : public Cell {
-  public:
-    LUTCell() : Cell(), index(0) {}
-
-    LUTCell(Parameters const &parameters, uindex_t material_index, float ex, float ey, float hz,
-            float hz_sum)
-        : Cell(ex, ey, hz, hz_sum), index(material_index) {}
-
-    uint8_t index;
-};
 
 class LUTResolver {
   public:
-    using CellImpl = LUTCell;
+    struct MaterialIdentifier {
+        uint8_t index;
+        uint8_t padding[3 + 3 * 4];
+    };
 
     LUTResolver(Parameters const &parameters) : materials() {
         materials[0] =
@@ -47,12 +38,18 @@ class LUTResolver {
             parameters.dt());
     }
 
-    CoefMaterial get_material(CellImpl cell) const {
-        uint8_t index = cell.index;
+    CoefMaterial identifier_to_material(MaterialIdentifier identifier) const {
+        uint8_t index = identifier.index;
         if (index > 1) {
             index = 0;
         }
         return materials[index];
+    }
+
+    MaterialIdentifier index_to_identifier(Parameters const &parameters,
+                                           uindex_t material_index) const {
+        return MaterialIdentifier{uint8_t(material_index),
+                                  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
     }
 
   private:
