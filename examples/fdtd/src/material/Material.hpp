@@ -24,6 +24,11 @@
 struct RelMaterial {
     float mu_r, eps_r, sigma;
 
+    static RelMaterial perfect_metal() {
+        return RelMaterial{std::numeric_limits<float>::infinity(),
+                           std::numeric_limits<float>::infinity(), 0.0};
+    }
+
     // permeability (transmissibility of the material for magnetic fields) in vacuum
     static constexpr float mu_0 = 4.0 * pi * 1.0e-7;
 
@@ -58,12 +63,10 @@ struct CoefMaterial {
     float da;
     float db;
 
-    static CoefMaterial from_relative(RelMaterial material, float dx, float dt) {
-        return CoefMaterial{
-            material.ca(dx, dt),
-            material.cb(dx, dt),
-            material.da(dx, dt),
-            material.db(dx, dt),
-        };
+    static CoefMaterial perfect_metal() { return CoefMaterial{1.0, 0.0, 1.0, 0.0}; }
+
+    static CoefMaterial from_relative_material(RelMaterial material, float dx, float dt) {
+        return CoefMaterial{material.ca(dx, dt), material.cb(dx, dt), material.da(dx, dt),
+                            material.db(dx, dt)};
     }
 };

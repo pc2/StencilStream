@@ -25,49 +25,37 @@
 
 template <typename MaterialResolver, typename Source> class Kernel {
   public:
-    struct Cell {
-        float ex, ey, hz, hz_sum;
-        typename MaterialResolver::MaterialIdentifier mat_ident;
-    };
+    using MaterialCell = typename MaterialResolver::MaterialCell;
 
     Kernel(Parameters const &parameters, MaterialResolver mat_resolver, Source source)
         : t_cutoff(parameters.t_cutoff()), t_detect(parameters.t_detect()), dt(parameters.dt()),
           mat_resolver(mat_resolver), source(source) {}
 
-    static Cell halo() {
-        Cell new_cell;
-        new_cell.ex = 0;
-        new_cell.ey = 0;
-        new_cell.hz = 0;
-        new_cell.hz_sum = 0;
-        return new_cell;
-    }
+    MaterialCell operator()(Stencil<MaterialCell, 1> const &stencil) const {
+        MaterialCell cell = stencil[ID(0, 0)];
 
-    Cell operator()(Stencil<Cell, stencil_radius> const &stencil) const {
-        Cell cell = stencil[ID(0, 0)];
-
-        CoefMaterial material = mat_resolver.identifier_to_material(cell.mat_ident);
+        CoefMaterial material = mat_resolver.get_material_coefficients(stencil);
 
         if ((stencil.stage & 0b1) == 0) {
-            cell.ex *= material.ca;
-            cell.ex += material.cb * (stencil[ID(0, 0)].hz - stencil[ID(0, -1)].hz);
+            cell.cell.ex *= material.ca;
+            cell.cell.ex += material.cb * (stencil[ID(0, 0)].cell.hz - stencil[ID(0, -1)].cell.hz);
 
-            cell.ey *= material.ca;
-            cell.ey += material.cb * (stencil[ID(-1, 0)].hz - stencil[ID(0, 0)].hz);
+            cell.cell.ey *= material.ca;
+            cell.cell.ey += material.cb * (stencil[ID(-1, 0)].cell.hz - stencil[ID(0, 0)].cell.hz);
         } else {
-            cell.hz *= material.da;
-            cell.hz += material.db * (stencil[ID(0, 1)].ex - stencil[ID(0, 0)].ex +
-                                      stencil[ID(0, 0)].ey - stencil[ID(1, 0)].ey);
+            cell.cell.hz *= material.da;
+            cell.cell.hz += material.db * (stencil[ID(0, 1)].cell.ex - stencil[ID(0, 0)].cell.ex +
+                                      stencil[ID(0, 0)].cell.ey - stencil[ID(1, 0)].cell.ey);
 
             float current_time = (stencil.generation >> 1) * dt;
 
             if (stencil.id.c == stencil.grid_range.c / 2 &&
                 stencil.id.r == stencil.grid_range.r / 2 && current_time < t_cutoff) {
-                cell.hz += source.get_source_amplitude(stencil.stage, current_time);
+                cell.cell.hz += source.get_source_amplitude(stencil.stage, current_time);
             }
 
             if (current_time > t_detect) {
-                cell.hz_sum += cell.hz * cell.hz;
+                cell.cell.hz_sum += cell.cell.hz * cell.cell.hz;
             }
         }
         return cell;

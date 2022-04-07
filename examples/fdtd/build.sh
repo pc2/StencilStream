@@ -20,6 +20,7 @@ The 'material_resolver' denotes how the material of a cell is stored in a cell a
 material coefficients are retrieved from it. Possible values are:
 * 'coef': Store the final material coefficients directly in every cell.
 * 'lut': Store a lookup table with all known material coefficients in the kernel and store only an index in the cell.
+* 'render': Use a lookup table like with `lut`, but pick the material depending on the cell's position. No material information is stored in the cells.
 
 The 'source' denotes whether the computations of the source wave amplitude are done by the FPGA or
 the host. If the wave is computed on the host, the amplitudes are simply stored in a look-up table. 
@@ -58,7 +59,7 @@ then
 fi
 
 COMMAND="dpcpp src/*.cpp -g -o $EXEC_NAME "
-COMMAND="$COMMAND -std=c++20 -DSTENCIL_INDEX_WIDTH=64 -DFDTD_BURST_SIZE=1024 -qactypes -I./ -O3"
+COMMAND="$COMMAND -std=c++20 -DSTENCIL_INDEX_WIDTH=32 -DFDTD_BURST_SIZE=1024 -qactypes -I./ -O3"
 
 VALID_ARGUMENTS=1
 
@@ -75,6 +76,9 @@ then
 elif [[ "$MATERIAL" == "lut" ]]
 then
     COMMAND="$COMMAND -DMATERIAL=1"
+elif [[ "$MATERIAL" == "render" ]]
+then
+    COMMAND="$COMMAND -DMATERIAL=2"
 else
     echo "Unknown material resolver '$MATERIAL'." 1>&2
     VALID_ARGUMENTS=0

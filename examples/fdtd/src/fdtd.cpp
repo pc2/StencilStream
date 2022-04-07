@@ -26,6 +26,9 @@ using MaterialResolver = CoefResolver;
 #elif MATERIAL == 1
     #include "material/LUTResolver.hpp"
 using MaterialResolver = LUTResolver;
+#elif MATERIAL == 2
+    #include "material/RenderResolver.hpp"
+using MaterialResolver = RenderResolver;
 #endif
 
 #if SOURCE == 0
@@ -37,7 +40,7 @@ using Source = LUTSource;
 #endif
 
 using KernelImpl = Kernel<MaterialResolver, Source>;
-using CellImpl = KernelImpl::Cell;
+using CellImpl = KernelImpl::MaterialCell;
 
 #if EXECUTOR == 0
     #include <StencilStream/MonotileExecutor.hpp>
@@ -99,16 +102,16 @@ void save_frame(cl::sycl::buffer<CellImpl, 2> frame_buffer, uindex_t generation_
         for (uindex_t c = 0; c < frame.get_range()[0]; c++) {
             switch (field) {
             case CellField::EX:
-                out << frame[c][r].ex;
+                out << frame[c][r].cell.ex;
                 break;
             case CellField::EY:
-                out << frame[c][r].ey;
+                out << frame[c][r].cell.ey;
                 break;
             case CellField::HZ:
-                out << frame[c][r].hz;
+                out << frame[c][r].cell.hz;
                 break;
             case CellField::HZ_SUM:
-                out << frame[c][r].hz_sum;
+                out << frame[c][r].cell.hz_sum;
                 break;
             default:
                 break;
@@ -143,14 +146,12 @@ int main(int argc, char **argv) {
         auto init_ac = grid_buffer.get_access<cl::sycl::access::mode::discard_write>();
         for (uindex_t c = 0; c < parameters.grid_range()[0]; c++) {
             for (uindex_t r = 0; r < parameters.grid_range()[1]; r++) {
-                init_ac[c][r] = KernelImpl::halo();
-
                 float a = float(c) - float(parameters.grid_range()[0]) / 2.0;
                 float b = float(r) - float(parameters.grid_range()[1]) / 2.0;
                 if (parameters.dx * sqrt(a * a + b * b) <= parameters.disk_radius) {
-                    init_ac[c][r].mat_ident = mat_resolver.index_to_identifier(parameters, 1);
+                    init_ac[c][r] = CellImpl::from_parameters(parameters, 1);
                 } else {
-                    init_ac[c][r].mat_ident = mat_resolver.index_to_identifier(parameters, 0);
+                    init_ac[c][r] = CellImpl::from_parameters(parameters, 0);
                 }
             }
         }
@@ -159,7 +160,7 @@ int main(int argc, char **argv) {
     Source source(parameters, 0);
     KernelImpl kernel(parameters, mat_resolver, source);
 
-    Executor executor(KernelImpl::halo(), kernel);
+    Executor executor(CellImpl::halo(), kernel);
     executor.set_input(grid_buffer);
 #ifdef HARDWARE
     executor.select_fpga();

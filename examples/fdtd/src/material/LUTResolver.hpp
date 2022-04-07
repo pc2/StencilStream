@@ -18,36 +18,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
+#include "../Cell.hpp"
 #include "../Parameters.hpp"
 #include "Material.hpp"
+#include <StencilStream/Stencil.hpp>
 
 class LUTResolver {
   public:
-    struct MaterialIdentifier {
+    struct MaterialCell {
+        Cell cell;
         uint8_t index;
+
+        static MaterialCell halo() { return MaterialCell{Cell::halo(), 0}; }
+
+        static MaterialCell from_parameters(Parameters const &parameters, uindex_t material_index) {
+            return MaterialCell{Cell::halo(), uint8_t(material_index)};
+        }
     };
 
     LUTResolver(Parameters const &parameters) : materials() {
-        materials[0] =
-            CoefMaterial::from_relative(RelMaterial{std::numeric_limits<float>::infinity(),
-                                                    std::numeric_limits<float>::infinity(), 0.0},
-                                        parameters.dx, parameters.dt());
-        materials[1] = CoefMaterial::from_relative(
+        materials[0] = CoefMaterial::from_relative_material(RelMaterial::perfect_metal(),
+                                                            parameters.dx, parameters.dt());
+        materials[1] = CoefMaterial::from_relative_material(
             RelMaterial{parameters.mu_r, parameters.eps_r, parameters.sigma}, parameters.dx,
             parameters.dt());
     }
 
-    CoefMaterial identifier_to_material(MaterialIdentifier identifier) const {
-        uint8_t index = identifier.index;
+    CoefMaterial get_material_coefficients(Stencil<MaterialCell, 1> const &stencil) const {
+        uint8_t index = stencil[ID(0, 0)].index;
         if (index > 1) {
             index = 0;
         }
         return materials[index];
-    }
-
-    MaterialIdentifier index_to_identifier(Parameters const &parameters,
-                                           uindex_t material_index) const {
-        return MaterialIdentifier{uint8_t(material_index)};
     }
 
   private:

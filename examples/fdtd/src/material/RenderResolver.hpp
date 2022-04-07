@@ -22,34 +22,52 @@
 #include "../Parameters.hpp"
 #include "Material.hpp"
 
-class CoefResolver {
+class RenderResolver {
   public:
     struct MaterialCell {
         Cell cell;
-        CoefMaterial coefficients;
 
-        static MaterialCell halo() {
-            return MaterialCell{
-                Cell::halo(),
-                CoefMaterial::perfect_metal(),
-            };
-        }
+        static MaterialCell halo() { return MaterialCell{Cell::halo()}; }
 
         static MaterialCell from_parameters(Parameters const &parameters, uindex_t material_index) {
-            if (material_index == 0) {
-                return MaterialCell{Cell::halo(), CoefMaterial::perfect_metal()};
-            } else {
-                return MaterialCell{Cell::halo(), CoefMaterial::from_relative_material(
-                                                      RelMaterial{parameters.mu_r, parameters.eps_r,
-                                                                  parameters.sigma},
-                                                      parameters.dx, parameters.dt())};
-            }
+            // No computations needed here, since no material information is stored in the cells.
+            return MaterialCell{Cell::halo()};
         }
     };
 
-    CoefResolver(Parameters const &parameters) {}
+    /**
+     * Derivation of the distance measuring system:
+     *
+     * The goal is to reduce the number of operations executed on the FPGA
+     */
+
+    RenderResolver(Parameters const &parameters) : distance_bound(0.0), materials() {
+        float r = parameters.disk_radius;
+        float dx = parameters.dx;
+        float w = parameters.grid_range()[0];
+        distance_bound = 2 * (r / dx) * (r / dx) - (w * w);
+
+        materials[0] = CoefMaterial::from_relative_material(RelMaterial::perfect_metal(),
+                                                            parameters.dx, parameters.dt());
+        materials[1] = CoefMaterial::from_relative_material(
+            RelMaterial{parameters.mu_r, parameters.eps_r, parameters.sigma}, parameters.dx,
+            parameters.dt());
+    }
 
     CoefMaterial get_material_coefficients(Stencil<MaterialCell, 1> const &stencil) const {
-        return stencil[ID(0, 0)].coefficients;
+        uindex_t c = stencil.id.c;
+        uindex_t r = stencil.id.r;
+        uindex_t w = stencil.grid_range.c;
+        uindex_t distance_score = 2 * (c * (c - w) + r * (r - w));
+
+        if (distance_score <= distance_bound) {
+            return materials[1];
+        } else {
+            return materials[0];
+        }
     }
+
+  private:
+    uindex_t distance_bound;
+    CoefMaterial materials[2];
 };
