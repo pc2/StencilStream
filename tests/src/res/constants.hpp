@@ -30,5 +30,5 @@ const stencil::uindex_t halo_radius = pipeline_length * stencil_radius;
 const stencil::uindex_t core_width = tile_width - 2 * halo_radius;
 const stencil::uindex_t core_height = tile_height - 2 * halo_radius;
 
-const stencil::uindex_t grid_width = 3*tile_width;
-const stencil::uindex_t grid_height = 3*tile_height;
+const stencil::uindex_t grid_width = 128;
+const stencil::uindex_t grid_height = 64;

@@ -24,7 +24,6 @@
 #include <CL/sycl.hpp>
 #include <optional>
 #include <stdexcept>
-#include <sycl/ext/intel/ac_types/ac_int.hpp>
 
 namespace stencil {
 namespace tiling {
@@ -46,40 +45,17 @@ namespace tiling {
  * \tparam height The number of rows of the tile.
  * \tparam halo_radius The radius (aka width and height) of the tile halo.
  */
-template <typename T, uindex_t max_width, uindex_t height, uindex_t halo_radius,
-          uindex_t burst_size>
+template <typename T, uindex_t width, uindex_t height, uindex_t halo_radius, uindex_t burst_size>
 class Tile {
+    static_assert(width > 2 * halo_radius);
+    static_assert(height > 2 * halo_radius);
+
   public:
     static constexpr uindex_t burst_buffer_size = std::lcm(sizeof(Padded<T>), burst_size);
     static constexpr uindex_t burst_buffer_length = burst_buffer_size / sizeof(Padded<T>);
-    using BurstBuffer = std::array<Padded<T>, burst_buffer_length>;
-
-    static_assert(height > 2 * halo_radius);
+    static constexpr uindex_t core_width = width - 2 * halo_radius;
     static constexpr uindex_t core_height = height - 2 * halo_radius;
-
-    static constexpr uindex_t n_cells_to_n_bursts(uindex_t n_cells) {
-        return (n_cells / burst_buffer_length) + (n_cells % burst_buffer_length == 0 ? 0 : 1);
-    }
-
-    static constexpr uindex_t max_n_cells_per_stripe() {
-        return std::max(halo_radius, height) * max_width;
-    }
-
-    static constexpr uindex_t max_n_bursts_per_stripe() {
-        return n_cells_to_n_bursts(max_n_cells_per_stripe());
-    }
-
-    static constexpr unsigned long bits_cell = std::bit_width(burst_buffer_length);
-    using index_cell_t = ac_int<bits_cell + 1, true>;
-    using uindex_cell_t = ac_int<bits_cell, false>;
-
-    static constexpr unsigned long bits_burst = std::bit_width(max_n_bursts_per_stripe());
-    using index_burst_t = ac_int<bits_burst + 1, true>;
-    using uindex_burst_t = ac_int<bits_burst, false>;
-
-    static constexpr unsigned long bits_2d = std::bit_width(max_n_cells_per_stripe());
-    using index_2d_t = ac_int<bits_2d + 1, true>;
-    using uindex_2d_t = ac_int<bits_2d, false>;
+    using BurstBuffer = std::array<Padded<T>, burst_buffer_length>;
 
     /**
      * \brief Create a new tile.
@@ -87,60 +63,170 @@ class Tile {
      * Logically, the contents of the newly created tile are undefined since no memory resources are
      * allocated during construction and no initialization is done by the indexing operation.
      */
-    Tile(uindex_t width)
-        : width(width), stripe{cl::sycl::range<1>(n_cells_to_n_bursts(halo_radius * width)),
-                               cl::sycl::range<1>(n_cells_to_n_bursts(core_height * width)),
-                               cl::sycl::range<1>(n_cells_to_n_bursts(halo_radius * width))} {
-        assert(width >= halo_radius && width <= max_width);
-    }
-
-    uindex_t get_width() const { return width; }
+    Tile() : part{std::nullopt} {}
 
     /**
-     * \brief Enumeration to address individual stripes of the tile.
+     * \brief Enumeration to address individual parts of the tile.
      */
-    enum class Stripe {
-        NORTH,
+    enum class Part {
+        NORTH_WEST_CORNER,
+        NORTH_BORDER,
+        NORTH_EAST_CORNER,
+        EAST_BORDER,
+        SOUTH_EAST_CORNER,
+        SOUTH_BORDER,
+        SOUTH_WEST_CORNER,
+        WEST_BORDER,
         CORE,
-        SOUTH,
     };
 
-    static constexpr std::array<Stripe, 3> all_stripes = {
-        Stripe::NORTH,
-        Stripe::CORE,
-        Stripe::SOUTH,
+    /**
+     * \brief Array with all \ref Part variants to allow iteration over them.
+     */
+    static constexpr Part all_parts[] = {
+        Part::NORTH_WEST_CORNER, Part::NORTH_BORDER,      Part::NORTH_EAST_CORNER,
+        Part::EAST_BORDER,       Part::SOUTH_EAST_CORNER, Part::SOUTH_BORDER,
+        Part::SOUTH_WEST_CORNER, Part::WEST_BORDER,       Part::CORE,
     };
 
-    static constexpr uindex_t get_stripe_height(Stripe stripe) {
-        if (stripe == Stripe::CORE) {
-            return core_height;
-        } else {
-            return halo_radius;
+    /**
+     * \brief Calculate the range of a given Part.
+     *
+     * \param part The part to calculate the range for.
+     * \return The range of the part, used for example to allocate it.
+     */
+    static UID get_part_range(Part part) {
+        switch (part) {
+        case Part::NORTH_WEST_CORNER:
+        case Part::SOUTH_WEST_CORNER:
+        case Part::SOUTH_EAST_CORNER:
+        case Part::NORTH_EAST_CORNER:
+            return UID(halo_radius, halo_radius);
+        case Part::NORTH_BORDER:
+        case Part::SOUTH_BORDER:
+            return UID(core_width, halo_radius);
+        case Part::WEST_BORDER:
+        case Part::EAST_BORDER:
+            return UID(halo_radius, core_height);
+        case Part::CORE:
+            return UID(core_width, core_height);
+        default:
+            throw std::invalid_argument("Invalid grid tile part specified");
         }
     }
 
-    static constexpr uindex_t stripe_to_index(Stripe stripe) {
-        switch (stripe) {
-        case Stripe::NORTH:
-            return 0;
-        case Stripe::CORE:
-            return 1;
-        case Stripe::SOUTH:
-            return 2;
+    /**
+     * \brief Calculate the index offset of a given part relative to the north-western corner of the
+     * tile.
+     *
+     * \param part The part to calculate the offset for.
+     * \return The offset of the part.
+     */
+    static cl::sycl::id<2> get_part_offset(Part part) {
+        switch (part) {
+        case Part::NORTH_WEST_CORNER:
+            return cl::sycl::id<2>(0, 0);
+        case Part::NORTH_BORDER:
+            return cl::sycl::id<2>(halo_radius, 0);
+        case Part::NORTH_EAST_CORNER:
+            return cl::sycl::id<2>(width - halo_radius, 0);
+        case Part::EAST_BORDER:
+            return cl::sycl::id<2>(width - halo_radius, halo_radius);
+        case Part::SOUTH_EAST_CORNER:
+            return cl::sycl::id<2>(width - halo_radius, height - halo_radius);
+        case Part::SOUTH_BORDER:
+            return cl::sycl::id<2>(halo_radius, height - halo_radius);
+        case Part::SOUTH_WEST_CORNER:
+            return cl::sycl::id<2>(0, height - halo_radius);
+        case Part::WEST_BORDER:
+            return cl::sycl::id<2>(0, halo_radius);
+        case Part::CORE:
+            return cl::sycl::id<2>(halo_radius, halo_radius);
+        default:
+            throw std::invalid_argument("Invalid grid tile part specified");
         }
     }
 
-    enum class StripePart {
-        HEADER,
-        FULL,
-        FOOTER,
-    };
+    static constexpr uindex_t n_cells_to_n_bursts(uindex_t n_cells) {
+        return (n_cells / burst_buffer_length) + (n_cells % burst_buffer_length == 0 ? 0 : 1);
+    }
 
-    static constexpr std::array<StripePart, 3> all_stripe_parts = {
-        StripePart::HEADER,
-        StripePart::FULL,
-        StripePart::FOOTER,
-    };
+    static uindex_t get_part_bursts(Part part) {
+        UID range = get_part_range(part);
+        uindex_t n_cells = range.c * range.r;
+        return n_cells_to_n_bursts(n_cells);
+    }
+
+    static constexpr uindex_t max_n_cells() {
+        uindex_t lhs = halo_radius >= width ? halo_radius : width;
+        uindex_t rhs = halo_radius >= height ? halo_radius : height;
+        return lhs * rhs;
+    }
+
+    static constexpr uindex_t max_n_bursts() { return n_cells_to_n_bursts(max_n_cells()); }
+
+    /**
+     * \brief Return the buffer with the contents of the given part.
+     *
+     * If the part has not been accessed before, it will allocate the part's buffer. Note however
+     * that this method does not initialize the buffer. Please also note that the buffer is
+     * burst-aligned: The height of the returned buffer (the second value of the range) is always
+     * `burst_length` and the width is big enough to store all required cells of the part. For more
+     * information, read about \ref burstalignment.
+     *
+     * \param tile_part The part to access.
+     * \return The buffer of the part.
+     */
+    cl::sycl::buffer<BurstBuffer, 1> operator[](Part tile_part) {
+        uindex_t part_column, part_row;
+        switch (tile_part) {
+        case Part::NORTH_WEST_CORNER:
+            part_column = 0;
+            part_row = 0;
+            break;
+        case Part::NORTH_BORDER:
+            part_column = 1;
+            part_row = 0;
+            break;
+        case Part::NORTH_EAST_CORNER:
+            part_column = 2;
+            part_row = 0;
+            break;
+        case Part::EAST_BORDER:
+            part_column = 2;
+            part_row = 1;
+            break;
+        case Part::SOUTH_EAST_CORNER:
+            part_column = 2;
+            part_row = 2;
+            break;
+        case Part::SOUTH_BORDER:
+            part_column = 1;
+            part_row = 2;
+            break;
+        case Part::SOUTH_WEST_CORNER:
+            part_column = 0;
+            part_row = 2;
+            break;
+        case Part::WEST_BORDER:
+            part_column = 0;
+            part_row = 1;
+            break;
+        case Part::CORE:
+            part_column = 1;
+            part_row = 1;
+            break;
+        default:
+            throw std::invalid_argument("Invalid grid tile part specified");
+        }
+
+        if (!part[part_column][part_row].has_value()) {
+            cl::sycl::buffer<BurstBuffer, 1> new_part =
+                cl::sycl::range<1>(get_part_bursts(tile_part));
+            part[part_column][part_row] = new_part;
+        }
+        return *part[part_column][part_row];
+    }
 
     /**
      * \brief Copy the contents of a buffer into the tile.
@@ -155,9 +241,15 @@ class Tile {
      */
     void copy_from(cl::sycl::buffer<T, 2> buffer, cl::sycl::id<2> offset) {
         auto accessor = buffer.template get_access<cl::sycl::access::mode::read_write>();
-        copy_stripe(accessor, 0, offset, true);
-        copy_stripe(accessor, 1, offset, true);
-        copy_stripe(accessor, 2, offset, true);
+        copy_part(accessor, Part::NORTH_WEST_CORNER, offset, true);
+        copy_part(accessor, Part::NORTH_BORDER, offset, true);
+        copy_part(accessor, Part::NORTH_EAST_CORNER, offset, true);
+        copy_part(accessor, Part::EAST_BORDER, offset, true);
+        copy_part(accessor, Part::SOUTH_EAST_CORNER, offset, true);
+        copy_part(accessor, Part::SOUTH_BORDER, offset, true);
+        copy_part(accessor, Part::SOUTH_WEST_CORNER, offset, true);
+        copy_part(accessor, Part::WEST_BORDER, offset, true);
+        copy_part(accessor, Part::CORE, offset, true);
     }
 
     /**
@@ -174,139 +266,56 @@ class Tile {
      */
     void copy_to(cl::sycl::buffer<T, 2> buffer, cl::sycl::id<2> offset) {
         auto accessor = buffer.template get_access<cl::sycl::access::mode::read_write>();
-        copy_stripe(accessor, 0, offset, false);
-        copy_stripe(accessor, 1, offset, false);
-        copy_stripe(accessor, 2, offset, false);
-    }
-
-    template <typename pipe>
-    void submit_read(cl::sycl::queue fpga_queue, Stripe stripe, StripePart part) {
-        fpga_queue.submit([&](cl::sycl::handler &cgh) {
-            auto ac = this->stripe[stripe_to_index(stripe)]
-                          .template get_access<cl::sycl::access::mode::read>(cgh);
-
-            uindex_t part_width;
-            if (part == StripePart::FULL) {
-                part_width = width;
-            } else {
-                part_width = halo_radius;
-            }
-            uindex_t part_height;
-            if (stripe == Stripe::CORE) {
-                part_height = core_height;
-            } else {
-                part_height = halo_radius;
-            }
-            uindex_2d_t n_cells = uindex_t(part_width * part_height);
-
-            uindex_t starting_burst_i;
-            uindex_t starting_cell_i;
-            switch (part) {
-            case StripePart::HEADER:
-            case StripePart::FULL:
-                starting_burst_i = 0;
-                starting_cell_i = 0;
-                break;
-            case StripePart::FOOTER:
-                starting_burst_i = (width - halo_radius) * part_height / burst_buffer_length;
-                starting_cell_i = (width - halo_radius) * part_height % burst_buffer_length;
-                break;
-            }
-
-            cgh.single_task<pipe>([=]() {
-                [[intel::fpga_register]] BurstBuffer cache = ac[starting_burst_i];
-                uindex_burst_t burst_i = starting_burst_i + 1;
-                uindex_cell_t cell_i = starting_cell_i;
-
-                for (uindex_2d_t i = 0; i < n_cells; i++) {
-                    if (cell_i == uindex_cell_t(burst_buffer_length)) {
-                        cache = ac[burst_i.to_uint64()];
-                        burst_i++;
-                        cell_i = 0;
-                    }
-                    pipe::write(cache[cell_i].value);
-                    cell_i++;
-                }
-            });
-        });
-    }
-
-    template <typename pipe> void submit_write(cl::sycl::queue fpga_queue, Stripe stripe) {
-        fpga_queue.submit([&](cl::sycl::handler &cgh) {
-            auto ac = this->stripe[stripe_to_index(stripe)]
-                          .template get_access<cl::sycl::access::mode::discard_write>(cgh);
-            uindex_t stripe_height = get_stripe_height(stripe);
-            uindex_2d_t n_cells = uindex_2d_t(width * stripe_height);
-
-            cgh.single_task<pipe>([=]() {
-                [[intel::fpga_memory]] BurstBuffer cache;
-                uindex_burst_t burst_i = 0;
-                uindex_cell_t cell_i = 0;
-
-                for (uindex_2d_t i = 0; i < n_cells; i++) {
-                    if (cell_i == uindex_cell_t(burst_buffer_length)) {
-                        ac[burst_i.to_uint64()] = cache;
-                        burst_i++;
-                        cell_i = 0;
-                    }
-                    cache[cell_i].value = pipe::read();
-                    cell_i++;
-                }
-
-                if (cell_i != 0) {
-                    ac[burst_i.to_uint64()] = cache;
-                }
-            });
-        });
+        copy_part(accessor, Part::NORTH_WEST_CORNER, offset, false);
+        copy_part(accessor, Part::NORTH_BORDER, offset, false);
+        copy_part(accessor, Part::NORTH_EAST_CORNER, offset, false);
+        copy_part(accessor, Part::EAST_BORDER, offset, false);
+        copy_part(accessor, Part::SOUTH_EAST_CORNER, offset, false);
+        copy_part(accessor, Part::SOUTH_BORDER, offset, false);
+        copy_part(accessor, Part::SOUTH_WEST_CORNER, offset, false);
+        copy_part(accessor, Part::WEST_BORDER, offset, false);
+        copy_part(accessor, Part::CORE, offset, false);
     }
 
   private:
     /**
-     * \brief Helper function to copy a stripe to or from a buffer.
+     * \brief Helper function to copy a part to or from a buffer.
      */
-    void copy_stripe(cl::sycl::accessor<T, 2, cl::sycl::access::mode::read_write,
-                                        cl::sycl::access::target::host_buffer>
-                         accessor,
-                     uindex_t i_stripe, cl::sycl::id<2> global_offset, bool buffer_to_stripe) {
-        uindex_t c_offset = global_offset[0];
-        uindex_t r_offset = global_offset[1];
-        if (i_stripe >= 1) {
-            r_offset += halo_radius;
-        }
-        if (i_stripe == 2) {
-            r_offset += core_height;
-        }
-
-        if (c_offset >= accessor.get_range()[0] || r_offset >= accessor.get_range()[1]) {
-            // Nothing to do here. There is no data in the buffer for this stripe.
+    void copy_part(cl::sycl::accessor<T, 2, cl::sycl::access::mode::read_write,
+                                      cl::sycl::access::target::host_buffer>
+                       accessor,
+                   Part part, cl::sycl::id<2> global_offset, bool buffer_to_part) {
+        cl::sycl::id<2> offset = global_offset + get_part_offset(part);
+        if (offset[0] >= accessor.get_range()[0] || offset[1] >= accessor.get_range()[1]) {
+            // Nothing to do here. There is no data in the buffer for this part.
             return;
         }
 
-        auto stripe_ac = stripe[i_stripe].template get_access<cl::sycl::access::mode::read_write>();
-        uindex_t stripe_height = i_stripe == 1 ? core_height : halo_radius;
+        auto part_ac = (*this)[part].template get_access<cl::sycl::access::mode::read_write>();
+        uindex_t part_width = get_part_range(part).c;
+        uindex_t part_height = get_part_range(part).r;
 
-        for (uindex_t c = 0; c < width; c++) {
-            for (uindex_t r = 0; r < stripe_height; r++) {
-                uindex_t burst_i = (c * stripe_height + r) / burst_buffer_length;
-                uindex_t cell_i = (c * stripe_height + r) % burst_buffer_length;
-                uindex_t global_c = c_offset + c;
-                uindex_t global_r = r_offset + r;
+        for (uindex_t c = 0; c < part_width; c++) {
+            for (uindex_t r = 0; r < part_height; r++) {
+                uindex_t burst_i = (c * part_height + r) / burst_buffer_length;
+                uindex_t cell_i = (c * part_height + r) % burst_buffer_length;
+                uindex_t global_c = offset[0] + c;
+                uindex_t global_r = offset[1] + r;
 
                 if (global_c >= accessor.get_range()[0] || global_r >= accessor.get_range()[1]) {
                     continue;
                 }
 
-                if (buffer_to_stripe) {
-                    stripe_ac[burst_i][cell_i].value = accessor[global_c][global_r];
+                if (buffer_to_part) {
+                    part_ac[burst_i][cell_i].value = accessor[global_c][global_r];
                 } else {
-                    accessor[global_c][global_r] = stripe_ac[burst_i][cell_i].value;
+                    accessor[global_c][global_r] = part_ac[burst_i][cell_i].value;
                 }
             }
         }
     }
 
-    uindex_t width;
-    cl::sycl::buffer<BurstBuffer, 1> stripe[3];
+    std::optional<cl::sycl::buffer<BurstBuffer, 1>> part[3][3];
 };
 
 } // namespace tiling
