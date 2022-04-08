@@ -55,7 +55,7 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
     static_assert(pipeline_length <= std::numeric_limits<uindex_t>::max() / stencil_radius);
 
     static constexpr uindex_t halo_radius = stencil_radius * pipeline_length;
-    
+
     static_assert(halo_radius <= std::numeric_limits<uindex_t>::max() / 2);
     static_assert(tile_width <= std::numeric_limits<uindex_t>::max() - 2 * halo_radius);
     static_assert(tile_height <= std::numeric_limits<uindex_t>::max() - 2 * halo_radius);
@@ -127,21 +127,22 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
                 uindex_t required_columns[5];
                 required_columns[0] = halo_radius;
 
-                required_columns[1] =
-                    std::clamp<uindex_t>(n_inner_columns, 0, halo_radius);
+                required_columns[1] = std::min(n_inner_columns, halo_radius);
 
                 if (n_inner_columns > halo_radius) {
-                    required_columns[2] = std::clamp<uindex_t>(n_inner_columns - halo_radius, 0, TileImpl::core_width);
+                    required_columns[2] =
+                        std::min(n_inner_columns - halo_radius, TileImpl::core_width);
                 } else {
                     required_columns[2] = 0;
                 }
-                
+
                 if (n_inner_columns > halo_radius + TileImpl::core_width) {
-                    required_columns[3] = std::clamp<uindex_t>(n_inner_columns - halo_radius - TileImpl::core_width, 0, halo_radius);
+                    required_columns[3] =
+                        std::min(n_inner_columns - halo_radius - TileImpl::core_width, halo_radius);
                 } else {
                     required_columns[3] = 0;
                 }
-                
+
                 required_columns[4] = halo_radius;
 
                 assert(required_columns[1] + required_columns[2] + required_columns[3] ==

@@ -62,7 +62,7 @@ constexpr uindex_t tile_height = 512;
 
 #if EXECUTOR == 1
 // tiling, make tile as wide as possible.
-constexpr uindex_t tile_width = std::numeric_limits<uindex_t>::max() - 2 * pipeline_length - 1;
+constexpr uindex_t tile_width = 1 << 16;
 #else
 // monotile and CPU. More than a quadratic tile doesn't make sense.
 constexpr uindex_t tile_width = tile_height;
