@@ -19,50 +19,50 @@
  */
 #pragma once
 #include "defines.hpp"
+#include "json.hpp"
 #include "material/Material.hpp"
 
-std::string description = "\
-This application simulates a nano-photonic disk cavity.\n\
-\n\
-The simulated cavity is a two-dimensional circular cavity in perfectly conducting metal. An inital\n\
-magnetic source wave is applied, which is cut off after a certain amount of time. Then, after\n\
-a certain amount of time has passed, the resulting magnetic field value is accumulated and written\n\
-to the CSV file \"hz_sum.csv\".\n\
-\n\
-In the verbose or debugging mode, the application prints the progress of the simulation roughly once\n\
-per second and writes the current state of the magnetic field to \"hz.<time>.csv\", where <time> is\n\
-the passed simulation time measured in multiples of tau.\n\
-\n\
-The CSV files use commata (\",\") as field separators and new-lines (\"\\n\") as line separators.\n\
-\n\
-Simulation Parameters:\n\
--c <float>:                 Time instant t_cutoff when the source wave is cut off, measured in multiples of tau (default: 7.0 tau).\n\
--d <float>:                 Time instant t_detect when the field accumulation starts, measured in multiples of tau (default: 14 tau).\n\
--e <float>:                 Time instant t_max when the simulation stops, measured in multiples of tau (default: 15 tau).\n\
--f <float>:                 The frequency of the source wave, measured in Hz (default: 120e12 Hz).\n\
--p <float>:                 Phase of the source wave, measured in multiples of tau (default: 3.0 tau).\n\
--m <float>,<float>,<float>: Internal material parameters mu_r, eps_r, and sigma (default: 11.56,1.0,0.0).\n\
--r <float>:                 Radius of the cavity, measured in meters (default: 800e-9 m).\n\
--s <float>:                 The spatial resultion, measured in meters per grid cell (default: 10e-9 m/cell).\n\
--t <float>:                 Timescale tau for the simulation, measured in in seconds (default: 100e-15 s).\n\
-\n\
-Operation Parameters:\n\
--h:         Print this help message and exit.\n\
--o <path>:  Directory for output files (default: \".\").\n\
--i <float>: Write a snapshot of the magnetic field to the output directory every x multiples of tau (default: disabled).\n\
-";
+using namespace nlohmann;
+
+std::string description = R"(
+This application simulates a nano-photonic disk cavity.
+
+The simulated cavity is a two-dimensional circular cavity in perfectly conducting metal. An inital
+magnetic source wave is applied, which is cut off after a certain amount of time. Then, after
+a certain amount of time has passed, the resulting magnetic field value is accumulated and written
+to the CSV file "hz_sum.csv".
+
+In the verbose or debugging mode, the application prints the progress of the simulation roughly once
+per second and writes the current state of the magnetic field to \"hz.<time>.csv\", where <time> is
+the passed simulation time measured in multiples of tau.
+
+The CSV files use commata (",") as field separators and new-lines ("\n") as line separators.
+
+-h:         Print this help message and exit.
+-c <path>:  Load the given experiment JSON file. If set to "-", it will be read from stdin (Required).
+-o <path>:  Directory for output files (default: ".").
+-i <float>: Write a snapshot of the magnetic field to the output directory
+            every x multiples of tau (default: disabled).
+)";
 
 struct Parameters {
+    static void print_usage_and_exit(char *process_name) {
+        std::cerr << "Usage: " << process_name << " -c <path>" << std::endl;
+        std::cerr << description;
+        exit(1);
+    }
+
     Parameters(int argc, char **argv)
         : t_cutoff_factor(7.0), t_detect_factor(14.0), t_max_factor(15.0), frequency(120e12),
           t_0_factor(3.0), disk_radius(800e-9), mu_r(11.5), eps_r(1.0), sigma(0.0), dx(10e-9),
           tau(100e-15), out_dir("."), interval_factor(std::nullopt) {
-        int c;
+        
+        bool config_loaded = false;
 
-        while ((c = getopt(argc, argv, "hc:d:e:f:p:r:m:s:t:o:i:")) != -1) {
+        int c;
+        while ((c = getopt(argc, argv, "hc:o:i:")) != -1) {
             if (c == 'h' || c == '?') {
-                std::cerr << description;
-                exit(1);
+                print_usage_and_exit(argv[0]);
             }
 
             std::string arg = std::string(optarg);
@@ -70,80 +70,8 @@ struct Parameters {
 
             switch (c) {
             case 'c':
-                t_cutoff_factor = stof(arg);
-                if (t_cutoff_factor < 0.0) {
-                    cerr << "Error: t_cutoff may not be negative!" << std::endl;
-                    exit(1);
-                }
-                break;
-            case 'd':
-                t_detect_factor = stof(arg);
-                if (t_detect_factor < 0.0) {
-                    cerr << "Error: t_detect may not be negative!" << std::endl;
-                    exit(1);
-                }
-                break;
-            case 'e':
-                t_max_factor = stof(arg);
-                if (t_max_factor < 0.0) {
-                    cerr << "Error: t_max may not not be negative!" << std::endl;
-                    exit(1);
-                }
-                break;
-            case 'f':
-                frequency = stof(arg);
-                if (frequency < 0.0) {
-                    cerr << "Error: The frequency of the source wave may not be negative"
-                         << std::endl;
-                    exit(1);
-                }
-                break;
-            case 'p':
-                t_0_factor = stof(arg);
-                if (t_0_factor < 0.0) {
-                    cerr << "Error: The phase of the source wave may not be negative" << std::endl;
-                    exit(1);
-                }
-                break;
-            case 'r':
-                disk_radius = stof(arg);
-                if (disk_radius < 0.0) {
-                    cerr << "Error: The disk radius wave may not be negative" << std::endl;
-                    exit(1);
-                }
-                break;
-            case 'm':
-                first_comma = arg.find(",");
-                if (first_comma == std::string::npos) {
-                    cerr << "Error: Illegal material parameters. Correct form is "
-                            "<float>,<float>,<float>"
-                         << std::endl;
-                    exit(1);
-                }
-                second_comma = arg.find(",", first_comma + 1);
-                if (second_comma == std::string::npos) {
-                    cerr << "Error: Illegal material parameters. Correct form is "
-                            "<float>,<float>,<float>"
-                         << std::endl;
-                    exit(1);
-                }
-                mu_r = stof(arg.substr(0, first_comma));
-                eps_r = stof(arg.substr(first_comma + 1, second_comma - first_comma - 1));
-                sigma = stof(arg.substr(second_comma + 1));
-                break;
-            case 's':
-                dx = stof(arg);
-                if (dx < 0.0) {
-                    cerr << "Error: The spatial resolution may not be negative" << std::endl;
-                    exit(1);
-                }
-                break;
-            case 't':
-                tau = stof(arg);
-                if (tau < 0.0) {
-                    cerr << "Error: Tau may not be negative" << std::endl;
-                    exit(1);
-                }
+                load_config(std::string(arg));
+                config_loaded = true;
                 break;
             case 'o':
                 out_dir = std::string(arg);
@@ -155,6 +83,79 @@ struct Parameters {
                 break;
             }
         }
+
+        if (!config_loaded) {
+            print_usage_and_exit(argv[0]);
+        }
+    }
+
+    static void check_existance(json &object, std::string key) {
+        if (!object.contains(key)) {
+            std::cerr << "Field '" << key << "' is missing!" << std::endl;
+            exit(1);
+        }
+    }
+
+    static float get_checked_float(json &object, std::string key) {
+        check_existance(object, key);
+        if (!object[key].is_number()) {
+            std::cerr << "Field '" << key << "' has to be a number, but is a " << object[key].type_name() << "!" << std::endl;
+            exit(1);
+        }
+        return object[key].get<float>();
+    }
+
+    static index_t get_checked_int(json &object, std::string key) {
+        check_existance(object, key);
+        if (!object[key].is_number()) {
+            std::cerr << "Field '" << key << "' has to be an integer, but is a " << object[key].type_name() << "!" << std::endl;
+            exit(1);
+        }
+        if (object[key].is_number_float()) {
+            std::cerr << "Field '" << key << "' has to be an integer, but is a float!" << std::endl;
+        }
+        return object[key].get<index_t>();
+    }
+
+    static json &get_checked_object(json &object, std::string key) {
+        check_existance(object, key);
+        if (!object[key].is_object()) {
+            std::cerr << "Field '" << key << "' has to be an object, but is a " << object[key].type_name() << "!" << std::endl;
+            exit(1);
+        }
+        return object[key];
+    }
+
+    void load_config(std::string path_to_config) {
+        json config;
+        try {
+            if (path_to_config == "-") {
+                config = json::parse(std::cin);
+            } else {
+                config = json::parse(std::ifstream(path_to_config));
+            }
+        } catch (nlohmann::detail::parse_error e) {
+            std::cerr << "Illegal config file: " << e.what() << std::endl;
+            exit(1);
+        }
+
+        tau = get_checked_float(config, "tau");
+        dx = get_checked_float(config, "dx");
+
+        json &time = get_checked_object(config, "time");
+        t_cutoff_factor = get_checked_float(time, "t_cutoff");
+        t_detect_factor = get_checked_float(time, "t_detect");
+        t_max_factor = get_checked_float(time, "t_max");
+
+        json &source = get_checked_object(config, "source");
+        frequency = get_checked_float(source, "frequency");
+        t_0_factor = get_checked_float(source, "phase");
+
+        json &cavity = get_checked_object(config, "cavity");
+        disk_radius = get_checked_float(cavity, "radius");
+        mu_r = get_checked_float(cavity, "mu_r");
+        eps_r = get_checked_float(cavity, "eps_r");
+        sigma = get_checked_float(cavity, "sigma");
     }
 
     float t_cutoff_factor;

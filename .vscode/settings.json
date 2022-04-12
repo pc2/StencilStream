@@ -74,7 +74,9 @@
         "variant": "cpp",
         "unordered_set": "cpp",
         "codecvt": "cpp",
-        "shared_mutex": "cpp"
+        "shared_mutex": "cpp",
+        "forward_list": "cpp",
+        "valarray": "cpp"
     },
     "C_Cpp.clang_format_style": "{ BasedOnStyle: LLVM, IndentWidth: 4, TabWidth: 4, ColumnLimit: 100, IndentPPDirectives: BeforeHash }",
 }
