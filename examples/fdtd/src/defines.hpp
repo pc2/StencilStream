@@ -45,21 +45,13 @@ constexpr uindex_t tile_width = tile_height;
 
 constexpr uindex_t stencil_radius = 1;
 
-#if MATERIAL == 0 && SOURCE == 1 && EXECUTOR == 0
+#if EXECUTOR == 0
 // material coefficients in cells, source LUT, monotile
 constexpr uindex_t pipeline_length = 320;
 
-#elif MATERIAL == 0 && SOURCE == 1 && EXECUTOR == 1
+#elif EXECUTOR == 1
 // material coefficients in cells, source LUT, tiling
 constexpr uindex_t pipeline_length = 190;
-
-#elif MATERIAL == 2 && SOURCE == 1 && EXECUTOR == 0
-// material rendered from position, source LUT, monotile
-constexpr uindex_t pipeline_length = 480;
-
-#elif MATERIAL == 2 && SOURCE == 1 && EXECUTOR == 1
-// material rendered from position, source LUT, tiling
-constexpr uindex_t pipeline_length = 254;
 
 #else
 // fallback
