@@ -168,13 +168,18 @@ class Grid {
     }
 
     template <typename pipe_id>
-    void submit_read(cl::sycl::queue fpga_queue, ID tile_id, typename Tile::Part part) {
+    void submit_read(cl::sycl::queue fpga_queue, ID tile_id, typename Tile::Part part,
+        uindex_t n_columns) {
+        if (n_columns == 0) {
+            return;
+        }
+        
         fpga_queue.submit([&](cl::sycl::handler &cgh) {
             auto ac =
                 this->get_tile(tile_id)[part].template get_access<cl::sycl::access::mode::read>(
                     cgh);
             UID range = Tile::get_part_range(part);
-            uindex_2d_t n_cells = uindex_t(range.c * range.r);
+            uindex_2d_t n_cells = uindex_t(n_columns * range.r);
 
             cgh.single_task<pipe_id>([=]() {
                 [[intel::fpga_register]] typename Tile::BurstBuffer cache;
@@ -195,12 +200,17 @@ class Grid {
     }
 
     template <typename pipe_id>
-    void submit_write(cl::sycl::queue fpga_queue, ID tile_id, typename Tile::Part part) {
+    void submit_write(cl::sycl::queue fpga_queue, ID tile_id, typename Tile::Part part,
+        uindex_t n_columns) {
+        if (n_columns == 0) {
+            return;
+        }
+
         fpga_queue.submit([&](cl::sycl::handler &cgh) {
             auto ac = this->get_tile(tile_id)[part]
                           .template get_access<cl::sycl::access::mode::discard_write>(cgh);
             UID range = Tile::get_part_range(part);
-            uindex_2d_t n_cells = uindex_t(range.c * range.r);
+            uindex_2d_t n_cells = uindex_t(n_columns * range.r);
 
             cgh.single_task<pipe_id>([=]() {
                 [[intel::fpga_memory]] typename Tile::BurstBuffer cache;
