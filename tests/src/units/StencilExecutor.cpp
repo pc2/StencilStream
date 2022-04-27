@@ -31,8 +31,10 @@ using namespace cl::sycl;
 
 using TransFunc = FPGATransFunc<stencil_radius>;
 using SingleContextExecutorImpl = SingleContextExecutor<Cell, stencil_radius, TransFunc>;
-using StencilExecutorImpl = StencilExecutor<Cell, stencil_radius, TransFunc, pipeline_length>;
-using MonotileExecutorImpl = MonotileExecutor<Cell, stencil_radius, TransFunc, pipeline_length>;
+using StencilExecutorImpl =
+    StencilExecutor<Cell, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height>;
+using MonotileExecutorImpl =
+    MonotileExecutor<Cell, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height>;
 using SimpleCPUExecutorImpl = SimpleCPUExecutor<Cell, stencil_radius, TransFunc>;
 
 void test_executor_set_input_copy_output(SingleContextExecutorImpl *executor, uindex_t grid_width,
@@ -78,12 +80,7 @@ TEST_CASE("SimpleCPUExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[SimpleCPUE
     test_executor_set_input_copy_output(&executor, tile_width - 1, tile_height - 1);
 }
 
-void test_executor_run(SingleContextExecutorImpl *executor, uindex_t grid_width,
-                       uindex_t grid_height) {
-    executor->select_emulator();
-
-    uindex_t n_generations = 2 * pipeline_length + 1;
-
+void test_executor(SingleContextExecutorImpl *executor, uindex_t grid_width, uindex_t grid_height, uindex_t n_generations) {
     buffer<Cell, 2> in_buffer(range<2>(grid_width, grid_height));
     {
         auto in_buffer_ac = in_buffer.get_access<access::mode::discard_write>();
@@ -94,9 +91,11 @@ void test_executor_run(SingleContextExecutorImpl *executor, uindex_t grid_width,
         }
     }
 
-    REQUIRE(executor->get_i_generation() == 0);
-
     executor->set_input(in_buffer);
+    executor->set_i_generation(0);
+    executor->select_emulator();
+
+    REQUIRE(executor->get_i_generation() == 0);
     REQUIRE(executor->get_grid_range().c == grid_width);
     REQUIRE(executor->get_grid_range().r == grid_height);
 
@@ -138,15 +137,41 @@ void test_executor_run(SingleContextExecutorImpl *executor, uindex_t grid_width,
 
 TEST_CASE("StencilExecutor::run", "[StencilExecutor]") {
     StencilExecutorImpl executor(Cell::halo(), TransFunc());
-    test_executor_run(&executor, grid_width, grid_height);
+    
+    // single pass
+    test_executor(&executor, tile_width, tile_height, pipeline_length);
+    // single pass, grid smaller than tile
+    test_executor(&executor, tile_width / 2, tile_height / 2, pipeline_length);
+    // single pass, grid bigger than tile
+    test_executor(&executor, tile_width * 2, tile_height * 2, pipeline_length);
+    // single pass, grid bigger slightly bigger than tile
+    test_executor(&executor, tile_width * 1.5, tile_height * 1.5, pipeline_length);
+
+    // multiple passes
+    test_executor(&executor, tile_width, tile_height, 2 * pipeline_length);
+    // multiple passes, grid smaller than tile
+    test_executor(&executor, tile_width / 2, tile_height / 2, 2 * pipeline_length);
+    // multiple passes, grid bigger than tile
+    test_executor(&executor, tile_width * 2, tile_height * 2, 2 * pipeline_length);
+    // multiple passes, grid bigger slightly bigger than tile
+    test_executor(&executor, tile_width * 1.5, tile_height * 1.5, 2 * pipeline_length);
 }
 
 TEST_CASE("MonotileExecutor::run", "[MonotileExecutor]") {
     MonotileExecutorImpl executor(Cell::halo(), TransFunc());
-    test_executor_run(&executor, grid_width, grid_height);
+    
+    // single pass
+    test_executor(&executor, tile_width, tile_height, pipeline_length);
+    // single pass, grid smaller than tile
+    test_executor(&executor, tile_width / 2, tile_height / 2, pipeline_length);
+
+    // multiple passes
+    test_executor(&executor, tile_width, tile_height, 2 * pipeline_length);
+    // multiple passes, grid smaller than tile
+    test_executor(&executor, tile_width / 2, tile_height / 2, 2 * pipeline_length);
 }
 
 TEST_CASE("SimpleCPUExecutor::run", "[SimpleCPUExecutor]") {
     SimpleCPUExecutorImpl executor(Cell::halo(), TransFunc());
-    test_executor_run(&executor, grid_width, grid_height);
+    test_executor(&executor, grid_width, grid_height, 32);
 }

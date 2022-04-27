@@ -53,6 +53,8 @@ class Tile {
   public:
     static constexpr uindex_t burst_buffer_size = std::lcm(sizeof(Padded<T>), burst_size);
     static constexpr uindex_t burst_buffer_length = burst_buffer_size / sizeof(Padded<T>);
+    static constexpr uindex_t core_width = width - 2 * halo_radius;
+    static constexpr uindex_t core_height = height - 2 * halo_radius;
     using BurstBuffer = std::array<Padded<T>, burst_buffer_length>;
 
     /**
@@ -102,12 +104,12 @@ class Tile {
             return UID(halo_radius, halo_radius);
         case Part::NORTH_BORDER:
         case Part::SOUTH_BORDER:
-            return UID(width - 2 * halo_radius, halo_radius);
+            return UID(core_width, halo_radius);
         case Part::WEST_BORDER:
         case Part::EAST_BORDER:
-            return UID(halo_radius, height - 2 * halo_radius);
+            return UID(halo_radius, core_height);
         case Part::CORE:
-            return UID(width - 2 * halo_radius, height - 2 * halo_radius);
+            return UID(core_width, core_height);
         default:
             throw std::invalid_argument("Invalid grid tile part specified");
         }

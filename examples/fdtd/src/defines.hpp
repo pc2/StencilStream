@@ -39,15 +39,11 @@ constexpr float sqrt_2 = 1.4142135623730951;
 
 constexpr float pi = 3.1415926535897932384626433;
 
-/* stencil parameters */
-constexpr uindex_t tile_height = 512;
-constexpr uindex_t tile_width = tile_height;
-
 constexpr uindex_t stencil_radius = 1;
 
 #if EXECUTOR == 0
 // material coefficients in cells, source LUT, monotile
-constexpr uindex_t pipeline_length = 320;
+constexpr uindex_t pipeline_length = 224;
 
 #elif EXECUTOR == 1
 // material coefficients in cells, source LUT, tiling
@@ -61,3 +57,14 @@ constexpr uindex_t pipeline_length = 100;
 
 
 static_assert(pipeline_length % 2 == 0);
+
+/* stencil parameters */
+constexpr uindex_t tile_height = 512;
+
+#if EXECUTOR == 1
+// tiling, make tile as wide as possible.
+constexpr uindex_t tile_width = 1 << 16;
+#else
+// monotile and CPU. More than a quadratic tile doesn't make sense.
+constexpr uindex_t tile_width = tile_height;
+#endif
