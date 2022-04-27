@@ -27,31 +27,30 @@ class LUTResolver {
   public:
     struct MaterialCell {
         Cell cell;
-        uint8_t index;
+        uindex_ring_t index;
 
         static MaterialCell halo() { return MaterialCell{Cell::halo(), 0}; }
 
-        static MaterialCell from_parameters(Parameters const &parameters, uindex_t material_index) {
-            return MaterialCell{Cell::halo(), uint8_t(material_index)};
+        static MaterialCell from_parameters(Parameters const &parameters, uindex_t ring_index) {
+            return MaterialCell{Cell::halo(), uindex_ring_t(ring_index)};
         }
     };
 
     LUTResolver(Parameters const &parameters) : materials() {
-        materials[0] = CoefMaterial::from_relative_material(RelMaterial::perfect_metal(),
-                                                            parameters.dx, parameters.dt());
-        materials[1] = CoefMaterial::from_relative_material(
-            RelMaterial{parameters.mu_r, parameters.eps_r, parameters.sigma}, parameters.dx,
-            parameters.dt());
+        for (uindex_t i = 0; i < max_n_rings + 1; i++) {
+            if (i < parameters.rings.size()) {
+                materials[i] = CoefMaterial::from_relative_material(parameters.rings[i].material,
+                                                                    parameters.dx, parameters.dt());
+            } else {
+                materials[i] = CoefMaterial::perfect_metal();
+            }
+        }
     }
 
     CoefMaterial get_material_coefficients(Stencil<MaterialCell, 1> const &stencil) const {
-        uint8_t index = stencil[ID(0, 0)].index;
-        if (index > 1) {
-            index = 0;
-        }
-        return materials[index];
+        return materials[stencil[ID(0, 0)].index];
     }
 
   private:
-    CoefMaterial materials[2];
+    CoefMaterial materials[max_n_rings + 1];
 };

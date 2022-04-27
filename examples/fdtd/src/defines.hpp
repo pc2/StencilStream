@@ -22,6 +22,7 @@
 #include <StencilStream/Index.hpp>
 #include <cmath>
 #include <optional>
+#include <sycl/ext/intel/ac_types/ac_int.hpp>
 #include <unistd.h>
 
 using namespace std;
@@ -42,11 +43,11 @@ constexpr float pi = 3.1415926535897932384626433;
 constexpr uindex_t stencil_radius = 1;
 
 #if EXECUTOR == 0
-// material coefficients in cells, source LUT, monotile
+// monotile
 constexpr uindex_t pipeline_length = 224;
 
 #elif EXECUTOR == 1
-// material coefficients in cells, source LUT, tiling
+// tiling
 constexpr uindex_t pipeline_length = 190;
 
 #else
@@ -54,7 +55,6 @@ constexpr uindex_t pipeline_length = 190;
 constexpr uindex_t pipeline_length = 100;
 
 #endif
-
 
 static_assert(pipeline_length % 2 == 0);
 
@@ -68,3 +68,7 @@ constexpr uindex_t tile_width = 1 << 16;
 // monotile and CPU. More than a quadratic tile doesn't make sense.
 constexpr uindex_t tile_width = tile_height;
 #endif
+
+constexpr uindex_t max_n_rings = 15;
+constexpr uindex_t bits_max_n_rings = std::bit_width(max_n_rings + 1);
+using uindex_ring_t = ac_int<bits_max_n_rings, false>;

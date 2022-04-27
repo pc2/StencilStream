@@ -148,10 +148,19 @@ int main(int argc, char **argv) {
             for (uindex_t r = 0; r < parameters.grid_range()[1]; r++) {
                 float a = float(c) - float(parameters.grid_range()[0]) / 2.0;
                 float b = float(r) - float(parameters.grid_range()[1]) / 2.0;
-                if (parameters.dx * sqrt(a * a + b * b) <= parameters.disk_radius) {
-                    init_ac[c][r] = CellImpl::from_parameters(parameters, 1);
-                } else {
-                    init_ac[c][r] = CellImpl::from_parameters(parameters, 0);
+                float distance = parameters.dx * sqrt(a * a + b * b);
+
+                float radius = 0.0;
+                for (uindex_t i = 0; i <= parameters.rings.size(); i++) {
+                    if (i < parameters.rings.size()) {
+                        radius += parameters.rings[i].width;
+                        if (distance < radius) {
+                            init_ac[c][r] = CellImpl::from_parameters(parameters, i);
+                            break;
+                        }
+                    } else {
+                        init_ac[c][r] = CellImpl::from_parameters(parameters, i);
+                    }
                 }
             }
         }

@@ -35,13 +35,12 @@ class CoefResolver {
             };
         }
 
-        static MaterialCell from_parameters(Parameters const &parameters, uindex_t material_index) {
-            if (material_index == 0) {
+        static MaterialCell from_parameters(Parameters const &parameters, uindex_t ring_index) {
+            if (ring_index >= parameters.rings.size()) {
                 return MaterialCell{Cell::halo(), CoefMaterial::perfect_metal()};
             } else {
                 return MaterialCell{Cell::halo(), CoefMaterial::from_relative_material(
-                                                      RelMaterial{parameters.mu_r, parameters.eps_r,
-                                                                  parameters.sigma},
+                                                      parameters.rings[ring_index].material,
                                                       parameters.dx, parameters.dt())};
             }
         }

@@ -54,9 +54,9 @@ struct Parameters {
 
     Parameters(int argc, char **argv)
         : t_cutoff_factor(7.0), t_detect_factor(14.0), t_max_factor(15.0), frequency(120e12),
-          t_0_factor(3.0), disk_radius(800e-9), mu_r(11.5), eps_r(1.0), sigma(0.0), dx(10e-9),
-          tau(100e-15), out_dir("."), interval_factor(std::nullopt) {
-        
+          t_0_factor(3.0), dx(10e-9), tau(100e-15), rings(), out_dir("."),
+          interval_factor(std::nullopt) {
+
         bool config_loaded = false;
 
         int c;
@@ -99,7 +99,8 @@ struct Parameters {
     static float get_checked_float(json &object, std::string key) {
         check_existance(object, key);
         if (!object[key].is_number()) {
-            std::cerr << "Field '" << key << "' has to be a number, but is a " << object[key].type_name() << "!" << std::endl;
+            std::cerr << "Field '" << key << "' has to be a number, but is a "
+                      << object[key].type_name() << "!" << std::endl;
             exit(1);
         }
         return object[key].get<float>();
@@ -108,7 +109,8 @@ struct Parameters {
     static index_t get_checked_int(json &object, std::string key) {
         check_existance(object, key);
         if (!object[key].is_number()) {
-            std::cerr << "Field '" << key << "' has to be an integer, but is a " << object[key].type_name() << "!" << std::endl;
+            std::cerr << "Field '" << key << "' has to be an integer, but is a "
+                      << object[key].type_name() << "!" << std::endl;
             exit(1);
         }
         if (object[key].is_number_float()) {
@@ -120,7 +122,18 @@ struct Parameters {
     static json &get_checked_object(json &object, std::string key) {
         check_existance(object, key);
         if (!object[key].is_object()) {
-            std::cerr << "Field '" << key << "' has to be an object, but is a " << object[key].type_name() << "!" << std::endl;
+            std::cerr << "Field '" << key << "' has to be an object, but is a "
+                      << object[key].type_name() << "!" << std::endl;
+            exit(1);
+        }
+        return object[key];
+    }
+
+    static json &get_checked_array(json &object, std::string key) {
+        check_existance(object, key);
+        if (!object[key].is_array()) {
+            std::cerr << "Field '" << key << "' has to be an array, but is a "
+                      << object[key].type_name() << "!" << std::endl;
             exit(1);
         }
         return object[key];
@@ -151,11 +164,18 @@ struct Parameters {
         frequency = get_checked_float(source, "frequency");
         t_0_factor = get_checked_float(source, "phase");
 
-        json &cavity = get_checked_object(config, "cavity");
-        disk_radius = get_checked_float(cavity, "radius");
-        mu_r = get_checked_float(cavity, "mu_r");
-        eps_r = get_checked_float(cavity, "eps_r");
-        sigma = get_checked_float(cavity, "sigma");
+        json rings_array = get_checked_array(config, "cavity_rings");
+        if (rings_array.size() > max_n_rings) {
+            std::cerr << "Illegal config file: Too many rings. This build only supports up to "
+                      << max_n_rings << std::endl;
+            exit(1);
+        }
+
+        rings.clear();
+        rings.reserve(rings_array.size());
+        for (auto it : rings_array) {
+            rings.push_back(RingParameter(it));
+        }
     }
 
     float t_cutoff_factor;
@@ -168,13 +188,30 @@ struct Parameters {
 
     float t_0_factor;
 
-    float mu_r, eps_r, sigma;
-
-    float disk_radius;
-
     float dx;
 
     float tau;
+
+    struct RingParameter {
+        float width;
+        RelMaterial material;
+
+        RingParameter(json &object) : width(0.0), material(RelMaterial::perfect_metal()) {
+            width = get_checked_float(object, "width");
+            if (width < 0.0) {
+                std::cerr << "Invalid config file: Cavity ring width may not be negative!"
+                          << std::endl;
+                exit(1);
+            }
+
+            float mu_r = get_checked_float(object, "mu_r");
+            float eps_r = get_checked_float(object, "eps_r");
+            float sigma = get_checked_float(object, "sigma");
+            material = RelMaterial{mu_r, eps_r, sigma};
+        }
+    };
+
+    std::vector<RingParameter> rings;
 
     std::string out_dir;
 
@@ -196,7 +233,11 @@ struct Parameters {
     float omega() const { return 2.0 * pi * frequency; }
 
     cl::sycl::range<2> grid_range() const {
-        uindex_t width = uindex_t(std::ceil((2 * disk_radius / dx) + 2));
+        float outer_radius = 0.0;
+        for (auto ring : rings) {
+            outer_radius += ring.width;
+        }
+        uindex_t width = uindex_t(std::ceil((2 * outer_radius / dx) + 2));
         uindex_t height = width;
         return cl::sycl::range<2>(width, height);
     }
@@ -212,6 +253,7 @@ struct Parameters {
     void print_configuration() const {
         std::cout << "Simulation Configuration:" << std::endl;
         std::cout << std::endl;
+
         std::cout << "# Timing" << std::endl;
         std::cout << "tau           = " << tau << " s" << std::endl;
         std::cout << "t_cutoff      = " << t_cutoff_factor << " tau = " << t_cutoff() << " s"
@@ -221,14 +263,28 @@ struct Parameters {
         std::cout << "t_max         = " << t_max_factor << " tau = " << t_max() << " s"
                   << std::endl;
         std::cout << std::endl;
+
         std::cout << "# Source Wave" << std::endl;
         std::cout << "phase         = " << t_0_factor << " tau = " << t_0() << " s" << std::endl;
         std::cout << "frequency     = " << frequency << " Hz" << std::endl;
         std::cout << std::endl;
+
+        std::cout << "# Cavity" << std::endl;
+        float inner_radius = 0.0;
+        for (uindex_t i = 0; i < rings.size(); i++) {
+            std::cout << "## Ring No. " << i << std::endl;
+            std::cout << "distance range= [" << inner_radius << ", "
+                      << inner_radius + rings[i].width << "]" << std::endl;
+            inner_radius += rings[i].width;
+            std::cout << "mu_r          = " << rings[i].material.mu_r << std::endl;
+            std::cout << "eps_r         = " << rings[i].material.eps_r << std::endl;
+            std::cout << "sigma         = " << rings[i].material.sigma << std::endl;
+            std::cout << std::endl;
+        }
+
         std::cout << "# Execution parameters" << std::endl;
         std::cout << "dx            = " << dx << " m/cell" << std::endl;
         std::cout << "dt            = " << dt() << " s/generation" << std::endl;
-        std::cout << "radius        = " << disk_radius << " m" << std::endl;
         std::cout << "grid w/h      = " << grid_range()[0] << " cells" << std::endl;
         std::cout << "n. timesteps  = " << n_timesteps() << std::endl;
         std::cout << std::endl;
