@@ -28,13 +28,23 @@ template <typename MaterialResolver, typename Source> class Kernel {
     using MaterialCell = typename MaterialResolver::MaterialCell;
 
     Kernel(Parameters const &parameters, MaterialResolver mat_resolver, Source source)
-        : t_cutoff(parameters.t_cutoff()), t_detect(parameters.t_detect()), dt(parameters.dt()),
-          source_c(parameters.source_c()), source_r(parameters.source_r()),
-          source_distance_bound(0.0), center_c(parameters.grid_range()[0] / 2),
-          center_r(parameters.grid_range()[1] / 2), mat_resolver(mat_resolver), source(source) {
+        : t_cutoff(), t_detect(), dt(), source_radius_squared(), source_c(), source_r(),
+          source_distance_bound(), center_c(), center_r(), mat_resolver(mat_resolver),
+          source(source) {
+        t_cutoff = parameters.t_cutoff();
+        t_detect = parameters.t_detect();
+        dt = parameters.dt();
+
+        source_radius_squared = parameters.source_radius / parameters.dx;
+        source_radius_squared *= source_radius_squared;
+
+        source_c = parameters.source_c();
+        source_r = parameters.source_r();
         source_distance_bound = parameters.source_radius / parameters.dx;
         source_distance_bound = source_distance_bound * source_distance_bound;
         source_distance_bound -= source_c * source_c + source_r * source_r;
+
+        center_c = center_r = parameters.grid_range()[0] / 2;
     }
 
     MaterialCell operator()(Stencil<MaterialCell, 1> const &stencil) const {
@@ -62,7 +72,13 @@ template <typename MaterialResolver, typename Source> class Kernel {
             float current_time = (stencil.generation >> 1) * dt;
 
             if (source_distance_score <= source_distance_bound && current_time < t_cutoff) {
-                cell.cell.hz += source.get_source_amplitude(stencil.stage, current_time);
+                index_t cell_distance_squared =
+                    source_distance_score + source_c * source_c + source_r * source_r;
+                // cell_distance_squared == (distance / dx)^2
+                float interp_factor = 1.0 - float(cell_distance_squared) / source_radius_squared;
+
+                cell.cell.hz +=
+                    interp_factor * source.get_source_amplitude(stencil.stage, current_time);
             }
 
             if (current_time > t_detect) {
@@ -77,6 +93,7 @@ template <typename MaterialResolver, typename Source> class Kernel {
     float t_detect;
     float dt;
 
+    float source_radius_squared;
     index_t source_c, source_r, source_distance_bound;
     index_t center_c, center_r;
 
