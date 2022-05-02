@@ -8,7 +8,9 @@
     },
     "source": {
         "frequency": 120e12,
-        "phase": 3.0
+        "phase": 3.0,
+        "x": 0,
+        "y": 0
     },
     "cavity_rings": [
         {

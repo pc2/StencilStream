@@ -54,7 +54,7 @@ struct Parameters {
 
     Parameters(int argc, char **argv)
         : t_cutoff_factor(7.0), t_detect_factor(14.0), t_max_factor(15.0), frequency(120e12),
-          t_0_factor(3.0), dx(10e-9), tau(100e-15), rings(), out_dir("."),
+          t_0_factor(3.0), source_x(0.0), source_y(0.0), dx(10e-9), tau(100e-15), rings(), out_dir("."),
           interval_factor(std::nullopt) {
 
         bool config_loaded = false;
@@ -163,6 +163,8 @@ struct Parameters {
         json &source = get_checked_object(config, "source");
         frequency = get_checked_float(source, "frequency");
         t_0_factor = get_checked_float(source, "phase");
+        source_x = get_checked_float(source, "x");
+        source_y = get_checked_float(source, "y");
 
         json rings_array = get_checked_array(config, "cavity_rings");
         if (rings_array.size() > max_n_rings) {
@@ -187,6 +189,10 @@ struct Parameters {
     float frequency;
 
     float t_0_factor;
+
+    float source_x;
+
+    float source_y;
 
     float dx;
 
@@ -224,6 +230,10 @@ struct Parameters {
     float t_max() const { return t_max_factor * tau; }
 
     float t_0() const { return t_0_factor * tau; }
+
+    uindex_t source_c() const { return uindex_t(float(grid_range()[0] / 2) + source_x / dx); }
+
+    uindex_t source_r() const { return uindex_t(float(grid_range()[0] / 2) + source_y / dx); }
 
     float dt() const { return (dx / float(c0 * sqrt_2)) * 0.99; }
 

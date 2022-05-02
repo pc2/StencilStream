@@ -29,6 +29,7 @@ template <typename MaterialResolver, typename Source> class Kernel {
 
     Kernel(Parameters const &parameters, MaterialResolver mat_resolver, Source source)
         : t_cutoff(parameters.t_cutoff()), t_detect(parameters.t_detect()), dt(parameters.dt()),
+          source_c(parameters.source_c()), source_r(parameters.source_r()),
           mat_resolver(mat_resolver), source(source) {}
 
     MaterialCell operator()(Stencil<MaterialCell, 1> const &stencil) const {
@@ -45,12 +46,12 @@ template <typename MaterialResolver, typename Source> class Kernel {
         } else {
             cell.cell.hz *= material.da;
             cell.cell.hz += material.db * (stencil[ID(0, 1)].cell.ex - stencil[ID(0, 0)].cell.ex +
-                                      stencil[ID(0, 0)].cell.ey - stencil[ID(1, 0)].cell.ey);
+                                           stencil[ID(0, 0)].cell.ey - stencil[ID(1, 0)].cell.ey);
 
             float current_time = (stencil.generation >> 1) * dt;
 
-            if (stencil.id.c == stencil.grid_range.c / 2 &&
-                stencil.id.r == stencil.grid_range.r / 2 && current_time < t_cutoff) {
+            if (stencil.id.c == source_c &&
+                stencil.id.r == source_r && current_time < t_cutoff) {
                 cell.cell.hz += source.get_source_amplitude(stencil.stage, current_time);
             }
 
@@ -65,6 +66,7 @@ template <typename MaterialResolver, typename Source> class Kernel {
     float t_cutoff;
     float t_detect;
     float dt;
+    uindex_t source_c, source_r;
     MaterialResolver mat_resolver;
     Source source;
 };
