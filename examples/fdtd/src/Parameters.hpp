@@ -54,7 +54,7 @@ struct Parameters {
 
     Parameters(int argc, char **argv)
         : t_cutoff_factor(7.0), t_detect_factor(14.0), t_max_factor(15.0), frequency(120e12),
-          t_0_factor(3.0), source_x(0.0), source_y(0.0), dx(10e-9), tau(100e-15), rings(), out_dir("."),
+          t_0_factor(3.0), source_x(0.0), source_y(0.0), source_radius(0.0), dx(10e-9), tau(100e-15), rings(), out_dir("."),
           interval_factor(std::nullopt) {
 
         bool config_loaded = false;
@@ -165,6 +165,7 @@ struct Parameters {
         t_0_factor = get_checked_float(source, "phase");
         source_x = get_checked_float(source, "x");
         source_y = get_checked_float(source, "y");
+        source_radius = get_checked_float(source, "radius");
 
         json rings_array = get_checked_array(config, "cavity_rings");
         if (rings_array.size() > max_n_rings) {
@@ -193,6 +194,8 @@ struct Parameters {
     float source_x;
 
     float source_y;
+
+    float source_radius;
 
     float dx;
 

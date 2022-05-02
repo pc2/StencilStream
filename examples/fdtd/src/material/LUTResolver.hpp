@@ -47,7 +47,7 @@ class LUTResolver {
         }
     }
 
-    CoefMaterial get_material_coefficients(Stencil<MaterialCell, 1> const &stencil) const {
+    CoefMaterial get_material_coefficients(Stencil<MaterialCell, 1> const &stencil, index_t distance_score) const {
         return materials[stencil[ID(0, 0)].index];
     }
 

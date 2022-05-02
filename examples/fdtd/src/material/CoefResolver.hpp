@@ -48,7 +48,7 @@ class CoefResolver {
 
     CoefResolver(Parameters const &parameters) {}
 
-    CoefMaterial get_material_coefficients(Stencil<MaterialCell, 1> const &stencil) const {
+    CoefMaterial get_material_coefficients(Stencil<MaterialCell, 1> const &stencil, index_t distance_score) const {
         return stencil[ID(0, 0)].coefficients;
     }
 };

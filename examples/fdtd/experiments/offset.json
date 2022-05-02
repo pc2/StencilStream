@@ -10,7 +10,8 @@
         "frequency": 120e12,
         "phase": 3.0,
         "x": 400e-9,
-        "y": 0
+        "y": 0,
+        "radius": 10e-9
     },
     "cavity_rings": [
         {

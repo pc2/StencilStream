@@ -30,12 +30,23 @@ template <typename MaterialResolver, typename Source> class Kernel {
     Kernel(Parameters const &parameters, MaterialResolver mat_resolver, Source source)
         : t_cutoff(parameters.t_cutoff()), t_detect(parameters.t_detect()), dt(parameters.dt()),
           source_c(parameters.source_c()), source_r(parameters.source_r()),
-          mat_resolver(mat_resolver), source(source) {}
+          source_distance_bound(0.0), center_c(parameters.grid_range()[0] / 2),
+          center_r(parameters.grid_range()[1] / 2), mat_resolver(mat_resolver), source(source) {
+        source_distance_bound = parameters.source_radius / parameters.dx;
+        source_distance_bound = source_distance_bound * source_distance_bound;
+        source_distance_bound -= source_c * source_c + source_r * source_r;
+    }
 
     MaterialCell operator()(Stencil<MaterialCell, 1> const &stencil) const {
         MaterialCell cell = stencil[ID(0, 0)];
 
-        CoefMaterial material = mat_resolver.get_material_coefficients(stencil);
+        index_t c = stencil.id.c;
+        index_t r = stencil.id.r;
+        index_t center_distance_score = c * (c - 2 * center_c) + r * (r - 2 * center_r);
+        index_t source_distance_score = c * (c - 2 * source_c) + r * (r - 2 * source_r);
+
+        CoefMaterial material =
+            mat_resolver.get_material_coefficients(stencil, center_distance_score);
 
         if ((stencil.stage & 0b1) == 0) {
             cell.cell.ex *= material.ca;
@@ -50,8 +61,7 @@ template <typename MaterialResolver, typename Source> class Kernel {
 
             float current_time = (stencil.generation >> 1) * dt;
 
-            if (stencil.id.c == source_c &&
-                stencil.id.r == source_r && current_time < t_cutoff) {
+            if (source_distance_score <= source_distance_bound && current_time < t_cutoff) {
                 cell.cell.hz += source.get_source_amplitude(stencil.stage, current_time);
             }
 
@@ -66,7 +76,10 @@ template <typename MaterialResolver, typename Source> class Kernel {
     float t_cutoff;
     float t_detect;
     float dt;
-    uindex_t source_c, source_r;
+
+    index_t source_c, source_r, source_distance_bound;
+    index_t center_c, center_r;
+
     MaterialResolver mat_resolver;
     Source source;
 };
