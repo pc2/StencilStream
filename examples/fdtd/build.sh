@@ -24,17 +24,11 @@ material coefficients are retrieved from it. Possible values are:
 * 'render': Use a lookup table like with `lut`, but pick the material depending on the cell's
     position. No material information is stored in the cells.
 
-The 'source' denotes whether the computations of the source wave amplitude are done by the FPGA or
-the host. If the wave is computed on the host, the amplitudes are simply stored in a look-up table. 
-Possible values are:
-* 'od': Compute the source wave amplitudes on-demand with the FPGA.
+The 'source' denotes how and where the computations of the source wave amplitude are done. Possible values are:
+* 'od': Compute the current time and source wave amplitudes on-demand with the FPGA.
+* 'time': Compute the source wave amplitudes on-demand with the FPGA, but use a look-up table 
+    to get the time instant of a generation.
 * 'lut': Compute the source wave amplitudes on the host and store them in a lookup table.
-
-The 'time_resolver' denotes whether the computations of the current time is done by the FPGA or the
-host. If the time precomputed on the host, they are simply stored in a look-up table. Possible
-values are:
-* 'od': Compute the time on-demand with the FPGA.
-* 'lut': Compute the time on the host and store it in a lookup table.
 
 StencilStream offers different backends or executors with different architectures or goals. The
 possible values are:
@@ -59,11 +53,10 @@ fi
 
 MATERIAL=$1
 SOURCE=$2
-TIME=$3
-BACKEND=$4
-MODIFIER=$5
+BACKEND=$3
+MODIFIER=$4
 
-EXEC_NAME="fdtd_${MATERIAL}_${SOURCE}_${TIME}_${BACKEND}"
+EXEC_NAME="fdtd_${MATERIAL}_${SOURCE}_${BACKEND}"
 if [[ -n $MODIFIER ]]
 then
     EXEC_NAME="${EXEC_NAME}_${MODIFIER}"
@@ -99,23 +92,14 @@ fi
 if [[ "$SOURCE" == "od" ]]
 then
     COMMAND="$COMMAND -DSOURCE=0"
-elif [[ "$SOURCE" == "lut" ]]
+elif [[ "$SOURCE" == "time" ]]
 then
     COMMAND="$COMMAND -DSOURCE=1"
+elif [[ "$SOURCE" == "lut" ]]
+then
+    COMMAND="$COMMAND -DSOURCE=2"
 else
     echo "Unknown source type '$SOURCE'." 1>&2
-    VALID_ARGUMENTS=0
-fi
-
-# Time computation
-if [[ "$TIME" == "od" ]]
-then
-    COMMAND="$COMMAND -DTIME=0"
-elif [[ "$TIME" == "lut" ]]
-then
-    COMMAND="$COMMAND -DTIME=1"
-else
-    echo "Unknown time type '$TIME'." 1>&2
     VALID_ARGUMENTS=0
 fi
 

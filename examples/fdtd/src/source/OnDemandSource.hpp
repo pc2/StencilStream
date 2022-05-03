@@ -25,13 +25,16 @@
 class OnDemandSource {
   public:
     OnDemandSource(Parameters const &parameters, uindex_t i_generation)
-        : tau(parameters.tau), omega(parameters.omega()), t_0(parameters.t_0()) {}
+        : dt(parameters.dt()), tau(parameters.tau), omega(parameters.omega()),
+          t_0(parameters.t_0()) {}
 
-    float get_source_amplitude(uindex_t stage, float current_time) const {
+    template <typename Cell> float get_source_amplitude(Stencil<Cell, 1> const &stencil) const {
+        float current_time = (stencil.generation >> 1) * dt;
         return calc_source_amplitude(current_time, t_0, tau, omega);
     }
 
   private:
+    float dt;
     float tau;
     float omega;
     float t_0;

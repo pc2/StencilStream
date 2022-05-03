@@ -32,7 +32,9 @@ class LUTSource {
         }
     }
 
-    float get_source_amplitude(uindex_t stage, float current_time) const { return lut[stage >> 1]; }
+    template <typename Cell> float get_source_amplitude(Stencil<Cell, 1> const &stencil) const {
+        return lut[stencil.stage >> 1];
+    }
 
   private:
     float lut[pipeline_length / 2];
