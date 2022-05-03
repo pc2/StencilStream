@@ -27,10 +27,11 @@ template <typename MaterialResolver, typename Source, typename TimeResolver> cla
   public:
     using MaterialCell = typename MaterialResolver::MaterialCell;
 
-    Kernel(Parameters const &parameters, MaterialResolver mat_resolver, Source source, TimeResolver time_resolver)
+    Kernel(Parameters const &parameters, MaterialResolver mat_resolver, Source source,
+           TimeResolver time_resolver)
         : t_cutoff(), t_detect(), dt(), source_radius_squared(), source_c(), source_r(),
-          source_distance_bound(), center_c(), center_r(), mat_resolver(mat_resolver),
-          source(source), time_resolver(time_resolver) {
+          source_distance_bound(), double_center_cr(), mat_resolver(mat_resolver), source(source),
+          time_resolver(time_resolver) {
         t_cutoff = parameters.t_cutoff();
         t_detect = parameters.t_detect();
         dt = parameters.dt();
@@ -44,7 +45,7 @@ template <typename MaterialResolver, typename Source, typename TimeResolver> cla
         source_distance_bound = source_distance_bound * source_distance_bound;
         source_distance_bound -= source_c * source_c + source_r * source_r;
 
-        center_c = center_r = parameters.grid_range()[0] / 2;
+        double_center_cr = parameters.grid_range()[0];
     }
 
     MaterialCell operator()(Stencil<MaterialCell, 1> const &stencil) const {
@@ -52,7 +53,7 @@ template <typename MaterialResolver, typename Source, typename TimeResolver> cla
 
         index_t c = stencil.id.c;
         index_t r = stencil.id.r;
-        index_t center_distance_score = c * (c - 2 * center_c) + r * (r - 2 * center_r);
+        index_t center_distance_score = c * (c - double_center_cr) + r * (r - double_center_cr);
         index_t source_distance_score = c * (c - 2 * source_c) + r * (r - 2 * source_r);
 
         CoefMaterial material =
@@ -70,12 +71,17 @@ template <typename MaterialResolver, typename Source, typename TimeResolver> cla
                                            stencil[ID(0, 0)].cell.ey - stencil[ID(1, 0)].cell.ey);
 
             float current_time = time_resolver.template resolve_time<MaterialCell>(stencil);
-            
+
             if (source_distance_score <= source_distance_bound && current_time < t_cutoff) {
-                index_t cell_distance_squared =
-                    source_distance_score + source_c * source_c + source_r * source_r;
-                // cell_distance_squared == (distance / dx)^2
-                float interp_factor = 1.0 - float(cell_distance_squared) / source_radius_squared;
+                float interp_factor;
+                if (source_radius_squared != 0) {
+                    index_t cell_distance_squared =
+                        source_distance_score + source_c * source_c + source_r * source_r;
+                    // cell_distance_squared == (distance / dx)^2
+                    interp_factor = 1.0 - float(cell_distance_squared) / source_radius_squared;
+                } else {
+                    interp_factor = 1.0;
+                }
 
                 cell.cell.hz +=
                     interp_factor * source.get_source_amplitude(stencil.stage, current_time);
@@ -95,7 +101,7 @@ template <typename MaterialResolver, typename Source, typename TimeResolver> cla
 
     float source_radius_squared;
     index_t source_c, source_r, source_distance_bound;
-    index_t center_c, center_r;
+    index_t double_center_cr;
 
     MaterialResolver mat_resolver;
     Source source;
