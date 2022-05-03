@@ -39,7 +39,15 @@ using Source = OnDemandSource;
 using Source = LUTSource;
 #endif
 
-using KernelImpl = Kernel<MaterialResolver, Source>;
+#if TIME == 0
+    #include "time/OnDemandTimeResolver.hpp"
+using TimeResolver = OnDemandTimeResolver;
+#elif TIME == 1
+    #include "time/LUTTimeResolver.hpp"
+using TimeResolver = LUTTimeResolver;
+#endif
+
+using KernelImpl = Kernel<MaterialResolver, Source, TimeResolver>;
 using CellImpl = KernelImpl::MaterialCell;
 
 #if EXECUTOR == 0
@@ -167,7 +175,8 @@ int main(int argc, char **argv) {
     }
 
     Source source(parameters, 0);
-    KernelImpl kernel(parameters, mat_resolver, source);
+    TimeResolver time_resolver(parameters, 0);
+    KernelImpl kernel(parameters, mat_resolver, source, time_resolver);
 
     Executor executor(CellImpl::halo(), kernel);
     executor.set_input(grid_buffer);
@@ -182,7 +191,8 @@ int main(int argc, char **argv) {
 
     while (executor.get_i_generation() < n_timesteps) {
         source = Source(parameters, executor.get_i_generation());
-        kernel = KernelImpl(parameters, mat_resolver, source);
+        time_resolver = TimeResolver(parameters, executor.get_i_generation());
+        kernel = KernelImpl(parameters, mat_resolver, source, time_resolver);
         executor.set_trans_func(kernel);
 
         executor.run(std::min(pipeline_length, n_timesteps - executor.get_i_generation()));

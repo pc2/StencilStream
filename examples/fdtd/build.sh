@@ -10,7 +10,7 @@
 if [[ $@ == *"-h"* || $@ == *"--help"* || $# < 3 ]]
 then
 cat <<EOF
-Usage: $0 material_resolver source backend [modifier]
+Usage: $0 material_resolver source time_resolver backend [modifier]
 
 This script builds variants of the FDTD application. The application has many different ways to do
 things, which are selected via macro constants and templates throughout the code. The actual
@@ -19,8 +19,10 @@ combinations one might want to build are expressed set using the CLI arguments.
 The 'material_resolver' denotes how the material of a cell is stored in a cell and how the 
 material coefficients are retrieved from it. Possible values are:
 * 'coef': Store the final material coefficients directly in every cell.
-* 'lut': Store a lookup table with all known material coefficients in the kernel and store only an index in the cell.
-* 'render': Use a lookup table like with `lut`, but pick the material depending on the cell's position. No material information is stored in the cells.
+* 'lut': Store a lookup table with all known material coefficients in the kernel and store only and 
+    index in the cell.
+* 'render': Use a lookup table like with `lut`, but pick the material depending on the cell's
+    position. No material information is stored in the cells.
 
 The 'source' denotes whether the computations of the source wave amplitude are done by the FPGA or
 the host. If the wave is computed on the host, the amplitudes are simply stored in a look-up table. 
@@ -28,31 +30,40 @@ Possible values are:
 * 'od': Compute the source wave amplitudes on-demand with the FPGA.
 * 'lut': Compute the source wave amplitudes on the host and store them in a lookup table.
 
-StencilStream offers different backends or executors with different architectures or goals. The possible values are:
+The 'time_resolver' denotes whether the computations of the current time is done by the FPGA or the
+host. If the time precomputed on the host, they are simply stored in a look-up table. Possible
+values are:
+* 'od': Compute the time on-demand with the FPGA.
+* 'lut': Compute the time on the host and store it in a lookup table.
+
+StencilStream offers different backends or executors with different architectures or goals. The
+possible values are:
 * 'mono': Use the monotile FPGA backend of StencilStream. It yields a higher performance for the 
-  same pipeline length than 'tiling', but it is limited to a maximal grid width and height.
+    same pipeline length than 'tiling', but it is limited to a maximal grid width and height.
 * 'tiling': Use the tiling FPGA backend of StencilStream. It can handle arbitrarly large grids (and
-  therefore cavity radii and resolutions), but generally yields a lower performance than 'mono'.
+    therefore cavity radii and resolutions), but generally yields a lower performance than 'mono'.
 * 'cpu': Use the testing CPU backend of StencilStream. This backend is a trivial implementation of
-  executor interface for CPUs and therefore performs worse than both FPGA backends when synthesized,
-  but it's good enough to complete most simulations in reasonable times for testing purposes.
+    executor interface for CPUs and therefore performs worse than both FPGA backends when
+    synthesized, but it's good enough to complete most simulations in reasonable times for testing
+    purposes.
 
 The FPGA backends also support some modifiers:
 * 'emu': Don't synthesize the design and create an emulation image. Note that emulation is *very* 
-  slow and not suitable to test the functionality of the transition function. Use the 'cpu' backend 
-  instead.
+    slow and not suitable to test the functionality of the transition function. Use the 'cpu'
+    backend instead.
 * 'report': Generate are hardware usage report for the variant. These reports can deliver a good 
-  estimate on the synthesized design's performance.
+    estimate on the synthesized design's performance.
 EOF
 exit 1
 fi
 
 MATERIAL=$1
 SOURCE=$2
-BACKEND=$3
-MODIFIER=$4
+TIME=$3
+BACKEND=$4
+MODIFIER=$5
 
-EXEC_NAME="fdtd_${MATERIAL}_${SOURCE}_${BACKEND}"
+EXEC_NAME="fdtd_${MATERIAL}_${SOURCE}_${TIME}_${BACKEND}"
 if [[ -n $MODIFIER ]]
 then
     EXEC_NAME="${EXEC_NAME}_${MODIFIER}"
@@ -93,6 +104,18 @@ then
     COMMAND="$COMMAND -DSOURCE=1"
 else
     echo "Unknown source type '$SOURCE'." 1>&2
+    VALID_ARGUMENTS=0
+fi
+
+# Time computation
+if [[ "$TIME" == "od" ]]
+then
+    COMMAND="$COMMAND -DTIME=0"
+elif [[ "$TIME" == "lut" ]]
+then
+    COMMAND="$COMMAND -DTIME=1"
+else
+    echo "Unknown time type '$TIME'." 1>&2
     VALID_ARGUMENTS=0
 fi
 

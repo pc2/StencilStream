@@ -23,14 +23,14 @@
 #include "material/Material.hpp"
 #include <StencilStream/Stencil.hpp>
 
-template <typename MaterialResolver, typename Source> class Kernel {
+template <typename MaterialResolver, typename Source, typename TimeResolver> class Kernel {
   public:
     using MaterialCell = typename MaterialResolver::MaterialCell;
 
-    Kernel(Parameters const &parameters, MaterialResolver mat_resolver, Source source)
+    Kernel(Parameters const &parameters, MaterialResolver mat_resolver, Source source, TimeResolver time_resolver)
         : t_cutoff(), t_detect(), dt(), source_radius_squared(), source_c(), source_r(),
           source_distance_bound(), center_c(), center_r(), mat_resolver(mat_resolver),
-          source(source) {
+          source(source), time_resolver(time_resolver) {
         t_cutoff = parameters.t_cutoff();
         t_detect = parameters.t_detect();
         dt = parameters.dt();
@@ -69,8 +69,8 @@ template <typename MaterialResolver, typename Source> class Kernel {
             cell.cell.hz += material.db * (stencil[ID(0, 1)].cell.ex - stencil[ID(0, 0)].cell.ex +
                                            stencil[ID(0, 0)].cell.ey - stencil[ID(1, 0)].cell.ey);
 
-            float current_time = (stencil.generation >> 1) * dt;
-
+            float current_time = time_resolver.template resolve_time<MaterialCell>(stencil);
+            
             if (source_distance_score <= source_distance_bound && current_time < t_cutoff) {
                 index_t cell_distance_squared =
                     source_distance_score + source_c * source_c + source_r * source_r;
@@ -99,4 +99,5 @@ template <typename MaterialResolver, typename Source> class Kernel {
 
     MaterialResolver mat_resolver;
     Source source;
+    TimeResolver time_resolver;
 };
