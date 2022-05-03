@@ -29,12 +29,11 @@ template <typename MaterialResolver, typename Source, typename TimeResolver> cla
 
     Kernel(Parameters const &parameters, MaterialResolver mat_resolver, Source source,
            TimeResolver time_resolver)
-        : t_cutoff(), t_detect(), dt(), source_radius_squared(), source_c(), source_r(),
+        : t_cutoff(), t_detect(), source_radius_squared(), source_c(), source_r(),
           source_distance_bound(), double_center_cr(), mat_resolver(mat_resolver), source(source),
           time_resolver(time_resolver) {
         t_cutoff = parameters.t_cutoff();
         t_detect = parameters.t_detect();
-        dt = parameters.dt();
 
         source_radius_squared = parameters.source_radius / parameters.dx;
         source_radius_squared *= source_radius_squared;
@@ -97,7 +96,6 @@ template <typename MaterialResolver, typename Source, typename TimeResolver> cla
   private:
     float t_cutoff;
     float t_detect;
-    float dt;
 
     float source_radius_squared;
     index_t source_c, source_r, source_distance_bound;
