@@ -21,6 +21,7 @@
 #include "GenericID.hpp"
 #include "Index.hpp"
 #include <CL/sycl.hpp>
+#include <functional>
 
 namespace stencil {
 /**
@@ -56,6 +57,8 @@ namespace stencil {
  */
 template <typename T, uindex_t stencil_radius, typename TransFunc> class AbstractExecutor {
   public:
+    using SnapshotHandler = std::function<void(cl::sycl::buffer<T, 2>, uindex_t)>;
+
     /**
      * \brief Create a new abstract executor.
      * \param halo_value The value of cells that are outside the grid.
@@ -75,6 +78,22 @@ template <typename T, uindex_t stencil_radius, typename TransFunc> class Abstrac
      * \param n_generations The number of generations to calculate.
      */
     virtual void run(uindex_t n_generations) = 0;
+
+    void run_with_snapshots(uindex_t n_generations, uindex_t delta_n_generations,
+                            SnapshotHandler handler) {
+        uindex_t target_i_generation = this->get_i_generation() + n_generations;
+        while (this->get_i_generation() < target_i_generation) {
+            uindex_t n_generations_till_snapshot =
+                std::min(delta_n_generations, target_i_generation - this->get_i_generation());
+            this->run(n_generations_till_snapshot);
+
+            cl::sycl::buffer<T, 2> output(
+                cl::sycl::range<2>(get_grid_range().c, get_grid_range().r));
+            this->copy_output(output);
+
+            handler(output, this->get_i_generation());
+        }
+    }
 
     /**
      * \brief Set the internal state of the grid.
