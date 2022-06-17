@@ -56,7 +56,7 @@ template <typename MaterialResolver, typename Source> class Kernel {
         CoefMaterial material =
             mat_resolver.get_material_coefficients(stencil, center_distance_score);
 
-        if ((stencil.stage & 0b1) == 0) {
+        if ((stencil.i_processing_element & 0b1) == 0) {
             cell.cell.ex *= material.ca;
             cell.cell.ex += material.cb * (stencil[ID(0, 0)].cell.hz - stencil[ID(0, -1)].cell.hz);
 

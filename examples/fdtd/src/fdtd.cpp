@@ -47,12 +47,12 @@ using CellImpl = KernelImpl::MaterialCell;
 
 #if EXECUTOR == 0
     #include <StencilStream/MonotileExecutor.hpp>
-using Executor = MonotileExecutor<CellImpl, stencil_radius, KernelImpl, pipeline_length, tile_width,
+using Executor = MonotileExecutor<CellImpl, stencil_radius, KernelImpl, n_processing_elements, tile_width,
                                   tile_height>;
 #elif EXECUTOR == 1
     #include <StencilStream/StencilExecutor.hpp>
 using Executor =
-    StencilExecutor<CellImpl, stencil_radius, KernelImpl, pipeline_length, tile_width, tile_height>;
+    StencilExecutor<CellImpl, stencil_radius, KernelImpl, n_processing_elements, tile_width, tile_height>;
 #elif EXECUTOR == 2
     #include <StencilStream/SimpleCPUExecutor.hpp>
 using Executor = SimpleCPUExecutor<CellImpl, stencil_radius, KernelImpl>;
@@ -188,7 +188,7 @@ int main(int argc, char **argv) {
         kernel = KernelImpl(parameters, mat_resolver, source);
         executor.set_trans_func(kernel);
 
-        executor.run(std::min(pipeline_length, n_timesteps - executor.get_i_generation()));
+        executor.run(std::min(n_processing_elements, n_timesteps - executor.get_i_generation()));
 
         if (parameters.interval().has_value() &&
             executor.get_i_generation() - last_saved_generation >= 2 * *(parameters.interval())) {

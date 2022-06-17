@@ -31,10 +31,10 @@ using namespace cl::sycl;
 
 using TransFunc = FPGATransFunc<stencil_radius>;
 using SingleContextExecutorImpl = SingleContextExecutor<Cell, stencil_radius, TransFunc>;
-using StencilExecutorImpl =
-    StencilExecutor<Cell, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height>;
-using MonotileExecutorImpl =
-    MonotileExecutor<Cell, stencil_radius, TransFunc, pipeline_length, tile_width, tile_height>;
+using StencilExecutorImpl = StencilExecutor<Cell, stencil_radius, TransFunc, n_processing_elements,
+                                            tile_width, tile_height>;
+using MonotileExecutorImpl = MonotileExecutor<Cell, stencil_radius, TransFunc,
+                                              n_processing_elements, tile_width, tile_height>;
 using SimpleCPUExecutorImpl = SimpleCPUExecutor<Cell, stencil_radius, TransFunc>;
 
 void test_executor_set_input_copy_output(SingleContextExecutorImpl *executor, uindex_t grid_width,
@@ -140,36 +140,36 @@ TEST_CASE("StencilExecutor::run", "[StencilExecutor]") {
     StencilExecutorImpl executor(Cell::halo(), TransFunc());
 
     // single pass
-    test_executor(&executor, tile_width, tile_height, pipeline_length);
+    test_executor(&executor, tile_width, tile_height, n_processing_elements);
     // single pass, grid smaller than tile
-    test_executor(&executor, tile_width / 2, tile_height / 2, pipeline_length);
+    test_executor(&executor, tile_width / 2, tile_height / 2, n_processing_elements);
     // single pass, grid bigger than tile
-    test_executor(&executor, tile_width * 2, tile_height * 2, pipeline_length);
+    test_executor(&executor, tile_width * 2, tile_height * 2, n_processing_elements);
     // single pass, grid bigger slightly bigger than tile
-    test_executor(&executor, tile_width * 1.5, tile_height * 1.5, pipeline_length);
+    test_executor(&executor, tile_width * 1.5, tile_height * 1.5, n_processing_elements);
 
     // multiple passes
-    test_executor(&executor, tile_width, tile_height, 2 * pipeline_length);
+    test_executor(&executor, tile_width, tile_height, 2 * n_processing_elements);
     // multiple passes, grid smaller than tile
-    test_executor(&executor, tile_width / 2, tile_height / 2, 2 * pipeline_length);
+    test_executor(&executor, tile_width / 2, tile_height / 2, 2 * n_processing_elements);
     // multiple passes, grid bigger than tile
-    test_executor(&executor, tile_width * 2, tile_height * 2, 2 * pipeline_length);
+    test_executor(&executor, tile_width * 2, tile_height * 2, 2 * n_processing_elements);
     // multiple passes, grid bigger slightly bigger than tile
-    test_executor(&executor, tile_width * 1.5, tile_height * 1.5, 2 * pipeline_length);
+    test_executor(&executor, tile_width * 1.5, tile_height * 1.5, 2 * n_processing_elements);
 }
 
 TEST_CASE("MonotileExecutor::run", "[MonotileExecutor]") {
     MonotileExecutorImpl executor(Cell::halo(), TransFunc());
 
     // single pass
-    test_executor(&executor, tile_width, tile_height, pipeline_length);
+    test_executor(&executor, tile_width, tile_height, n_processing_elements);
     // single pass, grid smaller than tile
-    test_executor(&executor, tile_width / 2, tile_height / 2, pipeline_length);
+    test_executor(&executor, tile_width / 2, tile_height / 2, n_processing_elements);
 
     // multiple passes
-    test_executor(&executor, tile_width, tile_height, 2 * pipeline_length);
+    test_executor(&executor, tile_width, tile_height, 2 * n_processing_elements);
     // multiple passes, grid smaller than tile
-    test_executor(&executor, tile_width / 2, tile_height / 2, 2 * pipeline_length);
+    test_executor(&executor, tile_width / 2, tile_height / 2, 2 * n_processing_elements);
 }
 
 TEST_CASE("SimpleCPUExecutor::run", "[SimpleCPUExecutor]") {
@@ -223,34 +223,40 @@ TEST_CASE("StencilExecutor::run_with_snapshots", "[StencilExecutor]") {
     StencilExecutorImpl executor(Cell::halo(), TransFunc());
 
     // snapshot distance divides number of generations
-    test_snapshotting(&executor, tile_width, tile_height, 4 * pipeline_length, pipeline_length);
+    test_snapshotting(&executor, tile_width, tile_height, 4 * n_processing_elements,
+                      n_processing_elements);
     // snapshot distance does not divide number of generations
-    test_snapshotting(&executor, tile_width, tile_height, 2.5 * pipeline_length, pipeline_length);
+    test_snapshotting(&executor, tile_width, tile_height, 2.5 * n_processing_elements,
+                      n_processing_elements);
     // snapshot distance is not a multiple of pipeline length
-    test_snapshotting(&executor, tile_width, tile_height, 2 * pipeline_length,
-                      0.5 * pipeline_length);
+    test_snapshotting(&executor, tile_width, tile_height, 2 * n_processing_elements,
+                      0.5 * n_processing_elements);
 }
 
 TEST_CASE("MonotileExecutor::run_with_snapshots", "[MonotileExecutor]") {
     MonotileExecutorImpl executor(Cell::halo(), TransFunc());
 
     // snapshot distance divides number of generations
-    test_snapshotting(&executor, tile_width, tile_height, 4 * pipeline_length, pipeline_length);
+    test_snapshotting(&executor, tile_width, tile_height, 4 * n_processing_elements,
+                      n_processing_elements);
     // snapshot distance does not divide number of generations
-    test_snapshotting(&executor, tile_width, tile_height, 2.5 * pipeline_length, pipeline_length);
+    test_snapshotting(&executor, tile_width, tile_height, 2.5 * n_processing_elements,
+                      n_processing_elements);
     // snapshot distance is not a multiple of pipeline length
-    test_snapshotting(&executor, tile_width, tile_height, 2 * pipeline_length,
-                      0.5 * pipeline_length);
+    test_snapshotting(&executor, tile_width, tile_height, 2 * n_processing_elements,
+                      0.5 * n_processing_elements);
 }
 
 TEST_CASE("SimpleCPUExecutor::run_with_snapshots", "[SimpleCPUExecutor]") {
     SimpleCPUExecutorImpl executor(Cell::halo(), TransFunc());
 
     // snapshot distance divides number of generations
-    test_snapshotting(&executor, tile_width, tile_height, 4 * pipeline_length, pipeline_length);
+    test_snapshotting(&executor, tile_width, tile_height, 4 * n_processing_elements,
+                      n_processing_elements);
     // snapshot distance does not divide number of generations
-    test_snapshotting(&executor, tile_width, tile_height, 2.5 * pipeline_length, pipeline_length);
+    test_snapshotting(&executor, tile_width, tile_height, 2.5 * n_processing_elements,
+                      n_processing_elements);
     // snapshot distance is not a multiple of pipeline length
-    test_snapshotting(&executor, tile_width, tile_height, 2 * pipeline_length,
-                      0.5 * pipeline_length);
+    test_snapshotting(&executor, tile_width, tile_height, 2 * n_processing_elements,
+                      0.5 * n_processing_elements);
 }

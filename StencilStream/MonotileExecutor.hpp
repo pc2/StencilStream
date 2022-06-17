@@ -26,8 +26,9 @@
 #include <numeric>
 
 namespace stencil {
-template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipeline_length = 1,
-          uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t burst_size = 64>
+template <typename T, uindex_t stencil_radius, typename TransFunc,
+          uindex_t n_processing_elements = 1, uindex_t tile_width = 1024,
+          uindex_t tile_height = 1024, uindex_t burst_size = 64>
 /**
  * \brief An executor that follows \ref monotile.
  *
@@ -38,7 +39,7 @@ template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipe
  * \tparam T The cell type.
  * \tparam stencil_radius The radius of the stencil buffer supplied to the transition function.
  * \tparam TransFunc The type of the transition function.
- * \tparam pipeline_length The number of hardware execution stages per kernel. Must be at least 1.
+ * \tparam n_processing_elements The number of processing elements per kernel. Must be at least 1.
  * Defaults to 1.
  * \tparam tile_width The number of columns in a tile and maximum number of columns in a grid.
  * Defaults to 1024.
@@ -134,8 +135,8 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
         using in_pipe = cl::sycl::pipe<class monotile_in_pipe, T>;
         using out_pipe = cl::sycl::pipe<class monotile_out_pipe, T>;
         using ExecutionKernelImpl =
-            monotile::ExecutionKernel<TransFunc, T, stencil_radius, pipeline_length, tile_width,
-                                      tile_height, in_pipe, out_pipe>;
+            monotile::ExecutionKernel<TransFunc, T, stencil_radius, n_processing_elements,
+                                      tile_width, tile_height, in_pipe, out_pipe>;
         using uindex_2d_t = typename ExecutionKernelImpl::uindex_2d_t;
 
         cl::sycl::queue input_queue = this->new_queue(true);
@@ -206,7 +207,7 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
             this->get_runtime_sample().add_pass(computation_event);
 
             this->inc_i_generation(std::min(target_i_generation - this->get_i_generation(),
-                                            uindex_t(pipeline_length)));
+                                            uindex_t(n_processing_elements)));
         }
 
         tile_buffer = read_buffer;

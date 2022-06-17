@@ -21,8 +21,8 @@
 #include "GenericID.hpp"
 #include "Helpers.hpp"
 #include "Index.hpp"
-#include <sycl/ext/intel/ac_types/ac_int.hpp>
 #include <bit>
+#include <sycl/ext/intel/ac_types/ac_int.hpp>
 
 namespace stencil {
 
@@ -57,23 +57,28 @@ template <typename T, uindex_t radius> class Stencil {
      *
      * \param id The position of the central cell in the global grid.
      * \param generation The present generation index of the central cell.
-     * \param stage The index of the pipeline stage that calls the transition function.
+     * \param i_processing_element The index of the processing element that calls the transition
+     * function.
      * \param grid_range The range of the stencil's grid.
      */
-    Stencil(ID id, UID grid_range, uindex_t generation, uindex_t stage)
-        : id(id), generation(generation), stage(stage), grid_range(grid_range), internal() {}
+    Stencil(ID id, UID grid_range, uindex_t generation, uindex_t i_processing_element)
+        : id(id), generation(generation), i_processing_element(i_processing_element),
+          grid_range(grid_range), internal() {}
 
     /**
      * \brief Create a new stencil from the raw buffer.
      *
      * \param id The position of the central cell in the global grid.
      * \param generation The present generation index of the central cell.
-     * \param stage The index of the pipeline stage that calls the transition function.
+     * \param i_processing_element The index of the processing element that calls the transition
+     * function.
      * \param raw A raw array containing cells.
      * \param grid_range The range of the stencil's grid.
      */
-    Stencil(ID id, UID grid_range, uindex_t generation, uindex_t stage, T raw[diameter][diameter])
-        : id(id), generation(generation), stage(stage), grid_range(grid_range), internal() {
+    Stencil(ID id, UID grid_range, uindex_t generation, uindex_t i_processing_element,
+            T raw[diameter][diameter])
+        : id(id), generation(generation), i_processing_element(i_processing_element),
+          grid_range(grid_range), internal() {
 #pragma unroll
         for (uindex_t c = 0; c < diameter; c++) {
 #pragma unroll
@@ -158,14 +163,15 @@ template <typename T, uindex_t radius> class Stencil {
     const uindex_t generation;
 
     /**
-     * \brief The index of the pipeline stage that calls the transition function.
+     * \brief The index of the processing element that calls the transition function.
      *
-     * The stage index is added to the generation index of the input tile to get the generation
-     * index of this stencil. Under the assumption that the pipeline was always fully executed, it
-     * equals to `generation % pipeline_length`. Since it is hard coded in the final design, it can
-     * be used to alternate between two different data paths: When you write something like this
+     * The processing element index is added to the generation index of the input tile to get the
+     * generation index of this stencil. Under the assumption that the pipeline was always fully
+     * executed, it equals to `generation % n_processing_elements`. Since it is hard coded in the
+     * final design, it can be used to alternate between two different data paths: When you write
+     * something like this
      * ```
-     * if (stencil.stage & 0b1 == 0)
+     * if (stencil.i_processing_element & 0b1 == 0)
      * {
      *   return foo(stencil);
      * }
@@ -174,10 +180,10 @@ template <typename T, uindex_t radius> class Stencil {
      *   return bar(stencil);
      * }
      * ```
-     * `foo` will only be synthesized for even pipeline stages, and `bar` will only be synthesized
-     * for odd pipeline stages.
+     * `foo` will only be synthesized for even processing elements, and `bar` will only be
+     * synthesized for odd processing elements.
      */
-    const uindex_t stage;
+    const uindex_t i_processing_element;
 
     /**
      * \brief The number of columns and rows of the grid.

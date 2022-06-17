@@ -37,24 +37,25 @@ namespace stencil {
  * \tparam T The cell type.
  * \tparam stencil_radius The radius of the stencil buffer supplied to the transition function.
  * \tparam TransFunc The type of the transition function.
- * \tparam pipeline_length The number of hardware execution stages per kernel. Must be at least 1.
+ * \tparam n_processing_elements The number of processing elements per kernel. Must be at least 1.
  * Defaults to 1.
  * \tparam tile_width The number of columns in a tile and maximum number of columns in a grid.
  * Defaults to 1024.
  * \tparam tile_height The number of rows in a tile and maximum number of rows in a grid. Defaults
  * to 1024.
  */
-template <typename T, uindex_t stencil_radius, typename TransFunc, uindex_t pipeline_length = 1,
-          uindex_t tile_width = 1024, uindex_t tile_height = 1024>
+template <typename T, uindex_t stencil_radius, typename TransFunc,
+          uindex_t n_processing_elements = 1, uindex_t tile_width = 1024,
+          uindex_t tile_height = 1024>
 class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc> {
   public:
     /**
      * \brief The number of cells that have be added to the tile in every direction to form the
      * complete input.
      */
-    static_assert(pipeline_length <= std::numeric_limits<uindex_t>::max() / stencil_radius);
+    static_assert(n_processing_elements <= std::numeric_limits<uindex_t>::max() / stencil_radius);
 
-    static constexpr uindex_t halo_radius = stencil_radius * pipeline_length;
+    static constexpr uindex_t halo_radius = stencil_radius * n_processing_elements;
 
     static_assert(halo_radius <= std::numeric_limits<uindex_t>::max() / 2);
     static_assert(tile_width <= std::numeric_limits<uindex_t>::max() - 2 * halo_radius);
@@ -98,7 +99,7 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
         using feed_out_pipe_2 = cl::sycl::pipe<class feed_out_pipe_2_id, T>;
 
         using ExecutionKernelImpl =
-            tiling::ExecutionKernel<TransFunc, T, stencil_radius, pipeline_length, tile_width,
+            tiling::ExecutionKernel<TransFunc, T, stencil_radius, n_processing_elements, tile_width,
                                     tile_height, in_pipe, out_pipe>;
 
         cl::sycl::queue input_queue[5] = {this->new_queue(true), this->new_queue(true),
@@ -337,7 +338,7 @@ class StencilExecutor : public SingleContextExecutor<T, stencil_radius, TransFun
             this->get_runtime_sample().add_pass(latest_end - earliest_start);
 
             this->inc_i_generation(std::min(target_i_generation - this->get_i_generation(),
-                                            uindex_t(pipeline_length)));
+                                            uindex_t(n_processing_elements)));
         }
     }
 

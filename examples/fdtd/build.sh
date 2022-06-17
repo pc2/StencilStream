@@ -33,7 +33,7 @@ The 'source' denotes how and where the computations of the source wave amplitude
 StencilStream offers different backends or executors with different architectures or goals. The
 possible values are:
 * 'mono': Use the monotile FPGA backend of StencilStream. It yields a higher performance for the 
-    same pipeline length than 'tiling', but it is limited to a maximal grid width and height.
+    same number of processing elements than 'tiling', but it is limited to a maximal grid width and height.
 * 'tiling': Use the tiling FPGA backend of StencilStream. It can handle arbitrarly large grids (and
     therefore cavity radii and resolutions), but generally yields a lower performance than 'mono'.
 * 'cpu': Use the testing CPU backend of StencilStream. This backend is a trivial implementation of

@@ -44,19 +44,19 @@ constexpr uindex_t stencil_radius = 1;
 
 #if EXECUTOR == 0
 // monotile
-constexpr uindex_t pipeline_length = 224;
+constexpr uindex_t n_processing_elements = 224;
 
 #elif EXECUTOR == 1
 // tiling
-constexpr uindex_t pipeline_length = 190;
+constexpr uindex_t n_processing_elements = 190;
 
 #else
 // fallback
-constexpr uindex_t pipeline_length = 100;
+constexpr uindex_t n_processing_elements = 100;
 
 #endif
 
-static_assert(pipeline_length % 2 == 0);
+static_assert(n_processing_elements % 2 == 0);
 
 /* stencil parameters */
 constexpr uindex_t tile_height = 512;

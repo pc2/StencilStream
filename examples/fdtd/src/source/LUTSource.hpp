@@ -25,7 +25,7 @@
 class LUTSource {
   public:
     LUTSource(Parameters const &parameters, uindex_t i_generation) : lut() {
-        for (uindex_t i = 0; i < pipeline_length / 2; i++) {
+        for (uindex_t i = 0; i < n_processing_elements / 2; i++) {
             float current_time = ((i_generation >> 1) + i) * parameters.dt();
             lut[i] = calc_source_amplitude(current_time, parameters.t_0(), parameters.tau,
                                            parameters.omega());
@@ -33,9 +33,9 @@ class LUTSource {
     }
 
     template <typename Cell> float get_source_amplitude(Stencil<Cell, 1> const &stencil) const {
-        return lut[stencil.stage >> 1];
+        return lut[stencil.i_processing_element >> 1];
     }
 
   private:
-    float lut[pipeline_length / 2];
+    float lut[n_processing_elements / 2];
 };

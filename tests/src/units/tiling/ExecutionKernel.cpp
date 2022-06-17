@@ -32,8 +32,9 @@ void test_tiling_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t n_ge
     using TransFunc = FPGATransFunc<stencil_radius>;
     using in_pipe = HostPipe<class TilingExecutionKernelInPipeID, Cell>;
     using out_pipe = HostPipe<class TilingExecutionKernelOutPipeID, Cell>;
-    using TestExecutionKernel = ExecutionKernel<TransFunc, Cell, stencil_radius, pipeline_length,
-                                                tile_width, tile_height, in_pipe, out_pipe>;
+    using TestExecutionKernel =
+        ExecutionKernel<TransFunc, Cell, stencil_radius, n_processing_elements, tile_width,
+                        tile_height, in_pipe, out_pipe>;
 
     for (index_t c = -halo_radius; c < index_t(halo_radius + grid_width); c++) {
         for (index_t r = -halo_radius; r < index_t(halo_radius + grid_height); r++) {
@@ -76,16 +77,16 @@ void test_tiling_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t n_ge
 }
 
 TEST_CASE("tiling::ExecutionKernel", "[tiling::ExecutionKernel]") {
-    test_tiling_kernel(tile_width, tile_height, pipeline_length);
+    test_tiling_kernel(tile_width, tile_height, n_processing_elements);
 }
 
 TEST_CASE("tiling::ExecutionKernel (partial tile)", "[tiling::ExecutionKernel]") {
-    test_tiling_kernel(tile_width/2, tile_height, pipeline_length);
+    test_tiling_kernel(tile_width / 2, tile_height, n_processing_elements);
 }
 
 TEST_CASE("tiling::ExecutionKernel (partial pipeline)", "[tiling::ExecutionKernel]") {
-    static_assert(pipeline_length != 1);
-    test_tiling_kernel(tile_width, tile_height, pipeline_length - 1);
+    static_assert(n_processing_elements != 1);
+    test_tiling_kernel(tile_width, tile_height, n_processing_elements - 1);
 }
 
 TEST_CASE("tiling::ExecutionKernel (noop)", "[tiling::ExecutionKernel]") {
@@ -114,8 +115,8 @@ TEST_CASE("Halo values inside the pipeline are handled correctly", "[tiling::Exe
     using in_pipe = HostPipe<class HaloValueTestInPipeID, bool>;
     using out_pipe = HostPipe<class HaloValueTestOutPipeID, bool>;
     using TestExecutionKernel =
-        ExecutionKernel<decltype(my_kernel), bool, stencil_radius, pipeline_length, tile_width,
-                        tile_height, in_pipe, out_pipe>;
+        ExecutionKernel<decltype(my_kernel), bool, stencil_radius, n_processing_elements,
+                        tile_width, tile_height, in_pipe, out_pipe>;
 
     for (index_t c = -halo_radius; c < index_t(halo_radius + tile_width); c++) {
         for (index_t r = -halo_radius; r < index_t(halo_radius + tile_height); r++) {
@@ -123,7 +124,7 @@ TEST_CASE("Halo values inside the pipeline are handled correctly", "[tiling::Exe
         }
     }
 
-    TestExecutionKernel(my_kernel, 0, pipeline_length, 0, 0, tile_width, tile_height, true)();
+    TestExecutionKernel(my_kernel, 0, n_processing_elements, 0, 0, tile_width, tile_height, true)();
 
     for (uindex_t c = 0; c < tile_width; c++) {
         for (uindex_t r = 0; r < tile_height; r++) {

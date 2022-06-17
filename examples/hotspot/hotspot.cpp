@@ -54,9 +54,9 @@ const FLOAT amb_temp = 80.0;
 /* stencil parameters */
 const uindex_t stencil_radius = 1;
 #if EXECUTOR == 1
-const uindex_t pipeline_length = 280; // tiling
+const uindex_t n_processing_elements = 280; // tiling
 #else
-const uindex_t pipeline_length = 350; // monotile & cpu
+const uindex_t n_processing_elements = 350; // monotile & cpu
 #endif
 const uindex_t tile_width = 1024;
 const uindex_t tile_height = 1024;
@@ -227,10 +227,10 @@ int main(int argc, char **argv) {
     };
 
 #if EXECUTOR == 0
-    using Executor = MonotileExecutor<Cell, stencil_radius, decltype(kernel), pipeline_length,
+    using Executor = MonotileExecutor<Cell, stencil_radius, decltype(kernel), n_processing_elements,
                                       tile_width, tile_height>;
 #elif EXECUTOR == 1
-    using Executor = StencilExecutor<Cell, stencil_radius, decltype(kernel), pipeline_length,
+    using Executor = StencilExecutor<Cell, stencil_radius, decltype(kernel), n_processing_elements,
                                      tile_width, tile_height>;
 #elif EXECUTOR == 2
     using Executor = SimpleCPUExecutor<Cell, stencil_radius, decltype(kernel)>;

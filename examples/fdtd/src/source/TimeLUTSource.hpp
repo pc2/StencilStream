@@ -26,18 +26,18 @@ class TimeLUTSource {
   public:
     TimeLUTSource(Parameters const &parameters, uindex_t i_generation)
         : time(), tau(parameters.tau), omega(parameters.omega()), t_0(parameters.t_0()) {
-        for (uindex_t i = 0; i < pipeline_length / 2; i++) {
+        for (uindex_t i = 0; i < n_processing_elements / 2; i++) {
             time[i] = (i_generation / 2 + i) * parameters.dt();
         }
     }
 
     template <typename Cell> float get_source_amplitude(Stencil<Cell, 1> const &stencil) const {
-        float current_time = time[stencil.stage >> 1];
+        float current_time = time[stencil.i_processing_element >> 1];
         return calc_source_amplitude(current_time, t_0, tau, omega);
     }
 
   private:
-    float time[pipeline_length / 2];
+    float time[n_processing_elements / 2];
     float tau;
     float omega;
     float t_0;

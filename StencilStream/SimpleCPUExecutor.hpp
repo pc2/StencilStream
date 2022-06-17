@@ -36,12 +36,12 @@ class SimpleCPUExecutor : public SingleContextExecutor<T, stencil_radius, TransF
         cl::sycl::buffer<T, 2> in_buffer = grid;
         cl::sycl::buffer<T, 2> out_buffer(grid.get_range());
 
-        for (uindex_t stage = 0; stage < n_generations; stage++) {
+        for (uindex_t i_generation = 0; i_generation < n_generations; i_generation++) {
             cl::sycl::event event = queue.submit([&](cl::sycl::handler &cgh) {
                 auto in_ac = in_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
                 auto out_ac =
                     out_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
-                uindex_t gen = this->get_i_generation() + stage;
+                uindex_t gen = this->get_i_generation() + i_generation;
                 uindex_t grid_width = in_ac.get_range()[0];
                 uindex_t grid_height = in_ac.get_range()[1];
                 T halo_value = this->get_halo_value();
@@ -49,7 +49,8 @@ class SimpleCPUExecutor : public SingleContextExecutor<T, stencil_radius, TransF
 
                 cgh.parallel_for<class SimpleCPUExecutionKernel>(
                     in_ac.get_range(), [=](cl::sycl::id<2> idx) {
-                        Stencil<T, stencil_radius> stencil(idx, in_ac.get_range(), gen, stage);
+                        Stencil<T, stencil_radius> stencil(idx, in_ac.get_range(), gen,
+                                                           i_generation);
 
                         for (index_t delta_c = -stencil_radius; delta_c <= index_t(stencil_radius);
                              delta_c++) {

@@ -41,12 +41,15 @@ namespace monotile {
  * \tparam TransFunc The type of transition function to use.
  * \tparam T Cell value type.
  * \tparam stencil_radius The static, maximal Chebyshev distance of cells in a stencil to the
- * central cell \tparam pipeline_length The number of pipeline stages to use. Similar to an unroll
- * factor for a loop. \tparam output_tile_width The number of columns in a grid tile. \tparam
- * output_tile_height The number of rows in a grid tile. \tparam in_pipe The pipe to read from.
+ * central cell.
+ * \tparam n_processing_elements The number of processing elements to use. Similar to an unroll
+ * factor for a loop.
+ * \tparam output_tile_width The number of columns in a grid tile.
+ * \tparam output_tile_height The number of rows in a grid tile.
+ * \tparam in_pipe The pipe to read from.
  * \tparam out_pipe The pipe to write to.
  */
-template <typename TransFunc, typename T, uindex_t stencil_radius, uindex_t pipeline_length,
+template <typename TransFunc, typename T, uindex_t stencil_radius, uindex_t n_processing_elements,
           uindex_t tile_width, uindex_t tile_height, typename in_pipe, typename out_pipe>
 class ExecutionKernel {
   public:
@@ -63,7 +66,7 @@ class ExecutionKernel {
     static constexpr uindex_t stencil_diameter = Stencil<T, stencil_radius>::diameter;
 
     static constexpr uindex_t calc_pipeline_latency(uindex_t grid_height) {
-        return pipeline_length * stencil_radius * (grid_height + 1);
+        return n_processing_elements * stencil_radius * (grid_height + 1);
     }
 
     static constexpr uindex_t calc_n_iterations(uindex_t grid_width, uindex_t grid_height) {
@@ -83,9 +86,9 @@ class ExecutionKernel {
     using index_2d_t = ac_int<bits_2d + 1, true>;
     using uindex_2d_t = ac_int<bits_2d, false>;
 
-    static constexpr unsigned long bits_plen = std::bit_width(pipeline_length);
-    using index_plen_t = ac_int<bits_plen + 1, true>;
-    using uindex_plen_t = ac_int<bits_plen, false>;
+    static constexpr unsigned long bits_pes = std::bit_width(n_processing_elements);
+    using index_pes_t = ac_int<bits_pes + 1, true>;
+    using uindex_pes_t = ac_int<bits_pes, false>;
 
     static constexpr unsigned long bits_n_iterations =
         std::bit_width(calc_n_iterations(tile_width, tile_height));
@@ -98,7 +101,7 @@ class ExecutionKernel {
      * \param trans_func The instance of the transition function to use.
      * \param i_generation The generation index of the input cells.
      * \param n_generations The number of generations to compute. If this number is bigger than
-     * `pipeline_length`, only `pipeline_length` generations will be computed.
+     * `n_processing_elements`, only `n_processing_elements` generations will be computed.
      * \param grid_width The number of cell columns in the grid.
      * \param grid_height The number of cell rows in the grid.
      * \param halo_value The value of cells outside the grid.
@@ -112,17 +115,17 @@ class ExecutionKernel {
      * \brief Execute the kernel.
      */
     void operator()() const {
-        [[intel::fpga_register]] index_1d_t c[pipeline_length];
-        [[intel::fpga_register]] index_1d_t r[pipeline_length];
+        [[intel::fpga_register]] index_1d_t c[n_processing_elements];
+        [[intel::fpga_register]] index_1d_t r[n_processing_elements];
 
         // Initializing (output) column and row counters.
         index_1d_t prev_c = 0;
         index_1d_t prev_r = 0;
 #pragma unroll
-        for (uindex_plen_t i = 0; i < uindex_plen_t(pipeline_length); i++) {
+        for (uindex_pes_t i = 0; i < uindex_pes_t(n_processing_elements); i++) {
             c[i] = prev_c - stencil_radius;
             r[i] = prev_r - stencil_radius;
-            if (r[i] < index_plen_t(0)) {
+            if (r[i] < index_pes_t(0)) {
                 r[i] += grid_height;
                 c[i] -= 1;
             }
@@ -132,14 +135,14 @@ class ExecutionKernel {
 
         /*
          * The intel::numbanks attribute requires a power of two as it's argument and if the
-         * pipeline length isn't a power of two, it would produce an error. Therefore, we calculate
-         * the next power of two and use it to allocate the cache. The compiler is smart enough to
-         * see that these additional banks in the cache aren't used and therefore optimizes them
-         * away.
+         * number of processing elements isn't a power of two, it would produce an error. Therefore,
+         * we calculate the next power of two and use it to allocate the cache. The compiler is
+         * smart enough to see that these additional banks in the cache aren't used and therefore
+         * optimizes them away.
          */
-        [[intel::fpga_memory, intel::numbanks(2 * std::bit_ceil(pipeline_length))]] Padded<T>
-            cache[2][tile_height][std::bit_ceil(pipeline_length)][stencil_diameter - 1];
-        [[intel::fpga_register]] T stencil_buffer[pipeline_length][stencil_diameter]
+        [[intel::fpga_memory, intel::numbanks(2 * std::bit_ceil(n_processing_elements))]] Padded<T>
+            cache[2][tile_height][std::bit_ceil(n_processing_elements)][stencil_diameter - 1];
+        [[intel::fpga_register]] T stencil_buffer[n_processing_elements][stencil_diameter]
                                                  [stencil_diameter];
 
         uindex_n_iterations_t n_iterations = calc_n_iterations(grid_width, grid_height);
@@ -152,12 +155,15 @@ class ExecutionKernel {
             }
 
 #pragma unroll
-            for (uindex_plen_t stage = 0; stage < uindex_plen_t(pipeline_length); stage++) {
+            for (uindex_pes_t i_processing_element = 0;
+                 i_processing_element < uindex_pes_t(n_processing_elements);
+                 i_processing_element++) {
 #pragma unroll
                 for (uindex_stencil_t r = 0; r < uindex_stencil_t(stencil_diameter - 1); r++) {
 #pragma unroll
                     for (uindex_stencil_t c = 0; c < uindex_stencil_t(stencil_diameter); c++) {
-                        stencil_buffer[stage][c][r] = stencil_buffer[stage][c][r + 1];
+                        stencil_buffer[i_processing_element][c][r] =
+                            stencil_buffer[i_processing_element][c][r + 1];
                     }
                 }
 
@@ -170,19 +176,25 @@ class ExecutionKernel {
                     if (cache_c == uindex_stencil_t(stencil_diameter - 1)) {
                         new_value = carry;
                     } else {
-                        new_value = cache[c[stage][0]][r[stage]][stage][cache_c].value;
+                        new_value = cache[c[i_processing_element][0]][r[i_processing_element]]
+                                         [i_processing_element][cache_c]
+                                             .value;
                     }
 
-                    stencil_buffer[stage][cache_c][stencil_diameter - 1] = new_value;
+                    stencil_buffer[i_processing_element][cache_c][stencil_diameter - 1] = new_value;
                     if (cache_c > 0) {
-                        cache[(~c[stage])[0]][r[stage]][stage][cache_c - 1].value = new_value;
+                        cache[(~c[i_processing_element])[0]][r[i_processing_element]]
+                             [i_processing_element][cache_c - 1]
+                                 .value = new_value;
                     }
                 }
 
-                if (n_generations > i_generation + pipeline_length ||
-                    stage < uindex_plen_t(n_generations - i_generation)) {
-                    StencilImpl stencil(ID(c[stage], r[stage]), UID(grid_width, grid_height),
-                                        i_generation + uindex_t(stage), uindex_t(stage));
+                if (n_generations > i_generation + n_processing_elements ||
+                    i_processing_element < uindex_pes_t(n_generations - i_generation)) {
+                    StencilImpl stencil(ID(c[i_processing_element], r[i_processing_element]),
+                                        UID(grid_width, grid_height),
+                                        i_generation + uindex_t(i_processing_element),
+                                        uindex_t(i_processing_element));
 
                     bool h_halo_mask[stencil_diameter];
                     bool v_halo_mask[stencil_diameter];
@@ -190,19 +202,21 @@ class ExecutionKernel {
                     for (uindex_stencil_t mask_i = 0; mask_i < uindex_stencil_t(stencil_diameter);
                          mask_i++) {
                         // These computation assume that the central cell is in the grid. If it's
-                        // not, the resulting value of this stage will be discarded anyways, so this
-                        // is safe.
+                        // not, the resulting value of this processing element will be discarded
+                        // anyways, so this is safe.
                         if (mask_i < uindex_stencil_t(stencil_radius)) {
-                            h_halo_mask[mask_i] = c[stage] >= index_1d_t(stencil_radius - mask_i);
-                            v_halo_mask[mask_i] = r[stage] >= index_1d_t(stencil_radius - mask_i);
+                            h_halo_mask[mask_i] =
+                                c[i_processing_element] >= index_1d_t(stencil_radius - mask_i);
+                            v_halo_mask[mask_i] =
+                                r[i_processing_element] >= index_1d_t(stencil_radius - mask_i);
                         } else if (mask_i == uindex_stencil_t(stencil_radius)) {
                             h_halo_mask[mask_i] = true;
                             v_halo_mask[mask_i] = true;
                         } else {
-                            h_halo_mask[mask_i] =
-                                c[stage] < grid_width + index_1d_t(stencil_radius - mask_i);
-                            v_halo_mask[mask_i] =
-                                r[stage] < grid_height + index_1d_t(stencil_radius - mask_i);
+                            h_halo_mask[mask_i] = c[i_processing_element] <
+                                                  grid_width + index_1d_t(stencil_radius - mask_i);
+                            v_halo_mask[mask_i] = r[i_processing_element] <
+                                                  grid_height + index_1d_t(stencil_radius - mask_i);
                         }
                     }
 
@@ -214,7 +228,7 @@ class ExecutionKernel {
                              cell_r < uindex_stencil_t(stencil_diameter); cell_r++) {
                             if (h_halo_mask[cell_c] && v_halo_mask[cell_r]) {
                                 stencil[StencilUID(cell_c, cell_r)] =
-                                    stencil_buffer[stage][cell_c][cell_r];
+                                    stencil_buffer[i_processing_element][cell_c][cell_r];
                             } else {
                                 stencil[StencilUID(cell_c, cell_r)] = halo_value;
                             }
@@ -223,13 +237,13 @@ class ExecutionKernel {
 
                     carry = trans_func(stencil);
                 } else {
-                    carry = stencil_buffer[stage][stencil_radius][stencil_radius];
+                    carry = stencil_buffer[i_processing_element][stencil_radius][stencil_radius];
                 }
 
-                r[stage] += 1;
-                if (r[stage] == index_1d_t(grid_height)) {
-                    r[stage] = 0;
-                    c[stage] += 1;
+                r[i_processing_element] += 1;
+                if (r[i_processing_element] == index_1d_t(grid_height)) {
+                    r[i_processing_element] = 0;
+                    c[i_processing_element] += 1;
                 }
             }
 

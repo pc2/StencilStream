@@ -32,8 +32,8 @@ void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t n_
     using in_pipe = HostPipe<class MonotileExecutionKernelInPipeID, Cell>;
     using out_pipe = HostPipe<class MonotileExecutionKernelOutPipeID, Cell>;
     using TestExecutionKernel =
-        monotile::ExecutionKernel<TransFunc, Cell, stencil_radius, pipeline_length, tile_width,
-                                  tile_height, in_pipe, out_pipe>;
+        monotile::ExecutionKernel<TransFunc, Cell, stencil_radius, n_processing_elements,
+                                  tile_width, tile_height, in_pipe, out_pipe>;
 
     for (uindex_t c = 0; c < grid_width; c++) {
         for (uindex_t r = 0; r < grid_height; r++) {
@@ -70,16 +70,16 @@ void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t n_
 }
 
 TEST_CASE("monotile::ExecutionKernel", "[monotile::ExecutionKernel]") {
-    test_monotile_kernel(tile_width, tile_height, pipeline_length);
+    test_monotile_kernel(tile_width, tile_height, n_processing_elements);
 }
 
 TEST_CASE("monotile::ExecutionKernel (partial tile)", "[monotile::ExecutionKernel]") {
-    test_monotile_kernel(tile_width / 2, tile_height / 2, pipeline_length);
+    test_monotile_kernel(tile_width / 2, tile_height / 2, n_processing_elements);
 }
 
 TEST_CASE("monotile::ExecutionKernel (partial pipeline)", "[monotile::ExecutionKernel]") {
-    static_assert(pipeline_length != 1);
-    test_monotile_kernel(tile_width, tile_height, pipeline_length - 1);
+    static_assert(n_processing_elements != 1);
+    test_monotile_kernel(tile_width, tile_height, n_processing_elements - 1);
 }
 
 TEST_CASE("monotile::ExecutionKernel (noop)", "[monotile::ExecutionKernel]") {
