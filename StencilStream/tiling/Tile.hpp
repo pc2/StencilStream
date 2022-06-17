@@ -45,17 +45,16 @@ namespace tiling {
  * \tparam height The number of rows of the tile.
  * \tparam halo_radius The radius (aka width and height) of the tile halo.
  */
-template <typename T, uindex_t width, uindex_t height, uindex_t halo_radius, uindex_t burst_size>
+template <typename T, uindex_t width, uindex_t height, uindex_t halo_radius, uindex_t word_size>
 class Tile {
     static_assert(width > 2 * halo_radius);
     static_assert(height > 2 * halo_radius);
 
   public:
-    static constexpr uindex_t burst_buffer_size = std::lcm(sizeof(Padded<T>), burst_size);
-    static constexpr uindex_t burst_buffer_length = burst_buffer_size / sizeof(Padded<T>);
+    static constexpr uindex_t word_length = std::lcm(sizeof(Padded<T>), word_size) / sizeof(Padded<T>);
     static constexpr uindex_t core_width = width - 2 * halo_radius;
     static constexpr uindex_t core_height = height - 2 * halo_radius;
-    using BurstBuffer = std::array<Padded<T>, burst_buffer_length>;
+    using IOWord = std::array<Padded<T>, word_length>;
 
     /**
      * \brief Create a new tile.
@@ -147,14 +146,14 @@ class Tile {
         }
     }
 
-    static constexpr uindex_t n_cells_to_n_bursts(uindex_t n_cells) {
-        return (n_cells / burst_buffer_length) + (n_cells % burst_buffer_length == 0 ? 0 : 1);
+    static constexpr uindex_t n_cells_to_n_words(uindex_t n_cells) {
+        return (n_cells / word_length) + (n_cells % word_length == 0 ? 0 : 1);
     }
 
-    static uindex_t get_part_bursts(Part part) {
+    static uindex_t get_part_words(Part part) {
         UID range = get_part_range(part);
         uindex_t n_cells = range.c * range.r;
-        return n_cells_to_n_bursts(n_cells);
+        return n_cells_to_n_words(n_cells);
     }
 
     static constexpr uindex_t max_n_cells() {
@@ -163,21 +162,21 @@ class Tile {
         return lhs * rhs;
     }
 
-    static constexpr uindex_t max_n_bursts() { return n_cells_to_n_bursts(max_n_cells()); }
+    static constexpr uindex_t max_n_words() { return n_cells_to_n_words(max_n_cells()); }
 
     /**
      * \brief Return the buffer with the contents of the given part.
      *
      * If the part has not been accessed before, it will allocate the part's buffer. Note however
      * that this method does not initialize the buffer. Please also note that the buffer is
-     * burst-aligned: The height of the returned buffer (the second value of the range) is always
-     * `burst_length` and the width is big enough to store all required cells of the part. For more
-     * information, read about \ref burstalignment.
+     * word-aligned: The height of the returned buffer (the second value of the range) is always
+     * `word_length` and the width is big enough to store all required cells of the part. For more
+     * information, read about \ref wordalignment.
      *
      * \param tile_part The part to access.
      * \return The buffer of the part.
      */
-    cl::sycl::buffer<BurstBuffer, 1> operator[](Part tile_part) {
+    cl::sycl::buffer<IOWord, 1> operator[](Part tile_part) {
         uindex_t part_column, part_row;
         switch (tile_part) {
         case Part::NORTH_WEST_CORNER:
@@ -221,8 +220,8 @@ class Tile {
         }
 
         if (!part[part_column][part_row].has_value()) {
-            cl::sycl::buffer<BurstBuffer, 1> new_part =
-                cl::sycl::range<1>(get_part_bursts(tile_part));
+            cl::sycl::buffer<IOWord, 1> new_part =
+                cl::sycl::range<1>(get_part_words(tile_part));
             part[part_column][part_row] = new_part;
         }
         return *part[part_column][part_row];
@@ -297,8 +296,8 @@ class Tile {
 
         for (uindex_t c = 0; c < part_width; c++) {
             for (uindex_t r = 0; r < part_height; r++) {
-                uindex_t burst_i = (c * part_height + r) / burst_buffer_length;
-                uindex_t cell_i = (c * part_height + r) % burst_buffer_length;
+                uindex_t word_i = (c * part_height + r) / word_length;
+                uindex_t cell_i = (c * part_height + r) % word_length;
                 uindex_t global_c = offset[0] + c;
                 uindex_t global_r = offset[1] + r;
 
@@ -307,15 +306,15 @@ class Tile {
                 }
 
                 if (buffer_to_part) {
-                    part_ac[burst_i][cell_i].value = accessor[global_c][global_r];
+                    part_ac[word_i][cell_i].value = accessor[global_c][global_r];
                 } else {
-                    accessor[global_c][global_r] = part_ac[burst_i][cell_i].value;
+                    accessor[global_c][global_r] = part_ac[word_i][cell_i].value;
                 }
             }
         }
     }
 
-    std::optional<cl::sycl::buffer<BurstBuffer, 1>> part[3][3];
+    std::optional<cl::sycl::buffer<IOWord, 1>> part[3][3];
 };
 
 } // namespace tiling

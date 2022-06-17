@@ -37,8 +37,8 @@ inline constexpr bool is_mode_writable(cl::sycl::access::mode access_mode) {
            access_mode == cl::sycl::access::mode::discard_read_write;
 }
 
-inline constexpr uindex_t n_cells_to_n_bursts(uindex_t n_cells, uindex_t burst_buffer_length) {
-    return n_cells / burst_buffer_length + (n_cells % burst_buffer_length == 0 ? 0 : 1);
+inline constexpr uindex_t n_cells_to_n_words(uindex_t n_cells, uindex_t word_length) {
+    return n_cells / word_length + (n_cells % word_length == 0 ? 0 : 1);
 }
 
 } // namespace stencil

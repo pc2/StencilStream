@@ -28,7 +28,7 @@
 namespace stencil {
 template <typename T, uindex_t stencil_radius, typename TransFunc,
           uindex_t n_processing_elements = 1, uindex_t tile_width = 1024,
-          uindex_t tile_height = 1024, uindex_t burst_size = 64>
+          uindex_t tile_height = 1024, uindex_t word_size = 64>
 /**
  * \brief An executor that follows \ref monotile.
  *
@@ -53,20 +53,19 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
      */
     using Parent = SingleContextExecutor<T, stencil_radius, TransFunc>;
 
-    static constexpr uindex_t burst_buffer_size = std::lcm(sizeof(Padded<T>), burst_size);
-    static constexpr uindex_t burst_buffer_length = burst_buffer_size / sizeof(Padded<T>);
-    static constexpr uindex_t n_bursts =
-        n_cells_to_n_bursts(tile_width * tile_height, burst_buffer_length);
+    static constexpr uindex_t word_length = std::lcm(sizeof(Padded<T>), word_size) / sizeof(Padded<T>);
+    static constexpr uindex_t n_words =
+        n_cells_to_n_words(tile_width * tile_height, word_length);
 
-    using BurstBuffer = std::array<Padded<T>, burst_buffer_length>;
+    using IOWord = std::array<Padded<T>, word_length>;
 
-    static constexpr unsigned long bits_cell = std::bit_width(burst_buffer_length);
+    static constexpr unsigned long bits_cell = std::bit_width(word_length);
     using index_cell_t = ac_int<bits_cell + 1, true>;
     using uindex_cell_t = ac_int<bits_cell, false>;
 
-    static constexpr unsigned long bits_burst = std::bit_width(n_bursts);
-    using index_burst_t = ac_int<bits_burst + 1, true>;
-    using uindex_burst_t = ac_int<bits_burst, false>;
+    static constexpr unsigned long bits_word = std::bit_width(n_words);
+    using index_word_t = ac_int<bits_word + 1, true>;
+    using uindex_word_t = ac_int<bits_word, false>;
 
     /**
      * \brief Create a new executor.
@@ -100,15 +99,15 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
         grid_range.c = input_buffer.get_range()[0];
         grid_range.r = input_buffer.get_range()[1];
         tile_buffer = cl::sycl::range<1>(
-            n_cells_to_n_bursts(grid_range.c * grid_range.r, burst_buffer_length));
+            n_cells_to_n_words(grid_range.c * grid_range.r, word_length));
 
         auto in_ac = input_buffer.template get_access<cl::sycl::access::mode::read>();
         auto tile_ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
         for (uindex_t c = 0; c < grid_range.c; c++) {
             for (uindex_t r = 0; r < grid_range.r; r++) {
-                uindex_t burst_i = (c * grid_range.r + r) / burst_buffer_length;
-                uindex_t cell_i = (c * grid_range.r + r) % burst_buffer_length;
-                tile_ac[burst_i][cell_i].value = in_ac[c][r];
+                uindex_t word_i = (c * grid_range.r + r) / word_length;
+                uindex_t cell_i = (c * grid_range.r + r) % word_length;
+                tile_ac[word_i][cell_i].value = in_ac[c][r];
             }
         }
     }
@@ -122,9 +121,9 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
         auto out_ac = output_buffer.template get_access<cl::sycl::access::mode::discard_write>();
         for (uindex_t c = 0; c < output_buffer.get_range()[0]; c++) {
             for (uindex_t r = 0; r < output_buffer.get_range()[1]; r++) {
-                uindex_t burst_i = (c * grid_range.r + r) / burst_buffer_length;
-                uindex_t cell_i = (c * grid_range.r + r) % burst_buffer_length;
-                out_ac[c][r] = in_ac[burst_i][cell_i].value;
+                uindex_t word_i = (c * grid_range.r + r) / word_length;
+                uindex_t cell_i = (c * grid_range.r + r) % word_length;
+                out_ac[c][r] = in_ac[word_i][cell_i].value;
             }
         }
     }
@@ -147,22 +146,22 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
         uindex_t grid_width = grid_range.c;
         uindex_t grid_height = grid_range.r;
 
-        cl::sycl::buffer<BurstBuffer, 1> read_buffer = tile_buffer;
-        cl::sycl::buffer<BurstBuffer, 1> write_buffer = cl::sycl::range<1>(n_bursts);
+        cl::sycl::buffer<IOWord, 1> read_buffer = tile_buffer;
+        cl::sycl::buffer<IOWord, 1> write_buffer = cl::sycl::range<1>(n_words);
 
         while (this->get_i_generation() < target_i_generation) {
             input_queue.submit([&](cl::sycl::handler &cgh) {
                 auto ac = read_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
 
                 cgh.single_task<class MonotileInputKernel>([=]() {
-                    [[intel::fpga_memory]] BurstBuffer cache;
+                    [[intel::fpga_memory]] IOWord cache;
 
-                    uindex_burst_t burst_i = 0;
-                    uindex_cell_t cell_i = burst_buffer_length;
+                    uindex_word_t word_i = 0;
+                    uindex_cell_t cell_i = word_length;
                     for (uindex_2d_t i = 0; i < uindex_2d_t(grid_width * grid_height); i++) {
-                        if (cell_i == uindex_cell_t(burst_buffer_length)) {
-                            cache = ac[burst_i.to_uint64()];
-                            burst_i++;
+                        if (cell_i == uindex_cell_t(word_length)) {
+                            cache = ac[word_i.to_uint64()];
+                            word_i++;
                             cell_i = 0;
                         }
                         in_pipe::write(cache[cell_i].value);
@@ -182,22 +181,22 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
                     write_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
 
                 cgh.single_task<class MonotileOutputKernel>([=]() {
-                    [[intel::fpga_memory]] BurstBuffer cache;
+                    [[intel::fpga_memory]] IOWord cache;
 
-                    uindex_burst_t burst_i = 0;
+                    uindex_word_t word_i = 0;
                     uindex_cell_t cell_i = 0;
                     for (uindex_2d_t i = 0; i < uindex_2d_t(grid_width * grid_height); i++) {
                         cache[cell_i].value = out_pipe::read();
                         cell_i++;
-                        if (cell_i == uindex_cell_t(burst_buffer_length)) {
-                            ac[burst_i.to_uint64()] = cache;
+                        if (cell_i == uindex_cell_t(word_length)) {
+                            ac[word_i.to_uint64()] = cache;
                             cell_i = 0;
-                            burst_i++;
+                            word_i++;
                         }
                     }
 
                     if (cell_i != 0) {
-                        ac[burst_i.to_uint64()] = cache;
+                        ac[word_i.to_uint64()] = cache;
                     }
                 });
             });
@@ -214,7 +213,7 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
     }
 
   private:
-    cl::sycl::buffer<BurstBuffer, 1> tile_buffer;
+    cl::sycl::buffer<IOWord, 1> tile_buffer;
     UID grid_range;
 };
 } // namespace stencil

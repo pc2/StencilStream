@@ -63,7 +63,7 @@ then
 fi
 
 COMMAND="dpcpp src/*.cpp -g -o $EXEC_NAME "
-COMMAND="$COMMAND -std=c++20 -DSTENCIL_INDEX_WIDTH=32 -DFDTD_BURST_SIZE=1024 -qactypes -I./ -O3"
+COMMAND="$COMMAND -std=c++20 -DSTENCIL_INDEX_WIDTH=32 -qactypes -I./ -O3"
 
 VALID_ARGUMENTS=1
 

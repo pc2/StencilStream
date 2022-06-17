@@ -29,8 +29,8 @@ using namespace stencil::tiling;
 using namespace std;
 
 using TileImpl = Tile<ID, tile_width, tile_height, halo_radius, 64>;
-constexpr uindex_t burst_length = 8;
-static_assert(burst_length == TileImpl::burst_buffer_length);
+constexpr uindex_t word_length = 8;
+static_assert(word_length == TileImpl::word_length);
 
 TEST_CASE("Tile::operator[]", "[Tile]") {
     TileImpl tile;
@@ -38,8 +38,8 @@ TEST_CASE("Tile::operator[]", "[Tile]") {
     for (TileImpl::Part part_type : TileImpl::all_parts) {
         auto part = tile[part_type];
 
-        uindex_t required_bursts = TileImpl::get_part_bursts(part_type);
-        REQUIRE(required_bursts == part.get_range()[0]);
+        uindex_t required_words = TileImpl::get_part_words(part_type);
+        REQUIRE(required_words == part.get_range()[0]);
     }
 }
 
@@ -71,10 +71,10 @@ void copy_from_test_impl(uindex_t tile_width, uindex_t tile_height) {
                 if (r + content_offset[1] >= tile_height) {
                     continue;
                 }
-                uindex_t burst_i = (c * true_range.r + r) / burst_length;
-                uindex_t cell_i = (c * true_range.r + r) % burst_length;
-                REQUIRE(part_ac[burst_i][cell_i].value.c == c + content_offset[0]);
-                REQUIRE(part_ac[burst_i][cell_i].value.r == r + content_offset[1]);
+                uindex_t word_i = (c * true_range.r + r) / word_length;
+                uindex_t cell_i = (c * true_range.r + r) % word_length;
+                REQUIRE(part_ac[word_i][cell_i].value.c == c + content_offset[0]);
+                REQUIRE(part_ac[word_i][cell_i].value.r == r + content_offset[1]);
             }
         }
     }
@@ -97,9 +97,9 @@ void copy_to_test_impl(uindex_t tile_width, uindex_t tile_height) {
 
         for (uindex_t c = 0; c < true_range.c; c++) {
             for (uindex_t r = 0; r < true_range.r; r++) {
-                uindex_t burst_i = (c * true_range.r + r) / burst_length;
-                uindex_t cell_i = (c * true_range.r + r) % burst_length;
-                part_ac[burst_i][cell_i].value = ID(c + content_offset[0], r + content_offset[1]);
+                uindex_t word_i = (c * true_range.r + r) / word_length;
+                uindex_t cell_i = (c * true_range.r + r) % word_length;
+                part_ac[word_i][cell_i].value = ID(c + content_offset[0], r + content_offset[1]);
             }
         }
     }
