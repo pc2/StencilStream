@@ -41,7 +41,10 @@ struct Cell {
 
 template <stencil::uindex_t radius> class FPGATransFunc {
   public:
-    Cell operator()(stencil::Stencil<Cell, radius> const &stencil) const {
+    using Cell = Cell;
+    static constexpr stencil::uindex_t stencil_radius = radius;
+
+    Cell operator()(stencil::Stencil<FPGATransFunc<radius>> const &stencil) const {
         Cell new_cell = stencil[stencil::ID(0, 0)];
 
         bool is_valid = true;
@@ -77,7 +80,10 @@ template <stencil::uindex_t radius> class FPGATransFunc {
 
 template <stencil::uindex_t radius> class HostTransFunc {
   public:
-    Cell operator()(stencil::Stencil<Cell, radius> const &stencil) const {
+    using Cell = Cell;
+    static constexpr stencil::uindex_t stencil_radius = radius;
+
+    Cell operator()(stencil::Stencil<HostTransFunc<radius>> const &stencil) const {
         Cell new_cell = stencil[stencil::ID(0, 0)];
 
         if (stencil.id.c < 0 || stencil.id.r < 0 || stencil.id.c > stencil.grid_range.c ||

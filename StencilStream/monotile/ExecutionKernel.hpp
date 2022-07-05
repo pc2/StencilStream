@@ -39,9 +39,6 @@ namespace monotile {
  * is described in \ref monotile.
  *
  * \tparam TransFunc The type of transition function to use.
- * \tparam T Cell value type.
- * \tparam stencil_radius The static, maximal Chebyshev distance of cells in a stencil to the
- * central cell.
  * \tparam n_processing_elements The number of processing elements to use. Similar to an unroll
  * factor for a loop.
  * \tparam output_tile_width The number of columns in a grid tile.
@@ -49,24 +46,25 @@ namespace monotile {
  * \tparam in_pipe The pipe to read from.
  * \tparam out_pipe The pipe to write to.
  */
-template <typename TransFunc, typename T, uindex_t stencil_radius, uindex_t n_processing_elements,
-          uindex_t tile_width, uindex_t tile_height, typename in_pipe, typename out_pipe>
+template <typename TransFunc, uindex_t n_processing_elements, uindex_t tile_width,
+          uindex_t tile_height, typename in_pipe, typename out_pipe>
 class ExecutionKernel {
   public:
-    static_assert(
-        std::is_invocable_r<T, TransFunc const, Stencil<T, stencil_radius> const &>::value);
-    static_assert(stencil_radius >= 1);
-    static_assert(stencil_radius <= std::min(tile_width, tile_height));
+    using Cell = typename TransFunc::Cell;
 
-    using StencilImpl = Stencil<T, stencil_radius>;
+    static_assert(std::is_invocable_r<Cell, TransFunc const, Stencil<TransFunc> const &>::value);
+    static_assert(TransFunc::stencil_radius >= 1);
+    static_assert(TransFunc::stencil_radius <= std::min(tile_width, tile_height));
+
+    using StencilImpl = Stencil<TransFunc>;
 
     /**
      * \brief The width and height of the stencil buffer.
      */
-    static constexpr uindex_t stencil_diameter = Stencil<T, stencil_radius>::diameter;
+    static constexpr uindex_t stencil_diameter = Stencil<TransFunc>::diameter;
 
     static constexpr uindex_t calc_pipeline_latency(uindex_t grid_height) {
-        return n_processing_elements * stencil_radius * (grid_height + 1);
+        return n_processing_elements * TransFunc::stencil_radius * (grid_height + 1);
     }
 
     static constexpr uindex_t calc_n_iterations(uindex_t grid_width, uindex_t grid_height) {
@@ -107,7 +105,7 @@ class ExecutionKernel {
      * \param halo_value The value of cells outside the grid.
      */
     ExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t n_generations,
-                    uindex_1d_t grid_width, uindex_1d_t grid_height, T halo_value)
+                    uindex_1d_t grid_width, uindex_1d_t grid_height, Cell halo_value)
         : trans_func(trans_func), i_generation(i_generation), n_generations(n_generations),
           grid_width(grid_width), grid_height(grid_height), halo_value(halo_value) {}
 
@@ -123,8 +121,8 @@ class ExecutionKernel {
         index_1d_t prev_r = 0;
 #pragma unroll
         for (uindex_pes_t i = 0; i < uindex_pes_t(n_processing_elements); i++) {
-            c[i] = prev_c - stencil_radius;
-            r[i] = prev_r - stencil_radius;
+            c[i] = prev_c - TransFunc::stencil_radius;
+            r[i] = prev_r - TransFunc::stencil_radius;
             if (r[i] < index_pes_t(0)) {
                 r[i] += grid_height;
                 c[i] -= 1;
@@ -140,14 +138,15 @@ class ExecutionKernel {
          * smart enough to see that these additional banks in the cache aren't used and therefore
          * optimizes them away.
          */
-        [[intel::fpga_memory, intel::numbanks(2 * std::bit_ceil(n_processing_elements))]] Padded<T>
+        [[intel::fpga_memory,
+          intel::numbanks(2 * std::bit_ceil(n_processing_elements))]] Padded<Cell>
             cache[2][tile_height][std::bit_ceil(n_processing_elements)][stencil_diameter - 1];
-        [[intel::fpga_register]] T stencil_buffer[n_processing_elements][stencil_diameter]
-                                                 [stencil_diameter];
+        [[intel::fpga_register]] Cell stencil_buffer[n_processing_elements][stencil_diameter]
+                                                    [stencil_diameter];
 
         uindex_n_iterations_t n_iterations = calc_n_iterations(grid_width, grid_height);
         for (uindex_n_iterations_t i = 0; i < n_iterations; i++) {
-            T carry;
+            Cell carry;
             if (i < uindex_n_iterations_t(grid_width * grid_height)) {
                 carry = in_pipe::read();
             } else {
@@ -172,7 +171,7 @@ class ExecutionKernel {
 #pragma unroll
                 for (uindex_stencil_t cache_c = 0; cache_c < uindex_stencil_t(stencil_diameter);
                      cache_c++) {
-                    T new_value;
+                    Cell new_value;
                     if (cache_c == uindex_stencil_t(stencil_diameter - 1)) {
                         new_value = carry;
                     } else {
@@ -204,19 +203,21 @@ class ExecutionKernel {
                         // These computation assume that the central cell is in the grid. If it's
                         // not, the resulting value of this processing element will be discarded
                         // anyways, so this is safe.
-                        if (mask_i < uindex_stencil_t(stencil_radius)) {
-                            h_halo_mask[mask_i] =
-                                c[i_processing_element] >= index_1d_t(stencil_radius - mask_i);
-                            v_halo_mask[mask_i] =
-                                r[i_processing_element] >= index_1d_t(stencil_radius - mask_i);
-                        } else if (mask_i == uindex_stencil_t(stencil_radius)) {
+                        if (mask_i < uindex_stencil_t(TransFunc::stencil_radius)) {
+                            h_halo_mask[mask_i] = c[i_processing_element] >=
+                                                  index_1d_t(TransFunc::stencil_radius - mask_i);
+                            v_halo_mask[mask_i] = r[i_processing_element] >=
+                                                  index_1d_t(TransFunc::stencil_radius - mask_i);
+                        } else if (mask_i == uindex_stencil_t(TransFunc::stencil_radius)) {
                             h_halo_mask[mask_i] = true;
                             v_halo_mask[mask_i] = true;
                         } else {
-                            h_halo_mask[mask_i] = c[i_processing_element] <
-                                                  grid_width + index_1d_t(stencil_radius - mask_i);
-                            v_halo_mask[mask_i] = r[i_processing_element] <
-                                                  grid_height + index_1d_t(stencil_radius - mask_i);
+                            h_halo_mask[mask_i] =
+                                c[i_processing_element] <
+                                grid_width + index_1d_t(TransFunc::stencil_radius - mask_i);
+                            v_halo_mask[mask_i] =
+                                r[i_processing_element] <
+                                grid_height + index_1d_t(TransFunc::stencil_radius - mask_i);
                         }
                     }
 
@@ -237,7 +238,8 @@ class ExecutionKernel {
 
                     carry = trans_func(stencil);
                 } else {
-                    carry = stencil_buffer[i_processing_element][stencil_radius][stencil_radius];
+                    carry = stencil_buffer[i_processing_element][TransFunc::stencil_radius]
+                                          [TransFunc::stencil_radius];
                 }
 
                 r[i_processing_element] += 1;
@@ -259,7 +261,7 @@ class ExecutionKernel {
     uindex_t n_generations;
     uindex_1d_t grid_width;
     uindex_1d_t grid_height;
-    T halo_value;
+    Cell halo_value;
 };
 
 } // namespace monotile

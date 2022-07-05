@@ -26,8 +26,7 @@
 #include <numeric>
 
 namespace stencil {
-template <typename T, uindex_t stencil_radius, typename TransFunc,
-          uindex_t n_processing_elements = 1, uindex_t tile_width = 1024,
+template <typename TransFunc, uindex_t n_processing_elements = 1, uindex_t tile_width = 1024,
           uindex_t tile_height = 1024, uindex_t word_size = 64>
 /**
  * \brief An executor that follows \ref monotile.
@@ -36,8 +35,6 @@ template <typename T, uindex_t stencil_radius, typename TransFunc,
  * one tile. This means the grid range may not exceed the set tile range, but it uses less resources
  * and time per kernel execution.
  *
- * \tparam T The cell type.
- * \tparam stencil_radius The radius of the stencil buffer supplied to the transition function.
  * \tparam TransFunc The type of the transition function.
  * \tparam n_processing_elements The number of processing elements per kernel. Must be at least 1.
  * Defaults to 1.
@@ -46,13 +43,15 @@ template <typename T, uindex_t stencil_radius, typename TransFunc,
  * \tparam tile_height The number of rows in a tile and maximum number of rows in a grid. Defaults
  * to 1024.
  */
-class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc> {
+class MonotileExecutor : public SingleContextExecutor<TransFunc> {
   public:
+    using Cell = typename TransFunc::Cell;
+
     static constexpr uindex_t word_length =
-        std::lcm(sizeof(Padded<T>), word_size) / sizeof(Padded<T>);
+        std::lcm(sizeof(Padded<Cell>), word_size) / sizeof(Padded<Cell>);
     static constexpr uindex_t n_words = n_cells_to_n_words(tile_width * tile_height, word_length);
 
-    using IOWord = std::array<Padded<T>, word_length>;
+    using IOWord = std::array<Padded<Cell>, word_length>;
 
     static constexpr unsigned long bits_cell = std::bit_width(word_length);
     using index_cell_t = ac_int<bits_cell + 1, true>;
@@ -65,14 +64,13 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
     /**
      * \brief Create a new executor.
      *
-     * \param halo_value The value of cells in the grid halo.
      * \param trans_func An instance of the transition function type.
      */
-    MonotileExecutor(T halo_value, TransFunc trans_func)
-        : SingleContextExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
-          tile_buffer(cl::sycl::range<1>(1)), grid_range(1, 1) {
+    MonotileExecutor(Cell halo_value, TransFunc trans_func)
+        : SingleContextExecutor<TransFunc>(halo_value, trans_func), tile_buffer(cl::sycl::range<1>(1)),
+          grid_range(1, 1) {
         auto ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
-        ac[0][0].value = halo_value;
+        ac[0][0].value = this->get_halo_value();
     }
 
     /**
@@ -86,7 +84,7 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
      * set width and height of the tile. \param input_buffer The source buffer of the new grid
      * state.
      */
-    void set_input(cl::sycl::buffer<T, 2> input_buffer) override {
+    void set_input(cl::sycl::buffer<Cell, 2> input_buffer) override {
         if (input_buffer.get_range()[0] > tile_width || input_buffer.get_range()[1] > tile_height) {
             throw std::range_error("The grid is bigger than the tile. The monotile architecture "
                                    "requires that grid ranges are smaller or equal to the tile "
@@ -108,7 +106,7 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
         }
     }
 
-    void copy_output(cl::sycl::buffer<T, 2> output_buffer) override {
+    void copy_output(cl::sycl::buffer<Cell, 2> output_buffer) override {
         if (output_buffer.get_range()[0] != grid_range.c ||
             output_buffer.get_range()[1] != grid_range.r) {
             throw std::range_error("The output buffer is not the same size as the grid");
@@ -127,11 +125,11 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
     UID get_grid_range() const override { return this->grid_range; }
 
     void run(uindex_t n_generations) override {
-        using in_pipe = cl::sycl::pipe<class monotile_in_pipe, T>;
-        using out_pipe = cl::sycl::pipe<class monotile_out_pipe, T>;
+        using in_pipe = cl::sycl::pipe<class monotile_in_pipe, Cell>;
+        using out_pipe = cl::sycl::pipe<class monotile_out_pipe, Cell>;
         using ExecutionKernelImpl =
-            monotile::ExecutionKernel<TransFunc, T, stencil_radius, n_processing_elements,
-                                      tile_width, tile_height, in_pipe, out_pipe>;
+            monotile::ExecutionKernel<TransFunc, n_processing_elements, tile_width, tile_height,
+                                      in_pipe, out_pipe>;
         using uindex_2d_t = typename ExecutionKernelImpl::uindex_2d_t;
 
         cl::sycl::queue input_queue = this->new_queue(true);

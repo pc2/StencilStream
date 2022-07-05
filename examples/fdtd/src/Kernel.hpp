@@ -25,7 +25,8 @@
 
 template <typename MaterialResolver, typename Source> class Kernel {
   public:
-    using MaterialCell = typename MaterialResolver::MaterialCell;
+    using Cell = typename MaterialResolver::MaterialCell;
+    static constexpr uindex_t stencil_radius = 1;
 
     Kernel(Parameters const &parameters, MaterialResolver mat_resolver, Source source)
         : cutoff_generation(), detect_generation(), source_radius_squared(), source_c(), source_r(),
@@ -45,8 +46,8 @@ template <typename MaterialResolver, typename Source> class Kernel {
         double_center_cr = parameters.grid_range()[0];
     }
 
-    MaterialCell operator()(Stencil<MaterialCell, 1> const &stencil) const {
-        MaterialCell cell = stencil[ID(0, 0)];
+    Cell operator()(Stencil<Kernel<MaterialResolver, Source>> const &stencil) const {
+        Cell cell = stencil[ID(0, 0)];
 
         index_t c = stencil.id.c;
         index_t r = stencil.id.r;
@@ -79,8 +80,7 @@ template <typename MaterialResolver, typename Source> class Kernel {
                     interp_factor = 1.0;
                 }
 
-                cell.cell.hz +=
-                    interp_factor * source.template get_source_amplitude<MaterialCell>(stencil);
+                cell.cell.hz += interp_factor * source.template get_source_amplitude(stencil);
             }
 
             if (stencil.generation > detect_generation) {

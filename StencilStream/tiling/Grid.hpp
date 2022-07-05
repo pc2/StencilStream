@@ -43,12 +43,12 @@ namespace tiling {
  * Apart from providing copy operations to and from monolithic grid buffers, it also handles the
  * input and output kernel submission for a given tile.
  *
- * \tparam T Cell value type.
+ * \tparam Cell Cell value type.
  * \tparam tile_width The number of columns of a tile.
  * \tparam tile_height The number of rows of a tile.
  * \tparam halo_radius The radius (aka width and height) of the tile halo.
  */
-template <typename T, uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius,
+template <typename Cell, uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius,
           uindex_t word_size = 64>
 class Grid {
   public:
@@ -56,7 +56,7 @@ class Grid {
     static constexpr uindex_t core_height = tile_height - 2 * halo_radius;
     static constexpr uindex_t core_width = tile_width - 2 * halo_radius;
 
-    using Tile = Tile<T, tile_width, tile_height, halo_radius, word_size>;
+    using Tile = Tile<Cell, tile_width, tile_height, halo_radius, word_size>;
 
     static constexpr unsigned long bits_cell = std::bit_width(Tile::word_length);
     using index_cell_t = ac_int<bits_cell + 1, true>;
@@ -90,7 +90,7 @@ class Grid {
      *
      * \param in_buffer The buffer to copy the cells from.
      */
-    Grid(cl::sycl::buffer<T, 2> in_buffer) : tiles(), grid_range(in_buffer.get_range()) {
+    Grid(cl::sycl::buffer<Cell, 2> in_buffer) : tiles(), grid_range(in_buffer.get_range()) {
         copy_from(in_buffer);
     }
 
@@ -103,7 +103,7 @@ class Grid {
      * \param out_buffer The buffer to copy the cells to.
      * \throws std::range_error The buffer's size is not the same as the grid's size.
      */
-    void copy_to(cl::sycl::buffer<T, 2> &out_buffer) {
+    void copy_to(cl::sycl::buffer<Cell, 2> &out_buffer) {
         if (out_buffer.get_range() != grid_range) {
             throw std::range_error("The target buffer has not the same size as the grid");
         }
@@ -169,11 +169,11 @@ class Grid {
 
     template <typename pipe_id>
     void submit_read(cl::sycl::queue fpga_queue, ID tile_id, typename Tile::Part part,
-        uindex_t n_columns) {
+                     uindex_t n_columns) {
         if (n_columns == 0) {
             return;
         }
-        
+
         fpga_queue.submit([&](cl::sycl::handler &cgh) {
             auto ac =
                 this->get_tile(tile_id)[part].template get_access<cl::sycl::access::mode::read>(
@@ -192,7 +192,7 @@ class Grid {
                         word_i++;
                         cell_i = 0;
                     }
-                    cl::sycl::pipe<pipe_id, T>::write(cache[cell_i].value);
+                    cl::sycl::pipe<pipe_id, Cell>::write(cache[cell_i].value);
                     cell_i++;
                 }
             });
@@ -201,7 +201,7 @@ class Grid {
 
     template <typename pipe_id>
     void submit_write(cl::sycl::queue fpga_queue, ID tile_id, typename Tile::Part part,
-        uindex_t n_columns) {
+                      uindex_t n_columns) {
         if (n_columns == 0) {
             return;
         }
@@ -223,7 +223,7 @@ class Grid {
                         word_i++;
                         cell_i = 0;
                     }
-                    cache[cell_i].value = cl::sycl::pipe<pipe_id, T>::read();
+                    cache[cell_i].value = cl::sycl::pipe<pipe_id, Cell>::read();
                     cell_i++;
                 }
 
@@ -235,7 +235,7 @@ class Grid {
     }
 
   private:
-    void copy_from(cl::sycl::buffer<T, 2> in_buffer) {
+    void copy_from(cl::sycl::buffer<Cell, 2> in_buffer) {
         if (in_buffer.get_range() != grid_range) {
             throw std::range_error("The target buffer has not the same size as the grid");
         }

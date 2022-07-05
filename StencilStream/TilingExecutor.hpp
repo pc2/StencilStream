@@ -34,8 +34,6 @@ namespace stencil {
  * This executor is called `TilingExecutor` since was the first one in StencilStream 2.x. A better
  * name for it would be `TilingExecutor`.
  *
- * \tparam T The cell type.
- * \tparam stencil_radius The radius of the stencil buffer supplied to the transition function.
  * \tparam TransFunc The type of the transition function.
  * \tparam n_processing_elements The number of processing elements per kernel. Must be at least 1.
  * Defaults to 1.
@@ -44,18 +42,20 @@ namespace stencil {
  * \tparam tile_height The number of rows in a tile and maximum number of rows in a grid. Defaults
  * to 1024.
  */
-template <typename T, uindex_t stencil_radius, typename TransFunc,
-          uindex_t n_processing_elements = 1, uindex_t tile_width = 1024,
+template <typename TransFunc, uindex_t n_processing_elements = 1, uindex_t tile_width = 1024,
           uindex_t tile_height = 1024>
-class TilingExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc> {
+class TilingExecutor : public SingleContextExecutor<TransFunc> {
   public:
+    using Cell = typename TransFunc::Cell;
+
     /**
      * \brief The number of cells that have be added to the tile in every direction to form the
      * complete input.
      */
-    static_assert(n_processing_elements <= std::numeric_limits<uindex_t>::max() / stencil_radius);
+    static_assert(n_processing_elements <=
+                  std::numeric_limits<uindex_t>::max() / TransFunc::stencil_radius);
 
-    static constexpr uindex_t halo_radius = stencil_radius * n_processing_elements;
+    static constexpr uindex_t halo_radius = TransFunc::stencil_radius * n_processing_elements;
 
     static_assert(halo_radius <= std::numeric_limits<uindex_t>::max() / 2);
     static_assert(tile_width <= std::numeric_limits<uindex_t>::max() - 2 * halo_radius);
@@ -67,35 +67,35 @@ class TilingExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc
      * \param halo_value The value of cells in the grid halo.
      * \param trans_func An instance of the transition function type.
      */
-    TilingExecutor(T halo_value, TransFunc trans_func)
-        : SingleContextExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
-          input_grid(cl::sycl::buffer<T, 2>(cl::sycl::range<2>(0, 0))) {}
+    TilingExecutor(Cell halo_value, TransFunc trans_func)
+        : SingleContextExecutor<TransFunc>(halo_value, trans_func),
+          input_grid(cl::sycl::buffer<Cell, 2>(cl::sycl::range<2>(0, 0))) {}
 
-    void set_input(cl::sycl::buffer<T, 2> input_buffer) override {
+    void set_input(cl::sycl::buffer<Cell, 2> input_buffer) override {
         this->input_grid = GridImpl(input_buffer);
     }
 
-    void copy_output(cl::sycl::buffer<T, 2> output_buffer) override {
+    void copy_output(cl::sycl::buffer<Cell, 2> output_buffer) override {
         input_grid.copy_to(output_buffer);
     }
 
     UID get_grid_range() const override { return input_grid.get_grid_range(); }
 
     void run(uindex_t n_generations) override {
-        using feed_in_pipe_0 = cl::sycl::pipe<class feed_in_pipe_0_id, T>;
-        using feed_in_pipe_1 = cl::sycl::pipe<class feed_in_pipe_1_id, T>;
-        using feed_in_pipe_2 = cl::sycl::pipe<class feed_in_pipe_2_id, T>;
-        using feed_in_pipe_3 = cl::sycl::pipe<class feed_in_pipe_3_id, T>;
-        using feed_in_pipe_4 = cl::sycl::pipe<class feed_in_pipe_4_id, T>;
-        using in_pipe = cl::sycl::pipe<class tiling_in_pipe, T>;
-        using out_pipe = cl::sycl::pipe<class tiling_out_pipe, T>;
-        using feed_out_pipe_0 = cl::sycl::pipe<class feed_out_pipe_0_id, T>;
-        using feed_out_pipe_1 = cl::sycl::pipe<class feed_out_pipe_1_id, T>;
-        using feed_out_pipe_2 = cl::sycl::pipe<class feed_out_pipe_2_id, T>;
+        using feed_in_pipe_0 = cl::sycl::pipe<class feed_in_pipe_0_id, Cell>;
+        using feed_in_pipe_1 = cl::sycl::pipe<class feed_in_pipe_1_id, Cell>;
+        using feed_in_pipe_2 = cl::sycl::pipe<class feed_in_pipe_2_id, Cell>;
+        using feed_in_pipe_3 = cl::sycl::pipe<class feed_in_pipe_3_id, Cell>;
+        using feed_in_pipe_4 = cl::sycl::pipe<class feed_in_pipe_4_id, Cell>;
+        using in_pipe = cl::sycl::pipe<class tiling_in_pipe, Cell>;
+        using out_pipe = cl::sycl::pipe<class tiling_out_pipe, Cell>;
+        using feed_out_pipe_0 = cl::sycl::pipe<class feed_out_pipe_0_id, Cell>;
+        using feed_out_pipe_1 = cl::sycl::pipe<class feed_out_pipe_1_id, Cell>;
+        using feed_out_pipe_2 = cl::sycl::pipe<class feed_out_pipe_2_id, Cell>;
 
         using ExecutionKernelImpl =
-            tiling::ExecutionKernel<TransFunc, T, stencil_radius, n_processing_elements, tile_width,
-                                    tile_height, in_pipe, out_pipe>;
+            tiling::ExecutionKernel<TransFunc, n_processing_elements, tile_width, tile_height,
+                                    in_pipe, out_pipe>;
 
         cl::sycl::queue input_queue[5] = {this->new_queue(true), this->new_queue(true),
                                           this->new_queue(true), this->new_queue(true),
@@ -237,7 +237,7 @@ class TilingExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc
                                                              c++) {
                                 for (uindex_height_t r = 0;
                                      r < uindex_height_t(2 * halo_radius + tile_height); r++) {
-                                    T value;
+                                    Cell value;
                                     if (r < uindex_height_t(halo_radius)) {
                                         value = feed_in_pipe_0::read();
                                     } else if (r < uindex_height_t(2 * halo_radius)) {
@@ -277,7 +277,7 @@ class TilingExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc
                                                              c < uindex_width_t(n_inner_columns);
                                                              c++) {
                                 for (uindex_height_t r = 0; r < uindex_height_t(tile_height); r++) {
-                                    T value = out_pipe::read();
+                                    Cell value = out_pipe::read();
                                     if (r < uindex_height_t(halo_radius)) {
                                         feed_out_pipe_0::write(value);
                                     } else if (r < uindex_height_t(tile_height - halo_radius)) {
@@ -338,7 +338,7 @@ class TilingExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc
     }
 
   private:
-    using GridImpl = tiling::Grid<T, tile_width, tile_height, halo_radius>;
+    using GridImpl = tiling::Grid<Cell, tile_width, tile_height, halo_radius>;
     using TileImpl = typename GridImpl::Tile;
     GridImpl input_grid;
 };

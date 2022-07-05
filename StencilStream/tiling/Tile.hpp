@@ -40,21 +40,22 @@ namespace tiling {
  * This tile manager supports copy operations to and from monolithic, user-supplied buffers, as well
  * as an index operation to access the individual parts.
  *
- * \tparam T Cell value type.
+ * \tparam Cell Cell value type.
  * \tparam width The number of columns of the tile.
  * \tparam height The number of rows of the tile.
  * \tparam halo_radius The radius (aka width and height) of the tile halo.
  */
-template <typename T, uindex_t width, uindex_t height, uindex_t halo_radius, uindex_t word_size>
+template <typename Cell, uindex_t width, uindex_t height, uindex_t halo_radius, uindex_t word_size>
 class Tile {
     static_assert(width > 2 * halo_radius);
     static_assert(height > 2 * halo_radius);
 
   public:
-    static constexpr uindex_t word_length = std::lcm(sizeof(Padded<T>), word_size) / sizeof(Padded<T>);
+    static constexpr uindex_t word_length =
+        std::lcm(sizeof(Padded<Cell>), word_size) / sizeof(Padded<Cell>);
     static constexpr uindex_t core_width = width - 2 * halo_radius;
     static constexpr uindex_t core_height = height - 2 * halo_radius;
-    using IOWord = std::array<Padded<T>, word_length>;
+    using IOWord = std::array<Padded<Cell>, word_length>;
 
     /**
      * \brief Create a new tile.
@@ -220,8 +221,7 @@ class Tile {
         }
 
         if (!part[part_column][part_row].has_value()) {
-            cl::sycl::buffer<IOWord, 1> new_part =
-                cl::sycl::range<1>(get_part_words(tile_part));
+            cl::sycl::buffer<IOWord, 1> new_part = cl::sycl::range<1>(get_part_words(tile_part));
             part[part_column][part_row] = new_part;
         }
         return *part[part_column][part_row];
@@ -238,7 +238,7 @@ class Tile {
      * \param buffer The buffer to copy the data from.
      * \param offset The offset of the buffer section relative to the origin of the buffer.
      */
-    void copy_from(cl::sycl::buffer<T, 2> buffer, cl::sycl::id<2> offset) {
+    void copy_from(cl::sycl::buffer<Cell, 2> buffer, cl::sycl::id<2> offset) {
         auto accessor = buffer.template get_access<cl::sycl::access::mode::read_write>();
         copy_part(accessor, Part::NORTH_WEST_CORNER, offset, true);
         copy_part(accessor, Part::NORTH_BORDER, offset, true);
@@ -263,7 +263,7 @@ class Tile {
      * \param buffer The buffer to copy the data to.
      * \param offset The offset of the buffer section relative to the origin of the buffer.
      */
-    void copy_to(cl::sycl::buffer<T, 2> buffer, cl::sycl::id<2> offset) {
+    void copy_to(cl::sycl::buffer<Cell, 2> buffer, cl::sycl::id<2> offset) {
         auto accessor = buffer.template get_access<cl::sycl::access::mode::read_write>();
         copy_part(accessor, Part::NORTH_WEST_CORNER, offset, false);
         copy_part(accessor, Part::NORTH_BORDER, offset, false);
@@ -280,7 +280,7 @@ class Tile {
     /**
      * \brief Helper function to copy a part to or from a buffer.
      */
-    void copy_part(cl::sycl::accessor<T, 2, cl::sycl::access::mode::read_write,
+    void copy_part(cl::sycl::accessor<Cell, 2, cl::sycl::access::mode::read_write,
                                       cl::sycl::access::target::host_buffer>
                        accessor,
                    Part part, cl::sycl::id<2> global_offset, bool buffer_to_part) {

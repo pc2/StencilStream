@@ -52,21 +52,20 @@ namespace stencil {
  * and therefore, it can be ignored in most instances. However, it can be reset if a transition
  * function needs it.
  *
- * \tparam T The cell type.
- * \tparam stencil_radius The radius of the stencil buffer supplied to the transition function.
  * \tparam TransFunc The type of the transition function.
  */
-template <typename T, uindex_t stencil_radius, typename TransFunc> class AbstractExecutor {
+template <typename TransFunc> class AbstractExecutor {
   public:
-    using SnapshotHandler = std::function<void(cl::sycl::buffer<T, 2>, uindex_t)>;
+    using Cell = typename TransFunc::Cell;
+
+    using SnapshotHandler = std::function<void(cl::sycl::buffer<Cell, 2>, uindex_t)>;
 
     /**
      * \brief Create a new abstract executor.
-     * \param halo_value The value of cells that are outside the grid.
      * \param trans_func The instance of the transition function that should be used to calculate
      * new generations.
      */
-    AbstractExecutor(T halo_value, TransFunc trans_func)
+    AbstractExecutor(Cell halo_value, TransFunc trans_func)
         : halo_value(halo_value), trans_func(trans_func), i_generation(0), runtime_sample() {}
 
     /**
@@ -88,7 +87,7 @@ template <typename T, uindex_t stencil_radius, typename TransFunc> class Abstrac
                 std::min(delta_n_generations, target_i_generation - this->get_i_generation());
             this->run(n_generations_till_snapshot);
 
-            cl::sycl::buffer<T, 2> output(
+            cl::sycl::buffer<Cell, 2> output(
                 cl::sycl::range<2>(get_grid_range().c, get_grid_range().r));
             this->copy_output(output);
 
@@ -105,7 +104,7 @@ template <typename T, uindex_t stencil_radius, typename TransFunc> class Abstrac
      *
      * \param input_buffer The source buffer of the new grid state.
      */
-    virtual void set_input(cl::sycl::buffer<T, 2> input_buffer) = 0;
+    virtual void set_input(cl::sycl::buffer<Cell, 2> input_buffer) = 0;
 
     /**
      * \brief Copy the state of the grid to a buffer.
@@ -116,7 +115,7 @@ template <typename T, uindex_t stencil_radius, typename TransFunc> class Abstrac
      *
      * \param output_buffer The target buffer.
      */
-    virtual void copy_output(cl::sycl::buffer<T, 2> output_buffer) = 0;
+    virtual void copy_output(cl::sycl::buffer<Cell, 2> output_buffer) = 0;
 
     /**
      * \brief Get the range of the internal grid.
@@ -126,12 +125,12 @@ template <typename T, uindex_t stencil_radius, typename TransFunc> class Abstrac
     /**
      * \brief Get the value of cells outside of the grid.
      */
-    T const get_halo_value() const { return halo_value; }
+    Cell const get_halo_value() const { return halo_value; }
 
     /**
      * \brief Set the value of cells outside of the grid.
      */
-    void set_halo_value(T halo_value) { this->halo_value = halo_value; }
+    void set_halo_value(Cell halo_value) { this->halo_value = halo_value; }
 
     /**
      * \brief Get the configured transition function instance.
@@ -166,7 +165,7 @@ template <typename T, uindex_t stencil_radius, typename TransFunc> class Abstrac
     RuntimeSample &get_runtime_sample() { return runtime_sample; }
 
   private:
-    T halo_value;
+    Cell halo_value;
     TransFunc trans_func;
     uindex_t i_generation;
     RuntimeSample runtime_sample;

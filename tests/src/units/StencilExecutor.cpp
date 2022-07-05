@@ -30,15 +30,17 @@ using namespace stencil;
 using namespace cl::sycl;
 
 using TransFunc = FPGATransFunc<stencil_radius>;
-using SingleContextExecutorImpl = SingleContextExecutor<Cell, stencil_radius, TransFunc>;
-using TilingExecutorImpl = TilingExecutor<Cell, stencil_radius, TransFunc, n_processing_elements,
-                                            tile_width, tile_height>;
-using MonotileExecutorImpl = MonotileExecutor<Cell, stencil_radius, TransFunc,
-                                              n_processing_elements, tile_width, tile_height>;
-using SimpleCPUExecutorImpl = SimpleCPUExecutor<Cell, stencil_radius, TransFunc>;
+using SingleContextExecutorImpl = SingleContextExecutor<TransFunc>;
+using TilingExecutorImpl =
+    TilingExecutor<TransFunc, n_processing_elements, tile_width, tile_height>;
+using MonotileExecutorImpl =
+    MonotileExecutor<TransFunc, n_processing_elements, tile_width, tile_height>;
+using SimpleCPUExecutorImpl = SimpleCPUExecutor<TransFunc>;
 
 void test_executor_set_input_copy_output(SingleContextExecutorImpl *executor, uindex_t grid_width,
                                          uindex_t grid_height) {
+    executor->set_halo_value(Cell::halo());
+
     buffer<Cell, 2> in_buffer(range<2>(grid_width, grid_height));
     {
         auto in_buffer_ac = in_buffer.get_access<access::mode::discard_write>();
@@ -66,22 +68,24 @@ void test_executor_set_input_copy_output(SingleContextExecutorImpl *executor, ui
 }
 
 TEST_CASE("TilingExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[TilingExecutor]") {
-    TilingExecutorImpl executor(Cell::halo(), TransFunc());
+    TilingExecutorImpl executor((TransFunc()));
     test_executor_set_input_copy_output(&executor, grid_width, grid_height);
 }
 
 TEST_CASE("MonotileExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[MonotileExecutor]") {
-    MonotileExecutorImpl executor(Cell::halo(), TransFunc());
+    MonotileExecutorImpl executor((TransFunc()));
     test_executor_set_input_copy_output(&executor, tile_width - 1, tile_height - 1);
 }
 
 TEST_CASE("SimpleCPUExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[SimpleCPUExecutor]") {
-    SimpleCPUExecutorImpl executor(Cell::halo(), TransFunc());
+    SimpleCPUExecutorImpl executor((TransFunc()));
     test_executor_set_input_copy_output(&executor, tile_width - 1, tile_height - 1);
 }
 
 void test_executor(SingleContextExecutorImpl *executor, uindex_t grid_width, uindex_t grid_height,
                    uindex_t n_generations) {
+    executor->set_halo_value(Cell::halo());
+
     buffer<Cell, 2> in_buffer(range<2>(grid_width, grid_height));
     {
         auto in_buffer_ac = in_buffer.get_access<access::mode::discard_write>();
@@ -137,7 +141,7 @@ void test_executor(SingleContextExecutorImpl *executor, uindex_t grid_width, uin
 }
 
 TEST_CASE("TilingExecutor::run", "[TilingExecutor]") {
-    TilingExecutorImpl executor(Cell::halo(), TransFunc());
+    TilingExecutorImpl executor((TransFunc()));
 
     // single pass
     test_executor(&executor, tile_width, tile_height, n_processing_elements);
@@ -159,7 +163,7 @@ TEST_CASE("TilingExecutor::run", "[TilingExecutor]") {
 }
 
 TEST_CASE("MonotileExecutor::run", "[MonotileExecutor]") {
-    MonotileExecutorImpl executor(Cell::halo(), TransFunc());
+    MonotileExecutorImpl executor((TransFunc()));
 
     // single pass
     test_executor(&executor, tile_width, tile_height, n_processing_elements);
@@ -173,12 +177,14 @@ TEST_CASE("MonotileExecutor::run", "[MonotileExecutor]") {
 }
 
 TEST_CASE("SimpleCPUExecutor::run", "[SimpleCPUExecutor]") {
-    SimpleCPUExecutorImpl executor(Cell::halo(), TransFunc());
+    SimpleCPUExecutorImpl executor((TransFunc()));
     test_executor(&executor, grid_width, grid_height, 32);
 }
 
 void test_snapshotting(SingleContextExecutorImpl *executor, uindex_t grid_width,
                        uindex_t grid_height, uindex_t n_generations, uindex_t delta_n_generations) {
+    executor->set_halo_value(Cell::halo());
+
     buffer<Cell, 2> in_buffer(range<2>(grid_width, grid_height));
     {
         auto in_buffer_ac = in_buffer.get_access<access::mode::discard_write>();
@@ -220,7 +226,7 @@ void test_snapshotting(SingleContextExecutorImpl *executor, uindex_t grid_width,
 }
 
 TEST_CASE("TilingExecutor::run_with_snapshots", "[TilingExecutor]") {
-    TilingExecutorImpl executor(Cell::halo(), TransFunc());
+    TilingExecutorImpl executor((TransFunc()));
 
     // snapshot distance divides number of generations
     test_snapshotting(&executor, tile_width, tile_height, 4 * n_processing_elements,
@@ -234,7 +240,7 @@ TEST_CASE("TilingExecutor::run_with_snapshots", "[TilingExecutor]") {
 }
 
 TEST_CASE("MonotileExecutor::run_with_snapshots", "[MonotileExecutor]") {
-    MonotileExecutorImpl executor(Cell::halo(), TransFunc());
+    MonotileExecutorImpl executor((TransFunc()));
 
     // snapshot distance divides number of generations
     test_snapshotting(&executor, tile_width, tile_height, 4 * n_processing_elements,
@@ -248,7 +254,7 @@ TEST_CASE("MonotileExecutor::run_with_snapshots", "[MonotileExecutor]") {
 }
 
 TEST_CASE("SimpleCPUExecutor::run_with_snapshots", "[SimpleCPUExecutor]") {
-    SimpleCPUExecutorImpl executor(Cell::halo(), TransFunc());
+    SimpleCPUExecutorImpl executor((TransFunc()));
 
     // snapshot distance divides number of generations
     test_snapshotting(&executor, tile_width, tile_height, 4 * n_processing_elements,

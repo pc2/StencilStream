@@ -22,7 +22,16 @@
 #include <res/constants.hpp>
 
 using namespace stencil;
-using StencilImpl = Stencil<index_t, 2>;
+
+class DummyTransFunc {
+  public:
+    using Cell = index_t;
+    static constexpr uindex_t stencil_radius = 2;
+
+    index_t operator()(Stencil<DummyTransFunc> const &stencil) { return 42; }
+};
+
+using StencilImpl = Stencil<DummyTransFunc>;
 using StencilID = typename StencilImpl::StencilID;
 using StencilUID = typename StencilImpl::StencilUID;
 

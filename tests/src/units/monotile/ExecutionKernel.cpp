@@ -32,8 +32,8 @@ void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t n_
     using in_pipe = HostPipe<class MonotileExecutionKernelInPipeID, Cell>;
     using out_pipe = HostPipe<class MonotileExecutionKernelOutPipeID, Cell>;
     using TestExecutionKernel =
-        monotile::ExecutionKernel<TransFunc, Cell, stencil_radius, n_processing_elements,
-                                  tile_width, tile_height, in_pipe, out_pipe>;
+        monotile::ExecutionKernel<TransFunc, n_processing_elements, tile_width, tile_height,
+                                  in_pipe, out_pipe>;
 
     for (uindex_t c = 0; c < grid_width; c++) {
         for (uindex_t r = 0; r < grid_height; r++) {
@@ -86,15 +86,22 @@ TEST_CASE("monotile::ExecutionKernel (noop)", "[monotile::ExecutionKernel]") {
     test_monotile_kernel(tile_width, tile_height, 0);
 }
 
+struct IncompletePipelineKernel {
+    using Cell = uint8_t;
+    static constexpr uindex_t stencil_radius = 1;
+
+    Cell operator()(Stencil<IncompletePipelineKernel> const &stencil) const {
+        return stencil[ID(0, 0)] + 1;
+    }
+};
+
 TEST_CASE("monotile::ExecutionKernel: Incomplete Pipeline with i_generation != 0",
           "[monotile::ExecutionKernel]") {
-    using Cell = uint8_t;
-    auto trans_func = [](Stencil<Cell, 1> const &stencil) { return stencil[ID(0, 0)] + 1; };
 
-    using in_pipe = HostPipe<class IncompletePipelineInPipeID, Cell>;
-    using out_pipe = HostPipe<class IncompletePipelineOutPipeID, Cell>;
+    using in_pipe = HostPipe<class IncompletePipelineInPipeID, uint8_t>;
+    using out_pipe = HostPipe<class IncompletePipelineOutPipeID, uint8_t>;
     using TestExecutionKernel =
-        monotile::ExecutionKernel<decltype(trans_func), Cell, 1, 16, 64, 64, in_pipe, out_pipe>;
+        monotile::ExecutionKernel<IncompletePipelineKernel, 16, 64, 64, in_pipe, out_pipe>;
 
     for (int c = 0; c < 64; c++) {
         for (int r = 0; r < 64; r++) {
@@ -102,7 +109,7 @@ TEST_CASE("monotile::ExecutionKernel: Incomplete Pipeline with i_generation != 0
         }
     }
 
-    TestExecutionKernel kernel(trans_func, 16, 20, 64, 64, 0);
+    TestExecutionKernel kernel(IncompletePipelineKernel(), 16, 20, 64, 64, 0);
     kernel.operator()();
 
     REQUIRE(in_pipe::empty());

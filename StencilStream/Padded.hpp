@@ -25,6 +25,8 @@
 
 namespace stencil {
 
-template <typename T> struct Padded { T value; } __attribute__((aligned(std::bit_ceil(sizeof(T)))));
+template <typename Cell> struct Padded {
+    Cell value;
+} __attribute__((aligned(std::bit_ceil(sizeof(Cell)))));
 
 } // namespace stencil

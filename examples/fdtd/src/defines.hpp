@@ -40,8 +40,6 @@ constexpr float sqrt_2 = 1.4142135623730951;
 
 constexpr float pi = 3.1415926535897932384626433;
 
-constexpr uindex_t stencil_radius = 1;
-
 #if EXECUTOR == 0
 // monotile
 constexpr uindex_t n_processing_elements = 224;

@@ -32,7 +32,7 @@ class LUTSource {
         }
     }
 
-    template <typename Cell> float get_source_amplitude(Stencil<Cell, 1> const &stencil) const {
+    template <typename Kernel> float get_source_amplitude(Stencil<Kernel> const &stencil) const {
         return lut[stencil.i_processing_element >> 1];
     }
 

@@ -43,19 +43,17 @@ using Source = LUTSource;
 #endif
 
 using KernelImpl = Kernel<MaterialResolver, Source>;
-using CellImpl = KernelImpl::MaterialCell;
+using CellImpl = KernelImpl::Cell;
 
 #if EXECUTOR == 0
     #include <StencilStream/MonotileExecutor.hpp>
-using Executor = MonotileExecutor<CellImpl, stencil_radius, KernelImpl, n_processing_elements, tile_width,
-                                  tile_height>;
+using Executor = MonotileExecutor<KernelImpl, n_processing_elements, tile_width, tile_height>;
 #elif EXECUTOR == 1
     #include <StencilStream/TilingExecutor.hpp>
-using Executor =
-    TilingExecutor<CellImpl, stencil_radius, KernelImpl, n_processing_elements, tile_width, tile_height>;
+using Executor = TilingExecutor<KernelImpl, n_processing_elements, tile_width, tile_height>;
 #elif EXECUTOR == 2
     #include <StencilStream/SimpleCPUExecutor.hpp>
-using Executor = SimpleCPUExecutor<CellImpl, stencil_radius, KernelImpl>;
+using Executor = SimpleCPUExecutor<KernelImpl>;
 #endif
 
 auto exception_handler = [](cl::sycl::exception_list exceptions) {

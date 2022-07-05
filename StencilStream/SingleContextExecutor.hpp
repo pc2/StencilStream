@@ -33,22 +33,20 @@ namespace stencil {
  * User code that may work with any kind of executor should use pointers to the general \ref
  * AbstractExecutor.
  *
- * \tparam T The cell type.
- * \tparam stencil_radius The radius of the stencil buffer supplied to the transition function.
  * \tparam TransFunc The type of the transition function.
  */
-template <typename T, uindex_t stencil_radius, typename TransFunc>
-class SingleContextExecutor : public AbstractExecutor<T, stencil_radius, TransFunc> {
+template <typename TransFunc> class SingleContextExecutor : public AbstractExecutor<TransFunc> {
   public:
+    using Cell = typename TransFunc::Cell;
+
     /**
      * \brief Create a new executor.
      * \param halo_value The value of cells that are outside the grid.
      * \param trans_func The instance of the transition function that should be used to calculate
      * new generations.
      */
-    SingleContextExecutor(T halo_value, TransFunc trans_func)
-        : AbstractExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
-          device(std::nullopt), context(std::nullopt) {}
+    SingleContextExecutor(Cell halo_value, TransFunc trans_func)
+        : AbstractExecutor<TransFunc>(halo_value, trans_func), device(std::nullopt), context(std::nullopt) {}
 
     /**
      * \brief Return the configured queue.

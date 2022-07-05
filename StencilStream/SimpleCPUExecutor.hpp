@@ -22,19 +22,19 @@
 #include "Stencil.hpp"
 
 namespace stencil {
-template <typename T, uindex_t stencil_radius, typename TransFunc>
-class SimpleCPUExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc> {
+template <typename TransFunc> class SimpleCPUExecutor : public SingleContextExecutor<TransFunc> {
   public:
-    SimpleCPUExecutor(T halo_value, TransFunc trans_func)
-        : SingleContextExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
-          grid(cl::sycl::range<2>(1, 1)) {
+    using Cell = typename TransFunc::Cell;
+
+    SimpleCPUExecutor(Cell halo_value, TransFunc trans_func)
+        : SingleContextExecutor<TransFunc>(halo_value, trans_func), grid(cl::sycl::range<2>(1, 1)) {
         this->select_cpu();
     }
 
     virtual void run(uindex_t n_generations) override {
         cl::sycl::queue queue = this->new_queue();
-        cl::sycl::buffer<T, 2> in_buffer = grid;
-        cl::sycl::buffer<T, 2> out_buffer(grid.get_range());
+        cl::sycl::buffer<Cell, 2> in_buffer = grid;
+        cl::sycl::buffer<Cell, 2> out_buffer(grid.get_range());
 
         for (uindex_t i_generation = 0; i_generation < n_generations; i_generation++) {
             cl::sycl::event event = queue.submit([&](cl::sycl::handler &cgh) {
@@ -44,18 +44,17 @@ class SimpleCPUExecutor : public SingleContextExecutor<T, stencil_radius, TransF
                 uindex_t gen = this->get_i_generation() + i_generation;
                 uindex_t grid_width = in_ac.get_range()[0];
                 uindex_t grid_height = in_ac.get_range()[1];
-                T halo_value = this->get_halo_value();
+                Cell halo_value = this->get_halo_value();
                 TransFunc trans_func = this->get_trans_func();
 
                 cgh.parallel_for<class SimpleCPUExecutionKernel>(
                     in_ac.get_range(), [=](cl::sycl::id<2> idx) {
-                        Stencil<T, stencil_radius> stencil(idx, in_ac.get_range(), gen,
-                                                           i_generation);
+                        Stencil<TransFunc> stencil(idx, in_ac.get_range(), gen, i_generation);
 
-                        for (index_t delta_c = -stencil_radius; delta_c <= index_t(stencil_radius);
-                             delta_c++) {
-                            for (index_t delta_r = -stencil_radius;
-                                 delta_r <= index_t(stencil_radius); delta_r++) {
+                        for (index_t delta_c = -TransFunc::stencil_radius;
+                             delta_c <= index_t(TransFunc::stencil_radius); delta_c++) {
+                            for (index_t delta_r = -TransFunc::stencil_radius;
+                                 delta_r <= index_t(TransFunc::stencil_radius); delta_r++) {
                                 index_t c = index_t(idx[0]) + delta_c;
                                 index_t r = index_t(idx[1]) + delta_r;
                                 if (c < 0 || r < 0 || c >= grid_width || r >= grid_height) {
@@ -78,7 +77,7 @@ class SimpleCPUExecutor : public SingleContextExecutor<T, stencil_radius, TransF
         this->inc_i_generation(n_generations);
     }
 
-    virtual void set_input(cl::sycl::buffer<T, 2> input_buffer) override {
+    virtual void set_input(cl::sycl::buffer<Cell, 2> input_buffer) override {
         grid = input_buffer.get_range();
 
         auto in_ac = input_buffer.template get_access<cl::sycl::access::mode::read>();
@@ -91,7 +90,7 @@ class SimpleCPUExecutor : public SingleContextExecutor<T, stencil_radius, TransF
         }
     }
 
-    virtual void copy_output(cl::sycl::buffer<T, 2> output_buffer) override {
+    virtual void copy_output(cl::sycl::buffer<Cell, 2> output_buffer) override {
         if (grid.get_range() != output_buffer.get_range()) {
             throw std::range_error(
                 "The given output buffer doesn't have the same range as the grid.");
@@ -112,6 +111,6 @@ class SimpleCPUExecutor : public SingleContextExecutor<T, stencil_radius, TransF
     }
 
   private:
-    cl::sycl::buffer<T, 2> grid;
+    cl::sycl::buffer<Cell, 2> grid;
 };
 } // namespace stencil

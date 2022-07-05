@@ -31,7 +31,7 @@ class TimeLUTSource {
         }
     }
 
-    template <typename Cell> float get_source_amplitude(Stencil<Cell, 1> const &stencil) const {
+    template <typename Kernel> float get_source_amplitude(Stencil<Kernel> const &stencil) const {
         float current_time = time[stencil.i_processing_element >> 1];
         return calc_source_amplitude(current_time, t_0, tau, omega);
     }

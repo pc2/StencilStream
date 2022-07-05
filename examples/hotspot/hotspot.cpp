@@ -52,7 +52,6 @@ const FLOAT chip_width = 0.016;
 const FLOAT amb_temp = 80.0;
 
 /* stencil parameters */
-const uindex_t stencil_radius = 1;
 #if EXECUTOR == 1
 const uindex_t n_processing_elements = 280; // tiling
 #else
@@ -61,9 +60,52 @@ const uindex_t n_processing_elements = 350; // monotile & cpu
 const uindex_t tile_width = 1024;
 const uindex_t tile_height = 1024;
 
-using Cell = vec<FLOAT, 2>;
+using HotspotCell = vec<FLOAT, 2>;
 
-void write_output(buffer<Cell, 2> vect, string file) {
+struct HotspotKernel {
+    using Cell = HotspotCell;
+    static constexpr uindex_t stencil_radius = 1;
+
+    float Rx_1, Ry_1, Rz_1, Cap_1;
+
+    Cell operator()(Stencil<HotspotKernel> const &temp) const {
+        using StencilID = typename Stencil<HotspotKernel>::StencilID;
+
+        ID idx = temp.id;
+        index_t c = idx.c;
+        index_t r = idx.r;
+        uindex_t width = temp.grid_range.c;
+        uindex_t height = temp.grid_range.r;
+
+        FLOAT power = temp[StencilID(0, 0)][1];
+        FLOAT old = temp[StencilID(0, 0)][0];
+        FLOAT left = temp[StencilID(-1, 0)][0];
+        FLOAT right = temp[StencilID(1, 0)][0];
+        FLOAT top = temp[StencilID(0, -1)][0];
+        FLOAT bottom = temp[StencilID(0, 1)][0];
+
+        if (c == 0) {
+            left = old;
+        } else if (c == width - 1) {
+            right = old;
+        }
+
+        if (r == 0) {
+            top = old;
+        } else if (r == height - 1) {
+            bottom = old;
+        }
+
+        // As in the OpenCL version of the rodinia "hotspot" benchmark.
+        FLOAT new_temp =
+            old + Cap_1 * (power + (bottom + top - 2.f * old) * Ry_1 +
+                           (right + left - 2.f * old) * Rx_1 + (amb_temp - old) * Rz_1);
+
+        return vec(new_temp, power);
+    }
+};
+
+void write_output(buffer<HotspotCell, 2> vect, string file) {
     fstream out(file, out.out | out.trunc);
     if (!out.is_open()) {
         throw std::runtime_error("The file was not opened\n");
@@ -84,7 +126,7 @@ void write_output(buffer<Cell, 2> vect, string file) {
     out.close();
 }
 
-buffer<Cell, 2> read_input(string temp_file, string power_file, range<2> buffer_range) {
+buffer<HotspotCell, 2> read_input(string temp_file, string power_file, range<2> buffer_range) {
     fstream temp(temp_file, temp.in);
     fstream power(power_file, power.in);
     if (!temp.is_open() || !power.is_open()) {
@@ -93,7 +135,7 @@ buffer<Cell, 2> read_input(string temp_file, string power_file, range<2> buffer_
 
     uindex_t n_columns = buffer_range[0];
     uindex_t n_rows = buffer_range[1];
-    buffer<Cell, 2> vect(buffer_range);
+    buffer<HotspotCell, 2> vect(buffer_range);
 
     {
         auto vect_ac = vect.get_access<access::mode::write>();
@@ -103,7 +145,7 @@ buffer<Cell, 2> read_input(string temp_file, string power_file, range<2> buffer_
             for (index_t c = 0; c < n_columns; c++) {
                 temp >> tmp_temp;
                 power >> tmp_power;
-                vect_ac[id<2>(c, r)] = Cell(tmp_temp, tmp_power);
+                vect_ac[id<2>(c, r)] = HotspotCell(tmp_temp, tmp_power);
             }
         }
     }
@@ -170,7 +212,8 @@ int main(int argc, char **argv) {
     tfile = argv[4];
     pfile = argv[5];
     ofile = argv[6];
-    buffer<Cell, 2> temp = read_input(string(tfile), string(pfile), range<2>(n_columns, n_rows));
+    buffer<HotspotCell, 2> temp =
+        read_input(string(tfile), string(pfile), range<2>(n_columns, n_rows));
 
     printf("Start computing the transient temperature\n");
 
@@ -190,53 +233,16 @@ int main(int argc, char **argv) {
     FLOAT Rz_1 = 1.f / Rz;
     FLOAT Cap_1 = step / Cap;
 
-    auto kernel = [=](Stencil<Cell, stencil_radius> const &temp) {
-        using StencilID = typename Stencil<Cell, stencil_radius>::StencilID;
-
-        ID idx = temp.id;
-        index_t c = idx.c;
-        index_t r = idx.r;
-        uindex_t width = temp.grid_range.c;
-        uindex_t height = temp.grid_range.r;
-
-        FLOAT power = temp[StencilID(0, 0)][1];
-        FLOAT old = temp[StencilID(0, 0)][0];
-        FLOAT left = temp[StencilID(-1, 0)][0];
-        FLOAT right = temp[StencilID(1, 0)][0];
-        FLOAT top = temp[StencilID(0, -1)][0];
-        FLOAT bottom = temp[StencilID(0, 1)][0];
-
-        if (c == 0) {
-            left = old;
-        } else if (c == width - 1) {
-            right = old;
-        }
-
-        if (r == 0) {
-            top = old;
-        } else if (r == height - 1) {
-            bottom = old;
-        }
-
-        // As in the OpenCL version of the rodinia "hotspot" benchmark.
-        FLOAT new_temp =
-            old + Cap_1 * (power + (bottom + top - 2.f * old) * Ry_1 +
-                           (right + left - 2.f * old) * Rx_1 + (amb_temp - old) * Rz_1);
-
-        return vec(new_temp, power);
-    };
-
 #if EXECUTOR == 0
-    using Executor = MonotileExecutor<Cell, stencil_radius, decltype(kernel), n_processing_elements,
-                                      tile_width, tile_height>;
+    using Executor =
+        MonotileExecutor<HotspotKernel, n_processing_elements, tile_width, tile_height>;
 #elif EXECUTOR == 1
-    using Executor = TilingExecutor<Cell, stencil_radius, decltype(kernel), n_processing_elements,
-                                     tile_width, tile_height>;
+    using Executor = TilingExecutor<HotspotKernel, n_processing_elements, tile_width, tile_height>;
 #elif EXECUTOR == 2
-    using Executor = SimpleCPUExecutor<Cell, stencil_radius, decltype(kernel)>;
+    using Executor = SimpleCPUExecutor<HotspotKernel>;
 #endif
 
-    Executor executor(Cell(0.0, 0.0), kernel);
+    Executor executor(HotspotCell(0.0, 0.0), HotspotKernel{Rx_1, Ry_1, Rz_1, Cap_1});
     executor.set_input(temp);
 #if EXECUTOR != 2
     executor.select_fpga();
