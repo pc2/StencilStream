@@ -18,7 +18,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "RuntimeSampleExecutor.hpp"
 #include "SingleContextExecutor.hpp"
 #include "tiling/ExecutionKernel.hpp"
 #include "tiling/Grid.hpp"
@@ -48,8 +47,7 @@ namespace stencil {
 template <typename T, uindex_t stencil_radius, typename TransFunc,
           uindex_t n_processing_elements = 1, uindex_t tile_width = 1024,
           uindex_t tile_height = 1024>
-class TilingExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc>,
-                        public RuntimeSampleExecutor<T, stencil_radius, TransFunc> {
+class TilingExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc> {
   public:
     /**
      * \brief The number of cells that have be added to the tile in every direction to form the
@@ -70,9 +68,7 @@ class TilingExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc
      * \param trans_func An instance of the transition function type.
      */
     TilingExecutor(T halo_value, TransFunc trans_func)
-        : AbstractExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
-          SingleContextExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
-          RuntimeSampleExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
+        : SingleContextExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
           input_grid(cl::sycl::buffer<T, 2>(cl::sycl::range<2>(0, 0))) {}
 
     void set_input(cl::sycl::buffer<T, 2> input_buffer) override {

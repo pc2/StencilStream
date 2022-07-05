@@ -38,7 +38,7 @@ namespace stencil {
  * \tparam TransFunc The type of the transition function.
  */
 template <typename T, uindex_t stencil_radius, typename TransFunc>
-class SingleContextExecutor : public virtual AbstractExecutor<T, stencil_radius, TransFunc> {
+class SingleContextExecutor : public AbstractExecutor<T, stencil_radius, TransFunc> {
   public:
     /**
      * \brief Create a new executor.
@@ -47,7 +47,8 @@ class SingleContextExecutor : public virtual AbstractExecutor<T, stencil_radius,
      * new generations.
      */
     SingleContextExecutor(T halo_value, TransFunc trans_func)
-        : device(std::nullopt), context(std::nullopt) {}
+        : AbstractExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
+          device(std::nullopt), context(std::nullopt) {}
 
     /**
      * \brief Return the configured queue.

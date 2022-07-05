@@ -18,19 +18,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "RuntimeSampleExecutor.hpp"
 #include "SingleContextExecutor.hpp"
 #include "Stencil.hpp"
 
 namespace stencil {
 template <typename T, uindex_t stencil_radius, typename TransFunc>
-class SimpleCPUExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc>,
-                          public RuntimeSampleExecutor<T, stencil_radius, TransFunc> {
+class SimpleCPUExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc> {
   public:
     SimpleCPUExecutor(T halo_value, TransFunc trans_func)
-        : AbstractExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
-          SingleContextExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
-          RuntimeSampleExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
+        : SingleContextExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
           grid(cl::sycl::range<2>(1, 1)) {
         this->select_cpu();
     }

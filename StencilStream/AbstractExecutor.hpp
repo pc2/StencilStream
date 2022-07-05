@@ -20,6 +20,7 @@
 #pragma once
 #include "GenericID.hpp"
 #include "Index.hpp"
+#include "RuntimeSample.hpp"
 #include <CL/sycl.hpp>
 #include <functional>
 
@@ -66,7 +67,7 @@ template <typename T, uindex_t stencil_radius, typename TransFunc> class Abstrac
      * new generations.
      */
     AbstractExecutor(T halo_value, TransFunc trans_func)
-        : halo_value(halo_value), trans_func(trans_func), i_generation(0) {}
+        : halo_value(halo_value), trans_func(trans_func), i_generation(0), runtime_sample() {}
 
     /**
      * \brief Compute the next generations of the grid and store it internally.
@@ -157,9 +158,17 @@ template <typename T, uindex_t stencil_radius, typename TransFunc> class Abstrac
      */
     void inc_i_generation(index_t delta) { this->i_generation += delta; }
 
+    /**
+     * \brief Return a reference to the runtime information struct.
+     *
+     * \return The collected runtime information.
+     */
+    RuntimeSample &get_runtime_sample() { return runtime_sample; }
+
   private:
     T halo_value;
     TransFunc trans_func;
     uindex_t i_generation;
+    RuntimeSample runtime_sample;
 };
 } // namespace stencil
