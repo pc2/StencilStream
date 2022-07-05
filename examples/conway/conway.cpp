@@ -18,7 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <StencilStream/SimpleCPUExecutor.hpp>
-#include <StencilStream/StencilExecutor.hpp>
+#include <StencilStream/TilingExecutor.hpp>
 
 using Cell = bool;
 const Cell halo_value = false;
@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
 #ifdef CPU
     using Executor = stencil::SimpleCPUExecutor<Cell, stencil_radius, decltype(conway)>;
 #else
-    using Executor = stencil::StencilExecutor<Cell, stencil_radius, decltype(conway)>;
+    using Executor = stencil::TilingExecutor<Cell, stencil_radius, decltype(conway)>;
 #endif
 
     Executor executor(halo_value, conway);

@@ -20,7 +20,7 @@
  */
 #include <StencilStream/MonotileExecutor.hpp>
 #include <StencilStream/SimpleCPUExecutor.hpp>
-#include <StencilStream/StencilExecutor.hpp>
+#include <StencilStream/TilingExecutor.hpp>
 #include <res/TransFuncs.hpp>
 #include <res/catch.hpp>
 #include <res/constants.hpp>
@@ -31,7 +31,7 @@ using namespace cl::sycl;
 
 using TransFunc = FPGATransFunc<stencil_radius>;
 using SingleContextExecutorImpl = SingleContextExecutor<Cell, stencil_radius, TransFunc>;
-using StencilExecutorImpl = StencilExecutor<Cell, stencil_radius, TransFunc, n_processing_elements,
+using TilingExecutorImpl = TilingExecutor<Cell, stencil_radius, TransFunc, n_processing_elements,
                                             tile_width, tile_height>;
 using MonotileExecutorImpl = MonotileExecutor<Cell, stencil_radius, TransFunc,
                                               n_processing_elements, tile_width, tile_height>;
@@ -65,8 +65,8 @@ void test_executor_set_input_copy_output(SingleContextExecutorImpl *executor, ui
     }
 }
 
-TEST_CASE("StencilExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[StencilExecutor]") {
-    StencilExecutorImpl executor(Cell::halo(), TransFunc());
+TEST_CASE("TilingExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[TilingExecutor]") {
+    TilingExecutorImpl executor(Cell::halo(), TransFunc());
     test_executor_set_input_copy_output(&executor, grid_width, grid_height);
 }
 
@@ -136,8 +136,8 @@ void test_executor(SingleContextExecutorImpl *executor, uindex_t grid_width, uin
     }
 }
 
-TEST_CASE("StencilExecutor::run", "[StencilExecutor]") {
-    StencilExecutorImpl executor(Cell::halo(), TransFunc());
+TEST_CASE("TilingExecutor::run", "[TilingExecutor]") {
+    TilingExecutorImpl executor(Cell::halo(), TransFunc());
 
     // single pass
     test_executor(&executor, tile_width, tile_height, n_processing_elements);
@@ -219,8 +219,8 @@ void test_snapshotting(SingleContextExecutorImpl *executor, uindex_t grid_width,
     REQUIRE(snapshotted_generations.back() == n_generations);
 }
 
-TEST_CASE("StencilExecutor::run_with_snapshots", "[StencilExecutor]") {
-    StencilExecutorImpl executor(Cell::halo(), TransFunc());
+TEST_CASE("TilingExecutor::run_with_snapshots", "[TilingExecutor]") {
+    TilingExecutorImpl executor(Cell::halo(), TransFunc());
 
     // snapshot distance divides number of generations
     test_snapshotting(&executor, tile_width, tile_height, 4 * n_processing_elements,

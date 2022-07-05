@@ -23,7 +23,7 @@
 #if EXECUTOR == 0
     #include <StencilStream/MonotileExecutor.hpp>
 #elif EXECUTOR == 1
-    #include <StencilStream/StencilExecutor.hpp>
+    #include <StencilStream/TilingExecutor.hpp>
 #elif EXECUTOR == 2
     #include <StencilStream/SimpleCPUExecutor.hpp>
 #endif
@@ -230,7 +230,7 @@ int main(int argc, char **argv) {
     using Executor = MonotileExecutor<Cell, stencil_radius, decltype(kernel), n_processing_elements,
                                       tile_width, tile_height>;
 #elif EXECUTOR == 1
-    using Executor = StencilExecutor<Cell, stencil_radius, decltype(kernel), n_processing_elements,
+    using Executor = TilingExecutor<Cell, stencil_radius, decltype(kernel), n_processing_elements,
                                      tile_width, tile_height>;
 #elif EXECUTOR == 2
     using Executor = SimpleCPUExecutor<Cell, stencil_radius, decltype(kernel)>;

@@ -18,7 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "RuntimeSampleExecutor.hpp"
+#include "AbstractExecutor.hpp"
 #include <ext/intel/fpga_extensions.hpp>
 #include <optional>
 
@@ -38,7 +38,7 @@ namespace stencil {
  * \tparam TransFunc The type of the transition function.
  */
 template <typename T, uindex_t stencil_radius, typename TransFunc>
-class SingleContextExecutor : public RuntimeSampleExecutor<T, stencil_radius, TransFunc> {
+class SingleContextExecutor : public virtual AbstractExecutor<T, stencil_radius, TransFunc> {
   public:
     /**
      * \brief Create a new executor.
@@ -47,8 +47,7 @@ class SingleContextExecutor : public RuntimeSampleExecutor<T, stencil_radius, Tr
      * new generations.
      */
     SingleContextExecutor(T halo_value, TransFunc trans_func)
-        : RuntimeSampleExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
-          device(std::nullopt), context(std::nullopt) {}
+        : device(std::nullopt), context(std::nullopt) {}
 
     /**
      * \brief Return the configured queue.

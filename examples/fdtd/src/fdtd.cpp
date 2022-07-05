@@ -50,9 +50,9 @@ using CellImpl = KernelImpl::MaterialCell;
 using Executor = MonotileExecutor<CellImpl, stencil_radius, KernelImpl, n_processing_elements, tile_width,
                                   tile_height>;
 #elif EXECUTOR == 1
-    #include <StencilStream/StencilExecutor.hpp>
+    #include <StencilStream/TilingExecutor.hpp>
 using Executor =
-    StencilExecutor<CellImpl, stencil_radius, KernelImpl, n_processing_elements, tile_width, tile_height>;
+    TilingExecutor<CellImpl, stencil_radius, KernelImpl, n_processing_elements, tile_width, tile_height>;
 #elif EXECUTOR == 2
     #include <StencilStream/SimpleCPUExecutor.hpp>
 using Executor = SimpleCPUExecutor<CellImpl, stencil_radius, KernelImpl>;

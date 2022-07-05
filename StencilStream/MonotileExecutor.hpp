@@ -21,6 +21,7 @@
  * SOFTWARE.
  */
 #pragma once
+#include "RuntimeSampleExecutor.hpp"
 #include "SingleContextExecutor.hpp"
 #include "monotile/ExecutionKernel.hpp"
 #include <numeric>
@@ -46,16 +47,12 @@ template <typename T, uindex_t stencil_radius, typename TransFunc,
  * \tparam tile_height The number of rows in a tile and maximum number of rows in a grid. Defaults
  * to 1024.
  */
-class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc> {
+class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFunc>,
+                         public RuntimeSampleExecutor<T, stencil_radius, TransFunc> {
   public:
-    /**
-     * \brief Shorthand for the parent class.
-     */
-    using Parent = SingleContextExecutor<T, stencil_radius, TransFunc>;
-
-    static constexpr uindex_t word_length = std::lcm(sizeof(Padded<T>), word_size) / sizeof(Padded<T>);
-    static constexpr uindex_t n_words =
-        n_cells_to_n_words(tile_width * tile_height, word_length);
+    static constexpr uindex_t word_length =
+        std::lcm(sizeof(Padded<T>), word_size) / sizeof(Padded<T>);
+    static constexpr uindex_t n_words = n_cells_to_n_words(tile_width * tile_height, word_length);
 
     using IOWord = std::array<Padded<T>, word_length>;
 
@@ -74,7 +71,10 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
      * \param trans_func An instance of the transition function type.
      */
     MonotileExecutor(T halo_value, TransFunc trans_func)
-        : Parent(halo_value, trans_func), tile_buffer(cl::sycl::range<1>(1)), grid_range(1, 1) {
+        : AbstractExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
+          SingleContextExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
+          RuntimeSampleExecutor<T, stencil_radius, TransFunc>(halo_value, trans_func),
+          tile_buffer(cl::sycl::range<1>(1)), grid_range(1, 1) {
         auto ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
         ac[0][0].value = halo_value;
     }
@@ -98,8 +98,8 @@ class MonotileExecutor : public SingleContextExecutor<T, stencil_radius, TransFu
         }
         grid_range.c = input_buffer.get_range()[0];
         grid_range.r = input_buffer.get_range()[1];
-        tile_buffer = cl::sycl::range<1>(
-            n_cells_to_n_words(grid_range.c * grid_range.r, word_length));
+        tile_buffer =
+            cl::sycl::range<1>(n_cells_to_n_words(grid_range.c * grid_range.r, word_length));
 
         auto in_ac = input_buffer.template get_access<cl::sycl::access::mode::read>();
         auto tile_ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
