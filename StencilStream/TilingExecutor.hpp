@@ -47,6 +47,8 @@ template <typename TransFunc, uindex_t n_processing_elements = 1, uindex_t tile_
 class TilingExecutor : public SingleContextExecutor<TransFunc> {
   public:
     using Cell = typename TransFunc::Cell;
+    using IntermediateRepresentation = typename TransFunc::IntermediateRepresentation;
+    using PreparationFunction = typename AbstractExecutor<TransFunc>::PreparationFunction;
 
     /**
      * \brief The number of cells that have be added to the tile in every direction to form the
@@ -67,8 +69,8 @@ class TilingExecutor : public SingleContextExecutor<TransFunc> {
      * \param halo_value The value of cells in the grid halo.
      * \param trans_func An instance of the transition function type.
      */
-    TilingExecutor(Cell halo_value, TransFunc trans_func)
-        : SingleContextExecutor<TransFunc>(halo_value, trans_func),
+    TilingExecutor(Cell halo_value, PreparationFunction prep_func)
+        : SingleContextExecutor<TransFunc>(halo_value, prep_func),
           input_grid(cl::sycl::buffer<Cell, 2>(cl::sycl::range<2>(0, 0))) {}
 
     void set_input(cl::sycl::buffer<Cell, 2> input_buffer) override {
@@ -111,6 +113,9 @@ class TilingExecutor : public SingleContextExecutor<TransFunc> {
         uindex_t grid_height = input_grid.get_grid_range().r;
 
         while (this->get_i_generation() < target_i_generation) {
+            uindex_t pass_n_generations = std::min(target_i_generation - this->get_i_generation(),
+                                                   uindex_t(n_processing_elements));
+
             GridImpl output_grid = input_grid.make_output_grid();
 
             std::vector<cl::sycl::event> events;
@@ -145,6 +150,9 @@ class TilingExecutor : public SingleContextExecutor<TransFunc> {
                        n_inner_columns);
 
                 for (uindex_t r = 0; r < input_grid.get_tile_range().r; r++) {
+                    uindex_t row_offset = r * tile_height;
+                    uindex_t n_inner_rows = std::min(tile_width, grid_height - row_offset);
+
                     input_grid.template submit_read<class feed_in_pipe_0_id>(
                         input_queue[0], ID(c - 1, r - 1), TileImpl::Part::SOUTH_EAST_CORNER,
                         required_columns[0]);
@@ -259,10 +267,15 @@ class TilingExecutor : public SingleContextExecutor<TransFunc> {
 
                     cl::sycl::event computation_event =
                         work_queue.submit([&](cl::sycl::handler &cgh) {
+                            IterationSpaceInformation info{
+                                this->get_i_generation(), pass_n_generations,
+                                cl::sycl::id<2>(column_offset, row_offset),
+                                cl::sycl::range<2>(n_inner_columns, n_inner_rows), cgh};
+                            IntermediateRepresentation inter_rep = this->get_prep_func()(info);
                             cgh.single_task<class TilingExecutionKernel>(ExecutionKernelImpl(
-                                this->get_trans_func(), this->get_i_generation(),
-                                target_i_generation, c * tile_width, r * tile_height, grid_width,
-                                grid_height, this->get_halo_value()));
+                                inter_rep, this->get_i_generation(), target_i_generation,
+                                c * tile_width, r * tile_height, grid_width, grid_height,
+                                this->get_halo_value()));
                         });
                     events.push_back(computation_event);
 

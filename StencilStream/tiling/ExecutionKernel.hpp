@@ -47,6 +47,7 @@ template <typename TransFunc, uindex_t n_processing_elements, uindex_t output_ti
 class ExecutionKernel {
   public:
     using Cell = typename TransFunc::Cell;
+    using IntermediateRepresentation = typename TransFunc::IntermediateRepresentation;
 
     static_assert(std::is_invocable_r<Cell, TransFunc const, Stencil<TransFunc> const &>::value);
     static_assert(TransFunc::stencil_radius >= 1);
@@ -109,10 +110,10 @@ class ExecutionKernel {
      * \param grid_height The number of cell rows in the grid.
      * \param halo_value The value of cells in the grid halo.
      */
-    ExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t target_i_generation,
+    ExecutionKernel(IntermediateRepresentation inter_rep, uindex_t i_generation, uindex_t target_i_generation,
                     uindex_t grid_c_offset, uindex_t grid_r_offset, uindex_t grid_width,
                     uindex_t grid_height, Cell halo_value)
-        : trans_func(trans_func), i_generation(i_generation),
+        : inter_rep(inter_rep), i_generation(i_generation),
           n_generations(
               std::min(uindex_t(n_processing_elements), target_i_generation - i_generation)),
           grid_c_offset(grid_c_offset), grid_r_offset(grid_r_offset), grid_width(grid_width),
@@ -213,6 +214,7 @@ class ExecutionKernel {
                                     stencil_buffer[i_processing_element]);
 
                 if (i_processing_element.to_uint64() < n_generations) {
+                    TransFunc trans_func(inter_rep, i_generation + i_processing_element.to_uint64());
                     carry = trans_func(stencil);
                 } else {
                     carry = stencil_buffer[i_processing_element][TransFunc::stencil_radius]
@@ -239,7 +241,7 @@ class ExecutionKernel {
     }
 
   private:
-    TransFunc trans_func;
+    IntermediateRepresentation inter_rep;
     uindex_t i_generation;
     uindex_t n_generations;
     uindex_t grid_c_offset;

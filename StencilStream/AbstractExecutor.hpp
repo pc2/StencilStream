@@ -19,9 +19,8 @@
  */
 #pragma once
 #include "GenericID.hpp"
-#include "Index.hpp"
+#include "IterationSpaceInformation.hpp"
 #include "RuntimeSample.hpp"
-#include <CL/sycl.hpp>
 #include <functional>
 
 namespace stencil {
@@ -57,7 +56,12 @@ namespace stencil {
 template <typename TransFunc> class AbstractExecutor {
   public:
     using Cell = typename TransFunc::Cell;
+    using IntermediateRepresentation = typename TransFunc::IntermediateRepresentation;
+    static_assert(
+        std::is_constructible<TransFunc, IntermediateRepresentation const &, uindex_t>::value);
 
+    using PreparationFunction =
+        std::function<IntermediateRepresentation(IterationSpaceInformation)>;
     using SnapshotHandler = std::function<void(cl::sycl::buffer<Cell, 2>, uindex_t)>;
 
     /**
@@ -65,8 +69,8 @@ template <typename TransFunc> class AbstractExecutor {
      * \param trans_func The instance of the transition function that should be used to calculate
      * new generations.
      */
-    AbstractExecutor(Cell halo_value, TransFunc trans_func)
-        : halo_value(halo_value), trans_func(trans_func), i_generation(0), runtime_sample() {}
+    AbstractExecutor(Cell halo_value, PreparationFunction prep_func)
+        : halo_value(halo_value), prep_func(prep_func), i_generation(0), runtime_sample() {}
 
     /**
      * \brief Compute the next generations of the grid and store it internally.
@@ -135,12 +139,12 @@ template <typename TransFunc> class AbstractExecutor {
     /**
      * \brief Get the configured transition function instance.
      */
-    TransFunc get_trans_func() const { return trans_func; }
+    PreparationFunction get_prep_func() const { return prep_func; }
 
     /**
      * \brief Set the transition function instance.
      */
-    void set_trans_func(TransFunc trans_func) { this->trans_func = trans_func; }
+    void set_prep_func(PreparationFunction prep_func) { this->prep_func = prep_func; }
 
     /**
      * \brief Get the generation index of the grid.
@@ -166,7 +170,7 @@ template <typename TransFunc> class AbstractExecutor {
 
   private:
     Cell halo_value;
-    TransFunc trans_func;
+    PreparationFunction prep_func;
     uindex_t i_generation;
     RuntimeSample runtime_sample;
 };

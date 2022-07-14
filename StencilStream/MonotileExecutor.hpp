@@ -46,6 +46,8 @@ template <typename TransFunc, uindex_t n_processing_elements = 1, uindex_t tile_
 class MonotileExecutor : public SingleContextExecutor<TransFunc> {
   public:
     using Cell = typename TransFunc::Cell;
+    using IntermediateRepresentation = typename TransFunc::IntermediateRepresentation;
+    using PreparationFunction = typename AbstractExecutor<TransFunc>::PreparationFunction;
 
     static constexpr uindex_t word_length =
         std::lcm(sizeof(Padded<Cell>), word_size) / sizeof(Padded<Cell>);
@@ -66,9 +68,9 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc> {
      *
      * \param trans_func An instance of the transition function type.
      */
-    MonotileExecutor(Cell halo_value, TransFunc trans_func)
-        : SingleContextExecutor<TransFunc>(halo_value, trans_func), tile_buffer(cl::sycl::range<1>(1)),
-          grid_range(1, 1) {
+    MonotileExecutor(Cell halo_value, PreparationFunction prep_func)
+        : SingleContextExecutor<TransFunc>(halo_value, prep_func),
+          tile_buffer(cl::sycl::range<1>(1)), grid_range(1, 1) {
         auto ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
         ac[0][0].value = this->get_halo_value();
     }
@@ -144,6 +146,9 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc> {
         cl::sycl::buffer<IOWord, 1> write_buffer = cl::sycl::range<1>(n_words);
 
         while (this->get_i_generation() < target_i_generation) {
+            uindex_t pass_n_generations = std::min(target_i_generation - this->get_i_generation(),
+                                                   uindex_t(n_processing_elements));
+
             input_queue.submit([&](cl::sycl::handler &cgh) {
                 auto ac = read_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
 
@@ -165,9 +170,14 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc> {
             });
 
             cl::sycl::event computation_event = work_queue.submit([&](cl::sycl::handler &cgh) {
-                cgh.single_task<class MonotileExecutionKernel>(ExecutionKernelImpl(
-                    this->get_trans_func(), this->get_i_generation(), target_i_generation,
-                    grid_width, grid_height, this->get_halo_value()));
+                IterationSpaceInformation info{this->get_i_generation(), pass_n_generations,
+                                               cl::sycl::id<2>(0, 0),
+                                               cl::sycl::range<2>(grid_width, grid_height), cgh};
+                IntermediateRepresentation inter_rep = this->get_prep_func()(info);
+
+                cgh.single_task<class MonotileExecutionKernel>(
+                    ExecutionKernelImpl(inter_rep, this->get_i_generation(), target_i_generation,
+                                        grid_width, grid_height, this->get_halo_value()));
             });
 
             output_queue.submit([&](cl::sycl::handler &cgh) {
@@ -199,8 +209,7 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc> {
 
             this->get_runtime_sample().add_pass(computation_event);
 
-            this->inc_i_generation(std::min(target_i_generation - this->get_i_generation(),
-                                            uindex_t(n_processing_elements)));
+            this->inc_i_generation(pass_n_generations);
         }
 
         tile_buffer = read_buffer;

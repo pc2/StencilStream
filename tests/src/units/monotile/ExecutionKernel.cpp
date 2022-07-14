@@ -41,7 +41,10 @@ void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t n_
         }
     }
 
-    TestExecutionKernel(TransFunc(), 0, n_generations, grid_width, grid_height, Cell::halo())();
+    RunInformation iter_rep{0, n_generations - 1, cl::sycl::id<2>(0, 0),
+                            cl::sycl::range<2>(grid_width, grid_height)};
+
+    TestExecutionKernel(iter_rep, 0, n_generations, grid_width, grid_height, Cell::halo())();
 
     buffer<Cell, 2> output_buffer(range<2>(grid_width, grid_height));
 
@@ -90,6 +93,10 @@ struct IncompletePipelineKernel {
     using Cell = uint8_t;
     static constexpr uindex_t stencil_radius = 1;
 
+    struct IntermediateRepresentation {};
+
+    IncompletePipelineKernel(IntermediateRepresentation const &inter_rep, uindex_t i_generation) {}
+
     Cell operator()(Stencil<IncompletePipelineKernel> const &stencil) const {
         return stencil[ID(0, 0)] + 1;
     }
@@ -109,7 +116,8 @@ TEST_CASE("monotile::ExecutionKernel: Incomplete Pipeline with i_generation != 0
         }
     }
 
-    TestExecutionKernel kernel(IncompletePipelineKernel(), 16, 20, 64, 64, 0);
+    TestExecutionKernel kernel(IncompletePipelineKernel::IntermediateRepresentation{}, 16, 20, 64,
+                               64, 0);
     kernel.operator()();
 
     REQUIRE(in_pipe::empty());

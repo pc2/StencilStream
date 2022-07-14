@@ -38,6 +38,7 @@ namespace stencil {
 template <typename TransFunc> class SingleContextExecutor : public AbstractExecutor<TransFunc> {
   public:
     using Cell = typename TransFunc::Cell;
+    using PreparationFunction = typename AbstractExecutor<TransFunc>::PreparationFunction;
 
     /**
      * \brief Create a new executor.
@@ -45,8 +46,9 @@ template <typename TransFunc> class SingleContextExecutor : public AbstractExecu
      * \param trans_func The instance of the transition function that should be used to calculate
      * new generations.
      */
-    SingleContextExecutor(Cell halo_value, TransFunc trans_func)
-        : AbstractExecutor<TransFunc>(halo_value, trans_func), device(std::nullopt), context(std::nullopt) {}
+    SingleContextExecutor(Cell halo_value, PreparationFunction prep_func)
+        : AbstractExecutor<TransFunc>(halo_value, prep_func), device(std::nullopt),
+          context(std::nullopt) {}
 
     /**
      * \brief Return the configured queue.
@@ -66,70 +68,6 @@ template <typename TransFunc> class SingleContextExecutor : public AbstractExecu
             this->select_emulator();
         }
         return cl::sycl::queue(*this->context, *this->device, queue_properties);
-    }
-
-    /**
-     * \brief Manually set the SYCL queue to use for execution.
-     *
-     * Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for
-     * the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will
-     * lead to exceptions.
-     *
-     * In order to use runtime analysis features, the queue has to be configured with the
-     * `cl::sycl::property::queue::enable_profiling` property. A `std::runtime_error` is thrown if
-     * `runtime_analysis` is true and the passed queue does not have this property.
-     *
-     * \deprecated This method is deprecated since the `runtime_analysis` flag is redundant by now.
-     * Use the other variant without the `runtime_analysis` flag instead.
-     *
-     * \param queue The new SYCL queue to use for execution.
-     * \param runtime_analysis Enable event-level runtime analysis.
-     */
-    [[deprecated("Use build_context() instead")]] void set_queue(cl::sycl::queue queue,
-                                                                 bool runtime_analysis) {
-        this->build_context(queue.get_device());
-    }
-
-    /**
-     * \brief Manually set the SYCL queue to use for execution.
-     *
-     * Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for
-     * the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will
-     * lead to exceptions.
-     *
-     * Runtime analysis is enabled by configuring the queue with the
-     * `cl::sycl::property::queue::enable_profiling` property.
-     *
-     * \param queue The new SYCL queue to use for execution.
-     */
-    [[deprecated("Use build_context() instead")]] void set_queue(cl::sycl::queue queue) {
-        this->build_context(queue.get_device());
-    }
-
-    /**
-     * \brief Set up a SYCL queue with the FPGA emulator device and optional runtime analysis.
-     *
-     * Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for
-     * the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will
-     * lead to exceptions.
-     *
-     * \param runtime_analysis Enable event-level runtime analysis.
-     */
-    [[deprecated("Use select_emulator() instead")]] void select_emulator(bool runtime_analysis) {
-        this->select_emulator();
-    }
-
-    /**
-     * \brief Set up a SYCL queue with an FPGA device and optional runtime analysis.
-     *
-     * Note that as of OneAPI Version 2021.1.1, device code is usually built either for CPU/GPU, for
-     * the FPGA emulator or for a specific FPGA. Using the wrong queue with the wrong device will
-     * lead to exceptions.
-     *
-     * \param runtime_analysis Enable event-level runtime analysis.
-     */
-    [[deprecated("Use select_fpga() instead")]] void select_fpga(bool runtime_analysis) {
-        this->select_fpga();
     }
 
     void select_cpu() { this->build_context(cl::sycl::cpu_selector().select_device()); }
