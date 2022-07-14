@@ -66,7 +66,14 @@ struct HotspotKernel {
     using Cell = HotspotCell;
     static constexpr uindex_t stencil_radius = 1;
 
-    float Rx_1, Ry_1, Rz_1, Cap_1;
+    struct Factors {
+        float Rx_1, Ry_1, Rz_1, Cap_1;
+    };
+    using IntermediateRepresentation = Factors;
+
+    Factors factors;
+
+    HotspotKernel(Factors const &factors, uindex_t i_generation) : factors(factors) {}
 
     Cell operator()(Stencil<HotspotKernel> const &temp) const {
         using StencilID = typename Stencil<HotspotKernel>::StencilID;
@@ -97,9 +104,9 @@ struct HotspotKernel {
         }
 
         // As in the OpenCL version of the rodinia "hotspot" benchmark.
-        FLOAT new_temp =
-            old + Cap_1 * (power + (bottom + top - 2.f * old) * Ry_1 +
-                           (right + left - 2.f * old) * Rx_1 + (amb_temp - old) * Rz_1);
+        FLOAT new_temp = old + factors.Cap_1 * (power + (bottom + top - 2.f * old) * factors.Ry_1 +
+                                                (right + left - 2.f * old) * factors.Rx_1 +
+                                                (amb_temp - old) * factors.Rz_1);
 
         return vec(new_temp, power);
     }
@@ -242,7 +249,9 @@ int main(int argc, char **argv) {
     using Executor = SimpleCPUExecutor<HotspotKernel>;
 #endif
 
-    Executor executor(HotspotCell(0.0, 0.0), HotspotKernel{Rx_1, Ry_1, Rz_1, Cap_1});
+    Executor executor(HotspotCell(0.0, 0.0), [=](IterationSpaceInformation info) {
+        return HotspotKernel::Factors{Rx_1, Ry_1, Rz_1, Cap_1};
+    });
     executor.set_input(temp);
 #if EXECUTOR != 2
     executor.select_fpga();

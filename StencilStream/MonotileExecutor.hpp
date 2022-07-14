@@ -75,6 +75,13 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc> {
         ac[0][0].value = this->get_halo_value();
     }
 
+    MonotileExecutor(Cell halo_value)
+        : SingleContextExecutor<TransFunc>(halo_value), tile_buffer(cl::sycl::range<1>(1)),
+          grid_range(1, 1) {
+        auto ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
+        ac[0][0].value = this->get_halo_value();
+    }
+
     /**
      * \brief Set the internal state of the grid.
      *

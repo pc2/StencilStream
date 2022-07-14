@@ -72,6 +72,11 @@ template <typename TransFunc> class AbstractExecutor {
     AbstractExecutor(Cell halo_value, PreparationFunction prep_func)
         : halo_value(halo_value), prep_func(prep_func), i_generation(0), runtime_sample() {}
 
+    AbstractExecutor(Cell halo_value)
+        : halo_value(halo_value),
+          prep_func([](IterationSpaceInformation info) { return IntermediateRepresentation(); }),
+          i_generation(0), runtime_sample() {}
+
     /**
      * \brief Compute the next generations of the grid and store it internally.
      *

@@ -50,6 +50,9 @@ template <typename TransFunc> class SingleContextExecutor : public AbstractExecu
         : AbstractExecutor<TransFunc>(halo_value, prep_func), device(std::nullopt),
           context(std::nullopt) {}
 
+    SingleContextExecutor(Cell halo_value)
+        : AbstractExecutor<TransFunc>(halo_value), device(std::nullopt), context(std::nullopt) {}
+
     /**
      * \brief Return the configured queue.
      *

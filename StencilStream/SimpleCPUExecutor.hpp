@@ -34,6 +34,11 @@ template <typename TransFunc> class SimpleCPUExecutor : public SingleContextExec
         this->select_cpu();
     }
 
+    SimpleCPUExecutor(Cell halo_value)
+        : SingleContextExecutor<TransFunc>(halo_value), grid(cl::sycl::range<2>(1, 1)) {
+        this->select_cpu();
+    }
+
     virtual void run(uindex_t n_generations) override {
         cl::sycl::queue queue = this->new_queue();
         cl::sycl::buffer<Cell, 2> in_buffer = grid;

@@ -24,6 +24,10 @@ struct ConwayKernel {
     using Cell = bool;
     static constexpr stencil::index_t stencil_radius = 1;
 
+    struct IntermediateRepresentation {};
+
+    ConwayKernel(IntermediateRepresentation const &inter_rep, stencil::uindex_t i_generation) {}
+
     bool operator()(stencil::Stencil<ConwayKernel> const &stencil) const {
         stencil::ID idx = stencil.id;
 
@@ -98,7 +102,7 @@ int main(int argc, char **argv) {
     using Executor = stencil::TilingExecutor<ConwayKernel>;
 #endif
 
-    Executor executor(false, ConwayKernel());
+    Executor executor(false);
 
 #ifdef HARDWARE
     executor.select_fpga();

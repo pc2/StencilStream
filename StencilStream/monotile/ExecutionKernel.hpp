@@ -243,7 +243,8 @@ class ExecutionKernel {
                         }
                     }
 
-                    TransFunc trans_func(inter_rep, i_generation + i_processing_element);
+                    TransFunc trans_func(inter_rep,
+                                         (i_generation + i_processing_element).to_uint64());
                     carry = trans_func(stencil);
                 } else {
                     carry = stencil_buffer[i_processing_element][TransFunc::stencil_radius]

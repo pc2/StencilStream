@@ -73,6 +73,10 @@ class TilingExecutor : public SingleContextExecutor<TransFunc> {
         : SingleContextExecutor<TransFunc>(halo_value, prep_func),
           input_grid(cl::sycl::buffer<Cell, 2>(cl::sycl::range<2>(0, 0))) {}
 
+    TilingExecutor(Cell halo_value)
+        : SingleContextExecutor<TransFunc>(halo_value),
+          input_grid(cl::sycl::buffer<Cell, 2>(cl::sycl::range<2>(0, 0))) {}
+
     void set_input(cl::sycl::buffer<Cell, 2> input_buffer) override {
         this->input_grid = GridImpl(input_buffer);
     }
