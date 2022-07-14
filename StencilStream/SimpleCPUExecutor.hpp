@@ -49,8 +49,7 @@ template <typename TransFunc> class SimpleCPUExecutor : public SingleContextExec
                 uindex_t grid_height = in_ac.get_range()[1];
                 Cell halo_value = this->get_halo_value();
 
-                IterationSpaceInformation iter_space_info{gen, 1, cl::sycl::id<2>(0, 0),
-                                                          in_ac.get_range(), cgh};
+                IterationSpaceInformation iter_space_info{gen, 1, cgh};
                 IntermediateRepresentation intermediate_rep =
                     this->get_prep_func()(iter_space_info);
                 TransFunc trans_func(intermediate_rep, gen);

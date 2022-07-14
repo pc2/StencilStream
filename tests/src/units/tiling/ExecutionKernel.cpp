@@ -46,8 +46,7 @@ void test_tiling_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t n_ge
         }
     }
 
-    RunInformation run_information(0, n_generations, cl::sycl::id<2>(0, 0),
-                                   cl::sycl::range<2>(grid_width, grid_height));
+    RunInformation run_information(0, n_generations);
     TestExecutionKernel(run_information, 0, n_generations, 0, 0, grid_width, grid_height,
                         Cell::halo())();
 

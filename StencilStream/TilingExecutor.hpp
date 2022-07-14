@@ -267,10 +267,8 @@ class TilingExecutor : public SingleContextExecutor<TransFunc> {
 
                     cl::sycl::event computation_event =
                         work_queue.submit([&](cl::sycl::handler &cgh) {
-                            IterationSpaceInformation info{
-                                this->get_i_generation(), pass_n_generations,
-                                cl::sycl::id<2>(column_offset, row_offset),
-                                cl::sycl::range<2>(n_inner_columns, n_inner_rows), cgh};
+                            IterationSpaceInformation info{this->get_i_generation(),
+                                                           pass_n_generations, cgh};
                             IntermediateRepresentation inter_rep = this->get_prep_func()(info);
                             cgh.single_task<class TilingExecutionKernel>(ExecutionKernelImpl(
                                 inter_rep, this->get_i_generation(), target_i_generation,

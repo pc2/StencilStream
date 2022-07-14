@@ -24,8 +24,6 @@
 namespace stencil {
 struct IterationSpaceInformation {
     uindex_t i_generation, n_generations;
-    cl::sycl::id<2> offset;
-    cl::sycl::range<2> area;
     cl::sycl::handler &cgh;
 };
 } // namespace stencil

@@ -41,8 +41,7 @@ void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t n_
         }
     }
 
-    RunInformation iter_rep{0, n_generations - 1, cl::sycl::id<2>(0, 0),
-                            cl::sycl::range<2>(grid_width, grid_height)};
+    RunInformation iter_rep{0, n_generations - 1};
 
     TestExecutionKernel(iter_rep, 0, n_generations, grid_width, grid_height, Cell::halo())();
 

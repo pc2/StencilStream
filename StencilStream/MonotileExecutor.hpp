@@ -170,9 +170,7 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc> {
             });
 
             cl::sycl::event computation_event = work_queue.submit([&](cl::sycl::handler &cgh) {
-                IterationSpaceInformation info{this->get_i_generation(), pass_n_generations,
-                                               cl::sycl::id<2>(0, 0),
-                                               cl::sycl::range<2>(grid_width, grid_height), cgh};
+                IterationSpaceInformation info{this->get_i_generation(), pass_n_generations, cgh};
                 IntermediateRepresentation inter_rep = this->get_prep_func()(info);
 
                 cgh.single_task<class MonotileExecutionKernel>(
