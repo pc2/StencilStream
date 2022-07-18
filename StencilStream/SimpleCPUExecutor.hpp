@@ -25,17 +25,9 @@ namespace stencil {
 template <typename TransFunc> class SimpleCPUExecutor : public SingleContextExecutor<TransFunc> {
   public:
     using Cell = typename TransFunc::Cell;
-    using IntermediateRepresentation =
-        typename AbstractExecutor<TransFunc>::IntermediateRepresentation;
-    using PreparationFunction = typename AbstractExecutor<TransFunc>::PreparationFunction;
 
-    SimpleCPUExecutor(Cell halo_value, PreparationFunction prep_func)
-        : SingleContextExecutor<TransFunc>(halo_value, prep_func), grid(cl::sycl::range<2>(1, 1)) {
-        this->select_cpu();
-    }
-
-    SimpleCPUExecutor(Cell halo_value)
-        : SingleContextExecutor<TransFunc>(halo_value), grid(cl::sycl::range<2>(1, 1)) {
+    SimpleCPUExecutor(Cell halo_value, TransFunc trans_func)
+        : SingleContextExecutor<TransFunc>(halo_value, trans_func), grid(cl::sycl::range<2>(1, 1)) {
         this->select_cpu();
     }
 
@@ -53,11 +45,7 @@ template <typename TransFunc> class SimpleCPUExecutor : public SingleContextExec
                 uindex_t grid_width = in_ac.get_range()[0];
                 uindex_t grid_height = in_ac.get_range()[1];
                 Cell halo_value = this->get_halo_value();
-
-                IterationSpaceInformation iter_space_info{gen, 1, cgh};
-                IntermediateRepresentation intermediate_rep =
-                    this->get_prep_func()(iter_space_info);
-                TransFunc trans_func(intermediate_rep, gen);
+                TransFunc trans_func = this->get_trans_func();
 
                 cgh.parallel_for<class SimpleCPUExecutionKernel>(
                     in_ac.get_range(), [=](cl::sycl::id<2> idx) {

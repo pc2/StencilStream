@@ -22,7 +22,6 @@
 #include <CL/sycl.hpp>
 #include <StencilStream/GenericID.hpp>
 #include <StencilStream/Index.hpp>
-#include <StencilStream/IterationSpaceInformation.hpp>
 #include <StencilStream/Stencil.hpp>
 
 enum class CellStatus {
@@ -40,35 +39,15 @@ struct Cell {
     static Cell halo() { return Cell{0, 0, 0, CellStatus::Halo}; }
 };
 
-struct RunInformation {
-    stencil::uindex_t min_generation;
-    stencil::uindex_t max_generation;
-
-    RunInformation(stencil::uindex_t min_generation, stencil::uindex_t max_generation)
-        : min_generation(min_generation), max_generation(max_generation) {}
-
-    RunInformation(stencil::IterationSpaceInformation const &info)
-        : min_generation(info.i_generation),
-          max_generation(info.i_generation + info.n_generations - 1) {}
-};
-
 template <stencil::uindex_t radius> class FPGATransFunc {
   public:
     using Cell = Cell;
     static constexpr stencil::uindex_t stencil_radius = radius;
 
-    using IntermediateRepresentation = RunInformation;
-
-    FPGATransFunc(RunInformation const &info, stencil::uindex_t i_generation)
-        : info(info), expected_generation(i_generation) {}
-
     Cell operator()(stencil::Stencil<FPGATransFunc<radius>> const &stencil) const {
         Cell new_cell = stencil[stencil::ID(0, 0)];
 
-        bool is_valid = info.min_generation <= stencil.generation;
-        is_valid &= expected_generation == stencil.generation;
-        is_valid &= info.max_generation >= stencil.generation;
-
+        bool is_valid = true;
 #pragma unroll
         for (stencil::index_t c = -stencil::index_t(radius); c <= stencil::index_t(radius); c++) {
 #pragma unroll
@@ -97,21 +76,12 @@ template <stencil::uindex_t radius> class FPGATransFunc {
 
         return new_cell;
     }
-
-  private:
-    RunInformation info;
-    stencil::uindex_t expected_generation;
 };
 
 template <stencil::uindex_t radius> class HostTransFunc {
   public:
     using Cell = Cell;
     static constexpr stencil::uindex_t stencil_radius = radius;
-
-    using IntermediateRepresentation = RunInformation;
-
-    HostTransFunc(RunInformation const &info, stencil::uindex_t i_generation)
-        : info(info), expected_generation(i_generation) {}
 
     Cell operator()(stencil::Stencil<HostTransFunc<radius>> const &stencil) const {
         Cell new_cell = stencil[stencil::ID(0, 0)];
@@ -122,10 +92,6 @@ template <stencil::uindex_t radius> class HostTransFunc {
             // effects.
             return new_cell;
         }
-
-        REQUIRE(info.min_generation <= stencil.generation);
-        REQUIRE(expected_generation == stencil.generation);
-        REQUIRE(info.max_generation >= stencil.generation);
 
 #pragma unroll
         for (stencil::index_t c = -stencil::index_t(radius); c <= stencil::index_t(radius); c++) {
@@ -154,8 +120,4 @@ template <stencil::uindex_t radius> class HostTransFunc {
 
         return new_cell;
     }
-
-  private:
-    RunInformation info;
-    stencil::uindex_t expected_generation;
 };

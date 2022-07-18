@@ -46,8 +46,7 @@ void test_tiling_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t n_ge
         }
     }
 
-    RunInformation run_information(0, n_generations);
-    TestExecutionKernel(run_information, 0, n_generations, 0, 0, grid_width, grid_height,
+    TestExecutionKernel(TransFunc(), 0, n_generations, 0, 0, grid_width, grid_height,
                         Cell::halo())();
 
     buffer<Cell, 2> output_buffer(range<2>(grid_width, grid_height));
@@ -97,10 +96,6 @@ struct HaloHandlingKernel {
     using Cell = bool;
     static constexpr uindex_t stencil_radius = 1;
 
-    struct IntermediateRepresentation {};
-
-    HaloHandlingKernel(IntermediateRepresentation const &inter_rep, uindex_t i_generation) {}
-
     bool operator()(Stencil<HaloHandlingKernel> const &stencil) const {
         ID idx = stencil.id;
         bool is_valid = true;
@@ -134,8 +129,8 @@ TEST_CASE("Halo values inside the pipeline are handled correctly", "[tiling::Exe
         }
     }
 
-    TestExecutionKernel(HaloHandlingKernel::IntermediateRepresentation{}, 0, n_processing_elements,
-                        0, 0, tile_width, tile_height, true)();
+    TestExecutionKernel(HaloHandlingKernel(), 0, n_processing_elements, 0, 0, tile_width,
+                        tile_height, true)();
 
     for (uindex_t c = 0; c < tile_width; c++) {
         for (uindex_t r = 0; r < tile_height; r++) {
@@ -150,10 +145,6 @@ TEST_CASE("Halo values inside the pipeline are handled correctly", "[tiling::Exe
 struct IncompletePipelineKernel {
     using Cell = uint8_t;
     static constexpr uindex_t stencil_radius = 1;
-
-    struct IntermediateRepresentation {};
-
-    IncompletePipelineKernel(IntermediateRepresentation const &inter_rep, uindex_t i_generation) {}
 
     uint8_t operator()(Stencil<IncompletePipelineKernel> const &stencil) const {
         return stencil[ID(0, 0)] + 1;
@@ -172,8 +163,7 @@ TEST_CASE("Incomplete Pipeline with i_generation != 0", "[tiling::ExecutionKerne
         }
     }
 
-    TestExecutionKernel kernel(IncompletePipelineKernel::IntermediateRepresentation{}, 16, 20, 0, 0,
-                               64, 64, 0);
+    TestExecutionKernel kernel(IncompletePipelineKernel(), 16, 20, 0, 0, 64, 64, 0);
     kernel.operator()();
 
     REQUIRE(in_pipe::empty());
