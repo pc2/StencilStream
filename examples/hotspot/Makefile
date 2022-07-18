@@ -47,7 +47,9 @@ hotspot_tiling.report.tar.gz: $(SOURCES) $(RESOURCES)
 	tar -caf hotspot_tiling.report.tar.gz hotspot_tiling.prj/reports
 
 hotspot_rodinia: Makefile
-	./scripts/build_rodinia.sh
+	make -C rodinia/openmp/hotspot hotspot
+	mv rodinia/openmp/hotspot/hotspot hotspot_rodinia
+	chmod +x hotspot_rodinia
 
 clean:
 	git clean -dXf

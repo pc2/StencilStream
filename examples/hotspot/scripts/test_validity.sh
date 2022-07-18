@@ -20,7 +20,7 @@ echo "ratio correct lines, average deviation, maximal deviation"
 
 for i in $(seq $STEP_SIZE $STEP_SIZE $MAX_GEN)
 do
-    $EXECUTABLE 1024 1024 $i $DATA/temp_1024 $DATA/power_1024 out.$i.temp > /dev/null
-    $REFERENCE 1024 1024 $i $(nproc) $DATA/temp_1024 $DATA/power_1024 ref.$i.temp > /dev/null
+    $EXECUTABLE 64 64 $i $DATA/temp_64 $DATA/power_64 out.$i.temp > /dev/null
+    $REFERENCE 64 64 $i $(nproc) $DATA/temp_64 $DATA/power_64 ref.$i.temp > /dev/null
     $COMPARE_TEMPS out.$i.temp ref.$i.temp
 done

@@ -1,9 +1,6 @@
 # executables
 hotspot_*
 
-# build directories
-rodinia_3.1
-
 # Output
 out
 profile.*
