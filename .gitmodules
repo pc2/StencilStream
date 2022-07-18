@@ -1,0 +1,3 @@
+[submodule "examples/hotspot/rodinia"]
+	path = examples/hotspot/rodinia
+	url = https://github.com/yuhc/gpu-rodinia.git
