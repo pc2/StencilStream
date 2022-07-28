@@ -24,11 +24,21 @@
 
 namespace stencil {
 template <typename T>
-concept TransitionFunction = std::semiregular<typename T::Cell> &&
-                             std::same_as<decltype(T::stencil_radius), const uindex_t> &&
-                             (T::stencil_radius >= 1) &&
-                             requires(T trans_func,
-                                      Stencil<typename T::Cell, T::stencil_radius> const &stencil) {
+concept TransitionFunction = requires {
+    // cell type
+    requires std::semiregular<typename T::Cell>;
+}
+&&requires {
+    // stencil radius
+    requires std::same_as<decltype(T::stencil_radius), const uindex_t>;
+    requires(T::stencil_radius >= 1);
+}
+&&requires {
+    // number of subgenerations
+    requires std::same_as<decltype(T::n_subgenerations), const uindex_t>;
+}
+&&requires(T trans_func, Stencil<typename T::Cell, T::stencil_radius> const &stencil) {
+    // update method
     { trans_func(stencil) } -> std::convertible_to<typename T::Cell>;
 };
 

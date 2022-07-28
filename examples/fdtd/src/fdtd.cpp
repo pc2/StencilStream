@@ -186,10 +186,10 @@ int main(int argc, char **argv) {
         kernel = KernelImpl(parameters, mat_resolver, source);
         executor.set_trans_func(kernel);
 
-        executor.run(std::min(n_processing_elements, n_timesteps - executor.get_i_generation()));
+        executor.run(std::min(gens_per_pass, n_timesteps - executor.get_i_generation()));
 
         if (parameters.interval().has_value() &&
-            executor.get_i_generation() - last_saved_generation >= 2 * *(parameters.interval())) {
+            executor.get_i_generation() - last_saved_generation >= *(parameters.interval())) {
             executor.copy_output(grid_buffer);
             save_frame(grid_buffer, executor.get_i_generation(), CellField::HZ, parameters);
             last_saved_generation = executor.get_i_generation();

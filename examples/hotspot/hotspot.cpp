@@ -65,6 +65,7 @@ using HotspotCell = vec<FLOAT, 2>;
 struct HotspotKernel {
     using Cell = HotspotCell;
     static constexpr uindex_t stencil_radius = 1;
+    static constexpr uindex_t n_subgenerations = 1;
 
     float Rx_1, Ry_1, Rz_1, Cap_1;
 

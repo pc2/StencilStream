@@ -54,8 +54,8 @@ struct Parameters {
 
     Parameters(int argc, char **argv)
         : t_cutoff_factor(7.0), t_detect_factor(14.0), t_max_factor(15.0), frequency(120e12),
-          t_0_factor(3.0), source_x(0.0), source_y(0.0), source_radius(0.0), dx(10e-9), tau(100e-15), rings(), out_dir("."),
-          interval_factor(std::nullopt) {
+          t_0_factor(3.0), source_x(0.0), source_y(0.0), source_radius(0.0), dx(10e-9),
+          tau(100e-15), rings(), out_dir("."), interval_factor(std::nullopt) {
 
         bool config_loaded = false;
 
@@ -240,7 +240,7 @@ struct Parameters {
 
     float dt() const { return (dx / float(c0 * sqrt_2)) * 0.99; }
 
-    uindex_t n_timesteps() const { return 2 * uindex_t(std::ceil(t_max() / dt())); }
+    uindex_t n_timesteps() const { return uindex_t(std::ceil(t_max() / dt())); }
 
     // Omega (?) in Hz.
     float omega() const { return 2.0 * pi * frequency; }

@@ -38,40 +38,43 @@ class SimpleCPUExecutor : public SingleContextExecutor<TransFunc> {
         cl::sycl::buffer<Cell, 2> out_buffer(grid.get_range());
 
         for (uindex_t i_generation = 0; i_generation < n_generations; i_generation++) {
-            cl::sycl::event event = queue.submit([&](cl::sycl::handler &cgh) {
-                auto in_ac = in_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
-                auto out_ac =
-                    out_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
-                uindex_t gen = this->get_i_generation() + i_generation;
-                uindex_t grid_width = in_ac.get_range()[0];
-                uindex_t grid_height = in_ac.get_range()[1];
-                Cell halo_value = this->get_halo_value();
-                TransFunc trans_func = this->get_trans_func();
+            for (uindex_t i_subgeneration = 0; i_subgeneration < TransFunc::n_subgenerations;
+                 i_subgeneration++) {
+                cl::sycl::event event = queue.submit([&](cl::sycl::handler &cgh) {
+                    auto in_ac = in_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
+                    auto out_ac =
+                        out_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
+                    uindex_t gen = this->get_i_generation() + i_generation;
+                    uindex_t grid_width = in_ac.get_range()[0];
+                    uindex_t grid_height = in_ac.get_range()[1];
+                    Cell halo_value = this->get_halo_value();
+                    TransFunc trans_func = this->get_trans_func();
 
-                cgh.parallel_for<class SimpleCPUExecutionKernel>(
-                    in_ac.get_range(), [=](cl::sycl::id<2> idx) {
-                        Stencil<Cell, TransFunc::stencil_radius> stencil(idx, in_ac.get_range(),
-                                                                         gen, i_generation);
+                    cgh.parallel_for<class SimpleCPUExecutionKernel>(
+                        in_ac.get_range(), [=](cl::sycl::id<2> idx) {
+                            Stencil<Cell, TransFunc::stencil_radius> stencil(
+                                idx, in_ac.get_range(), gen, i_subgeneration, 0);
 
-                        for (index_t delta_c = -TransFunc::stencil_radius;
-                             delta_c <= index_t(TransFunc::stencil_radius); delta_c++) {
-                            for (index_t delta_r = -TransFunc::stencil_radius;
-                                 delta_r <= index_t(TransFunc::stencil_radius); delta_r++) {
-                                index_t c = index_t(idx[0]) + delta_c;
-                                index_t r = index_t(idx[1]) + delta_r;
-                                if (c < 0 || r < 0 || c >= grid_width || r >= grid_height) {
-                                    stencil[ID(delta_c, delta_r)] = halo_value;
-                                } else {
-                                    stencil[ID(delta_c, delta_r)] = in_ac[c][r];
+                            for (index_t delta_c = -TransFunc::stencil_radius;
+                                 delta_c <= index_t(TransFunc::stencil_radius); delta_c++) {
+                                for (index_t delta_r = -TransFunc::stencil_radius;
+                                     delta_r <= index_t(TransFunc::stencil_radius); delta_r++) {
+                                    index_t c = index_t(idx[0]) + delta_c;
+                                    index_t r = index_t(idx[1]) + delta_r;
+                                    if (c < 0 || r < 0 || c >= grid_width || r >= grid_height) {
+                                        stencil[ID(delta_c, delta_r)] = halo_value;
+                                    } else {
+                                        stencil[ID(delta_c, delta_r)] = in_ac[c][r];
+                                    }
                                 }
                             }
-                        }
 
-                        out_ac[idx] = trans_func(stencil);
-                    });
-            });
-            this->get_runtime_sample().add_pass(event);
-            std::swap(in_buffer, out_buffer);
+                            out_ac[idx] = trans_func(stencil);
+                        });
+                });
+                this->get_runtime_sample().add_pass(event);
+                std::swap(in_buffer, out_buffer);
+            }
         }
 
         queue.wait_and_throw();

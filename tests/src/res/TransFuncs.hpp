@@ -34,15 +34,17 @@ struct Cell {
     stencil::index_t c;
     stencil::index_t r;
     stencil::index_t i_generation;
+    stencil::index_t i_subgeneration;
     CellStatus status;
 
-    static Cell halo() { return Cell{0, 0, 0, CellStatus::Halo}; }
+    static Cell halo() { return Cell{0, 0, 0, 0, CellStatus::Halo}; }
 };
 
 template <stencil::uindex_t radius> class FPGATransFunc {
   public:
     using Cell = Cell;
     static constexpr stencil::uindex_t stencil_radius = radius;
+    static constexpr stencil::uindex_t n_subgenerations = 2;
 
     Cell operator()(stencil::Stencil<Cell, radius> const &stencil) const {
         Cell new_cell = stencil[stencil::ID(0, 0)];
@@ -61,18 +63,25 @@ template <stencil::uindex_t radius> class FPGATransFunc {
                     is_valid &= old_cell.c == cell_c;
                     is_valid &= old_cell.r == cell_r;
                     is_valid &= old_cell.i_generation == stencil.generation;
+                    is_valid &= old_cell.i_subgeneration == stencil.subgeneration;
                     is_valid &= old_cell.status == CellStatus::Normal;
                 } else {
                     is_valid &= old_cell.c == Cell::halo().c;
                     is_valid &= old_cell.r == Cell::halo().r;
                     is_valid &= old_cell.i_generation == Cell::halo().i_generation;
+                    is_valid &= old_cell.i_subgeneration == Cell::halo().i_subgeneration;
                     is_valid &= old_cell.status == Cell::halo().status;
                 }
             }
         }
 
         new_cell.status = is_valid ? CellStatus::Normal : CellStatus::Invalid;
-        new_cell.i_generation += 1;
+        if (new_cell.i_subgeneration == n_subgenerations - 1) {
+            new_cell.i_generation += 1;
+            new_cell.i_subgeneration = 0;
+        } else {
+            new_cell.i_subgeneration++;
+        }
 
         return new_cell;
     }
@@ -82,12 +91,13 @@ template <stencil::uindex_t radius> class HostTransFunc {
   public:
     using Cell = Cell;
     static constexpr stencil::uindex_t stencil_radius = radius;
+    static constexpr stencil::uindex_t n_subgenerations = 2;
 
     Cell operator()(stencil::Stencil<Cell, radius> const &stencil) const {
         Cell new_cell = stencil[stencil::ID(0, 0)];
 
-        if (stencil.id.c < 0 || stencil.id.r < 0 || stencil.id.c > stencil.grid_range.c ||
-            stencil.id.r > stencil.grid_range.r) {
+        if (stencil.id.c < 0 || stencil.id.r < 0 || stencil.id.c >= stencil.grid_range.c ||
+            stencil.id.r >= stencil.grid_range.r) {
             // Things may be weird in this (illegal) situation, we should not do anything with
             // effects.
             return new_cell;
@@ -106,17 +116,24 @@ template <stencil::uindex_t radius> class HostTransFunc {
                     REQUIRE(old_cell.c == cell_c);
                     REQUIRE(old_cell.r == cell_r);
                     REQUIRE(old_cell.i_generation == stencil.generation);
+                    REQUIRE(old_cell.i_subgeneration == stencil.subgeneration);
                     REQUIRE(old_cell.status == CellStatus::Normal);
                 } else {
                     REQUIRE(old_cell.c == Cell::halo().c);
                     REQUIRE(old_cell.r == Cell::halo().r);
                     REQUIRE(old_cell.i_generation == Cell::halo().i_generation);
+                    REQUIRE(old_cell.i_subgeneration == Cell::halo().i_subgeneration);
                     REQUIRE(old_cell.status == Cell::halo().status);
                 }
             }
         }
 
-        new_cell.i_generation += 1;
+        if (new_cell.i_subgeneration == n_subgenerations - 1) {
+            new_cell.i_generation += 1;
+            new_cell.i_subgeneration = 0;
+        } else {
+            new_cell.i_subgeneration++;
+        }
 
         return new_cell;
     }

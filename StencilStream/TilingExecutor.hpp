@@ -327,7 +327,7 @@ class TilingExecutor : public SingleContextExecutor<TransFunc> {
             this->get_runtime_sample().add_pass(latest_end - earliest_start);
 
             this->inc_i_generation(std::min(target_i_generation - this->get_i_generation(),
-                                            uindex_t(n_processing_elements)));
+                                            ExecutionKernelImpl::gens_per_pass));
         }
     }
 

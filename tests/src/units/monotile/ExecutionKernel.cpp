@@ -27,7 +27,7 @@ using namespace stencil;
 using namespace std;
 using namespace cl::sycl;
 
-void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t n_generations) {
+void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t target_i_generation) {
     using TransFunc = HostTransFunc<stencil_radius>;
     using in_pipe = HostPipe<class MonotileExecutionKernelInPipeID, Cell>;
     using out_pipe = HostPipe<class MonotileExecutionKernelOutPipeID, Cell>;
@@ -37,11 +37,12 @@ void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t n_
 
     for (uindex_t c = 0; c < grid_width; c++) {
         for (uindex_t r = 0; r < grid_height; r++) {
-            in_pipe::write(Cell{index_t(c), index_t(r), 0, CellStatus::Normal});
+            in_pipe::write(Cell{index_t(c), index_t(r), 0, 0, CellStatus::Normal});
         }
     }
 
-    TestExecutionKernel(TransFunc(), 0, n_generations, grid_width, grid_height, Cell::halo())();
+    TestExecutionKernel(TransFunc(), 0, target_i_generation, grid_width, grid_height,
+                        Cell::halo())();
 
     buffer<Cell, 2> output_buffer(range<2>(grid_width, grid_height));
 
@@ -63,23 +64,24 @@ void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t n_
             Cell cell = output_buffer_ac[c][r];
             REQUIRE(cell.c == c);
             REQUIRE(cell.r == r);
-            REQUIRE(cell.i_generation == n_generations);
+            REQUIRE(cell.i_generation == target_i_generation);
+            REQUIRE(cell.i_subgeneration == 0);
             REQUIRE(cell.status == CellStatus::Normal);
         }
     }
 }
 
 TEST_CASE("monotile::ExecutionKernel", "[monotile::ExecutionKernel]") {
-    test_monotile_kernel(tile_width, tile_height, n_processing_elements);
+    test_monotile_kernel(tile_width, tile_height, gens_per_pass);
 }
 
 TEST_CASE("monotile::ExecutionKernel (partial tile)", "[monotile::ExecutionKernel]") {
-    test_monotile_kernel(tile_width / 2, tile_height / 2, n_processing_elements);
+    test_monotile_kernel(tile_width / 2, tile_height / 2, gens_per_pass);
 }
 
 TEST_CASE("monotile::ExecutionKernel (partial pipeline)", "[monotile::ExecutionKernel]") {
-    static_assert(n_processing_elements != 1);
-    test_monotile_kernel(tile_width, tile_height, n_processing_elements - 1);
+    static_assert(gens_per_pass != 1);
+    test_monotile_kernel(tile_width, tile_height, gens_per_pass - 1);
 }
 
 TEST_CASE("monotile::ExecutionKernel (noop)", "[monotile::ExecutionKernel]") {
@@ -89,6 +91,7 @@ TEST_CASE("monotile::ExecutionKernel (noop)", "[monotile::ExecutionKernel]") {
 struct IncompletePipelineKernel {
     using Cell = uint8_t;
     static constexpr uindex_t stencil_radius = 1;
+    static constexpr uindex_t n_subgenerations = 1;
 
     Cell operator()(Stencil<uint8_t, 1> const &stencil) const { return stencil[ID(0, 0)] + 1; }
 };

@@ -29,7 +29,7 @@ class OnDemandSource {
           t_0(parameters.t_0()) {}
 
     template <typename Cell> float get_source_amplitude(Stencil<Cell, 1> const &stencil) const {
-        float current_time = (stencil.generation >> 1) * dt;
+        float current_time = stencil.generation * dt;
         return calc_source_amplitude(current_time, t_0, tau, omega);
     }
 

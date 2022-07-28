@@ -61,9 +61,10 @@ requires std::semiregular<Cell> &&(stencil_radius >= 1) class Stencil {
      * function.
      * \param grid_range The range of the stencil's grid.
      */
-    Stencil(ID id, UID grid_range, uindex_t generation, uindex_t i_processing_element)
-        : id(id), generation(generation), i_processing_element(i_processing_element),
-          grid_range(grid_range), internal() {}
+    Stencil(ID id, UID grid_range, uindex_t generation, uindex_t subgeneration,
+            uindex_t i_processing_element)
+        : id(id), generation(generation), subgeneration(subgeneration),
+          i_processing_element(i_processing_element), grid_range(grid_range), internal() {}
 
     /**
      * \brief Create a new stencil from the raw buffer.
@@ -75,10 +76,10 @@ requires std::semiregular<Cell> &&(stencil_radius >= 1) class Stencil {
      * \param raw A raw array containing cells.
      * \param grid_range The range of the stencil's grid.
      */
-    Stencil(ID id, UID grid_range, uindex_t generation, uindex_t i_processing_element,
-            Cell raw[diameter][diameter])
-        : id(id), generation(generation), i_processing_element(i_processing_element),
-          grid_range(grid_range), internal() {
+    Stencil(ID id, UID grid_range, uindex_t generation, uindex_t subgeneration,
+            uindex_t i_processing_element, Cell raw[diameter][diameter])
+        : id(id), generation(generation), subgeneration(subgeneration),
+          i_processing_element(i_processing_element), grid_range(grid_range), internal() {
 #pragma unroll
         for (uindex_t c = 0; c < diameter; c++) {
 #pragma unroll
@@ -165,6 +166,8 @@ requires std::semiregular<Cell> &&(stencil_radius >= 1) class Stencil {
      * \brief The present generation index of the central cell.
      */
     const uindex_t generation;
+
+    const uindex_t subgeneration;
 
     /**
      * \brief The index of the processing element that calls the transition function.

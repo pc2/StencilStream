@@ -200,7 +200,7 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc> {
             this->get_runtime_sample().add_pass(computation_event);
 
             this->inc_i_generation(std::min(target_i_generation - this->get_i_generation(),
-                                            uindex_t(n_processing_elements)));
+                                            uindex_t(ExecutionKernelImpl::gens_per_pass)));
         }
 
         tile_buffer = read_buffer;

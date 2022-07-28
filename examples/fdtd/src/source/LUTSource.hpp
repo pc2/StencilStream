@@ -24,9 +24,10 @@
 
 class LUTSource {
   public:
-    LUTSource(Parameters const &parameters, uindex_t i_generation) : lut() {
-        for (uindex_t i = 0; i < n_processing_elements / 2; i++) {
-            float current_time = ((i_generation >> 1) + i) * parameters.dt();
+    LUTSource(Parameters const &parameters, uindex_t i_generation)
+        : starting_generation(i_generation), lut() {
+        for (uindex_t i = 0; i < gens_per_pass; i++) {
+            float current_time = (i_generation + i) * parameters.dt();
             lut[i] = calc_source_amplitude(current_time, parameters.t_0(), parameters.tau,
                                            parameters.omega());
         }
@@ -37,5 +38,6 @@ class LUTSource {
     }
 
   private:
-    float lut[n_processing_elements / 2];
+    uindex_t starting_generation;
+    float lut[gens_per_pass];
 };

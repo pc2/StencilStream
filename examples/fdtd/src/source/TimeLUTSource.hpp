@@ -25,9 +25,10 @@
 class TimeLUTSource {
   public:
     TimeLUTSource(Parameters const &parameters, uindex_t i_generation)
-        : time(), tau(parameters.tau), omega(parameters.omega()), t_0(parameters.t_0()) {
-        for (uindex_t i = 0; i < n_processing_elements / 2; i++) {
-            time[i] = (i_generation / 2 + i) * parameters.dt();
+        : starting_generation(i_generation), time(), tau(parameters.tau), omega(parameters.omega()),
+          t_0(parameters.t_0()) {
+        for (uindex_t i = 0; i < gens_per_pass; i++) {
+            time[i] = (i_generation + i) * parameters.dt();
         }
     }
 
@@ -37,7 +38,8 @@ class TimeLUTSource {
     }
 
   private:
-    float time[n_processing_elements / 2];
+    uindex_t starting_generation;
+    float time[gens_per_pass];
     float tau;
     float omega;
     float t_0;

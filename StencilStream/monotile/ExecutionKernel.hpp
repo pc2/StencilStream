@@ -49,7 +49,8 @@ namespace monotile {
  */
 template <TransitionFunction TransFunc, uindex_t n_processing_elements, uindex_t tile_width,
           uindex_t tile_height, typename in_pipe, typename out_pipe>
-requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) class ExecutionKernel {
+requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
+    (n_processing_elements % TransFunc::n_subgenerations == 0) class ExecutionKernel {
   public:
     using Cell = typename TransFunc::Cell;
 
@@ -59,6 +60,8 @@ requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) class E
      * \brief The width and height of the stencil buffer.
      */
     static constexpr uindex_t stencil_diameter = StencilImpl::diameter;
+
+    static constexpr uindex_t gens_per_pass = n_processing_elements / TransFunc::n_subgenerations;
 
     static constexpr uindex_t calc_pipeline_latency(uindex_t grid_height) {
         return n_processing_elements * TransFunc::stencil_radius * (grid_height + 1);
@@ -101,10 +104,11 @@ requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) class E
      * \param grid_height The number of cell rows in the grid.
      * \param halo_value The value of cells outside the grid.
      */
-    ExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t n_generations,
+    ExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t target_i_generation,
                     uindex_1d_t grid_width, uindex_1d_t grid_height, Cell halo_value)
-        : trans_func(trans_func), i_generation(i_generation), n_generations(n_generations),
-          grid_width(grid_width), grid_height(grid_height), halo_value(halo_value) {}
+        : trans_func(trans_func), i_generation(i_generation),
+          target_i_generation(target_i_generation), grid_width(grid_width),
+          grid_height(grid_height), halo_value(halo_value) {}
 
     /**
      * \brief Execute the kernel.
@@ -185,12 +189,14 @@ requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) class E
                     }
                 }
 
-                if (n_generations > i_generation + n_processing_elements ||
-                    i_processing_element < uindex_pes_t(n_generations - i_generation)) {
+                uindex_t pe_generation =
+                    i_generation + i_processing_element / TransFunc::n_subgenerations;
+                uindex_t pe_subgeneration = i_processing_element % TransFunc::n_subgenerations;
+
+                if (pe_generation < target_i_generation) {
                     StencilImpl stencil(ID(c[i_processing_element], r[i_processing_element]),
-                                        UID(grid_width, grid_height),
-                                        i_generation + uindex_t(i_processing_element),
-                                        uindex_t(i_processing_element));
+                                        UID(grid_width, grid_height), pe_generation,
+                                        pe_subgeneration, i_processing_element);
 
                     bool h_halo_mask[stencil_diameter];
                     bool v_halo_mask[stencil_diameter];
@@ -255,7 +261,7 @@ requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) class E
   private:
     TransFunc trans_func;
     uindex_t i_generation;
-    uindex_t n_generations;
+    uindex_t target_i_generation;
     uindex_1d_t grid_width;
     uindex_1d_t grid_height;
     Cell halo_value;

@@ -27,12 +27,13 @@ template <typename MaterialResolver, typename Source> class Kernel {
   public:
     using Cell = typename MaterialResolver::MaterialCell;
     static constexpr uindex_t stencil_radius = 1;
+    static constexpr uindex_t n_subgenerations = 2;
 
     Kernel(Parameters const &parameters, MaterialResolver mat_resolver, Source source)
         : cutoff_generation(), detect_generation(), source_radius_squared(), source_c(), source_r(),
           source_distance_bound(), double_center_cr(), mat_resolver(mat_resolver), source(source) {
-        cutoff_generation = 2 * std::floor(parameters.t_cutoff() / parameters.dt());
-        detect_generation = 2 * std::floor(parameters.t_detect() / parameters.dt());
+        cutoff_generation = std::floor(parameters.t_cutoff() / parameters.dt());
+        detect_generation = std::floor(parameters.t_detect() / parameters.dt());
 
         source_radius_squared = parameters.source_radius / parameters.dx;
         source_radius_squared *= source_radius_squared;
@@ -57,7 +58,7 @@ template <typename MaterialResolver, typename Source> class Kernel {
         CoefMaterial material =
             mat_resolver.get_material_coefficients(stencil, center_distance_score);
 
-        if ((stencil.i_processing_element & 0b1) == 0) {
+        if (stencil.subgeneration == 0) {
             cell.cell.ex *= material.ca;
             cell.cell.ex += material.cb * (stencil[ID(0, 0)].cell.hz - stencil[ID(0, -1)].cell.hz);
 

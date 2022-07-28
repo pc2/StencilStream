@@ -39,14 +39,12 @@ using SimpleCPUExecutorImpl = SimpleCPUExecutor<TransFunc>;
 
 void test_executor_set_input_copy_output(SingleContextExecutorImpl *executor, uindex_t grid_width,
                                          uindex_t grid_height) {
-    executor->set_halo_value(Cell::halo());
-
     buffer<Cell, 2> in_buffer(range<2>(grid_width, grid_height));
     {
         auto in_buffer_ac = in_buffer.get_access<access::mode::discard_write>();
         for (uindex_t c = 0; c < grid_width; c++) {
             for (uindex_t r = 0; r < grid_height; r++) {
-                in_buffer_ac[c][r] = Cell{index_t(c), index_t(r), 0, CellStatus::Normal};
+                in_buffer_ac[c][r] = Cell{index_t(c), index_t(r), 0, 0, CellStatus::Normal};
             }
         }
     }
@@ -62,6 +60,7 @@ void test_executor_set_input_copy_output(SingleContextExecutorImpl *executor, ui
             REQUIRE(out_buffer_ac[c][r].c == c);
             REQUIRE(out_buffer_ac[c][r].r == r);
             REQUIRE(out_buffer_ac[c][r].i_generation == 0);
+            REQUIRE(out_buffer_ac[c][r].i_subgeneration == 0);
             REQUIRE(out_buffer_ac[c][r].status == CellStatus::Normal);
         }
     }
@@ -84,14 +83,12 @@ TEST_CASE("SimpleCPUExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[SimpleCPUE
 
 void test_executor(SingleContextExecutorImpl *executor, uindex_t grid_width, uindex_t grid_height,
                    uindex_t n_generations) {
-    executor->set_halo_value(Cell::halo());
-
     buffer<Cell, 2> in_buffer(range<2>(grid_width, grid_height));
     {
         auto in_buffer_ac = in_buffer.get_access<access::mode::discard_write>();
         for (uindex_t c = 0; c < grid_width; c++) {
             for (uindex_t r = 0; r < grid_height; r++) {
-                in_buffer_ac[c][r] = Cell{index_t(c), index_t(r), 0, CellStatus::Normal};
+                in_buffer_ac[c][r] = Cell{index_t(c), index_t(r), 0, 0, CellStatus::Normal};
             }
         }
     }
@@ -117,6 +114,7 @@ void test_executor(SingleContextExecutorImpl *executor, uindex_t grid_width, uin
                 REQUIRE(out_buffer_ac[c][r].c == c);
                 REQUIRE(out_buffer_ac[c][r].r == r);
                 REQUIRE(out_buffer_ac[c][r].i_generation == n_generations);
+                REQUIRE(out_buffer_ac[c][r].i_subgeneration == 0);
                 REQUIRE(out_buffer_ac[c][r].status == CellStatus::Normal);
             }
         }
@@ -134,6 +132,7 @@ void test_executor(SingleContextExecutorImpl *executor, uindex_t grid_width, uin
                 REQUIRE(out_buffer_ac[c][r].c == c);
                 REQUIRE(out_buffer_ac[c][r].r == r);
                 REQUIRE(out_buffer_ac[c][r].i_generation == 2 * n_generations);
+                REQUIRE(out_buffer_ac[c][r].i_subgeneration == 0);
                 REQUIRE(out_buffer_ac[c][r].status == CellStatus::Normal);
             }
         }
@@ -144,36 +143,36 @@ TEST_CASE("TilingExecutor::run", "[TilingExecutor]") {
     TilingExecutorImpl executor(Cell::halo(), TransFunc());
 
     // single pass
-    test_executor(&executor, tile_width, tile_height, n_processing_elements);
+    test_executor(&executor, tile_width, tile_height, gens_per_pass);
     // single pass, grid smaller than tile
-    test_executor(&executor, tile_width / 2, tile_height / 2, n_processing_elements);
+    test_executor(&executor, tile_width / 2, tile_height / 2, gens_per_pass);
     // single pass, grid bigger than tile
-    test_executor(&executor, tile_width * 2, tile_height * 2, n_processing_elements);
+    test_executor(&executor, tile_width * 2, tile_height * 2, gens_per_pass);
     // single pass, grid bigger slightly bigger than tile
-    test_executor(&executor, tile_width * 1.5, tile_height * 1.5, n_processing_elements);
+    test_executor(&executor, tile_width * 1.5, tile_height * 1.5, gens_per_pass);
 
     // multiple passes
-    test_executor(&executor, tile_width, tile_height, 2 * n_processing_elements);
+    test_executor(&executor, tile_width, tile_height, 2 * gens_per_pass);
     // multiple passes, grid smaller than tile
-    test_executor(&executor, tile_width / 2, tile_height / 2, 2 * n_processing_elements);
+    test_executor(&executor, tile_width / 2, tile_height / 2, 2 * gens_per_pass);
     // multiple passes, grid bigger than tile
-    test_executor(&executor, tile_width * 2, tile_height * 2, 2 * n_processing_elements);
+    test_executor(&executor, tile_width * 2, tile_height * 2, 2 * gens_per_pass);
     // multiple passes, grid bigger slightly bigger than tile
-    test_executor(&executor, tile_width * 1.5, tile_height * 1.5, 2 * n_processing_elements);
+    test_executor(&executor, tile_width * 1.5, tile_height * 1.5, 2 * gens_per_pass);
 }
 
 TEST_CASE("MonotileExecutor::run", "[MonotileExecutor]") {
     MonotileExecutorImpl executor(Cell::halo(), TransFunc());
 
     // single pass
-    test_executor(&executor, tile_width, tile_height, n_processing_elements);
+    test_executor(&executor, tile_width, tile_height, gens_per_pass);
     // single pass, grid smaller than tile
-    test_executor(&executor, tile_width / 2, tile_height / 2, n_processing_elements);
+    test_executor(&executor, tile_width / 2, tile_height / 2, gens_per_pass);
 
     // multiple passes
-    test_executor(&executor, tile_width, tile_height, 2 * n_processing_elements);
+    test_executor(&executor, tile_width, tile_height, 2 * gens_per_pass);
     // multiple passes, grid smaller than tile
-    test_executor(&executor, tile_width / 2, tile_height / 2, 2 * n_processing_elements);
+    test_executor(&executor, tile_width / 2, tile_height / 2, 2 * gens_per_pass);
 }
 
 TEST_CASE("SimpleCPUExecutor::run", "[SimpleCPUExecutor]") {
@@ -183,14 +182,12 @@ TEST_CASE("SimpleCPUExecutor::run", "[SimpleCPUExecutor]") {
 
 void test_snapshotting(SingleContextExecutorImpl *executor, uindex_t grid_width,
                        uindex_t grid_height, uindex_t n_generations, uindex_t delta_n_generations) {
-    executor->set_halo_value(Cell::halo());
-
     buffer<Cell, 2> in_buffer(range<2>(grid_width, grid_height));
     {
         auto in_buffer_ac = in_buffer.get_access<access::mode::discard_write>();
         for (uindex_t c = 0; c < grid_width; c++) {
             for (uindex_t r = 0; r < grid_height; r++) {
-                in_buffer_ac[c][r] = Cell{index_t(c), index_t(r), 0, CellStatus::Normal};
+                in_buffer_ac[c][r] = Cell{index_t(c), index_t(r), 0, 0, CellStatus::Normal};
             }
         }
     }
@@ -207,6 +204,7 @@ void test_snapshotting(SingleContextExecutorImpl *executor, uindex_t grid_width,
                 REQUIRE(ac[c][r].c == c);
                 REQUIRE(ac[c][r].r == r);
                 REQUIRE(ac[c][r].i_generation == i_generation);
+                REQUIRE(ac[c][r].i_subgeneration == 0);
                 REQUIRE(ac[c][r].status == CellStatus::Normal);
             }
         }
@@ -229,40 +227,31 @@ TEST_CASE("TilingExecutor::run_with_snapshots", "[TilingExecutor]") {
     TilingExecutorImpl executor(Cell::halo(), TransFunc());
 
     // snapshot distance divides number of generations
-    test_snapshotting(&executor, tile_width, tile_height, 4 * n_processing_elements,
-                      n_processing_elements);
+    test_snapshotting(&executor, tile_width, tile_height, 4 * gens_per_pass, gens_per_pass);
     // snapshot distance does not divide number of generations
-    test_snapshotting(&executor, tile_width, tile_height, 2.5 * n_processing_elements,
-                      n_processing_elements);
+    test_snapshotting(&executor, tile_width, tile_height, 2.5 * gens_per_pass, gens_per_pass);
     // snapshot distance is not a multiple of pipeline length
-    test_snapshotting(&executor, tile_width, tile_height, 2 * n_processing_elements,
-                      0.5 * n_processing_elements);
+    test_snapshotting(&executor, tile_width, tile_height, 2 * gens_per_pass, 0.5 * gens_per_pass);
 }
 
 TEST_CASE("MonotileExecutor::run_with_snapshots", "[MonotileExecutor]") {
     MonotileExecutorImpl executor(Cell::halo(), TransFunc());
 
     // snapshot distance divides number of generations
-    test_snapshotting(&executor, tile_width, tile_height, 4 * n_processing_elements,
-                      n_processing_elements);
+    test_snapshotting(&executor, tile_width, tile_height, 4 * gens_per_pass, gens_per_pass);
     // snapshot distance does not divide number of generations
-    test_snapshotting(&executor, tile_width, tile_height, 2.5 * n_processing_elements,
-                      n_processing_elements);
+    test_snapshotting(&executor, tile_width, tile_height, 2.5 * gens_per_pass, gens_per_pass);
     // snapshot distance is not a multiple of pipeline length
-    test_snapshotting(&executor, tile_width, tile_height, 2 * n_processing_elements,
-                      0.5 * n_processing_elements);
+    test_snapshotting(&executor, tile_width, tile_height, 2 * gens_per_pass, 0.5 * gens_per_pass);
 }
 
 TEST_CASE("SimpleCPUExecutor::run_with_snapshots", "[SimpleCPUExecutor]") {
     SimpleCPUExecutorImpl executor(Cell::halo(), TransFunc());
 
     // snapshot distance divides number of generations
-    test_snapshotting(&executor, tile_width, tile_height, 4 * n_processing_elements,
-                      n_processing_elements);
+    test_snapshotting(&executor, tile_width, tile_height, 4 * gens_per_pass, gens_per_pass);
     // snapshot distance does not divide number of generations
-    test_snapshotting(&executor, tile_width, tile_height, 2.5 * n_processing_elements,
-                      n_processing_elements);
+    test_snapshotting(&executor, tile_width, tile_height, 2.5 * gens_per_pass, gens_per_pass);
     // snapshot distance is not a multiple of pipeline length
-    test_snapshotting(&executor, tile_width, tile_height, 2 * n_processing_elements,
-                      0.5 * n_processing_elements);
+    test_snapshotting(&executor, tile_width, tile_height, 2 * gens_per_pass, 0.5 * gens_per_pass);
 }

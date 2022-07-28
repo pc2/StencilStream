@@ -45,7 +45,7 @@ namespace tiling {
  */
 template <TransitionFunction TransFunc, uindex_t n_processing_elements, uindex_t output_tile_width,
           uindex_t output_tile_height, typename in_pipe, typename out_pipe>
-class ExecutionKernel {
+requires(n_processing_elements % TransFunc::n_subgenerations == 0) class ExecutionKernel {
   public:
     using Cell = typename TransFunc::Cell;
 
@@ -55,6 +55,8 @@ class ExecutionKernel {
      * \brief The width and height of the stencil buffer.
      */
     static constexpr uindex_t stencil_diameter = StencilImpl::diameter;
+
+    static constexpr uindex_t gens_per_pass = n_processing_elements / TransFunc::n_subgenerations;
 
     static constexpr uindex_t halo_radius = TransFunc::stencil_radius * n_processing_elements;
 
@@ -111,10 +113,9 @@ class ExecutionKernel {
                     uindex_t grid_c_offset, uindex_t grid_r_offset, uindex_t grid_width,
                     uindex_t grid_height, Cell halo_value)
         : trans_func(trans_func), i_generation(i_generation),
-          n_generations(
-              std::min(uindex_t(n_processing_elements), target_i_generation - i_generation)),
-          grid_c_offset(grid_c_offset), grid_r_offset(grid_r_offset), grid_width(grid_width),
-          grid_height(grid_height), halo_value(halo_value) {
+          target_i_generation(target_i_generation), grid_c_offset(grid_c_offset),
+          grid_r_offset(grid_r_offset), grid_width(grid_width), grid_height(grid_height),
+          halo_value(halo_value) {
         assert(grid_c_offset % output_tile_width == 0);
         assert(grid_r_offset % output_tile_height == 0);
     }
@@ -203,14 +204,17 @@ class ExecutionKernel {
                     }
                 }
 
+                uindex_t pe_generation =
+                    (i_generation + i_processing_element / TransFunc::n_subgenerations);
+                uindex_t pe_subgeneration = i_processing_element % TransFunc::n_subgenerations;
                 index_t output_grid_c = input_grid_c - index_t(TransFunc::stencil_radius);
                 index_t output_grid_r = input_grid_r - index_t(TransFunc::stencil_radius);
                 StencilImpl stencil(ID(output_grid_c, output_grid_r), UID(grid_width, grid_height),
-                                    i_generation + i_processing_element.to_uint64(),
+                                    pe_generation, pe_subgeneration,
                                     i_processing_element.to_uint64(),
                                     stencil_buffer[i_processing_element]);
 
-                if (i_processing_element.to_uint64() < n_generations) {
+                if (pe_generation < target_i_generation) {
                     carry = trans_func(stencil);
                 } else {
                     carry = stencil_buffer[i_processing_element][TransFunc::stencil_radius]
@@ -239,7 +243,7 @@ class ExecutionKernel {
   private:
     TransFunc trans_func;
     uindex_t i_generation;
-    uindex_t n_generations;
+    uindex_t target_i_generation;
     uindex_t grid_c_offset;
     uindex_t grid_r_offset;
     uindex_t grid_width;
