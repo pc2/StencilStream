@@ -26,8 +26,8 @@
 #include <numeric>
 
 namespace stencil {
-template <typename TransFunc, uindex_t n_processing_elements = 1, uindex_t tile_width = 1024,
-          uindex_t tile_height = 1024, uindex_t word_size = 64>
+template <TransitionFunction TransFunc, uindex_t n_processing_elements = 1,
+          uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t word_size = 64>
 /**
  * \brief An executor that follows \ref monotile.
  *
@@ -67,8 +67,8 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc> {
      * \param trans_func An instance of the transition function type.
      */
     MonotileExecutor(Cell halo_value, TransFunc trans_func)
-        : SingleContextExecutor<TransFunc>(halo_value, trans_func), tile_buffer(cl::sycl::range<1>(1)),
-          grid_range(1, 1) {
+        : SingleContextExecutor<TransFunc>(halo_value, trans_func),
+          tile_buffer(cl::sycl::range<1>(1)), grid_range(1, 1) {
         auto ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
         ac[0][0].value = this->get_halo_value();
     }

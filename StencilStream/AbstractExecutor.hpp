@@ -21,6 +21,7 @@
 #include "GenericID.hpp"
 #include "Index.hpp"
 #include "RuntimeSample.hpp"
+#include "TransitionFunction.hpp"
 #include <CL/sycl.hpp>
 #include <functional>
 
@@ -54,7 +55,7 @@ namespace stencil {
  *
  * \tparam TransFunc The type of the transition function.
  */
-template <typename TransFunc> class AbstractExecutor {
+template <TransitionFunction TransFunc> class AbstractExecutor {
   public:
     using Cell = typename TransFunc::Cell;
 

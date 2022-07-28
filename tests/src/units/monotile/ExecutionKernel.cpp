@@ -90,9 +90,7 @@ struct IncompletePipelineKernel {
     using Cell = uint8_t;
     static constexpr uindex_t stencil_radius = 1;
 
-    Cell operator()(Stencil<IncompletePipelineKernel> const &stencil) const {
-        return stencil[ID(0, 0)] + 1;
-    }
+    Cell operator()(Stencil<uint8_t, 1> const &stencil) const { return stencil[ID(0, 0)] + 1; }
 };
 
 TEST_CASE("monotile::ExecutionKernel: Incomplete Pipeline with i_generation != 0",

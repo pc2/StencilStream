@@ -46,7 +46,7 @@ template <typename MaterialResolver, typename Source> class Kernel {
         double_center_cr = parameters.grid_range()[0];
     }
 
-    Cell operator()(Stencil<Kernel<MaterialResolver, Source>> const &stencil) const {
+    Cell operator()(Stencil<Cell, 1> const &stencil) const {
         Cell cell = stencil[ID(0, 0)];
 
         index_t c = stencil.id.c;
@@ -80,7 +80,7 @@ template <typename MaterialResolver, typename Source> class Kernel {
                     interp_factor = 1.0;
                 }
 
-                cell.cell.hz += interp_factor * source.template get_source_amplitude(stencil);
+                cell.cell.hz += interp_factor * source.get_source_amplitude(stencil);
             }
 
             if (stencil.generation > detect_generation) {

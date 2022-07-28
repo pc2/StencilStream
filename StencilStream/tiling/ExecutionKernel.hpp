@@ -23,6 +23,7 @@
 #include "../Index.hpp"
 #include "../Padded.hpp"
 #include "../Stencil.hpp"
+#include "../TransitionFunction.hpp"
 #include <optional>
 
 namespace stencil {
@@ -42,21 +43,18 @@ namespace tiling {
  * \tparam in_pipe The pipe to read from.
  * \tparam out_pipe The pipe to write to.
  */
-template <typename TransFunc, uindex_t n_processing_elements, uindex_t output_tile_width,
+template <TransitionFunction TransFunc, uindex_t n_processing_elements, uindex_t output_tile_width,
           uindex_t output_tile_height, typename in_pipe, typename out_pipe>
 class ExecutionKernel {
   public:
     using Cell = typename TransFunc::Cell;
 
-    static_assert(std::is_invocable_r<Cell, TransFunc const, Stencil<TransFunc> const &>::value);
-    static_assert(TransFunc::stencil_radius >= 1);
-
-    using StencilImpl = Stencil<TransFunc>;
+    using StencilImpl = Stencil<Cell, TransFunc::stencil_radius>;
 
     /**
      * \brief The width and height of the stencil buffer.
      */
-    static constexpr uindex_t stencil_diameter = Stencil<TransFunc>::diameter;
+    static constexpr uindex_t stencil_diameter = StencilImpl::diameter;
 
     static constexpr uindex_t halo_radius = TransFunc::stencil_radius * n_processing_elements;
 

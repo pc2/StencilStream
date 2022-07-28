@@ -35,7 +35,8 @@ namespace stencil {
  *
  * \tparam TransFunc The type of the transition function.
  */
-template <typename TransFunc> class SingleContextExecutor : public AbstractExecutor<TransFunc> {
+template <TransitionFunction TransFunc>
+class SingleContextExecutor : public AbstractExecutor<TransFunc> {
   public:
     using Cell = typename TransFunc::Cell;
 
@@ -46,7 +47,8 @@ template <typename TransFunc> class SingleContextExecutor : public AbstractExecu
      * new generations.
      */
     SingleContextExecutor(Cell halo_value, TransFunc trans_func)
-        : AbstractExecutor<TransFunc>(halo_value, trans_func), device(std::nullopt), context(std::nullopt) {}
+        : AbstractExecutor<TransFunc>(halo_value, trans_func), device(std::nullopt),
+          context(std::nullopt) {}
 
     /**
      * \brief Return the configured queue.

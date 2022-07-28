@@ -22,7 +22,8 @@
 #include "Stencil.hpp"
 
 namespace stencil {
-template <typename TransFunc> class SimpleCPUExecutor : public SingleContextExecutor<TransFunc> {
+template <TransitionFunction TransFunc>
+class SimpleCPUExecutor : public SingleContextExecutor<TransFunc> {
   public:
     using Cell = typename TransFunc::Cell;
 
@@ -49,7 +50,8 @@ template <typename TransFunc> class SimpleCPUExecutor : public SingleContextExec
 
                 cgh.parallel_for<class SimpleCPUExecutionKernel>(
                     in_ac.get_range(), [=](cl::sycl::id<2> idx) {
-                        Stencil<TransFunc> stencil(idx, in_ac.get_range(), gen, i_generation);
+                        Stencil<Cell, TransFunc::stencil_radius> stencil(idx, in_ac.get_range(),
+                                                                         gen, i_generation);
 
                         for (index_t delta_c = -TransFunc::stencil_radius;
                              delta_c <= index_t(TransFunc::stencil_radius); delta_c++) {

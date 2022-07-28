@@ -22,9 +22,9 @@
 
 struct ConwayKernel {
     using Cell = bool;
-    static constexpr stencil::index_t stencil_radius = 1;
+    static constexpr stencil::uindex_t stencil_radius = 1;
 
-    bool operator()(stencil::Stencil<ConwayKernel> const &stencil) const {
+    bool operator()(stencil::Stencil<Cell, stencil_radius> const &stencil) const {
         stencil::ID idx = stencil.id;
 
         uint8_t alive_neighbours = 0;

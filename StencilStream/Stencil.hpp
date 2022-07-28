@@ -37,14 +37,13 @@ namespace stencil {
  * points to the central cell. `UID` is unsigned and the column and row axes are within the range of
  * [0 : 2*radius + 1). Therefore, (0,0) points to the north-western corner of the stencil.
  */
-template <typename TransFunc> class Stencil {
+template <typename Cell, uindex_t stencil_radius>
+requires std::semiregular<Cell> &&(stencil_radius >= 1) class Stencil {
   public:
-    using Cell = typename TransFunc::Cell;
     /**
      * \brief The diameter (aka width and height) of the stencil buffer.
      */
-    static constexpr uindex_t diameter = 2 * TransFunc::stencil_radius + 1;
-    static_assert(diameter >= 3);
+    static constexpr uindex_t diameter = 2 * stencil_radius + 1;
 
     static constexpr unsigned long bits_stencil = std::bit_width(diameter);
     using index_stencil_t = ac_int<bits_stencil, true>;
@@ -95,7 +94,7 @@ template <typename TransFunc> class Stencil {
      * Since the indices in `id` are signed, the origin of this index operator is the central cell.
      */
     Cell const &operator[](ID id) const {
-        return internal[id.c + TransFunc::stencil_radius][id.r + TransFunc::stencil_radius];
+        return internal[id.c + stencil_radius][id.r + stencil_radius];
     }
 
     /**
@@ -103,9 +102,7 @@ template <typename TransFunc> class Stencil {
      *
      * Since the indices in `id` are signed, the origin of this index operator is the central cell.
      */
-    Cell &operator[](ID id) {
-        return internal[id.c + TransFunc::stencil_radius][id.r + TransFunc::stencil_radius];
-    }
+    Cell &operator[](ID id) { return internal[id.c + stencil_radius][id.r + stencil_radius]; }
 
     /**
      * \brief Access a cell in the stencil.
@@ -113,8 +110,8 @@ template <typename TransFunc> class Stencil {
      * Since the indices in `id` are signed, the origin of this index operator is the central cell.
      */
     Cell const &operator[](StencilID id) const {
-        return internal[id.c + index_stencil_t(TransFunc::stencil_radius)]
-                       [id.r + index_stencil_t(TransFunc::stencil_radius)];
+        return internal[id.c + index_stencil_t(stencil_radius)]
+                       [id.r + index_stencil_t(stencil_radius)];
     }
 
     /**
@@ -123,8 +120,8 @@ template <typename TransFunc> class Stencil {
      * Since the indices in `id` are signed, the origin of this index operator is the central cell.
      */
     Cell &operator[](StencilID id) {
-        return internal[id.c + index_stencil_t(TransFunc::stencil_radius)]
-                       [id.r + index_stencil_t(TransFunc::stencil_radius)];
+        return internal[id.c + index_stencil_t(stencil_radius)]
+                       [id.r + index_stencil_t(stencil_radius)];
     }
 
     /**
@@ -200,5 +197,4 @@ template <typename TransFunc> class Stencil {
   private:
     Cell internal[diameter][diameter];
 };
-
 } // namespace stencil

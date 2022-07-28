@@ -18,24 +18,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../Parameters.hpp"
-#include "../defines.hpp"
-#include "SourceFunction.hpp"
+#include "Index.hpp"
+#include "Stencil.hpp"
+#include <concepts>
 
-class LUTSource {
-  public:
-    LUTSource(Parameters const &parameters, uindex_t i_generation) : lut() {
-        for (uindex_t i = 0; i < n_processing_elements / 2; i++) {
-            float current_time = ((i_generation >> 1) + i) * parameters.dt();
-            lut[i] = calc_source_amplitude(current_time, parameters.t_0(), parameters.tau,
-                                           parameters.omega());
-        }
-    }
-
-    template <typename Cell> float get_source_amplitude(Stencil<Cell, 1> const &stencil) const {
-        return lut[stencil.i_processing_element >> 1];
-    }
-
-  private:
-    float lut[n_processing_elements / 2];
+namespace stencil {
+template <typename T>
+concept TransitionFunction = std::semiregular<typename T::Cell> &&
+                             std::same_as<decltype(T::stencil_radius), const uindex_t> &&
+                             (T::stencil_radius >= 1) &&
+                             requires(T trans_func,
+                                      Stencil<typename T::Cell, T::stencil_radius> const &stencil) {
+    { trans_func(stencil) } -> std::convertible_to<typename T::Cell>;
 };
+
+} // namespace stencil

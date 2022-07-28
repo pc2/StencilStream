@@ -96,7 +96,7 @@ struct HaloHandlingKernel {
     using Cell = bool;
     static constexpr uindex_t stencil_radius = 1;
 
-    bool operator()(Stencil<HaloHandlingKernel> const &stencil) const {
+    bool operator()(Stencil<bool, 1> const &stencil) const {
         ID idx = stencil.id;
         bool is_valid = true;
         if (idx.c == 0) {
@@ -146,9 +146,7 @@ struct IncompletePipelineKernel {
     using Cell = uint8_t;
     static constexpr uindex_t stencil_radius = 1;
 
-    uint8_t operator()(Stencil<IncompletePipelineKernel> const &stencil) const {
-        return stencil[ID(0, 0)] + 1;
-    }
+    uint8_t operator()(Stencil<uint8_t, 1> const &stencil) const { return stencil[ID(0, 0)] + 1; }
 };
 
 TEST_CASE("Incomplete Pipeline with i_generation != 0", "[tiling::ExecutionKernel]") {

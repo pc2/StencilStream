@@ -42,8 +42,8 @@ namespace stencil {
  * \tparam tile_height The number of rows in a tile and maximum number of rows in a grid. Defaults
  * to 1024.
  */
-template <typename TransFunc, uindex_t n_processing_elements = 1, uindex_t tile_width = 1024,
-          uindex_t tile_height = 1024>
+template <TransitionFunction TransFunc, uindex_t n_processing_elements = 1,
+          uindex_t tile_width = 1024, uindex_t tile_height = 1024>
 class TilingExecutor : public SingleContextExecutor<TransFunc> {
   public:
     using Cell = typename TransFunc::Cell;
@@ -52,14 +52,8 @@ class TilingExecutor : public SingleContextExecutor<TransFunc> {
      * \brief The number of cells that have be added to the tile in every direction to form the
      * complete input.
      */
-    static_assert(n_processing_elements <=
-                  std::numeric_limits<uindex_t>::max() / TransFunc::stencil_radius);
 
     static constexpr uindex_t halo_radius = TransFunc::stencil_radius * n_processing_elements;
-
-    static_assert(halo_radius <= std::numeric_limits<uindex_t>::max() / 2);
-    static_assert(tile_width <= std::numeric_limits<uindex_t>::max() - 2 * halo_radius);
-    static_assert(tile_height <= std::numeric_limits<uindex_t>::max() - 2 * halo_radius);
 
     /**
      * \brief Create a new stencil executor.

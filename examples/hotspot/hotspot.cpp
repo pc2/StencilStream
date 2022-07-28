@@ -68,8 +68,8 @@ struct HotspotKernel {
 
     float Rx_1, Ry_1, Rz_1, Cap_1;
 
-    Cell operator()(Stencil<HotspotKernel> const &temp) const {
-        using StencilID = typename Stencil<HotspotKernel>::StencilID;
+    Cell operator()(Stencil<HotspotCell, 1> const &temp) const {
+        using StencilID = typename Stencil<HotspotCell, 1>::StencilID;
 
         ID idx = temp.id;
         index_t c = idx.c;

@@ -55,8 +55,7 @@ class RenderResolver {
         }
     }
 
-    template <typename Kernel>
-    CoefMaterial get_material_coefficients(Stencil<Kernel> const &stencil,
+    CoefMaterial get_material_coefficients(Stencil<MaterialCell, 1> const &stencil,
                                            index_t distance_score) const {
 #pragma unroll
         for (uindex_ring_t i = 0; i < max_n_rings + 1; i++) {
