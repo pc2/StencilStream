@@ -30,9 +30,9 @@ struct ConwayKernel {
 
         uint8_t alive_neighbours = 0;
 #pragma unroll
-        for (stencil::index_t c = -stencil_radius; c <= stencil_radius; c++) {
+        for (stencil::index_t c = -1; c <= 1; c++) {
 #pragma unroll
-            for (stencil::index_t r = -stencil_radius; r <= stencil_radius; r++) {
+            for (stencil::index_t r = -1; r <= 1; r++) {
                 if (stencil[stencil::ID(c, r)] && !(c == 0 && r == 0)) {
                     alive_neighbours += 1;
                 }
