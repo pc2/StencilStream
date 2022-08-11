@@ -14,10 +14,6 @@ ifdef OPTIMIZE
 	ARGS += -O3
 endif
 
-ifdef EBROOTGCC
-	ARGS += --gcc-toolchain=$(EBROOTGCC)
-endif
-
 UNIT_ARGS = $(ARGS) -fintelfpga
 UNIT_SOURCES = $(wildcard src/units/*.cpp src/units/*/*.cpp)
 UNIT_OBJECTS = $(patsubst %.cpp,%.o,$(UNIT_SOURCES))
