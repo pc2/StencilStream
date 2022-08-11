@@ -19,48 +19,32 @@
  */
 #pragma once
 #include "Concepts.hpp"
-#include <array>
-#include <cassert>
+
+#include <variant>
 
 namespace stencil {
 namespace tdvs {
 
-template <typename V, uindex_t max_n_generations> class ValueBuffer {
-  public:
-    ValueBuffer(std::array<V, max_n_generations> values) : values(values) {}
-
-    using LocalState = ValueBuffer<V, max_n_generations>;
-
-    ValueBuffer prepare_local_state() const { return *this; }
-
-    V get_value(uindex_t i) const { return values[i]; }
-
-  private:
-    std::array<V, max_n_generations> values;
-};
-
-template <ValueFunction F, uindex_t max_n_generations> class OfflineValueSupplier {
-  public:
-    OfflineValueSupplier(F function) : function(function) {}
-
-    using Value = typename F::Value;
-
-    using GlobalState = ValueBuffer<Value, max_n_generations>;
-
-    GlobalState prepare_global_state(uindex_t i_generation, uindex_t n_generations) const {
-        assert(n_generations <= max_n_generations);
-
-        std::array<Value, max_n_generations> values;
-        for (uindex_t i = 0; i < n_generations; i++) {
-            values[i] = function(i + i_generation);
-        }
-
-        return GlobalState(values);
+class NoneSupplier {
+public:
+    using Value = std::monostate;
+    using LocalState = NoneSupplier;
+    using GlobalState = NoneSupplier;
+    
+    NoneSupplier prepare_global_state(uindex_t i_generation, uindex_t n_generation) const {
+        return NoneSupplier();
     }
 
-  private:
-    F function;
+    NoneSupplier prepare_local_state() const {
+        return NoneSupplier();
+    }
+
+    std::monostate get_value(uindex_t i) const {
+        return std::monostate();
+    }
 };
 
-} // namespace tdvs
-} // namespace stencil
+static_assert(HostState<NoneSupplier>);
+
+}
+}
