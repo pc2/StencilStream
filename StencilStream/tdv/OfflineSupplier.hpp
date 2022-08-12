@@ -23,7 +23,7 @@
 #include <cassert>
 
 namespace stencil {
-namespace tdvs {
+namespace tdv {
 
 template <typename V, uindex_t max_n_generations> class ValueBuffer {
   public:
@@ -62,5 +62,5 @@ template <ValueFunction F, uindex_t max_n_generations> class OfflineValueSupplie
     F function;
 };
 
-} // namespace tdvs
+} // namespace tdv
 } // namespace stencil

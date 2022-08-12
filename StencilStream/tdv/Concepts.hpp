@@ -18,33 +18,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "Concepts.hpp"
-
-#include <variant>
+#include "../Index.hpp"
+#include <concepts>
 
 namespace stencil {
-namespace tdvs {
+namespace tdv {
 
-class NoneSupplier {
-public:
-    using Value = std::monostate;
-    using LocalState = NoneSupplier;
-    using GlobalState = NoneSupplier;
-    
-    NoneSupplier prepare_global_state(uindex_t i_generation, uindex_t n_generation) const {
-        return NoneSupplier();
-    }
+template<typename V>
+concept TimeDependentValue = std::copyable<V>;
 
-    NoneSupplier prepare_local_state() const {
-        return NoneSupplier();
-    }
-
-    std::monostate get_value(uindex_t i) const {
-        return std::monostate();
-    }
+template <typename F>
+concept ValueFunction = requires(F function, uindex_t i_generation) {
+    requires TimeDependentValue<typename F::Value>;
+    { function(i_generation) } -> std::convertible_to<typename F::Value>;
 };
 
-static_assert(HostState<NoneSupplier>);
+template <typename T>
+concept LocalState = TimeDependentValue<typename T::Value> && std::copyable<T> &&
+    requires(T const &local_state, uindex_t i) {
+    { local_state.get_value(i) } -> std::convertible_to<typename T::Value>;
+};
 
-}
-}
+template <typename T>
+concept GlobalState = LocalState<typename T::LocalState> && std::copyable<T> &&
+    requires(T const &global_state) {
+    { global_state.prepare_local_state() } -> std::convertible_to<typename T::LocalState>;
+};
+
+template <typename T>
+concept HostState = GlobalState<typename T::GlobalState> &&
+    requires(T const &supplier, uindex_t i_generation, uindex_t n_generations) {
+    {
+        supplier.prepare_global_state(i_generation, n_generations)
+        } -> std::convertible_to<typename T::GlobalState>;
+};
+
+} // namespace tdv
+} // namespace stencil

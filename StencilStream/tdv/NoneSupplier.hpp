@@ -18,37 +18,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../Index.hpp"
-#include <concepts>
+#include "Concepts.hpp"
+
+#include <variant>
 
 namespace stencil {
-namespace tdvs {
+namespace tdv {
 
-template <typename F>
-concept ValueFunction = requires(F function, uindex_t i_generation) {
-    requires std::semiregular<typename F::Value>;
-    { function(i_generation) } -> std::convertible_to<typename F::Value>;
+class NoneSupplier {
+  public:
+    using Value = std::monostate;
+    using LocalState = NoneSupplier;
+    using GlobalState = NoneSupplier;
+
+    NoneSupplier prepare_global_state(uindex_t i_generation, uindex_t n_generation) const {
+        return NoneSupplier();
+    }
+
+    NoneSupplier prepare_local_state() const { return NoneSupplier(); }
+
+    std::monostate get_value(uindex_t i) const { return std::monostate(); }
 };
 
-template <typename T>
-concept LocalState = std::copyable<typename T::Value> && std::copyable<T> &&
-    requires(T const &local_state, uindex_t i) {
-    { local_state.get_value(i) } -> std::convertible_to<typename T::Value>;
-};
+static_assert(HostState<NoneSupplier>);
 
-template <typename T>
-concept GlobalState = LocalState<typename T::LocalState> && std::copyable<T> &&
-    requires(T const &global_state) {
-    { global_state.prepare_local_state() } -> std::convertible_to<typename T::LocalState>;
-};
-
-template <typename T>
-concept HostState = GlobalState<typename T::GlobalState> &&
-    requires(T const &supplier, uindex_t i_generation, uindex_t n_generations) {
-    {
-        supplier.prepare_global_state(i_generation, n_generations)
-        } -> std::convertible_to<typename T::GlobalState>;
-};
-
-} // namespace tdvs
+} // namespace tdv
 } // namespace stencil

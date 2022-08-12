@@ -21,7 +21,7 @@
 #include "Concepts.hpp"
 
 namespace stencil {
-namespace tdvs {
+namespace tdv {
 
 template <ValueFunction F> class OnDemandState {
   public:
@@ -53,5 +53,5 @@ template <ValueFunction F> class OnDemandSupplier {
     F function;
 };
 
-} // namespace tdvs
+} // namespace tdv
 } // namespace stencil
