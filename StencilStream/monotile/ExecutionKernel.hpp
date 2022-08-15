@@ -22,8 +22,10 @@
 #include "../Helpers.hpp"
 #include "../Index.hpp"
 #include "../Padded.hpp"
-#include "../Stencil.hpp"
-#include "../TransitionFunction.hpp"
+#include "../tdv/Concepts.hpp"
+#include "../tdv/Stencil.hpp"
+
+#include <CL/sycl/accessor.hpp>
 #include <optional>
 
 namespace stencil {
@@ -47,14 +49,21 @@ namespace monotile {
  * \tparam in_pipe The pipe to read from.
  * \tparam out_pipe The pipe to write to.
  */
-template <TransitionFunction TransFunc, uindex_t n_processing_elements, uindex_t tile_width,
-          uindex_t tile_height, typename in_pipe, typename out_pipe>
+template <tdv::TransitionFunction TransFunc, tdv::GlobalState TDVGlobalState,
+          uindex_t n_processing_elements, uindex_t tile_width, uindex_t tile_height,
+          typename in_pipe, typename out_pipe>
 requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
     (n_processing_elements % TransFunc::n_subgenerations == 0) class ExecutionKernel {
   public:
     using Cell = typename TransFunc::Cell;
 
-    using StencilImpl = Stencil<Cell, TransFunc::stencil_radius>;
+    using TDVLocalState = typename TDVGlobalState::LocalState;
+    using TDV = typename TDVLocalState::Value;
+    static_assert(std::is_same<typename TransFunc::TimeDependentValue, TDV>());
+
+    using GlobalStateAccessor = cl::sycl::accessor<TDVGlobalState, 1, cl::sycl::access::mode::read>;
+
+    using StencilImpl = tdv::Stencil<Cell, TransFunc::stencil_radius, TDV>;
 
     /**
      * \brief The width and height of the stencil buffer.
@@ -105,10 +114,11 @@ requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
      * \param halo_value The value of cells outside the grid.
      */
     ExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t target_i_generation,
-                    uindex_1d_t grid_width, uindex_1d_t grid_height, Cell halo_value)
+                    uindex_1d_t grid_width, uindex_1d_t grid_height, Cell halo_value,
+                    GlobalStateAccessor global_state)
         : trans_func(trans_func), i_generation(i_generation),
           target_i_generation(target_i_generation), grid_width(grid_width),
-          grid_height(grid_height), halo_value(halo_value) {}
+          grid_height(grid_height), halo_value(halo_value), global_state(global_state) {}
 
     /**
      * \brief Execute the kernel.
@@ -116,6 +126,7 @@ requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
     void operator()() const {
         [[intel::fpga_register]] index_1d_t c[n_processing_elements];
         [[intel::fpga_register]] index_1d_t r[n_processing_elements];
+        TDVLocalState local_state = global_state[0].prepare_local_state();
 
         // Initializing (output) column and row counters.
         index_1d_t prev_c = 0;
@@ -190,13 +201,17 @@ requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
                 }
 
                 uindex_t pe_generation =
-                    i_generation + i_processing_element / TransFunc::n_subgenerations;
-                uindex_t pe_subgeneration = i_processing_element % TransFunc::n_subgenerations;
+                    (i_generation + i_processing_element / TransFunc::n_subgenerations).to_uint();
+                uindex_t pe_subgeneration =
+                    (i_processing_element % TransFunc::n_subgenerations).to_uint();
 
                 if (pe_generation < target_i_generation) {
-                    StencilImpl stencil(ID(c[i_processing_element], r[i_processing_element]),
-                                        UID(grid_width, grid_height), pe_generation,
-                                        pe_subgeneration, i_processing_element);
+                    StencilImpl stencil(
+                        ID(c[i_processing_element], r[i_processing_element]),
+                        UID(grid_width, grid_height), pe_generation, pe_subgeneration,
+                        i_processing_element,
+                        local_state.get_value(
+                            (i_processing_element / TransFunc::n_subgenerations).to_uint()));
 
                     bool h_halo_mask[stencil_diameter];
                     bool v_halo_mask[stencil_diameter];
@@ -265,6 +280,7 @@ requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
     uindex_1d_t grid_width;
     uindex_1d_t grid_height;
     Cell halo_value;
+    GlobalStateAccessor global_state;
 };
 
 } // namespace monotile

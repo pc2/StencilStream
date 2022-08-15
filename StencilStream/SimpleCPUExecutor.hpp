@@ -21,16 +21,16 @@
 #include "SingleContextExecutor.hpp"
 
 #include "tdv/Executor.hpp"
+#include "tdv/NoneSupplier.hpp"
 #include "tdv/Stencil.hpp"
 #include "tdv/TransitionFunctionWrapper.hpp"
-#include "tdv/NoneSupplier.hpp"
 
 namespace stencil {
 namespace tdv {
 
 template <tdv::TransitionFunction TransFunc, tdv::HostState TDVS>
 class SimpleCPUExecutor : public SingleContextExecutor<TransFunc>,
-                             public tdv::Executor<TransFunc, TDVS> {
+                          public tdv::Executor<TransFunc, TDVS> {
   public:
     using Cell = typename TransFunc::Cell;
 
@@ -140,8 +140,7 @@ class SimpleCPUExecutor : public SingleContextExecutor<TransFunc>,
 
 template <TransitionFunction TransFunc>
 class SimpleCPUExecutor
-    : public tdv::SimpleCPUExecutor<tdv::TransitionFunctionWrapper<TransFunc>,
-                                       tdv::NoneSupplier> {
+    : public tdv::SimpleCPUExecutor<tdv::TransitionFunctionWrapper<TransFunc>, tdv::NoneSupplier> {
   public:
     using Cell = typename TransFunc::Cell;
 
@@ -149,4 +148,5 @@ class SimpleCPUExecutor
         : tdv::SimpleCPUExecutor<tdv::TransitionFunctionWrapper<TransFunc>, tdv::NoneSupplier>(
               halo_value, trans_func, tdv::NoneSupplier()) {}
 };
+
 } // namespace stencil

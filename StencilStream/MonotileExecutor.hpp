@@ -23,11 +23,17 @@
 #pragma once
 #include "SingleContextExecutor.hpp"
 #include "monotile/ExecutionKernel.hpp"
+#include "tdv/Executor.hpp"
+#include "tdv/NoneSupplier.hpp"
+#include "tdv/TransitionFunctionWrapper.hpp"
+
 #include <numeric>
 
 namespace stencil {
-template <TransitionFunction TransFunc, uindex_t n_processing_elements = 1,
-          uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t word_size = 64>
+namespace tdv {
+template <tdv::TransitionFunction TransFunc, tdv::HostState TDVS,
+          uindex_t n_processing_elements = 1, uindex_t tile_width = 1024,
+          uindex_t tile_height = 1024, uindex_t word_size = 64>
 /**
  * \brief An executor that follows \ref monotile.
  *
@@ -43,7 +49,7 @@ template <TransitionFunction TransFunc, uindex_t n_processing_elements = 1,
  * \tparam tile_height The number of rows in a tile and maximum number of rows in a grid. Defaults
  * to 1024.
  */
-class MonotileExecutor : public SingleContextExecutor<TransFunc> {
+class MonotileExecutor : public SingleContextExecutor<TransFunc>, tdv::Executor<TransFunc, TDVS> {
   public:
     using Cell = typename TransFunc::Cell;
 
@@ -66,8 +72,9 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc> {
      *
      * \param trans_func An instance of the transition function type.
      */
-    MonotileExecutor(Cell halo_value, TransFunc trans_func)
-        : SingleContextExecutor<TransFunc>(halo_value, trans_func),
+    MonotileExecutor(Cell halo_value, TransFunc trans_func, TDVS tdvs)
+        : SingleContextExecutor<TransFunc>(halo_value, trans_func), tdv::Executor<TransFunc, TDVS>(
+                                                                        tdvs),
           tile_buffer(cl::sycl::range<1>(1)), grid_range(1, 1) {
         auto ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
         ac[0][0].value = this->get_halo_value();
@@ -128,8 +135,8 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc> {
         using in_pipe = cl::sycl::pipe<class monotile_in_pipe, Cell>;
         using out_pipe = cl::sycl::pipe<class monotile_out_pipe, Cell>;
         using ExecutionKernelImpl =
-            monotile::ExecutionKernel<TransFunc, n_processing_elements, tile_width, tile_height,
-                                      in_pipe, out_pipe>;
+            monotile::ExecutionKernel<TransFunc, typename TDVS::GlobalState, n_processing_elements,
+                                      tile_width, tile_height, in_pipe, out_pipe>;
         using uindex_2d_t = typename ExecutionKernelImpl::uindex_2d_t;
 
         cl::sycl::queue input_queue = this->new_queue(true);
@@ -144,6 +151,9 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc> {
         cl::sycl::buffer<IOWord, 1> write_buffer = cl::sycl::range<1>(n_words);
 
         while (this->get_i_generation() < target_i_generation) {
+            uindex_t delta_n_generations = std::min(target_i_generation - this->get_i_generation(),
+                                                    uindex_t(ExecutionKernelImpl::gens_per_pass));
+
             input_queue.submit([&](cl::sycl::handler &cgh) {
                 auto ac = read_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
 
@@ -164,10 +174,20 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc> {
                 });
             });
 
+            cl::sycl::buffer<typename TDVS::GlobalState, 1> tdv_global_state(cl::sycl::range<1>(1));
+            {
+                auto ac =
+                    tdv_global_state.template get_access<cl::sycl::access::mode::discard_write>();
+                ac[0] = this->get_tdvs().prepare_global_state(this->get_i_generation(),
+                                                              delta_n_generations);
+            }
+
             cl::sycl::event computation_event = work_queue.submit([&](cl::sycl::handler &cgh) {
+                auto ac = tdv_global_state.template get_access<cl::sycl::access::mode::read>(cgh);
+
                 cgh.single_task<class MonotileExecutionKernel>(ExecutionKernelImpl(
                     this->get_trans_func(), this->get_i_generation(), target_i_generation,
-                    grid_width, grid_height, this->get_halo_value()));
+                    grid_width, grid_height, this->get_halo_value(), ac));
             });
 
             output_queue.submit([&](cl::sycl::handler &cgh) {
@@ -199,8 +219,7 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc> {
 
             this->get_runtime_sample().add_pass(computation_event);
 
-            this->inc_i_generation(std::min(target_i_generation - this->get_i_generation(),
-                                            uindex_t(ExecutionKernelImpl::gens_per_pass)));
+            this->inc_i_generation(delta_n_generations);
         }
 
         tile_buffer = read_buffer;
@@ -210,4 +229,21 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc> {
     cl::sycl::buffer<IOWord, 1> tile_buffer;
     UID grid_range;
 };
+
+} // namespace tdv
+
+template <TransitionFunction TransFunc, uindex_t n_processing_elements = 1,
+          uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t word_size = 64>
+class MonotileExecutor
+    : public tdv::MonotileExecutor<tdv::TransitionFunctionWrapper<TransFunc>, tdv::NoneSupplier,
+                                   n_processing_elements, tile_width, tile_height, word_size> {
+  public:
+    using Cell = typename TransFunc::Cell;
+
+    MonotileExecutor(Cell halo_value, TransFunc trans_func)
+        : tdv::MonotileExecutor<tdv::TransitionFunctionWrapper<TransFunc>, tdv::NoneSupplier,
+                                n_processing_elements, tile_width, tile_height, word_size>(
+              halo_value, trans_func, tdv::NoneSupplier()) {}
+};
+
 } // namespace stencil

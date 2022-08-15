@@ -71,12 +71,12 @@ TEST_CASE("TilingExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[TilingExecuto
     TilingExecutorImpl executor(Cell::halo(), TransFunc());
     test_executor_set_input_copy_output(&executor, grid_width, grid_height);
 }
-
+*/
 TEST_CASE("MonotileExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[MonotileExecutor]") {
     MonotileExecutorImpl executor(Cell::halo(), TransFunc());
     test_executor_set_input_copy_output(&executor, tile_width - 1, tile_height - 1);
 }
-*/
+
 TEST_CASE("SimpleCPUExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[SimpleCPUExecutor]") {
     SimpleCPUExecutorImpl executor(Cell::halo(), TransFunc());
     test_executor_set_input_copy_output(&executor, tile_width - 1, tile_height - 1);
@@ -161,7 +161,7 @@ TEST_CASE("TilingExecutor::run", "[TilingExecutor]") {
     // multiple passes, grid bigger slightly bigger than tile
     test_executor(&executor, tile_width * 1.5, tile_height * 1.5, 2 * gens_per_pass);
 }
-
+*/
 TEST_CASE("MonotileExecutor::run", "[MonotileExecutor]") {
     MonotileExecutorImpl executor(Cell::halo(), TransFunc());
 
@@ -175,7 +175,7 @@ TEST_CASE("MonotileExecutor::run", "[MonotileExecutor]") {
     // multiple passes, grid smaller than tile
     test_executor(&executor, tile_width / 2, tile_height / 2, 2 * gens_per_pass);
 }
-*/
+
 TEST_CASE("SimpleCPUExecutor::run", "[SimpleCPUExecutor]") {
     SimpleCPUExecutorImpl executor(Cell::halo(), TransFunc());
     test_executor(&executor, grid_width, grid_height, 32);
@@ -234,7 +234,7 @@ TEST_CASE("TilingExecutor::run_with_snapshots", "[TilingExecutor]") {
     // snapshot distance is not a multiple of pipeline length
     test_snapshotting(&executor, tile_width, tile_height, 2 * gens_per_pass, 0.5 * gens_per_pass);
 }
-
+*/
 TEST_CASE("MonotileExecutor::run_with_snapshots", "[MonotileExecutor]") {
     MonotileExecutorImpl executor(Cell::halo(), TransFunc());
 
@@ -245,7 +245,7 @@ TEST_CASE("MonotileExecutor::run_with_snapshots", "[MonotileExecutor]") {
     // snapshot distance is not a multiple of pipeline length
     test_snapshotting(&executor, tile_width, tile_height, 2 * gens_per_pass, 0.5 * gens_per_pass);
 }
-*/
+
 TEST_CASE("SimpleCPUExecutor::run_with_snapshots", "[SimpleCPUExecutor]") {
     SimpleCPUExecutorImpl executor(Cell::halo(), TransFunc());
 

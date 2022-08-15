@@ -18,6 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <StencilStream/monotile/ExecutionKernel.hpp>
+#include <StencilStream/tdv/NoneSupplier.hpp>
+
 #include <res/HostPipe.hpp>
 #include <res/TransFuncs.hpp>
 #include <res/catch.hpp>
@@ -26,14 +28,14 @@
 using namespace stencil;
 using namespace std;
 using namespace cl::sycl;
-
+/*
 void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t target_i_generation) {
     using TransFunc = HostTransFunc<stencil_radius>;
     using in_pipe = HostPipe<class MonotileExecutionKernelInPipeID, Cell>;
     using out_pipe = HostPipe<class MonotileExecutionKernelOutPipeID, Cell>;
     using TestExecutionKernel =
-        monotile::ExecutionKernel<TransFunc, n_processing_elements, tile_width, tile_height,
-                                  in_pipe, out_pipe>;
+        monotile::ExecutionKernel<TransFunc, tdv::NoneSupplier, n_processing_elements, tile_width,
+tile_height, in_pipe, out_pipe>;
 
     for (uindex_t c = 0; c < grid_width; c++) {
         for (uindex_t r = 0; r < grid_height; r++) {
@@ -122,4 +124,4 @@ TEST_CASE("monotile::ExecutionKernel: Incomplete Pipeline with i_generation != 0
     }
 
     REQUIRE(out_pipe::empty());
-}
+}*/
