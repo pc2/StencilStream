@@ -20,23 +20,20 @@
 #pragma once
 #include "SingleContextExecutor.hpp"
 
-#include "tdv/Executor.hpp"
-#include "tdv/NoneSupplier.hpp"
-#include "tdv/Stencil.hpp"
-#include "tdv/TransitionFunctionWrapper.hpp"
-
 namespace stencil {
-namespace tdv {
 
-template <tdv::TransitionFunction TransFunc, tdv::HostState TDVS>
-class SimpleCPUExecutor : public SingleContextExecutor<TransFunc>,
-                          public tdv::Executor<TransFunc, TDVS> {
+template <TransitionFunction TransFunc, tdv::HostState TDVS = tdv::NoneSupplier>
+class SimpleCPUExecutor : public SingleContextExecutor<TransFunc, TDVS> {
   public:
     using Cell = typename TransFunc::Cell;
 
+    SimpleCPUExecutor(Cell halo_value, TransFunc trans_func)
+        : SingleContextExecutor<TransFunc>(halo_value, trans_func), grid(cl::sycl::range<2>(1, 1)) {
+        this->select_cpu();
+    }
+
     SimpleCPUExecutor(Cell halo_value, TransFunc trans_func, TDVS tdvs)
-        : SingleContextExecutor<TransFunc>(halo_value, trans_func), tdv::Executor<TransFunc, TDVS>(
-                                                                        tdvs),
+        : SingleContextExecutor<TransFunc>(halo_value, trans_func, tdvs),
           grid(cl::sycl::range<2>(1, 1)) {
         this->select_cpu();
     }
@@ -69,7 +66,7 @@ class SimpleCPUExecutor : public SingleContextExecutor<TransFunc>,
                         in_ac.get_range(), [=](cl::sycl::id<2> idx) {
                             TDVLocalState local_state = global_state.prepare_local_state();
                             TDV tdv = local_state.get_value(0);
-                            tdv::Stencil<Cell, TransFunc::stencil_radius, TDV> stencil(
+                            Stencil<Cell, TransFunc::stencil_radius, TDV> stencil(
                                 idx, in_ac.get_range(), gen, i_subgeneration, 0, tdv);
 
                             for (index_t delta_c = -TransFunc::stencil_radius;
@@ -134,19 +131,6 @@ class SimpleCPUExecutor : public SingleContextExecutor<TransFunc>,
 
   private:
     cl::sycl::buffer<Cell, 2> grid;
-};
-
-} // namespace tdv
-
-template <TransitionFunction TransFunc>
-class SimpleCPUExecutor
-    : public tdv::SimpleCPUExecutor<tdv::TransitionFunctionWrapper<TransFunc>, tdv::NoneSupplier> {
-  public:
-    using Cell = typename TransFunc::Cell;
-
-    SimpleCPUExecutor(Cell halo_value, TransFunc trans_func)
-        : tdv::SimpleCPUExecutor<tdv::TransitionFunctionWrapper<TransFunc>, tdv::NoneSupplier>(
-              halo_value, trans_func, tdv::NoneSupplier()) {}
 };
 
 } // namespace stencil

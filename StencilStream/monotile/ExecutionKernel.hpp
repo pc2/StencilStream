@@ -18,13 +18,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
+#include "../Concepts.hpp"
 #include "../GenericID.hpp"
 #include "../Helpers.hpp"
 #include "../Index.hpp"
 #include "../Padded.hpp"
-
-#include "../tdv/Concepts.hpp"
-#include "../tdv/Stencil.hpp"
 
 #include <CL/sycl/accessor.hpp>
 #include <optional>
@@ -50,7 +48,7 @@ namespace monotile {
  * \tparam in_pipe The pipe to read from.
  * \tparam out_pipe The pipe to write to.
  */
-template <tdv::TransitionFunction TransFunc, tdv::GlobalState TDVGlobalState,
+template <TransitionFunction TransFunc, tdv::GlobalState TDVGlobalState,
           uindex_t n_processing_elements, uindex_t tile_width, uindex_t tile_height,
           typename in_pipe, typename out_pipe>
 requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
@@ -64,7 +62,7 @@ requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
 
     using GlobalStateAccessor = cl::sycl::accessor<TDVGlobalState, 1, cl::sycl::access::mode::read>;
 
-    using StencilImpl = tdv::Stencil<Cell, TransFunc::stencil_radius, TDV>;
+    using StencilImpl = Stencil<Cell, TransFunc::stencil_radius, TDV>;
 
     /**
      * \brief The width and height of the stencil buffer.

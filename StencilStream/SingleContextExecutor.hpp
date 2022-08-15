@@ -35,8 +35,8 @@ namespace stencil {
  *
  * \tparam TransFunc The type of the transition function.
  */
-template <TransitionFunction TransFunc>
-class SingleContextExecutor : public AbstractExecutor<TransFunc> {
+template <TransitionFunction TransFunc, tdv::HostState TDVS = tdv::NoneSupplier>
+class SingleContextExecutor : public AbstractExecutor<TransFunc, TDVS> {
   public:
     using Cell = typename TransFunc::Cell;
 
@@ -48,6 +48,10 @@ class SingleContextExecutor : public AbstractExecutor<TransFunc> {
      */
     SingleContextExecutor(Cell halo_value, TransFunc trans_func)
         : AbstractExecutor<TransFunc>(halo_value, trans_func), device(std::nullopt),
+          context(std::nullopt) {}
+
+    SingleContextExecutor(Cell halo_value, TransFunc trans_func, TDVS tdvs)
+        : AbstractExecutor<TransFunc>(halo_value, trans_func, tdvs), device(std::nullopt),
           context(std::nullopt) {}
 
     /**

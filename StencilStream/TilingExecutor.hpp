@@ -22,14 +22,10 @@
 #include "tiling/ExecutionKernel.hpp"
 #include "tiling/Grid.hpp"
 
-#include "tdv/Executor.hpp"
-#include "tdv/NoneSupplier.hpp"
-#include "tdv/TransitionFunctionWrapper.hpp"
-
 #include <algorithm>
 
 namespace stencil {
-namespace tdv {
+
 /**
  * \brief The default stencil executor.
  *
@@ -48,11 +44,10 @@ namespace tdv {
  * \tparam tile_height The number of rows in a tile and maximum number of rows in a grid. Defaults
  * to 1024.
  */
-template <tdv::TransitionFunction TransFunc, tdv::HostState TDVS,
+template <TransitionFunction TransFunc, tdv::HostState TDVS = tdv::NoneSupplier,
           uindex_t n_processing_elements = 1, uindex_t tile_width = 1024,
           uindex_t tile_height = 1024>
-class TilingExecutor : public SingleContextExecutor<TransFunc>,
-                       public tdv::Executor<TransFunc, TDVS> {
+class TilingExecutor : public SingleContextExecutor<TransFunc, TDVS> {
   public:
     using Cell = typename TransFunc::Cell;
 
@@ -69,9 +64,12 @@ class TilingExecutor : public SingleContextExecutor<TransFunc>,
      * \param halo_value The value of cells in the grid halo.
      * \param trans_func An instance of the transition function type.
      */
+    TilingExecutor(Cell halo_value, TransFunc trans_func)
+        : SingleContextExecutor<TransFunc>(halo_value, trans_func),
+          input_grid(cl::sycl::buffer<Cell, 2>(cl::sycl::range<2>(0, 0))) {}
+
     TilingExecutor(Cell halo_value, TransFunc trans_func, TDVS tdvs)
-        : SingleContextExecutor<TransFunc>(halo_value, trans_func), tdv::Executor<TransFunc, TDVS>(
-                                                                        tdvs),
+        : SingleContextExecutor<TransFunc>(halo_value, trans_func, tdvs),
           input_grid(cl::sycl::buffer<Cell, 2>(cl::sycl::range<2>(0, 0))) {}
 
     void set_input(cl::sycl::buffer<Cell, 2> input_buffer) override {
@@ -122,7 +120,8 @@ class TilingExecutor : public SingleContextExecutor<TransFunc>,
             cl::sycl::buffer<typename TDVS::GlobalState, 1> global_state_buffer(
                 cl::sycl::range<1>(1));
             {
-                auto ac = global_state_buffer.template get_access<cl::sycl::access::mode::discard_write>();
+                auto ac = global_state_buffer
+                              .template get_access<cl::sycl::access::mode::discard_write>();
                 ac[0] = this->get_tdvs().prepare_global_state(this->get_i_generation(),
                                                               delta_n_generations);
             }
@@ -358,21 +357,6 @@ class TilingExecutor : public SingleContextExecutor<TransFunc>,
     using GridImpl = tiling::Grid<Cell, tile_width, tile_height, halo_radius>;
     using TileImpl = typename GridImpl::Tile;
     GridImpl input_grid;
-};
-} // namespace tdv
-
-template <TransitionFunction TransFunc, uindex_t n_processing_elements = 1,
-          uindex_t tile_width = 1024, uindex_t tile_height = 1024>
-class TilingExecutor
-    : public tdv::TilingExecutor<tdv::TransitionFunctionWrapper<TransFunc>, tdv::NoneSupplier,
-                                 n_processing_elements, tile_width, tile_height> {
-  public:
-    using Cell = typename TransFunc::Cell;
-
-    TilingExecutor(Cell halo_value, TransFunc trans_func)
-        : tdv::TilingExecutor<tdv::TransitionFunctionWrapper<TransFunc>, tdv::NoneSupplier,
-                              n_processing_elements, tile_width, tile_height>(
-              halo_value, trans_func, tdv::NoneSupplier()) {}
 };
 
 } // namespace stencil

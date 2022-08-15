@@ -23,6 +23,7 @@
 #include "Index.hpp"
 #include <bit>
 #include <sycl/ext/intel/ac_types/ac_int.hpp>
+#include <variant>
 
 namespace stencil {
 
@@ -37,7 +38,7 @@ namespace stencil {
  * points to the central cell. `UID` is unsigned and the column and row axes are within the range of
  * [0 : 2*radius + 1). Therefore, (0,0) points to the north-western corner of the stencil.
  */
-template <typename Cell, uindex_t stencil_radius>
+template <typename Cell, uindex_t stencil_radius, typename TimeDependentValue = std::monostate>
 requires std::semiregular<Cell> &&(stencil_radius >= 1) class Stencil {
   public:
     /**
@@ -62,9 +63,10 @@ requires std::semiregular<Cell> &&(stencil_radius >= 1) class Stencil {
      * \param grid_range The range of the stencil's grid.
      */
     Stencil(ID id, UID grid_range, uindex_t generation, uindex_t subgeneration,
-            uindex_t i_processing_element)
+            uindex_t i_processing_element, TimeDependentValue tdv)
         : id(id), generation(generation), subgeneration(subgeneration),
-          i_processing_element(i_processing_element), grid_range(grid_range), internal() {}
+          i_processing_element(i_processing_element), grid_range(grid_range), tdv(tdv), internal() {
+    }
 
     /**
      * \brief Create a new stencil from the raw buffer.
@@ -77,9 +79,9 @@ requires std::semiregular<Cell> &&(stencil_radius >= 1) class Stencil {
      * \param grid_range The range of the stencil's grid.
      */
     Stencil(ID id, UID grid_range, uindex_t generation, uindex_t subgeneration,
-            uindex_t i_processing_element, Cell raw[diameter][diameter])
+            uindex_t i_processing_element, TimeDependentValue tdv, Cell raw[diameter][diameter])
         : id(id), generation(generation), subgeneration(subgeneration),
-          i_processing_element(i_processing_element), grid_range(grid_range), internal() {
+          i_processing_element(i_processing_element), grid_range(grid_range), tdv(tdv), internal() {
 #pragma unroll
         for (uindex_t c = 0; c < diameter; c++) {
 #pragma unroll
@@ -196,6 +198,8 @@ requires std::semiregular<Cell> &&(stencil_radius >= 1) class Stencil {
      * \brief The number of columns and rows of the grid.
      */
     const UID grid_range;
+
+    const TimeDependentValue tdv;
 
   private:
     Cell internal[diameter][diameter];

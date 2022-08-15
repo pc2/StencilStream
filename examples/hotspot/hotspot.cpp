@@ -64,6 +64,8 @@ using HotspotCell = vec<FLOAT, 2>;
 
 struct HotspotKernel {
     using Cell = HotspotCell;
+    using TimeDependentValue = std::monostate;
+    
     static constexpr uindex_t stencil_radius = 1;
     static constexpr uindex_t n_subgenerations = 1;
 

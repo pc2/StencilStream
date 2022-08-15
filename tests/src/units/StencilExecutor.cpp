@@ -21,7 +21,7 @@
 #include <StencilStream/MonotileExecutor.hpp>
 #include <StencilStream/SimpleCPUExecutor.hpp>
 #include <StencilStream/TilingExecutor.hpp>
-#include <StencilStream/tdv/TransitionFunctionWrapper.hpp>
+#include <StencilStream/tdv/NoneSupplier.hpp>
 #include <res/TransFuncs.hpp>
 #include <res/catch.hpp>
 #include <res/constants.hpp>
@@ -31,11 +31,11 @@ using namespace stencil;
 using namespace cl::sycl;
 
 using TransFunc = FPGATransFunc<stencil_radius>;
-using SingleContextExecutorImpl = SingleContextExecutor<tdv::TransitionFunctionWrapper<TransFunc>>;
+using SingleContextExecutorImpl = SingleContextExecutor<TransFunc>;
 using TilingExecutorImpl =
-    TilingExecutor<TransFunc, n_processing_elements, tile_width, tile_height>;
+    TilingExecutor<TransFunc, tdv::NoneSupplier, n_processing_elements, tile_width, tile_height>;
 using MonotileExecutorImpl =
-    MonotileExecutor<TransFunc, n_processing_elements, tile_width, tile_height>;
+    MonotileExecutor<TransFunc, tdv::NoneSupplier, n_processing_elements, tile_width, tile_height>;
 using SimpleCPUExecutorImpl = SimpleCPUExecutor<TransFunc>;
 
 void test_executor_set_input_copy_output(SingleContextExecutorImpl *executor, uindex_t grid_width,

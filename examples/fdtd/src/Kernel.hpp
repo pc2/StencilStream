@@ -26,6 +26,8 @@
 template <typename MaterialResolver, typename Source> class Kernel {
   public:
     using Cell = typename MaterialResolver::MaterialCell;
+    using TimeDependentValue = std::monostate;
+
     static constexpr uindex_t stencil_radius = 1;
     static constexpr uindex_t n_subgenerations = 2;
 

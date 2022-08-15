@@ -43,6 +43,8 @@ struct Cell {
 template <stencil::uindex_t radius> class FPGATransFunc {
   public:
     using Cell = Cell;
+    using TimeDependentValue = std::monostate;
+
     static constexpr stencil::uindex_t stencil_radius = radius;
     static constexpr stencil::uindex_t n_subgenerations = 2;
 
@@ -90,6 +92,8 @@ template <stencil::uindex_t radius> class FPGATransFunc {
 template <stencil::uindex_t radius> class HostTransFunc {
   public:
     using Cell = Cell;
+    using TimeDependentValue = std::monostate;
+
     static constexpr stencil::uindex_t stencil_radius = radius;
     static constexpr stencil::uindex_t n_subgenerations = 2;
 

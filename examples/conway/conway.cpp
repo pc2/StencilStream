@@ -22,6 +22,8 @@
 
 struct ConwayKernel {
     using Cell = bool;
+    using TimeDependentValue = std::monostate;
+    
     static constexpr stencil::uindex_t stencil_radius = 1;
     static constexpr stencil::uindex_t n_subgenerations = 1;
 

@@ -18,10 +18,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
+#include "Concepts.hpp"
 #include "GenericID.hpp"
 #include "Index.hpp"
 #include "RuntimeSample.hpp"
-#include "TransitionFunction.hpp"
+
+#include "tdv/NoneSupplier.hpp"
+
 #include <CL/sycl.hpp>
 #include <functional>
 
@@ -55,8 +58,12 @@ namespace stencil {
  *
  * \tparam TransFunc The type of the transition function.
  */
-template <TransitionFunction TransFunc> class AbstractExecutor {
+template <TransitionFunction TransFunc, tdv::HostState TDVS = tdv::NoneSupplier>
+class AbstractExecutor {
   public:
+    static_assert(std::is_same<typename TransFunc::TimeDependentValue,
+                               typename TDVS::GlobalState::LocalState::Value>());
+
     using Cell = typename TransFunc::Cell;
 
     using SnapshotHandler = std::function<void(cl::sycl::buffer<Cell, 2>, uindex_t)>;
@@ -67,7 +74,17 @@ template <TransitionFunction TransFunc> class AbstractExecutor {
      * new generations.
      */
     AbstractExecutor(Cell halo_value, TransFunc trans_func)
-        : halo_value(halo_value), trans_func(trans_func), i_generation(0), runtime_sample() {}
+        : halo_value(halo_value), trans_func(trans_func), i_generation(0), runtime_sample(),
+          tdvs() {}
+
+    /**
+     * \brief Create a new abstract executor.
+     * \param trans_func The instance of the transition function that should be used to calculate
+     * new generations.
+     */
+    AbstractExecutor(Cell halo_value, TransFunc trans_func, TDVS tdvs)
+        : halo_value(halo_value), trans_func(trans_func), i_generation(0), runtime_sample(),
+          tdvs(tdvs) {}
 
     /**
      * \brief Compute the next generations of the grid and store it internally.
@@ -165,10 +182,17 @@ template <TransitionFunction TransFunc> class AbstractExecutor {
      */
     RuntimeSample &get_runtime_sample() { return runtime_sample; }
 
+    TDVS &get_tdvs() { return tdvs; }
+
+    TDVS const &get_tdvs() const { return tdvs; }
+
+    void set_tdvs(TDVS new_tdvs) { tdvs = new_tdvs; }
+
   private:
     Cell halo_value;
     TransFunc trans_func;
     uindex_t i_generation;
     RuntimeSample runtime_sample;
+    TDVS tdvs;
 };
 } // namespace stencil

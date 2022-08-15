@@ -28,14 +28,14 @@ using StencilID = typename StencilImpl::StencilID;
 using StencilUID = typename StencilImpl::StencilUID;
 
 TEST_CASE("Stencil::diameter", "[Stencil]") {
-    StencilImpl stencil(ID(0, 0), UID(42, 42), 0, 0, 0);
+    StencilImpl stencil(ID(0, 0), UID(42, 42), 0, 0, 0, std::monostate());
 
     REQUIRE(stencil.diameter == StencilImpl::diameter);
     REQUIRE(stencil.diameter == 2 * stencil_radius + 1);
 };
 
 TEST_CASE("Stencil::operator[](ID)", "[Stencil]") {
-    StencilImpl stencil(ID(0, 0), UID(42, 42), 0, 0, 0);
+    StencilImpl stencil(ID(0, 0), UID(42, 42), 0, 0, 0, std::monostate());
 
     for (index_t c = -stencil_radius; c <= index_t(stencil_radius); c++) {
         for (index_t r = -stencil_radius; r <= index_t(stencil_radius); r++) {
@@ -51,7 +51,7 @@ TEST_CASE("Stencil::operator[](ID)", "[Stencil]") {
 };
 
 TEST_CASE("Stencil::operator[](UID)", "[Stencil]") {
-    StencilImpl stencil(ID(0, 0), UID(42, 42), 0, 0, 0);
+    StencilImpl stencil(ID(0, 0), UID(42, 42), 0, 0, 0, std::monostate());
 
     for (uindex_t c = 0; c < stencil.diameter; c++) {
         for (uindex_t r = 0; r < stencil.diameter; r++) {
@@ -67,7 +67,7 @@ TEST_CASE("Stencil::operator[](UID)", "[Stencil]") {
 };
 
 TEST_CASE("Stencil::operator[](StencilID)", "[Stencil]") {
-    StencilImpl stencil(ID(0, 0), UID(42, 42), 0, 0, 0);
+    StencilImpl stencil(ID(0, 0), UID(42, 42), 0, 0, 0, std::monostate());
 
     for (index_t c = -stencil_radius; c <= index_t(stencil_radius); c++) {
         for (index_t r = -stencil_radius; r <= index_t(stencil_radius); r++) {
@@ -83,7 +83,7 @@ TEST_CASE("Stencil::operator[](StencilID)", "[Stencil]") {
 };
 
 TEST_CASE("Stencil::operator[](StencilUID)", "[Stencil]") {
-    StencilImpl stencil(ID(0, 0), UID(42, 42), 0, 0, 0);
+    StencilImpl stencil(ID(0, 0), UID(42, 42), 0, 0, 0, std::monostate());
 
     for (uindex_t c = 0; c < stencil.diameter; c++) {
         for (uindex_t r = 0; r < stencil.diameter; r++) {

@@ -18,29 +18,48 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../Index.hpp"
-#include "../TransitionFunction.hpp"
+#include "Index.hpp"
+#include "Stencil.hpp"
 
 #include <concepts>
 
 namespace stencil {
+
+template <typename T>
+concept TransitionFunction = requires {
+    // cell type
+    requires std::semiregular<typename T::Cell>;
+}
+&&requires {
+    // stencil radius
+    requires std::same_as<decltype(T::stencil_radius), const uindex_t>;
+    requires(T::stencil_radius >= 1);
+}
+&&requires {
+    // number of subgenerations
+    requires std::same_as<decltype(T::n_subgenerations), const uindex_t>;
+}
+&&requires {
+    // time-dependent value
+    requires std::copyable<typename T::TimeDependentValue>;
+}
+&&requires(
+    T trans_func,
+    Stencil<typename T::Cell, T::stencil_radius, typename T::TimeDependentValue> const &stencil) {
+    // update method
+    { trans_func(stencil) } -> std::convertible_to<typename T::Cell>;
+};
+
 namespace tdv {
-
-template <typename V>
-concept TimeDependentValue = std::copyable<V>;
-
-template <typename TransFunc>
-concept TransitionFunction = stencil::TransitionFunction<TransFunc> &&
-    TimeDependentValue<typename TransFunc::TimeDependentValue>;
 
 template <typename F>
 concept ValueFunction = requires(F function, uindex_t i_generation) {
-    requires TimeDependentValue<typename F::Value>;
+    requires std::copyable<typename F::Value>;
     { function(i_generation) } -> std::convertible_to<typename F::Value>;
 };
 
 template <typename T>
-concept LocalState = TimeDependentValue<typename T::Value> && std::copyable<T> &&
+concept LocalState = std::copyable<typename T::Value> && std::copyable<T> &&
     requires(T const &local_state, uindex_t i) {
     { local_state.get_value(i) } -> std::convertible_to<typename T::Value>;
 };
