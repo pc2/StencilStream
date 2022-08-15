@@ -18,26 +18,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../Parameters.hpp"
-#include "../defines.hpp"
-#include "SourceFunction.hpp"
+#include "Parameters.hpp"
+#include "defines.hpp"
 
-class LUTSource {
+class SourceFunction {
   public:
-    LUTSource(Parameters const &parameters, uindex_t i_generation)
-        : starting_generation(i_generation), lut() {
-        for (uindex_t i = 0; i < gens_per_pass; i++) {
-            float current_time = (i_generation + i) * parameters.dt();
-            lut[i] = calc_source_amplitude(current_time, parameters.t_0(), parameters.tau,
-                                           parameters.omega());
-        }
-    }
+    SourceFunction(Parameters const &parameters)
+        : dt(parameters.dt()), t_0(parameters.t_0()), tau(parameters.tau),
+          omega(parameters.omega()) {}
 
-    template <typename Cell> float get_source_amplitude(Stencil<Cell, 1> const &stencil) const {
-        return lut[stencil.i_processing_element >> 1];
+    using Value = float;
+
+    float operator()(uindex_t i_generation) const {
+        float current_time = i_generation * dt;
+        float wave_progress = (current_time - t_0) / tau;
+        return cl::sycl::cos(omega * current_time) *
+               cl::sycl::exp(-1 * wave_progress * wave_progress);
     }
 
   private:
-    uindex_t starting_generation;
-    float lut[gens_per_pass];
+    float dt, t_0, tau, omega;
 };

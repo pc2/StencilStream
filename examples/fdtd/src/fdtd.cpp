@@ -18,6 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Kernel.hpp"
+#include "SourceFunction.hpp"
 #include <deque>
 
 #if MATERIAL == 0
@@ -32,28 +33,27 @@ using MaterialResolver = RenderResolver;
 #endif
 
 #if SOURCE == 0
-    #include "source/OnDemandSource.hpp"
-using Source = OnDemandSource;
+    #include <StencilStream/tdv/OnDemandSupplier.hpp>
+using SourceSupplier = tdv::OnDemandSupplier<SourceFunction>;
 #elif SOURCE == 1
-    #include "source/TimeLUTSource.hpp"
-using Source = TimeLUTSource;
-#elif SOURCE == 2
-    #include "source/LUTSource.hpp"
-using Source = LUTSource;
+    #include <StencilStream/tdv/OfflineSupplier.hpp>
+using SourceSupplier = tdv::OfflineSupplier<SourceFunction, gens_per_pass>;
 #endif
 
-using KernelImpl = Kernel<MaterialResolver, Source>;
+using KernelImpl = Kernel<MaterialResolver>;
 using CellImpl = KernelImpl::Cell;
 
 #if EXECUTOR == 0
     #include <StencilStream/MonotileExecutor.hpp>
-using Executor = MonotileExecutor<KernelImpl, n_processing_elements, tile_width, tile_height>;
+using Executor =
+    MonotileExecutor<KernelImpl, SourceSupplier, n_processing_elements, tile_width, tile_height>;
 #elif EXECUTOR == 1
     #include <StencilStream/TilingExecutor.hpp>
-using Executor = TilingExecutor<KernelImpl, n_processing_elements, tile_width, tile_height>;
+using Executor =
+    TilingExecutor<KernelImpl, SourceSupplier, n_processing_elements, tile_width, tile_height>;
 #elif EXECUTOR == 2
     #include <StencilStream/SimpleCPUExecutor.hpp>
-using Executor = SimpleCPUExecutor<KernelImpl>;
+using Executor = SimpleCPUExecutor<KernelImpl, SourceSupplier>;
 #endif
 
 auto exception_handler = [](cl::sycl::exception_list exceptions) {
@@ -167,10 +167,12 @@ int main(int argc, char **argv) {
         }
     }
 
-    Source source(parameters, 0);
-    KernelImpl kernel(parameters, mat_resolver, source);
+    KernelImpl kernel(parameters, mat_resolver);
 
-    Executor executor(CellImpl::halo(), kernel);
+    SourceFunction source_function(parameters);
+    SourceSupplier source_supplier(source_function);
+
+    Executor executor(CellImpl::halo(), kernel, source_supplier);
     executor.set_input(grid_buffer);
 #ifdef HARDWARE
     executor.select_fpga();
@@ -181,19 +183,15 @@ int main(int argc, char **argv) {
 
     std::cout << "Simulating..." << std::endl;
 
-    while (executor.get_i_generation() < n_timesteps) {
-        source = Source(parameters, executor.get_i_generation());
-        kernel = KernelImpl(parameters, mat_resolver, source);
-        executor.set_trans_func(kernel);
-
-        executor.run(std::min(gens_per_pass, n_timesteps - executor.get_i_generation()));
-
-        if (parameters.interval().has_value() &&
-            executor.get_i_generation() - last_saved_generation >= *(parameters.interval())) {
-            executor.copy_output(grid_buffer);
-            save_frame(grid_buffer, executor.get_i_generation(), CellField::HZ, parameters);
-            last_saved_generation = executor.get_i_generation();
-        }
+    if (parameters.interval().has_value()) {
+        uindex_t interval = parameters.interval().value();
+        auto snapshot_handler = [&](cl::sycl::buffer<CellImpl, 2> cell_buffer,
+                                    uindex_t i_generation) {
+            save_frame(cell_buffer, i_generation, CellField::HZ, parameters);
+        };
+        executor.run_with_snapshots(n_timesteps, interval, snapshot_handler);
+    } else {
+        executor.run(n_timesteps);
     }
 
     std::cout << "Simulation complete!" << std::endl;

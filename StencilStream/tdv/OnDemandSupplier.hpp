@@ -25,6 +25,7 @@ namespace tdv {
 
 template <ValueFunction F> class OnDemandState {
   public:
+    using LocalState = OnDemandState;
     using Value = typename F::Value;
 
     OnDemandState(F function, uindex_t i_generation)

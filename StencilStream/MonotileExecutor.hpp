@@ -69,14 +69,14 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc, TDVS> {
      * \param trans_func An instance of the transition function type.
      */
     MonotileExecutor(Cell halo_value, TransFunc trans_func)
-        : SingleContextExecutor<TransFunc>(halo_value, trans_func),
+        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func),
           tile_buffer(cl::sycl::range<1>(1)), grid_range(1, 1) {
         auto ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
         ac[0][0].value = this->get_halo_value();
     }
 
     MonotileExecutor(Cell halo_value, TransFunc trans_func, TDVS tdvs)
-        : SingleContextExecutor<TransFunc>(halo_value, trans_func, tdvs),
+        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func, tdvs),
           tile_buffer(cl::sycl::range<1>(1)), grid_range(1, 1) {
         auto ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>();
         ac[0][0].value = this->get_halo_value();

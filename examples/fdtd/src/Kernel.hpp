@@ -23,17 +23,17 @@
 #include "material/Material.hpp"
 #include <StencilStream/Stencil.hpp>
 
-template <typename MaterialResolver, typename Source> class Kernel {
+template <typename MaterialResolver> class Kernel {
   public:
     using Cell = typename MaterialResolver::MaterialCell;
-    using TimeDependentValue = std::monostate;
+    using TimeDependentValue = float;
 
     static constexpr uindex_t stencil_radius = 1;
     static constexpr uindex_t n_subgenerations = 2;
 
-    Kernel(Parameters const &parameters, MaterialResolver mat_resolver, Source source)
+    Kernel(Parameters const &parameters, MaterialResolver mat_resolver)
         : cutoff_generation(), detect_generation(), source_radius_squared(), source_c(), source_r(),
-          source_distance_bound(), double_center_cr(), mat_resolver(mat_resolver), source(source) {
+          source_distance_bound(), double_center_cr(), mat_resolver(mat_resolver) {
         cutoff_generation = std::floor(parameters.t_cutoff() / parameters.dt());
         detect_generation = std::floor(parameters.t_detect() / parameters.dt());
 
@@ -49,7 +49,7 @@ template <typename MaterialResolver, typename Source> class Kernel {
         double_center_cr = parameters.grid_range()[0];
     }
 
-    Cell operator()(Stencil<Cell, 1> const &stencil) const {
+    Cell operator()(Stencil<Cell, 1, float> const &stencil) const {
         Cell cell = stencil[ID(0, 0)];
 
         index_t c = stencil.id.c;
@@ -83,7 +83,8 @@ template <typename MaterialResolver, typename Source> class Kernel {
                     interp_factor = 1.0;
                 }
 
-                cell.cell.hz += interp_factor * source.get_source_amplitude(stencil);
+                float source_amplitude = stencil.time_dependent_value;
+                cell.cell.hz += interp_factor * source_amplitude;
             }
 
             if (stencil.generation > detect_generation) {
@@ -102,5 +103,4 @@ template <typename MaterialResolver, typename Source> class Kernel {
     index_t double_center_cr;
 
     MaterialResolver mat_resolver;
-    Source source;
 };

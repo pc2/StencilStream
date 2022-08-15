@@ -47,11 +47,11 @@ class SingleContextExecutor : public AbstractExecutor<TransFunc, TDVS> {
      * new generations.
      */
     SingleContextExecutor(Cell halo_value, TransFunc trans_func)
-        : AbstractExecutor<TransFunc>(halo_value, trans_func), device(std::nullopt),
+        : AbstractExecutor<TransFunc, TDVS>(halo_value, trans_func), device(std::nullopt),
           context(std::nullopt) {}
 
     SingleContextExecutor(Cell halo_value, TransFunc trans_func, TDVS tdvs)
-        : AbstractExecutor<TransFunc>(halo_value, trans_func, tdvs), device(std::nullopt),
+        : AbstractExecutor<TransFunc, TDVS>(halo_value, trans_func, tdvs), device(std::nullopt),
           context(std::nullopt) {}
 
     /**

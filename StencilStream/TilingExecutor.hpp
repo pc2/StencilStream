@@ -65,11 +65,11 @@ class TilingExecutor : public SingleContextExecutor<TransFunc, TDVS> {
      * \param trans_func An instance of the transition function type.
      */
     TilingExecutor(Cell halo_value, TransFunc trans_func)
-        : SingleContextExecutor<TransFunc>(halo_value, trans_func),
+        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func),
           input_grid(cl::sycl::buffer<Cell, 2>(cl::sycl::range<2>(0, 0))) {}
 
     TilingExecutor(Cell halo_value, TransFunc trans_func, TDVS tdvs)
-        : SingleContextExecutor<TransFunc>(halo_value, trans_func, tdvs),
+        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func, tdvs),
           input_grid(cl::sycl::buffer<Cell, 2>(cl::sycl::range<2>(0, 0))) {}
 
     void set_input(cl::sycl::buffer<Cell, 2> input_buffer) override {
@@ -95,7 +95,7 @@ class TilingExecutor : public SingleContextExecutor<TransFunc, TDVS> {
         using feed_out_pipe_2 = cl::sycl::pipe<class feed_out_pipe_2_id, Cell>;
 
         using ExecutionKernelImpl =
-            tiling::ExecutionKernel<TransFunc, TDVS, n_processing_elements, tile_width, tile_height,
+            tiling::ExecutionKernel<TransFunc, typename TDVS::GlobalState, n_processing_elements, tile_width, tile_height,
                                     in_pipe, out_pipe>;
 
         cl::sycl::queue input_queue[5] = {this->new_queue(true), this->new_queue(true),

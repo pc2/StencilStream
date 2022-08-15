@@ -65,8 +65,8 @@ requires std::semiregular<Cell> &&(stencil_radius >= 1) class Stencil {
     Stencil(ID id, UID grid_range, uindex_t generation, uindex_t subgeneration,
             uindex_t i_processing_element, TimeDependentValue tdv)
         : id(id), generation(generation), subgeneration(subgeneration),
-          i_processing_element(i_processing_element), grid_range(grid_range), tdv(tdv), internal() {
-    }
+          i_processing_element(i_processing_element), grid_range(grid_range),
+          time_dependent_value(tdv), internal() {}
 
     /**
      * \brief Create a new stencil from the raw buffer.
@@ -81,7 +81,8 @@ requires std::semiregular<Cell> &&(stencil_radius >= 1) class Stencil {
     Stencil(ID id, UID grid_range, uindex_t generation, uindex_t subgeneration,
             uindex_t i_processing_element, TimeDependentValue tdv, Cell raw[diameter][diameter])
         : id(id), generation(generation), subgeneration(subgeneration),
-          i_processing_element(i_processing_element), grid_range(grid_range), tdv(tdv), internal() {
+          i_processing_element(i_processing_element), grid_range(grid_range),
+          time_dependent_value(tdv), internal() {
 #pragma unroll
         for (uindex_t c = 0; c < diameter; c++) {
 #pragma unroll
@@ -199,7 +200,7 @@ requires std::semiregular<Cell> &&(stencil_radius >= 1) class Stencil {
      */
     const UID grid_range;
 
-    const TimeDependentValue tdv;
+    const TimeDependentValue time_dependent_value;
 
   private:
     Cell internal[diameter][diameter];

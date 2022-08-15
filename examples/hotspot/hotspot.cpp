@@ -65,7 +65,7 @@ using HotspotCell = vec<FLOAT, 2>;
 struct HotspotKernel {
     using Cell = HotspotCell;
     using TimeDependentValue = std::monostate;
-    
+
     static constexpr uindex_t stencil_radius = 1;
     static constexpr uindex_t n_subgenerations = 1;
 
@@ -237,10 +237,11 @@ int main(int argc, char **argv) {
     FLOAT Cap_1 = step / Cap;
 
 #if EXECUTOR == 0
-    using Executor =
-        MonotileExecutor<HotspotKernel, n_processing_elements, tile_width, tile_height>;
+    using Executor = MonotileExecutor<HotspotKernel, tdv::NoneSupplier, n_processing_elements,
+                                      tile_width, tile_height>;
 #elif EXECUTOR == 1
-    using Executor = TilingExecutor<HotspotKernel, n_processing_elements, tile_width, tile_height>;
+    using Executor = TilingExecutor<HotspotKernel, tdv::NoneSupplier, n_processing_elements,
+                                    tile_width, tile_height>;
 #elif EXECUTOR == 2
     using Executor = SimpleCPUExecutor<HotspotKernel>;
 #endif

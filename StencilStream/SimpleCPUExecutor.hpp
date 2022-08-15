@@ -28,12 +28,13 @@ class SimpleCPUExecutor : public SingleContextExecutor<TransFunc, TDVS> {
     using Cell = typename TransFunc::Cell;
 
     SimpleCPUExecutor(Cell halo_value, TransFunc trans_func)
-        : SingleContextExecutor<TransFunc>(halo_value, trans_func), grid(cl::sycl::range<2>(1, 1)) {
+        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func),
+          grid(cl::sycl::range<2>(1, 1)) {
         this->select_cpu();
     }
 
     SimpleCPUExecutor(Cell halo_value, TransFunc trans_func, TDVS tdvs)
-        : SingleContextExecutor<TransFunc>(halo_value, trans_func, tdvs),
+        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func, tdvs),
           grid(cl::sycl::range<2>(1, 1)) {
         this->select_cpu();
     }
@@ -60,7 +61,7 @@ class SimpleCPUExecutor : public SingleContextExecutor<TransFunc, TDVS> {
                     Cell halo_value = this->get_halo_value();
                     TransFunc trans_func = this->get_trans_func();
                     TDVGlobalState global_state =
-                        this->get_tdvs().prepare_global_state(i_generation, 1);
+                        this->get_tdvs().prepare_global_state(gen, 1);
 
                     cgh.parallel_for<class SimpleCPUExecutionKernel>(
                         in_ac.get_range(), [=](cl::sycl::id<2> idx) {

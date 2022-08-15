@@ -26,8 +26,6 @@ material coefficients are retrieved from it. Possible values are:
 
 The 'source' denotes how and where the computations of the source wave amplitude are done. Possible values are:
 * 'od': Compute the current time and source wave amplitudes on-demand with the FPGA.
-* 'time': Compute the source wave amplitudes on-demand with the FPGA, but use a look-up table 
-    to get the time instant of a generation.
 * 'lut': Compute the source wave amplitudes on the host and store them in a lookup table.
 
 StencilStream offers different backends or executors with different architectures or goals. The
@@ -92,12 +90,9 @@ fi
 if [[ "$SOURCE" == "od" ]]
 then
     COMMAND="$COMMAND -DSOURCE=0"
-elif [[ "$SOURCE" == "time" ]]
-then
-    COMMAND="$COMMAND -DSOURCE=1"
 elif [[ "$SOURCE" == "lut" ]]
 then
-    COMMAND="$COMMAND -DSOURCE=2"
+    COMMAND="$COMMAND -DSOURCE=1"
 else
     echo "Unknown source type '$SOURCE'." 1>&2
     VALID_ARGUMENTS=0
