@@ -18,45 +18,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../Index.hpp"
 #include "../TransitionFunction.hpp"
-
-#include <concepts>
+#include "Concepts.hpp"
 
 namespace stencil {
 namespace tdv {
 
-template <typename V>
-concept TimeDependentValue = std::copyable<V>;
+template <TransitionFunction TransFunc, HostState TimeDependentValueSupplier> class Executor {
+    static_assert(
+        std::is_same<typename TransFunc::TimeDependentValue,
+                     typename TimeDependentValueSupplier::GlobalState::LocalState::Value>());
 
-template <typename TransFunc>
-concept TransitionFunction = stencil::TransitionFunction<TransFunc> &&
-    TimeDependentValue<typename TransFunc::TimeDependentValue>;
+  public:
+    Executor(TimeDependentValueSupplier tdvs) : tdvs(tdvs) {}
 
-template <typename F>
-concept ValueFunction = requires(F function, uindex_t i_generation) {
-    requires TimeDependentValue<typename F::Value>;
-    { function(i_generation) } -> std::convertible_to<typename F::Value>;
-};
+    TimeDependentValueSupplier &get_tdvs() { return tdvs; }
 
-template <typename T>
-concept LocalState = TimeDependentValue<typename T::Value> && std::copyable<T> &&
-    requires(T const &local_state, uindex_t i) {
-    { local_state.get_value(i) } -> std::convertible_to<typename T::Value>;
-};
+    TimeDependentValueSupplier const &get_tdvs() const { return tdvs; }
 
-template <typename T>
-concept GlobalState = LocalState<typename T::LocalState> && std::copyable<T> &&
-    requires(T const &global_state) {
-    { global_state.prepare_local_state() } -> std::convertible_to<typename T::LocalState>;
-};
+    void set_tdvs(TimeDependentValueSupplier new_tdvs) { tdvs = new_tdvs; }
 
-template <typename T>
-concept HostState = GlobalState<typename T::GlobalState> &&
-    requires(T const &supplier, uindex_t i_generation, uindex_t n_generations) {
-    {
-        supplier.prepare_global_state(i_generation, n_generations)
-        } -> std::convertible_to<typename T::GlobalState>;
+  private:
+    TimeDependentValueSupplier tdvs;
 };
 
 } // namespace tdv

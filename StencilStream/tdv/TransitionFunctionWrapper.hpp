@@ -18,46 +18,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../Index.hpp"
 #include "../TransitionFunction.hpp"
-
-#include <concepts>
+#include "Concepts.hpp"
+#include <variant>
 
 namespace stencil {
 namespace tdv {
+template <stencil::TransitionFunction TransFunc>
+class TransitionFunctionWrapper : public TransFunc {
+  public:
+    using Cell = typename TransFunc::Cell;
+    using TimeDependentValue = std::monostate;
+    static constexpr uindex_t stencil_radius = TransFunc::stencil_radius;
 
-template <typename V>
-concept TimeDependentValue = std::copyable<V>;
-
-template <typename TransFunc>
-concept TransitionFunction = stencil::TransitionFunction<TransFunc> &&
-    TimeDependentValue<typename TransFunc::TimeDependentValue>;
-
-template <typename F>
-concept ValueFunction = requires(F function, uindex_t i_generation) {
-    requires TimeDependentValue<typename F::Value>;
-    { function(i_generation) } -> std::convertible_to<typename F::Value>;
+    TransitionFunctionWrapper(TransFunc trans_func) : TransFunc(trans_func) {}
 };
-
-template <typename T>
-concept LocalState = TimeDependentValue<typename T::Value> && std::copyable<T> &&
-    requires(T const &local_state, uindex_t i) {
-    { local_state.get_value(i) } -> std::convertible_to<typename T::Value>;
-};
-
-template <typename T>
-concept GlobalState = LocalState<typename T::LocalState> && std::copyable<T> &&
-    requires(T const &global_state) {
-    { global_state.prepare_local_state() } -> std::convertible_to<typename T::LocalState>;
-};
-
-template <typename T>
-concept HostState = GlobalState<typename T::GlobalState> &&
-    requires(T const &supplier, uindex_t i_generation, uindex_t n_generations) {
-    {
-        supplier.prepare_global_state(i_generation, n_generations)
-        } -> std::convertible_to<typename T::GlobalState>;
-};
-
 } // namespace tdv
 } // namespace stencil

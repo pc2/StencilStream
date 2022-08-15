@@ -19,20 +19,33 @@
  */
 #pragma once
 #include "SingleContextExecutor.hpp"
-#include "Stencil.hpp"
+
+#include "tdv/Executor.hpp"
+#include "tdv/Stencil.hpp"
+#include "tdv/TransitionFunctionWrapper.hpp"
+#include "tdv/NoneSupplier.hpp"
 
 namespace stencil {
-template <TransitionFunction TransFunc>
-class SimpleCPUExecutor : public SingleContextExecutor<TransFunc> {
+namespace tdv {
+
+template <tdv::TransitionFunction TransFunc, tdv::HostState TDVS>
+class SimpleCPUExecutor : public SingleContextExecutor<TransFunc>,
+                             public tdv::Executor<TransFunc, TDVS> {
   public:
     using Cell = typename TransFunc::Cell;
 
-    SimpleCPUExecutor(Cell halo_value, TransFunc trans_func)
-        : SingleContextExecutor<TransFunc>(halo_value, trans_func), grid(cl::sycl::range<2>(1, 1)) {
+    SimpleCPUExecutor(Cell halo_value, TransFunc trans_func, TDVS tdvs)
+        : SingleContextExecutor<TransFunc>(halo_value, trans_func), tdv::Executor<TransFunc, TDVS>(
+                                                                        tdvs),
+          grid(cl::sycl::range<2>(1, 1)) {
         this->select_cpu();
     }
 
     virtual void run(uindex_t n_generations) override {
+        using TDVGlobalState = typename TDVS::GlobalState;
+        using TDVLocalState = typename TDVGlobalState::LocalState;
+        using TDV = typename TransFunc::TimeDependentValue;
+
         cl::sycl::queue queue = this->new_queue();
         cl::sycl::buffer<Cell, 2> in_buffer = grid;
         cl::sycl::buffer<Cell, 2> out_buffer(grid.get_range());
@@ -49,11 +62,15 @@ class SimpleCPUExecutor : public SingleContextExecutor<TransFunc> {
                     uindex_t grid_height = in_ac.get_range()[1];
                     Cell halo_value = this->get_halo_value();
                     TransFunc trans_func = this->get_trans_func();
+                    TDVGlobalState global_state =
+                        this->get_tdvs().prepare_global_state(i_generation, 1);
 
                     cgh.parallel_for<class SimpleCPUExecutionKernel>(
                         in_ac.get_range(), [=](cl::sycl::id<2> idx) {
-                            Stencil<Cell, TransFunc::stencil_radius> stencil(
-                                idx, in_ac.get_range(), gen, i_subgeneration, 0);
+                            TDVLocalState local_state = global_state.prepare_local_state();
+                            TDV tdv = local_state.get_value(0);
+                            tdv::Stencil<Cell, TransFunc::stencil_radius, TDV> stencil(
+                                idx, in_ac.get_range(), gen, i_subgeneration, 0, tdv);
 
                             for (index_t delta_c = -TransFunc::stencil_radius;
                                  delta_c <= index_t(TransFunc::stencil_radius); delta_c++) {
@@ -117,5 +134,19 @@ class SimpleCPUExecutor : public SingleContextExecutor<TransFunc> {
 
   private:
     cl::sycl::buffer<Cell, 2> grid;
+};
+
+} // namespace tdv
+
+template <TransitionFunction TransFunc>
+class SimpleCPUExecutor
+    : public tdv::SimpleCPUExecutor<tdv::TransitionFunctionWrapper<TransFunc>,
+                                       tdv::NoneSupplier> {
+  public:
+    using Cell = typename TransFunc::Cell;
+
+    SimpleCPUExecutor(Cell halo_value, TransFunc trans_func)
+        : tdv::SimpleCPUExecutor<tdv::TransitionFunctionWrapper<TransFunc>, tdv::NoneSupplier>(
+              halo_value, trans_func, tdv::NoneSupplier()) {}
 };
 } // namespace stencil
