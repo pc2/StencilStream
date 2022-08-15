@@ -22,6 +22,7 @@
 #include "../Helpers.hpp"
 #include "../Index.hpp"
 #include "../Padded.hpp"
+
 #include "../tdv/Concepts.hpp"
 #include "../tdv/Stencil.hpp"
 

@@ -27,7 +27,7 @@ using namespace stencil;
 using namespace std;
 using namespace stencil::tiling;
 using namespace cl::sycl;
-
+/*
 void test_tiling_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t target_i_generation) {
     using TransFunc = FPGATransFunc<stencil_radius>;
     using in_pipe = HostPipe<class TilingExecutionKernelInPipeID, Cell>;
@@ -177,3 +177,4 @@ TEST_CASE("Incomplete Pipeline with i_generation != 0", "[tiling::ExecutionKerne
 
     REQUIRE(out_pipe::empty());
 }
+*/

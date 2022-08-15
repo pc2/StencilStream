@@ -23,6 +23,7 @@
 #pragma once
 #include "SingleContextExecutor.hpp"
 #include "monotile/ExecutionKernel.hpp"
+
 #include "tdv/Executor.hpp"
 #include "tdv/NoneSupplier.hpp"
 #include "tdv/TransitionFunctionWrapper.hpp"
@@ -31,9 +32,8 @@
 
 namespace stencil {
 namespace tdv {
-template <tdv::TransitionFunction TransFunc, tdv::HostState TDVS,
-          uindex_t n_processing_elements = 1, uindex_t tile_width = 1024,
-          uindex_t tile_height = 1024, uindex_t word_size = 64>
+template <TransitionFunction TransFunc, HostState TDVS, uindex_t n_processing_elements = 1,
+          uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t word_size = 64>
 /**
  * \brief An executor that follows \ref monotile.
  *

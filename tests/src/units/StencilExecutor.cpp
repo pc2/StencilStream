@@ -66,12 +66,12 @@ void test_executor_set_input_copy_output(SingleContextExecutorImpl *executor, ui
         }
     }
 }
-/*
+
 TEST_CASE("TilingExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[TilingExecutor]") {
     TilingExecutorImpl executor(Cell::halo(), TransFunc());
     test_executor_set_input_copy_output(&executor, grid_width, grid_height);
 }
-*/
+
 TEST_CASE("MonotileExecutor::copy_output(cl::sycl::buffer<T, 2>)", "[MonotileExecutor]") {
     MonotileExecutorImpl executor(Cell::halo(), TransFunc());
     test_executor_set_input_copy_output(&executor, tile_width - 1, tile_height - 1);
@@ -139,7 +139,7 @@ void test_executor(SingleContextExecutorImpl *executor, uindex_t grid_width, uin
         }
     }
 }
-/*
+
 TEST_CASE("TilingExecutor::run", "[TilingExecutor]") {
     TilingExecutorImpl executor(Cell::halo(), TransFunc());
 
@@ -161,7 +161,7 @@ TEST_CASE("TilingExecutor::run", "[TilingExecutor]") {
     // multiple passes, grid bigger slightly bigger than tile
     test_executor(&executor, tile_width * 1.5, tile_height * 1.5, 2 * gens_per_pass);
 }
-*/
+
 TEST_CASE("MonotileExecutor::run", "[MonotileExecutor]") {
     MonotileExecutorImpl executor(Cell::halo(), TransFunc());
 
@@ -223,7 +223,7 @@ void test_snapshotting(SingleContextExecutorImpl *executor, uindex_t grid_width,
     }
     REQUIRE(snapshotted_generations.back() == n_generations);
 }
-/*
+
 TEST_CASE("TilingExecutor::run_with_snapshots", "[TilingExecutor]") {
     TilingExecutorImpl executor(Cell::halo(), TransFunc());
 
@@ -234,7 +234,7 @@ TEST_CASE("TilingExecutor::run_with_snapshots", "[TilingExecutor]") {
     // snapshot distance is not a multiple of pipeline length
     test_snapshotting(&executor, tile_width, tile_height, 2 * gens_per_pass, 0.5 * gens_per_pass);
 }
-*/
+
 TEST_CASE("MonotileExecutor::run_with_snapshots", "[MonotileExecutor]") {
     MonotileExecutorImpl executor(Cell::halo(), TransFunc());
 

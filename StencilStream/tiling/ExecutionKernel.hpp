@@ -22,8 +22,11 @@
 #include "../Helpers.hpp"
 #include "../Index.hpp"
 #include "../Padded.hpp"
-#include "../Stencil.hpp"
-#include "../TransitionFunction.hpp"
+
+#include "../tdv/Concepts.hpp"
+#include "../tdv/Stencil.hpp"
+
+#include <CL/sycl/accessor.hpp>
 #include <optional>
 
 namespace stencil {
@@ -43,13 +46,20 @@ namespace tiling {
  * \tparam in_pipe The pipe to read from.
  * \tparam out_pipe The pipe to write to.
  */
-template <TransitionFunction TransFunc, uindex_t n_processing_elements, uindex_t output_tile_width,
-          uindex_t output_tile_height, typename in_pipe, typename out_pipe>
+template <tdv::TransitionFunction TransFunc, tdv::GlobalState TDVGlobalState,
+          uindex_t n_processing_elements, uindex_t output_tile_width, uindex_t output_tile_height,
+          typename in_pipe, typename out_pipe>
 requires(n_processing_elements % TransFunc::n_subgenerations == 0) class ExecutionKernel {
   public:
     using Cell = typename TransFunc::Cell;
 
-    using StencilImpl = Stencil<Cell, TransFunc::stencil_radius>;
+    using TDVLocalState = typename TDVGlobalState::LocalState;
+    using TDV = typename TransFunc::TimeDependentValue;
+    static_assert(std::is_same<TDV, typename TDVLocalState::Value>());
+
+    using GlobalStateAccessor = cl::sycl::accessor<TDVGlobalState, 1, cl::sycl::access::mode::read>;
+
+    using StencilImpl = tdv::Stencil<Cell, TransFunc::stencil_radius, TDV>;
 
     /**
      * \brief The width and height of the stencil buffer.
@@ -111,11 +121,11 @@ requires(n_processing_elements % TransFunc::n_subgenerations == 0) class Executi
      */
     ExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t target_i_generation,
                     uindex_t grid_c_offset, uindex_t grid_r_offset, uindex_t grid_width,
-                    uindex_t grid_height, Cell halo_value)
+                    uindex_t grid_height, Cell halo_value, GlobalStateAccessor global_state)
         : trans_func(trans_func), i_generation(i_generation),
           target_i_generation(target_i_generation), grid_c_offset(grid_c_offset),
           grid_r_offset(grid_r_offset), grid_width(grid_width), grid_height(grid_height),
-          halo_value(halo_value) {
+          halo_value(halo_value), global_state(global_state) {
         assert(grid_c_offset % output_tile_width == 0);
         assert(grid_r_offset % output_tile_height == 0);
     }
@@ -126,6 +136,8 @@ requires(n_processing_elements % TransFunc::n_subgenerations == 0) class Executi
     void operator()() const {
         uindex_1d_t input_tile_c = 0;
         uindex_1d_t input_tile_r = 0;
+
+        TDVLocalState local_state = global_state[0].prepare_local_state();
 
         /*
          * The intel::numbanks attribute requires a power of two as it's argument and if the
@@ -205,14 +217,17 @@ requires(n_processing_elements % TransFunc::n_subgenerations == 0) class Executi
                 }
 
                 uindex_t pe_generation =
-                    (i_generation + i_processing_element / TransFunc::n_subgenerations);
-                uindex_t pe_subgeneration = i_processing_element % TransFunc::n_subgenerations;
+                    (i_generation + i_processing_element / TransFunc::n_subgenerations).to_uint();
+                uindex_t pe_subgeneration =
+                    (i_processing_element % TransFunc::n_subgenerations).to_uint();
                 index_t output_grid_c = input_grid_c - index_t(TransFunc::stencil_radius);
                 index_t output_grid_r = input_grid_r - index_t(TransFunc::stencil_radius);
-                StencilImpl stencil(ID(output_grid_c, output_grid_r), UID(grid_width, grid_height),
-                                    pe_generation, pe_subgeneration,
-                                    i_processing_element.to_uint64(),
-                                    stencil_buffer[i_processing_element]);
+                StencilImpl stencil(
+                    ID(output_grid_c, output_grid_r), UID(grid_width, grid_height), pe_generation,
+                    pe_subgeneration, i_processing_element.to_uint64(),
+                    local_state.get_value(
+                        (i_processing_element / TransFunc::n_subgenerations).to_uint()),
+                    stencil_buffer[i_processing_element]);
 
                 if (pe_generation < target_i_generation) {
                     carry = trans_func(stencil);
@@ -249,6 +264,7 @@ requires(n_processing_elements % TransFunc::n_subgenerations == 0) class Executi
     uindex_t grid_width;
     uindex_t grid_height;
     Cell halo_value;
+    GlobalStateAccessor global_state;
 };
 
 } // namespace tiling
