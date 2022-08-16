@@ -59,7 +59,7 @@ namespace stencil {
 template <TransitionFunction TransFunc, tdv::HostState TDVS> class AbstractExecutor {
   public:
     static_assert(std::is_same<typename TransFunc::TimeDependentValue,
-                               typename TDVS::GlobalState::LocalState::Value>());
+                               typename TDVS::KernelArgument::LocalState::Value>());
 
     using Cell = typename TransFunc::Cell;
 

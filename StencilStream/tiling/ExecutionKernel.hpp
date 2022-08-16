@@ -44,14 +44,14 @@ namespace tiling {
  * \tparam in_pipe The pipe to read from.
  * \tparam out_pipe The pipe to write to.
  */
-template <TransitionFunction TransFunc, tdv::GlobalState TDVGlobalState,
+template <TransitionFunction TransFunc, tdv::KernelArgument TDVKernelArgument,
           uindex_t n_processing_elements, uindex_t output_tile_width, uindex_t output_tile_height,
           typename in_pipe, typename out_pipe>
 requires(n_processing_elements % TransFunc::n_subgenerations == 0) class ExecutionKernel {
   public:
     using Cell = typename TransFunc::Cell;
 
-    using TDVLocalState = typename TDVGlobalState::LocalState;
+    using TDVLocalState = typename TDVKernelArgument::LocalState;
     using TDV = typename TransFunc::TimeDependentValue;
     static_assert(std::is_same<TDV, typename TDVLocalState::Value>());
 
@@ -117,7 +117,7 @@ requires(n_processing_elements % TransFunc::n_subgenerations == 0) class Executi
      */
     ExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t target_i_generation,
                     uindex_t grid_c_offset, uindex_t grid_r_offset, uindex_t grid_width,
-                    uindex_t grid_height, Cell halo_value, TDVGlobalState global_state)
+                    uindex_t grid_height, Cell halo_value, TDVKernelArgument global_state)
         : trans_func(trans_func), i_generation(i_generation),
           target_i_generation(target_i_generation), grid_c_offset(grid_c_offset),
           grid_r_offset(grid_r_offset), grid_width(grid_width), grid_height(grid_height),
@@ -260,7 +260,7 @@ requires(n_processing_elements % TransFunc::n_subgenerations == 0) class Executi
     uindex_t grid_width;
     uindex_t grid_height;
     Cell halo_value;
-    TDVGlobalState global_state;
+    TDVKernelArgument global_state;
 };
 
 } // namespace tiling

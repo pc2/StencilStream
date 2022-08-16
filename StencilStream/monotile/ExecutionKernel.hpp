@@ -48,7 +48,7 @@ namespace monotile {
  * \tparam in_pipe The pipe to read from.
  * \tparam out_pipe The pipe to write to.
  */
-template <TransitionFunction TransFunc, tdv::GlobalState TDVGlobalState,
+template <TransitionFunction TransFunc, tdv::KernelArgument TDVKernelArgument,
           uindex_t n_processing_elements, uindex_t tile_width, uindex_t tile_height,
           typename in_pipe, typename out_pipe>
 requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
@@ -56,7 +56,7 @@ requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
   public:
     using Cell = typename TransFunc::Cell;
 
-    using TDVLocalState = typename TDVGlobalState::LocalState;
+    using TDVLocalState = typename TDVKernelArgument::LocalState;
     using TDV = typename TDVLocalState::Value;
     static_assert(std::is_same<typename TransFunc::TimeDependentValue, TDV>());
 
@@ -112,7 +112,7 @@ requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
      */
     ExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t target_i_generation,
                     uindex_1d_t grid_width, uindex_1d_t grid_height, Cell halo_value,
-                    TDVGlobalState global_state)
+                    TDVKernelArgument global_state)
         : trans_func(trans_func), i_generation(i_generation),
           target_i_generation(target_i_generation), grid_width(grid_width),
           grid_height(grid_height), halo_value(halo_value), global_state(global_state) {}
@@ -277,7 +277,7 @@ requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
     uindex_1d_t grid_width;
     uindex_1d_t grid_height;
     Cell halo_value;
-    TDVGlobalState global_state;
+    TDVKernelArgument global_state;
 };
 
 } // namespace monotile

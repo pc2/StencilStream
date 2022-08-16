@@ -25,11 +25,11 @@ namespace tdv {
 
 template <ValueFunction F> class InlineSupplier {
   public:
-    struct GlobalState {
-        using LocalState = GlobalState;
+    struct KernelArgument {
+        using LocalState = KernelArgument;
         using Value = typename F::Value;
 
-        GlobalState build_local_state() const { return *this; }
+        KernelArgument build_local_state() const { return *this; }
 
         Value get_value(uindex_t i) const { return function(i_generation + i); }
 
@@ -41,9 +41,9 @@ template <ValueFunction F> class InlineSupplier {
 
     void prepare_range(uindex_t i_generation, uindex_t n_generations) {}
 
-    GlobalState build_global_state(cl::sycl::handler &cgh, uindex_t i_generation,
+    KernelArgument build_global_state(cl::sycl::handler &cgh, uindex_t i_generation,
                                    uindex_t n_generations) {
-        return GlobalState{.function = function, .i_generation = i_generation};
+        return KernelArgument{.function = function, .i_generation = i_generation};
     }
 
   private:

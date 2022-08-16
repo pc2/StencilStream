@@ -40,8 +40,8 @@ class SimpleCPUExecutor : public SingleContextExecutor<TransFunc, TDVS> {
     }
 
     virtual void run(uindex_t n_generations) override {
-        using TDVGlobalState = typename TDVS::GlobalState;
-        using TDVLocalState = typename TDVGlobalState::LocalState;
+        using TDVKernelArgument = typename TDVS::KernelArgument;
+        using TDVLocalState = typename TDVKernelArgument::LocalState;
         using TDV = typename TransFunc::TimeDependentValue;
 
         this->get_tdvs().prepare_range(this->get_i_generation(), n_generations);
@@ -62,7 +62,7 @@ class SimpleCPUExecutor : public SingleContextExecutor<TransFunc, TDVS> {
                     uindex_t grid_height = in_ac.get_range()[1];
                     Cell halo_value = this->get_halo_value();
                     TransFunc trans_func = this->get_trans_func();
-                    TDVGlobalState global_state = this->get_tdvs().build_global_state(cgh, gen, 1);
+                    TDVKernelArgument global_state = this->get_tdvs().build_global_state(cgh, gen, 1);
 
                     cgh.parallel_for<class SimpleCPUExecutionKernel>(
                         in_ac.get_range(), [=](cl::sycl::id<2> idx) {

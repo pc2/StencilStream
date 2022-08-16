@@ -66,18 +66,18 @@ concept LocalState = std::copyable<typename T::Value> && std::copyable<T> &&
 };
 
 template <typename T>
-concept GlobalState = LocalState<typename T::LocalState> && std::copyable<T> &&
+concept KernelArgument = LocalState<typename T::LocalState> && std::copyable<T> &&
     requires(T const &global_state) {
     { global_state.build_local_state() } -> std::convertible_to<typename T::LocalState>;
 };
 
 template <typename T>
-concept HostState = GlobalState<typename T::GlobalState> &&
+concept HostState = KernelArgument<typename T::KernelArgument> &&
     requires(T &supplier, cl::sycl::handler &cgh, uindex_t i_generation, uindex_t n_generations) {
     {
         // building the global state
         supplier.build_global_state(cgh, i_generation, n_generations)
-        } -> std::convertible_to<typename T::GlobalState>;
+        } -> std::convertible_to<typename T::KernelArgument>;
 
 } && requires(T &supplier, uindex_t i_generation, uindex_t n_generations) {
     // preparing the global state

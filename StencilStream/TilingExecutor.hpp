@@ -94,7 +94,7 @@ class TilingExecutor : public SingleContextExecutor<TransFunc, TDVS> {
         using feed_out_pipe_2 = cl::sycl::pipe<class feed_out_pipe_2_id, Cell>;
 
         using ExecutionKernelImpl =
-            tiling::ExecutionKernel<TransFunc, typename TDVS::GlobalState, n_processing_elements,
+            tiling::ExecutionKernel<TransFunc, typename TDVS::KernelArgument, n_processing_elements,
                                     tile_width, tile_height, in_pipe, out_pipe>;
 
         this->get_tdvs().prepare_range(this->get_i_generation(), n_generations);

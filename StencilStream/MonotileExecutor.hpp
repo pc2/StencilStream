@@ -136,7 +136,7 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc, TDVS> {
         using in_pipe = cl::sycl::pipe<class monotile_in_pipe, Cell>;
         using out_pipe = cl::sycl::pipe<class monotile_out_pipe, Cell>;
         using ExecutionKernelImpl =
-            monotile::ExecutionKernel<TransFunc, typename TDVS::GlobalState, n_processing_elements,
+            monotile::ExecutionKernel<TransFunc, typename TDVS::KernelArgument, n_processing_elements,
                                       tile_width, tile_height, in_pipe, out_pipe>;
         using uindex_2d_t = typename ExecutionKernelImpl::uindex_2d_t;
 

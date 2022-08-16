@@ -35,7 +35,7 @@ template <ValueFunction F, uindex_t max_n_generations> class HostPrecomputeSuppl
 
     using Value = typename F::Value;
 
-    struct GlobalState {
+    struct KernelArgument {
         struct LocalState {
             using Value = Value;
 
@@ -69,13 +69,13 @@ template <ValueFunction F, uindex_t max_n_generations> class HostPrecomputeSuppl
         }
     }
 
-    GlobalState build_global_state(cl::sycl::handler &cgh, uindex_t i_generation,
+    KernelArgument build_global_state(cl::sycl::handler &cgh, uindex_t i_generation,
                                    uindex_t n_generations) {
         assert(n_generations <= max_n_generations);
         assert(i_generation >= generation_offset);
         assert(i_generation + n_generations <= generation_offset + value_buffer.get_range()[0]);
 
-        return GlobalState{.buffer_offset = i_generation - generation_offset,
+        return KernelArgument{.buffer_offset = i_generation - generation_offset,
                            .ac =
                                value_buffer.template get_access<cl::sycl::access::mode::read>(cgh)};
     }

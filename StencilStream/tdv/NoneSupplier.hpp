@@ -29,7 +29,7 @@ class NoneSupplier {
   public:
     using Value = std::monostate;
     using LocalState = NoneSupplier;
-    using GlobalState = NoneSupplier;
+    using KernelArgument = NoneSupplier;
 
     void prepare_range(uindex_t i_generation, uindex_t n_generations) {}
 
