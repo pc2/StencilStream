@@ -27,9 +27,8 @@
 #include <numeric>
 
 namespace stencil {
-template <TransitionFunction TransFunc, tdv::HostState TDVS = tdv::NoneSupplier,
-          uindex_t n_processing_elements = 1, uindex_t tile_width = 1024,
-          uindex_t tile_height = 1024, uindex_t word_size = 64>
+template <TransitionFunction TransFunc, tdv::HostState TDVS, uindex_t n_processing_elements = 1,
+          uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t word_size = 64>
 /**
  * \brief An executor that follows \ref monotile.
  *

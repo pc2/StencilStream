@@ -19,6 +19,7 @@
  */
 #include <StencilStream/SimpleCPUExecutor.hpp>
 #include <StencilStream/TilingExecutor.hpp>
+#include <StencilStream/tdv/NoneSupplier.hpp>
 
 struct ConwayKernel {
     using Cell = bool;
@@ -96,9 +97,9 @@ int main(int argc, char **argv) {
     cl::sycl::buffer<bool, 2> grid_buffer = read(width, height);
 
 #ifdef CPU
-    using Executor = stencil::SimpleCPUExecutor<ConwayKernel>;
+    using Executor = stencil::SimpleCPUExecutor<ConwayKernel, stencil::tdv::NoneSupplier>;
 #else
-    using Executor = stencil::TilingExecutor<ConwayKernel>;
+    using Executor = stencil::TilingExecutor<ConwayKernel, stencil::tdv::NoneSupplier>;
 #endif
 
     Executor executor(false, ConwayKernel());

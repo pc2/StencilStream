@@ -31,12 +31,12 @@ using namespace stencil;
 using namespace cl::sycl;
 
 using TransFunc = FPGATransFunc<stencil_radius>;
-using SingleContextExecutorImpl = SingleContextExecutor<TransFunc>;
+using SingleContextExecutorImpl = SingleContextExecutor<TransFunc, tdv::NoneSupplier>;
 using TilingExecutorImpl =
     TilingExecutor<TransFunc, tdv::NoneSupplier, n_processing_elements, tile_width, tile_height>;
 using MonotileExecutorImpl =
     MonotileExecutor<TransFunc, tdv::NoneSupplier, n_processing_elements, tile_width, tile_height>;
-using SimpleCPUExecutorImpl = SimpleCPUExecutor<TransFunc>;
+using SimpleCPUExecutorImpl = SimpleCPUExecutor<TransFunc, tdv::NoneSupplier>;
 
 void test_executor_set_input_copy_output(SingleContextExecutorImpl *executor, uindex_t grid_width,
                                          uindex_t grid_height) {

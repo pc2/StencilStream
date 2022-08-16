@@ -23,8 +23,6 @@
 #include "Index.hpp"
 #include "RuntimeSample.hpp"
 
-#include "tdv/NoneSupplier.hpp"
-
 #include <CL/sycl.hpp>
 #include <functional>
 
@@ -58,8 +56,7 @@ namespace stencil {
  *
  * \tparam TransFunc The type of the transition function.
  */
-template <TransitionFunction TransFunc, tdv::HostState TDVS = tdv::NoneSupplier>
-class AbstractExecutor {
+template <TransitionFunction TransFunc, tdv::HostState TDVS> class AbstractExecutor {
   public:
     static_assert(std::is_same<typename TransFunc::TimeDependentValue,
                                typename TDVS::GlobalState::LocalState::Value>());

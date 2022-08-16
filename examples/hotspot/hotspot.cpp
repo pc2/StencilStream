@@ -28,6 +28,8 @@
     #include <StencilStream/SimpleCPUExecutor.hpp>
 #endif
 
+#include <StencilStream/tdv/NoneSupplier.hpp>
+
 using namespace std;
 using namespace cl::sycl;
 using namespace stencil;
@@ -243,7 +245,7 @@ int main(int argc, char **argv) {
     using Executor = TilingExecutor<HotspotKernel, tdv::NoneSupplier, n_processing_elements,
                                     tile_width, tile_height>;
 #elif EXECUTOR == 2
-    using Executor = SimpleCPUExecutor<HotspotKernel>;
+    using Executor = SimpleCPUExecutor<HotspotKernel, tdv::NoneSupplier>;
 #endif
 
     Executor executor(HotspotCell(0.0, 0.0), HotspotKernel{Rx_1, Ry_1, Rz_1, Cap_1});

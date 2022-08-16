@@ -35,7 +35,7 @@ namespace stencil {
  *
  * \tparam TransFunc The type of the transition function.
  */
-template <TransitionFunction TransFunc, tdv::HostState TDVS = tdv::NoneSupplier>
+template <TransitionFunction TransFunc, tdv::HostState TDVS>
 class SingleContextExecutor : public AbstractExecutor<TransFunc, TDVS> {
   public:
     using Cell = typename TransFunc::Cell;

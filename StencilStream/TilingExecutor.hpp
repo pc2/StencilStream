@@ -44,9 +44,8 @@ namespace stencil {
  * \tparam tile_height The number of rows in a tile and maximum number of rows in a grid. Defaults
  * to 1024.
  */
-template <TransitionFunction TransFunc, tdv::HostState TDVS = tdv::NoneSupplier,
-          uindex_t n_processing_elements = 1, uindex_t tile_width = 1024,
-          uindex_t tile_height = 1024>
+template <TransitionFunction TransFunc, tdv::HostState TDVS, uindex_t n_processing_elements = 1,
+          uindex_t tile_width = 1024, uindex_t tile_height = 1024>
 class TilingExecutor : public SingleContextExecutor<TransFunc, TDVS> {
   public:
     using Cell = typename TransFunc::Cell;

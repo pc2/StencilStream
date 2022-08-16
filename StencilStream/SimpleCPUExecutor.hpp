@@ -22,7 +22,7 @@
 
 namespace stencil {
 
-template <TransitionFunction TransFunc, tdv::HostState TDVS = tdv::NoneSupplier>
+template <TransitionFunction TransFunc, tdv::HostState TDVS>
 class SimpleCPUExecutor : public SingleContextExecutor<TransFunc, TDVS> {
   public:
     using Cell = typename TransFunc::Cell;
