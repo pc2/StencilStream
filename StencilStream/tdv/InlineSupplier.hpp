@@ -23,7 +23,7 @@
 namespace stencil {
 namespace tdv {
 
-template <ValueFunction F> class OnDemandSupplier {
+template <ValueFunction F> class InlineSupplier {
   public:
     struct GlobalState {
         using LocalState = GlobalState;
@@ -37,7 +37,7 @@ template <ValueFunction F> class OnDemandSupplier {
         uindex_t i_generation;
     };
 
-    OnDemandSupplier(F function) : function(function) {}
+    InlineSupplier(F function) : function(function) {}
 
     void prepare_range(uindex_t i_generation, uindex_t n_generations) {}
 

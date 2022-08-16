@@ -33,11 +33,11 @@ using MaterialResolver = RenderResolver;
 #endif
 
 #if SOURCE == 0
-    #include <StencilStream/tdv/OnDemandSupplier.hpp>
-using SourceSupplier = tdv::OnDemandSupplier<SourceFunction>;
+    #include <StencilStream/tdv/InlineSupplier.hpp>
+using SourceSupplier = tdv::InlineSupplier<SourceFunction>;
 #elif SOURCE == 1
-    #include <StencilStream/tdv/OfflineSupplier.hpp>
-using SourceSupplier = tdv::OfflineSupplier<SourceFunction, gens_per_pass>;
+    #include <StencilStream/tdv/HostPrecomputeSupplier.hpp>
+using SourceSupplier = tdv::HostPrecomputeSupplier<SourceFunction, gens_per_pass>;
 #endif
 
 using KernelImpl = Kernel<MaterialResolver>;

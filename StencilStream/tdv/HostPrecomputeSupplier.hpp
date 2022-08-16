@@ -26,9 +26,9 @@
 namespace stencil {
 namespace tdv {
 
-template <ValueFunction F, uindex_t max_n_generations> class OfflineSupplier {
+template <ValueFunction F, uindex_t max_n_generations> class HostPrecomputeSupplier {
   public:
-    OfflineSupplier(F function)
+    HostPrecomputeSupplier(F function)
         : function(function), generation_offset(0), value_buffer(cl::sycl::range<1>(1)) {
         value_buffer.template get_access<cl::sycl::access::mode::discard_write>()[0] = function(0);
     }
