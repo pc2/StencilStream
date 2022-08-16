@@ -55,8 +55,6 @@ requires(n_processing_elements % TransFunc::n_subgenerations == 0) class Executi
     using TDV = typename TransFunc::TimeDependentValue;
     static_assert(std::is_same<TDV, typename TDVLocalState::Value>());
 
-    using GlobalStateAccessor = cl::sycl::accessor<TDVGlobalState, 1, cl::sycl::access::mode::read>;
-
     using StencilImpl = Stencil<Cell, TransFunc::stencil_radius, TDV>;
 
     /**
@@ -119,7 +117,7 @@ requires(n_processing_elements % TransFunc::n_subgenerations == 0) class Executi
      */
     ExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t target_i_generation,
                     uindex_t grid_c_offset, uindex_t grid_r_offset, uindex_t grid_width,
-                    uindex_t grid_height, Cell halo_value, GlobalStateAccessor global_state)
+                    uindex_t grid_height, Cell halo_value, TDVGlobalState global_state)
         : trans_func(trans_func), i_generation(i_generation),
           target_i_generation(target_i_generation), grid_c_offset(grid_c_offset),
           grid_r_offset(grid_r_offset), grid_width(grid_width), grid_height(grid_height),
@@ -135,7 +133,7 @@ requires(n_processing_elements % TransFunc::n_subgenerations == 0) class Executi
         uindex_1d_t input_tile_c = 0;
         uindex_1d_t input_tile_r = 0;
 
-        TDVLocalState local_state = global_state[0].prepare_local_state();
+        TDVLocalState local_state = global_state.build_local_state();
 
         /*
          * The intel::numbanks attribute requires a power of two as it's argument and if the
@@ -262,7 +260,7 @@ requires(n_processing_elements % TransFunc::n_subgenerations == 0) class Executi
     uindex_t grid_width;
     uindex_t grid_height;
     Cell halo_value;
-    GlobalStateAccessor global_state;
+    TDVGlobalState global_state;
 };
 
 } // namespace tiling

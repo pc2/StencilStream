@@ -21,6 +21,7 @@
 #include "Index.hpp"
 #include "Stencil.hpp"
 
+#include <CL/sycl/handler.hpp>
 #include <concepts>
 
 namespace stencil {
@@ -53,7 +54,7 @@ concept TransitionFunction = requires {
 namespace tdv {
 
 template <typename F>
-concept ValueFunction = requires(F function, uindex_t i_generation) {
+concept ValueFunction = requires(F const &function, uindex_t i_generation) {
     requires std::copyable<typename F::Value>;
     { function(i_generation) } -> std::convertible_to<typename F::Value>;
 };
@@ -67,15 +68,20 @@ concept LocalState = std::copyable<typename T::Value> && std::copyable<T> &&
 template <typename T>
 concept GlobalState = LocalState<typename T::LocalState> && std::copyable<T> &&
     requires(T const &global_state) {
-    { global_state.prepare_local_state() } -> std::convertible_to<typename T::LocalState>;
+    { global_state.build_local_state() } -> std::convertible_to<typename T::LocalState>;
 };
 
 template <typename T>
 concept HostState = GlobalState<typename T::GlobalState> &&
-    requires(T const &supplier, uindex_t i_generation, uindex_t n_generations) {
+    requires(T &supplier, cl::sycl::handler &cgh, uindex_t i_generation, uindex_t n_generations) {
     {
-        supplier.prepare_global_state(i_generation, n_generations)
+        // building the global state
+        supplier.build_global_state(cgh, i_generation, n_generations)
         } -> std::convertible_to<typename T::GlobalState>;
+
+} && requires(T &supplier, uindex_t i_generation, uindex_t n_generations) {
+    // preparing the global state
+    {supplier.prepare_range(i_generation, n_generations)};
 };
 
 } // namespace tdv

@@ -21,44 +21,69 @@
 #include "../Concepts.hpp"
 #include <array>
 #include <cassert>
+#include <numeric>
 
 namespace stencil {
 namespace tdv {
 
-template <typename V, uindex_t max_n_generations> class ValueBuffer {
-  public:
-    ValueBuffer(std::array<V, max_n_generations> values) : values(values) {}
-
-    using LocalState = ValueBuffer;
-    using Value = V;
-
-    ValueBuffer prepare_local_state() const { return *this; }
-
-    V get_value(uindex_t i) const { return values[i]; }
-
-  private:
-    std::array<V, max_n_generations> values;
-};
-
 template <ValueFunction F, uindex_t max_n_generations> class OfflineSupplier {
   public:
-    OfflineSupplier(F function) : function(function) {}
+    OfflineSupplier(F function)
+        : function(function), generation_offset(0), value_buffer(cl::sycl::range<1>(1)) {
+        value_buffer.template get_access<cl::sycl::access::mode::discard_write>()[0] = function(0);
+    }
 
-    using GlobalState = ValueBuffer<typename F::Value, max_n_generations>;
+    using Value = typename F::Value;
 
-    GlobalState prepare_global_state(uindex_t i_generation, uindex_t n_generations) const {
-        assert(n_generations <= max_n_generations);
+    struct GlobalState {
+        struct LocalState {
+            using Value = Value;
 
-        std::array<typename F::Value, max_n_generations> values;
-        for (uindex_t i = 0; i < n_generations; i++) {
-            values[i] = function(i + i_generation);
+            Value get_value(uindex_t i) const { return values[i]; }
+
+            Value values[max_n_generations];
+        };
+
+        LocalState build_local_state() const {
+            uindex_t n_values =
+                std::min(uindex_t(max_n_generations), uindex_t(ac.get_range()[0] - buffer_offset));
+
+            LocalState state;
+            for (uindex_t i = 0; i < n_values; i++) {
+                state.values[i] = ac[buffer_offset + i];
+            }
+            return state;
         }
 
-        return GlobalState(values);
+        uindex_t buffer_offset;
+        cl::sycl::accessor<Value, 1, cl::sycl::access::mode::read> ac;
+    };
+
+    void prepare_range(uindex_t i_generation, uindex_t n_generations) {
+        generation_offset = i_generation;
+        value_buffer = cl::sycl::range<1>(n_generations);
+
+        auto ac = value_buffer.template get_access<cl::sycl::access::mode::discard_write>();
+        for (uindex_t i = 0; i < n_generations; i++) {
+            ac[i] = function(i_generation + i);
+        }
+    }
+
+    GlobalState build_global_state(cl::sycl::handler &cgh, uindex_t i_generation,
+                                   uindex_t n_generations) {
+        assert(n_generations <= max_n_generations);
+        assert(i_generation >= generation_offset);
+        assert(i_generation + n_generations <= generation_offset + value_buffer.get_range()[0]);
+
+        return GlobalState{.buffer_offset = i_generation - generation_offset,
+                           .ac =
+                               value_buffer.template get_access<cl::sycl::access::mode::read>(cgh)};
     }
 
   private:
     F function;
+    uindex_t generation_offset;
+    cl::sycl::buffer<Value, 1> value_buffer;
 };
 
 } // namespace tdv

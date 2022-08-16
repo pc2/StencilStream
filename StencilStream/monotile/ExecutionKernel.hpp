@@ -60,8 +60,6 @@ requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
     using TDV = typename TDVLocalState::Value;
     static_assert(std::is_same<typename TransFunc::TimeDependentValue, TDV>());
 
-    using GlobalStateAccessor = cl::sycl::accessor<TDVGlobalState, 1, cl::sycl::access::mode::read>;
-
     using StencilImpl = Stencil<Cell, TransFunc::stencil_radius, TDV>;
 
     /**
@@ -114,7 +112,7 @@ requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
      */
     ExecutionKernel(TransFunc trans_func, uindex_t i_generation, uindex_t target_i_generation,
                     uindex_1d_t grid_width, uindex_1d_t grid_height, Cell halo_value,
-                    GlobalStateAccessor global_state)
+                    TDVGlobalState global_state)
         : trans_func(trans_func), i_generation(i_generation),
           target_i_generation(target_i_generation), grid_width(grid_width),
           grid_height(grid_height), halo_value(halo_value), global_state(global_state) {}
@@ -125,7 +123,7 @@ requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
     void operator()() const {
         [[intel::fpga_register]] index_1d_t c[n_processing_elements];
         [[intel::fpga_register]] index_1d_t r[n_processing_elements];
-        TDVLocalState local_state = global_state[0].prepare_local_state();
+        TDVLocalState local_state = global_state.build_local_state();
 
         // Initializing (output) column and row counters.
         index_1d_t prev_c = 0;
@@ -279,7 +277,7 @@ requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
     uindex_1d_t grid_width;
     uindex_1d_t grid_height;
     Cell halo_value;
-    GlobalStateAccessor global_state;
+    TDVGlobalState global_state;
 };
 
 } // namespace monotile

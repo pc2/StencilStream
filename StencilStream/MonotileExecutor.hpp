@@ -141,6 +141,8 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc, TDVS> {
                                       tile_width, tile_height, in_pipe, out_pipe>;
         using uindex_2d_t = typename ExecutionKernelImpl::uindex_2d_t;
 
+        this->get_tdvs().prepare_range(this->get_i_generation(), n_generations);
+
         cl::sycl::queue input_queue = this->new_queue(true);
         cl::sycl::queue work_queue = this->new_queue(true);
         cl::sycl::queue output_queue = this->new_queue(true);
@@ -176,20 +178,13 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc, TDVS> {
                 });
             });
 
-            cl::sycl::buffer<typename TDVS::GlobalState, 1> tdv_global_state(cl::sycl::range<1>(1));
-            {
-                auto ac =
-                    tdv_global_state.template get_access<cl::sycl::access::mode::discard_write>();
-                ac[0] = this->get_tdvs().prepare_global_state(this->get_i_generation(),
-                                                              delta_n_generations);
-            }
-
             cl::sycl::event computation_event = work_queue.submit([&](cl::sycl::handler &cgh) {
-                auto ac = tdv_global_state.template get_access<cl::sycl::access::mode::read>(cgh);
+                auto tdv_global_state = this->get_tdvs().build_global_state(
+                    cgh, this->get_i_generation(), delta_n_generations);
 
                 cgh.single_task<class MonotileExecutionKernel>(ExecutionKernelImpl(
                     this->get_trans_func(), this->get_i_generation(), target_i_generation,
-                    grid_width, grid_height, this->get_halo_value(), ac));
+                    grid_width, grid_height, this->get_halo_value(), tdv_global_state));
             });
 
             output_queue.submit([&](cl::sycl::handler &cgh) {

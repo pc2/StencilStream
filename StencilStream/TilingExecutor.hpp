@@ -95,8 +95,10 @@ class TilingExecutor : public SingleContextExecutor<TransFunc, TDVS> {
         using feed_out_pipe_2 = cl::sycl::pipe<class feed_out_pipe_2_id, Cell>;
 
         using ExecutionKernelImpl =
-            tiling::ExecutionKernel<TransFunc, typename TDVS::GlobalState, n_processing_elements, tile_width, tile_height,
-                                    in_pipe, out_pipe>;
+            tiling::ExecutionKernel<TransFunc, typename TDVS::GlobalState, n_processing_elements,
+                                    tile_width, tile_height, in_pipe, out_pipe>;
+
+        this->get_tdvs().prepare_range(this->get_i_generation(), n_generations);
 
         cl::sycl::queue input_queue[5] = {this->new_queue(true), this->new_queue(true),
                                           this->new_queue(true), this->new_queue(true),
@@ -116,15 +118,6 @@ class TilingExecutor : public SingleContextExecutor<TransFunc, TDVS> {
 
             uindex_t delta_n_generations = std::min(target_i_generation - this->get_i_generation(),
                                                     ExecutionKernelImpl::gens_per_pass);
-
-            cl::sycl::buffer<typename TDVS::GlobalState, 1> global_state_buffer(
-                cl::sycl::range<1>(1));
-            {
-                auto ac = global_state_buffer
-                              .template get_access<cl::sycl::access::mode::discard_write>();
-                ac[0] = this->get_tdvs().prepare_global_state(this->get_i_generation(),
-                                                              delta_n_generations);
-            }
 
             std::vector<cl::sycl::event> events;
             events.reserve(input_grid.get_tile_range().c * input_grid.get_tile_range().r);
@@ -272,14 +265,13 @@ class TilingExecutor : public SingleContextExecutor<TransFunc, TDVS> {
 
                     cl::sycl::event computation_event =
                         work_queue.submit([&](cl::sycl::handler &cgh) {
-                            auto global_state_ac =
-                                global_state_buffer
-                                    .template get_access<cl::sycl::access::mode::read>(cgh);
+                            auto global_state = this->get_tdvs().build_global_state(
+                                cgh, this->get_i_generation(), delta_n_generations);
 
                             cgh.single_task<class TilingExecutionKernel>(ExecutionKernelImpl(
                                 this->get_trans_func(), this->get_i_generation(),
                                 target_i_generation, c * tile_width, r * tile_height, grid_width,
-                                grid_height, this->get_halo_value(), global_state_ac));
+                                grid_height, this->get_halo_value(), global_state));
                         });
                     events.push_back(computation_event);
 

@@ -44,6 +44,8 @@ class SimpleCPUExecutor : public SingleContextExecutor<TransFunc, TDVS> {
         using TDVLocalState = typename TDVGlobalState::LocalState;
         using TDV = typename TransFunc::TimeDependentValue;
 
+        this->get_tdvs().prepare_range(this->get_i_generation(), n_generations);
+
         cl::sycl::queue queue = this->new_queue();
         cl::sycl::buffer<Cell, 2> in_buffer = grid;
         cl::sycl::buffer<Cell, 2> out_buffer(grid.get_range());
@@ -60,12 +62,11 @@ class SimpleCPUExecutor : public SingleContextExecutor<TransFunc, TDVS> {
                     uindex_t grid_height = in_ac.get_range()[1];
                     Cell halo_value = this->get_halo_value();
                     TransFunc trans_func = this->get_trans_func();
-                    TDVGlobalState global_state =
-                        this->get_tdvs().prepare_global_state(gen, 1);
+                    TDVGlobalState global_state = this->get_tdvs().build_global_state(cgh, gen, 1);
 
                     cgh.parallel_for<class SimpleCPUExecutionKernel>(
                         in_ac.get_range(), [=](cl::sycl::id<2> idx) {
-                            TDVLocalState local_state = global_state.prepare_local_state();
+                            TDVLocalState local_state = global_state.build_local_state();
                             TDV tdv = local_state.get_value(0);
                             Stencil<Cell, TransFunc::stencil_radius, TDV> stencil(
                                 idx, in_ac.get_range(), gen, i_subgeneration, 0, tdv);

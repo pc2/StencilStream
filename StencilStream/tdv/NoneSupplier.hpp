@@ -31,11 +31,14 @@ class NoneSupplier {
     using LocalState = NoneSupplier;
     using GlobalState = NoneSupplier;
 
-    NoneSupplier prepare_global_state(uindex_t i_generation, uindex_t n_generation) const {
+    void prepare_range(uindex_t i_generation, uindex_t n_generations) {}
+
+    NoneSupplier build_global_state(cl::sycl::handler &cgh, uindex_t i_generation,
+                                    uindex_t n_generation) const {
         return NoneSupplier();
     }
 
-    NoneSupplier prepare_local_state() const { return NoneSupplier(); }
+    NoneSupplier build_local_state() const { return NoneSupplier(); }
 
     std::monostate get_value(uindex_t i) const { return std::monostate(); }
 };

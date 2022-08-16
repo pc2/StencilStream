@@ -23,31 +23,27 @@
 namespace stencil {
 namespace tdv {
 
-template <ValueFunction F> class OnDemandState {
-  public:
-    using LocalState = OnDemandState;
-    using Value = typename F::Value;
-
-    OnDemandState(F function, uindex_t i_generation)
-        : function(function), i_generation(i_generation) {}
-
-    OnDemandState prepare_local_state() const { return *this; }
-
-    Value get_value(uindex_t i) const { return function(i_generation + i); }
-
-  private:
-    F function;
-    uindex_t i_generation;
-};
-
 template <ValueFunction F> class OnDemandSupplier {
   public:
-    using GlobalState = OnDemandState<F>;
+    struct GlobalState {
+        using LocalState = GlobalState;
+        using Value = typename F::Value;
+
+        GlobalState build_local_state() const { return *this; }
+
+        Value get_value(uindex_t i) const { return function(i_generation + i); }
+
+        F function;
+        uindex_t i_generation;
+    };
 
     OnDemandSupplier(F function) : function(function) {}
 
-    OnDemandState<F> prepare_global_state(uindex_t i_generation, uindex_t n_generations) const {
-        return OnDemandState<F>(function, i_generation);
+    void prepare_range(uindex_t i_generation, uindex_t n_generations) {}
+
+    GlobalState build_global_state(cl::sycl::handler &cgh, uindex_t i_generation,
+                                   uindex_t n_generations) {
+        return GlobalState{.function = function, .i_generation = i_generation};
     }
 
   private:
