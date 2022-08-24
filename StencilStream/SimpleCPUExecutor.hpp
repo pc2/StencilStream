@@ -62,7 +62,7 @@ class SimpleCPUExecutor : public SingleContextExecutor<TransFunc, TDVS> {
                     uindex_t grid_height = in_ac.get_range()[1];
                     Cell halo_value = this->get_halo_value();
                     TransFunc trans_func = this->get_trans_func();
-                    TDVKernelArgument global_state = this->get_tdvs().build_global_state(cgh, gen, 1);
+                    TDVKernelArgument global_state = this->get_tdvs().build_kernel_argument(cgh, gen, 1);
 
                     cgh.parallel_for<class SimpleCPUExecutionKernel>(
                         in_ac.get_range(), [=](cl::sycl::id<2> idx) {

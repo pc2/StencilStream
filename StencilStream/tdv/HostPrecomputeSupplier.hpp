@@ -69,7 +69,7 @@ template <ValueFunction F, uindex_t max_n_generations> class HostPrecomputeSuppl
         }
     }
 
-    KernelArgument build_global_state(cl::sycl::handler &cgh, uindex_t i_generation,
+    KernelArgument build_kernel_argument(cl::sycl::handler &cgh, uindex_t i_generation,
                                    uindex_t n_generations) {
         assert(n_generations <= max_n_generations);
         assert(i_generation >= generation_offset);

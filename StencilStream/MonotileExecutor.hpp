@@ -178,7 +178,7 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc, TDVS> {
             });
 
             cl::sycl::event computation_event = work_queue.submit([&](cl::sycl::handler &cgh) {
-                auto tdv_global_state = this->get_tdvs().build_global_state(
+                auto tdv_global_state = this->get_tdvs().build_kernel_argument(
                     cgh, this->get_i_generation(), delta_n_generations);
 
                 cgh.single_task<class MonotileExecutionKernel>(ExecutionKernelImpl(

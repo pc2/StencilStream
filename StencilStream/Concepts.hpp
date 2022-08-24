@@ -76,7 +76,7 @@ concept HostState = KernelArgument<typename T::KernelArgument> &&
     requires(T &supplier, cl::sycl::handler &cgh, uindex_t i_generation, uindex_t n_generations) {
     {
         // building the global state
-        supplier.build_global_state(cgh, i_generation, n_generations)
+        supplier.build_kernel_argument(cgh, i_generation, n_generations)
         } -> std::convertible_to<typename T::KernelArgument>;
 
 } && requires(T &supplier, uindex_t i_generation, uindex_t n_generations) {
