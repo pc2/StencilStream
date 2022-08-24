@@ -17,6 +17,8 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <StencilStream/tdv/InlineSupplier.hpp>
+#include <StencilStream/tdv/NoneSupplier.hpp>
 #include <StencilStream/tiling/ExecutionKernel.hpp>
 #include <res/HostPipe.hpp>
 #include <res/TransFuncs.hpp>
@@ -27,13 +29,14 @@ using namespace stencil;
 using namespace std;
 using namespace stencil::tiling;
 using namespace cl::sycl;
-/*
+
 void test_tiling_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t target_i_generation) {
     using TransFunc = FPGATransFunc<stencil_radius>;
     using in_pipe = HostPipe<class TilingExecutionKernelInPipeID, Cell>;
     using out_pipe = HostPipe<class TilingExecutionKernelOutPipeID, Cell>;
-    using TestExecutionKernel = ExecutionKernel<TransFunc, n_processing_elements, tile_width,
-                                                tile_height, in_pipe, out_pipe>;
+    using KernelArgument = tdv::InlineSupplier<GenerationFunction>::KernelArgument;
+    using TestExecutionKernel = ExecutionKernel<TransFunc, KernelArgument, n_processing_elements,
+                                                tile_width, tile_height, in_pipe, out_pipe>;
 
     for (index_t c = -halo_radius; c < index_t(halo_radius + grid_width); c++) {
         for (index_t r = -halo_radius; r < index_t(halo_radius + grid_height); r++) {
@@ -47,7 +50,8 @@ void test_tiling_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t targ
     }
 
     TestExecutionKernel(TransFunc(), 0, target_i_generation, 0, 0, grid_width, grid_height,
-                        Cell::halo())();
+                        Cell::halo(),
+                        KernelArgument{.function = GenerationFunction{}, .i_generation = 0})();
 
     buffer<Cell, 2> output_buffer(range<2>(grid_width, grid_height));
 
@@ -95,6 +99,8 @@ TEST_CASE("tiling::ExecutionKernel (noop)", "[tiling::ExecutionKernel]") {
 
 struct HaloHandlingKernel {
     using Cell = bool;
+    using TimeDependentValue = std::monostate;
+
     static constexpr uindex_t stencil_radius = 1;
     static constexpr stencil::uindex_t n_subgenerations = 1;
 
@@ -120,8 +126,9 @@ struct HaloHandlingKernel {
 TEST_CASE("Halo values inside the pipeline are handled correctly", "[tiling::ExecutionKernel]") {
     using in_pipe = HostPipe<class HaloValueTestInPipeID, bool>;
     using out_pipe = HostPipe<class HaloValueTestOutPipeID, bool>;
-    using TestExecutionKernel = ExecutionKernel<HaloHandlingKernel, n_processing_elements,
-                                                tile_width, tile_height, in_pipe, out_pipe>;
+    using TestExecutionKernel =
+        ExecutionKernel<HaloHandlingKernel, tdv::NoneSupplier, n_processing_elements, tile_width,
+                        tile_height, in_pipe, out_pipe>;
 
     uindex_t halo_radius = n_processing_elements;
 
@@ -131,8 +138,8 @@ TEST_CASE("Halo values inside the pipeline are handled correctly", "[tiling::Exe
         }
     }
 
-    TestExecutionKernel(HaloHandlingKernel(), 0, gens_per_pass, 0, 0, tile_width, tile_height,
-                        true)();
+    TestExecutionKernel(HaloHandlingKernel(), 0, gens_per_pass, 0, 0, tile_width, tile_height, true,
+                        tdv::NoneSupplier())();
 
     for (uindex_t c = 0; c < tile_width; c++) {
         for (uindex_t r = 0; r < tile_height; r++) {
@@ -146,6 +153,8 @@ TEST_CASE("Halo values inside the pipeline are handled correctly", "[tiling::Exe
 
 struct IncompletePipelineKernel {
     using Cell = uint8_t;
+    using TimeDependentValue = std::monostate;
+
     static constexpr uindex_t stencil_radius = 1;
     static constexpr stencil::uindex_t n_subgenerations = 1;
 
@@ -156,7 +165,7 @@ TEST_CASE("Incomplete Pipeline with i_generation != 0", "[tiling::ExecutionKerne
     using in_pipe = HostPipe<class IncompletePipelineInPipeID, uint8_t>;
     using out_pipe = HostPipe<class IncompletePipelineOutPipeID, uint8_t>;
     using TestExecutionKernel =
-        ExecutionKernel<IncompletePipelineKernel, 16, 64, 64, in_pipe, out_pipe>;
+        ExecutionKernel<IncompletePipelineKernel, tdv::NoneSupplier, 16, 64, 64, in_pipe, out_pipe>;
 
     for (int c = -16; c < 16 + 64; c++) {
         for (int r = -16; r < 16 + 64; r++) {
@@ -164,7 +173,8 @@ TEST_CASE("Incomplete Pipeline with i_generation != 0", "[tiling::ExecutionKerne
         }
     }
 
-    TestExecutionKernel kernel(IncompletePipelineKernel(), 16, 20, 0, 0, 64, 64, 0);
+    TestExecutionKernel kernel(IncompletePipelineKernel(), 16, 20, 0, 0, 64, 64, 0,
+                               tdv::NoneSupplier());
     kernel.operator()();
 
     REQUIRE(in_pipe::empty());
@@ -177,4 +187,3 @@ TEST_CASE("Incomplete Pipeline with i_generation != 0", "[tiling::ExecutionKerne
 
     REQUIRE(out_pipe::empty());
 }
-*/

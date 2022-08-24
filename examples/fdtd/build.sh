@@ -10,7 +10,7 @@
 if [[ $@ == *"-h"* || $@ == *"--help"* || $# < 3 ]]
 then
 cat <<EOF
-Usage: $0 material_resolver source time_resolver backend [modifier]
+Usage: $0 material_resolver tdvs time_resolver backend [modifier]
 
 This script builds variants of the FDTD application. The application has many different ways to do
 things, which are selected via macro constants and templates throughout the code. The actual
@@ -24,9 +24,11 @@ material coefficients are retrieved from it. Possible values are:
 * 'render': Use a lookup table like with `lut`, but pick the material depending on the cell's
     position. No material information is stored in the cells.
 
-The 'source' denotes how and where the computations of the source wave amplitude are done. Possible values are:
-* 'od': Compute the current time and source wave amplitudes on-demand with the FPGA.
-* 'lut': Compute the source wave amplitudes on the host and store them in a lookup table.
+The 'tdvs' denotes how and where the computations of time-dependent values, i.e. the current time
+and the source wave amplitude, are done. Possible values are:
+* 'inline': Compute time dependent values inside the processing elements.
+* 'device': Precompute time dependent values on the device and store them in a lookup table.
+* 'host': Precompute time dependent values on the host and store them in a lookup table.
 
 StencilStream offers different backends or executors with different architectures or goals. The
 possible values are:
@@ -50,11 +52,11 @@ exit 1
 fi
 
 MATERIAL=$1
-SOURCE=$2
+TDVS=$2
 BACKEND=$3
 MODIFIER=$4
 
-EXEC_NAME="fdtd_${MATERIAL}_${SOURCE}_${BACKEND}"
+EXEC_NAME="fdtd_${MATERIAL}_${TDVS}_${BACKEND}"
 if [[ -n $MODIFIER ]]
 then
     EXEC_NAME="${EXEC_NAME}_${MODIFIER}"
@@ -87,14 +89,17 @@ else
 fi
 
 # Source wave computation
-if [[ "$SOURCE" == "od" ]]
+if [[ "$TDVS" == "inline" ]]
 then
-    COMMAND="$COMMAND -DSOURCE=0"
-elif [[ "$SOURCE" == "lut" ]]
+    COMMAND="$COMMAND -DTDVS_TYPE=0"
+elif [[ "$TDVS" == "device" ]]
 then
-    COMMAND="$COMMAND -DSOURCE=1"
+    COMMAND="$COMMAND -DTDVS_TYPE=1"
+elif [[ "$TDVS" == "host" ]]
+then
+    COMMAND="$COMMAND -DTDVS_TYPE=2"
 else
-    echo "Unknown source type '$SOURCE'." 1>&2
+    echo "Unknown tdvs type '$TDVS'." 1>&2
     VALID_ARGUMENTS=0
 fi
 

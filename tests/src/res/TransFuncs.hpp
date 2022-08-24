@@ -40,15 +40,22 @@ struct Cell {
     static Cell halo() { return Cell{0, 0, 0, 0, CellStatus::Halo}; }
 };
 
-template <stencil::uindex_t radius> class FPGATransFunc {
+struct GenerationFunction {
+    using Value = stencil::uindex_t;
+
+    stencil::uindex_t operator()(stencil::uindex_t i_generation) const { return i_generation; }
+};
+
+template <stencil::uindex_t radius>
+class FPGATransFunc {
   public:
     using Cell = Cell;
-    using TimeDependentValue = std::monostate;
+    using TimeDependentValue = stencil::uindex_t;
 
     static constexpr stencil::uindex_t stencil_radius = radius;
     static constexpr stencil::uindex_t n_subgenerations = 2;
 
-    Cell operator()(stencil::Stencil<Cell, radius> const &stencil) const {
+    Cell operator()(stencil::Stencil<Cell, radius, stencil::uindex_t> const &stencil) const {
         Cell new_cell = stencil[stencil::ID(0, 0)];
 
         bool is_valid = true;
@@ -76,6 +83,7 @@ template <stencil::uindex_t radius> class FPGATransFunc {
                 }
             }
         }
+        is_valid &= stencil.time_dependent_value == stencil.generation;
 
         new_cell.status = is_valid ? CellStatus::Normal : CellStatus::Invalid;
         if (new_cell.i_subgeneration == n_subgenerations - 1) {
@@ -92,12 +100,12 @@ template <stencil::uindex_t radius> class FPGATransFunc {
 template <stencil::uindex_t radius> class HostTransFunc {
   public:
     using Cell = Cell;
-    using TimeDependentValue = std::monostate;
+    using TimeDependentValue = stencil::uindex_t;
 
     static constexpr stencil::uindex_t stencil_radius = radius;
     static constexpr stencil::uindex_t n_subgenerations = 2;
 
-    Cell operator()(stencil::Stencil<Cell, radius> const &stencil) const {
+    Cell operator()(stencil::Stencil<Cell, radius, stencil::uindex_t> const &stencil) const {
         Cell new_cell = stencil[stencil::ID(0, 0)];
 
         if (stencil.id.c < 0 || stencil.id.r < 0 || stencil.id.c >= stencil.grid_range.c ||
@@ -131,6 +139,8 @@ template <stencil::uindex_t radius> class HostTransFunc {
                 }
             }
         }
+
+        REQUIRE(stencil.time_dependent_value == stencil.generation);
 
         if (new_cell.i_subgeneration == n_subgenerations - 1) {
             new_cell.i_generation += 1;

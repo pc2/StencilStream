@@ -32,10 +32,13 @@ using MaterialResolver = LUTResolver;
 using MaterialResolver = RenderResolver;
 #endif
 
-#if SOURCE == 0
+#if TDVS_TYPE == 0
     #include <StencilStream/tdv/InlineSupplier.hpp>
 using SourceSupplier = tdv::InlineSupplier<SourceFunction>;
-#elif SOURCE == 1
+#elif TDVS_TYPE == 1
+    #include <StencilStream/tdv/DevicePrecomputeSupplier.hpp>
+using SourceSupplier = tdv::DevicePrecomputeSupplier<SourceFunction, gens_per_pass>;
+#elif TDVS_TYPE == 2
     #include <StencilStream/tdv/HostPrecomputeSupplier.hpp>
 using SourceSupplier = tdv::HostPrecomputeSupplier<SourceFunction, gens_per_pass>;
 #endif

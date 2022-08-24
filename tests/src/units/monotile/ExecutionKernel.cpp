@@ -18,6 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <StencilStream/monotile/ExecutionKernel.hpp>
+#include <StencilStream/tdv/InlineSupplier.hpp>
 #include <StencilStream/tdv/NoneSupplier.hpp>
 
 #include <res/HostPipe.hpp>
@@ -28,14 +29,15 @@
 using namespace stencil;
 using namespace std;
 using namespace cl::sycl;
-/*
+
 void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t target_i_generation) {
     using TransFunc = HostTransFunc<stencil_radius>;
     using in_pipe = HostPipe<class MonotileExecutionKernelInPipeID, Cell>;
     using out_pipe = HostPipe<class MonotileExecutionKernelOutPipeID, Cell>;
+    using KernelArgument = tdv::InlineSupplier<GenerationFunction>::KernelArgument;
     using TestExecutionKernel =
-        monotile::ExecutionKernel<TransFunc, tdv::NoneSupplier, n_processing_elements, tile_width,
-tile_height, in_pipe, out_pipe>;
+        monotile::ExecutionKernel<TransFunc, KernelArgument, n_processing_elements, tile_width,
+                                  tile_height, in_pipe, out_pipe>;
 
     for (uindex_t c = 0; c < grid_width; c++) {
         for (uindex_t r = 0; r < grid_height; r++) {
@@ -43,8 +45,8 @@ tile_height, in_pipe, out_pipe>;
         }
     }
 
-    TestExecutionKernel(TransFunc(), 0, target_i_generation, grid_width, grid_height,
-                        Cell::halo())();
+    TestExecutionKernel(TransFunc(), 0, target_i_generation, grid_width, grid_height, Cell::halo(),
+                        KernelArgument{.function = GenerationFunction{}, .i_generation = 0})();
 
     buffer<Cell, 2> output_buffer(range<2>(grid_width, grid_height));
 
@@ -92,6 +94,8 @@ TEST_CASE("monotile::ExecutionKernel (noop)", "[monotile::ExecutionKernel]") {
 
 struct IncompletePipelineKernel {
     using Cell = uint8_t;
+    using TimeDependentValue = std::monostate;
+
     static constexpr uindex_t stencil_radius = 1;
     static constexpr uindex_t n_subgenerations = 1;
 
@@ -104,7 +108,7 @@ TEST_CASE("monotile::ExecutionKernel: Incomplete Pipeline with i_generation != 0
     using in_pipe = HostPipe<class IncompletePipelineInPipeID, uint8_t>;
     using out_pipe = HostPipe<class IncompletePipelineOutPipeID, uint8_t>;
     using TestExecutionKernel =
-        monotile::ExecutionKernel<IncompletePipelineKernel, 16, 64, 64, in_pipe, out_pipe>;
+        monotile::ExecutionKernel<IncompletePipelineKernel, tdv::NoneSupplier, 16, 64, 64, in_pipe, out_pipe>;
 
     for (int c = 0; c < 64; c++) {
         for (int r = 0; r < 64; r++) {
@@ -112,7 +116,7 @@ TEST_CASE("monotile::ExecutionKernel: Incomplete Pipeline with i_generation != 0
         }
     }
 
-    TestExecutionKernel kernel(IncompletePipelineKernel(), 16, 20, 64, 64, 0);
+    TestExecutionKernel kernel(IncompletePipelineKernel(), 16, 20, 64, 64, 0, tdv::NoneSupplier {});
     kernel.operator()();
 
     REQUIRE(in_pipe::empty());
@@ -124,4 +128,4 @@ TEST_CASE("monotile::ExecutionKernel: Incomplete Pipeline with i_generation != 0
     }
 
     REQUIRE(out_pipe::empty());
-}*/
+}
