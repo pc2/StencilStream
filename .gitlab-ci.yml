@@ -1,0 +1,19 @@
+stages:
+    - emulation
+
+default:
+    before_script:
+        - "ml fpga devel intel/oneapi bittware/520n Boost"
+
+unit_test:
+    stage: emulation
+    only:
+        - housekeeping
+        - staging
+        - main
+    variables:
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal --time=00:15:00 --mem 4G --c 8"
+    script:
+        - cd tests
+        - make unit_test -j8
+        - ./unit_test
