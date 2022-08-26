@@ -1,5 +1,6 @@
 stages:
     - emulation
+    - reports
 
 default:
     before_script:
@@ -45,3 +46,5 @@ reports:
             - examples/hotspot/*.prj/reports
             - examples/conway/report.log
             - examples/conway/conway_hw.prj/reports
+    tags:
+        - noctua2
