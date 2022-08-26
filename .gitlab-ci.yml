@@ -17,3 +17,5 @@ unit_test:
         - cd tests
         - make unit_test -j8
         - ./unit_test
+    tags:
+        - noctua2
