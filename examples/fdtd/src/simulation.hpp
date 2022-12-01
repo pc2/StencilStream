@@ -66,8 +66,8 @@ class FDTDKernel {
                 float current_time = (stencil.generation >> 1) * dt;
                 if (cell.distance < dx && current_time < t_cutoff) {
                     float wave_progress = (current_time - t_0) / tau;
-                    cell.hz += cl::sycl::cos(omega * current_time) *
-                               cl::sycl::exp(-1 * wave_progress * wave_progress);
+                    cell.hz += std::cos(omega * current_time) *
+                               std::exp(-1 * wave_progress * wave_progress);
                 }
 
                 if (current_time > t_detect) {

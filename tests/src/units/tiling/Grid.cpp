@@ -18,7 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <CL/sycl.hpp>
-#include <CL/sycl/INTEL/fpga_extensions.hpp>
+#include <ext/intel/fpga_extensions.hpp>
 #include <StencilStream/tiling/Grid.hpp>
 #include <res/catch.hpp>
 #include <res/constants.hpp>
@@ -69,89 +69,6 @@ TEST_CASE("Grid::Grid(cl::sycl::buffer<T, 2>, T)", "[Grid]") {
                 REQUIRE(out_buffer_ac[c][r].c == c);
                 REQUIRE(out_buffer_ac[c][r].r == r);
             }
-        }
-    }
-}
-
-TEST_CASE("Grid::submit_tile_input", "[Grid]") {
-    using grid_in_pipe = pipe<class grid_in_pipe_id, ID>;
-
-    buffer<ID, 2> in_buffer(range<2>(3 * tile_width, 3 * tile_height));
-    buffer<ID, 2> out_buffer(range<2>(2 * halo_radius + tile_width, 2 * halo_radius + tile_height));
-
-#ifdef HARDWARE
-    INTEL::fpga_selector device_selector;
-#else
-    INTEL::fpga_emulator_selector device_selector;
-#endif
-    cl::sycl::queue working_queue(device_selector);
-
-    {
-        auto in_buffer_ac = in_buffer.get_access<access::mode::discard_write>();
-        for (uindex_t c = 0; c < 3 * tile_width; c++) {
-            for (uindex_t r = 0; r < 3 * tile_height; r++) {
-                in_buffer_ac[c][r] = ID(c, r);
-            }
-        }
-    }
-
-    TestGrid grid(in_buffer);
-    grid.submit_tile_input<grid_in_pipe>(working_queue, UID(1, 1));
-
-    working_queue.submit([&](handler &cgh) {
-        auto out_buffer_ac = out_buffer.get_access<access::mode::discard_write>(cgh);
-
-        cgh.single_task<class input_test_kernel>([=]() {
-            for (uindex_t c = 0; c < 2 * halo_radius + tile_width; c++) {
-                for (uindex_t r = 0; r < 2 * halo_radius + tile_height; r++) {
-                    out_buffer_ac[c][r] = grid_in_pipe::read();
-                }
-            }
-        });
-    });
-
-    auto out_buffer_ac = out_buffer.get_access<access::mode::read>();
-
-    for (uindex_t c = 0; c < 2 * halo_radius + tile_width; c++) {
-        for (uindex_t r = 0; r < 2 * halo_radius + tile_height; r++) {
-            REQUIRE(out_buffer_ac[c][r].c == c + tile_width - halo_radius);
-            REQUIRE(out_buffer_ac[c][r].r == r + tile_height - halo_radius);
-        }
-    }
-}
-
-TEST_CASE("Grid::submit_tile_output", "[Grid]") {
-    using grid_out_pipe = pipe<class grid_out_pipe_id, ID>;
-
-    TestGrid grid(tile_width, tile_height);
-
-#ifdef HARDWARE
-    INTEL::fpga_selector device_selector;
-#else
-    INTEL::fpga_emulator_selector device_selector;
-#endif
-    cl::sycl::queue working_queue(device_selector);
-
-    working_queue.submit([&](handler &cgh) {
-        cgh.single_task<class output_test_kernel>([=]() {
-            for (uindex_t c = 0; c < tile_width; c++) {
-                for (uindex_t r = 0; r < tile_height; r++) {
-                    grid_out_pipe::write(ID(c, r));
-                }
-            }
-        });
-    });
-
-    grid.submit_tile_output<grid_out_pipe>(working_queue, UID(0, 0));
-
-    buffer<ID, 2> out_buffer(range<2>(tile_width, tile_height));
-    grid.copy_to(out_buffer);
-
-    auto out_buffer_ac = out_buffer.get_access<access::mode::read>();
-    for (uindex_t c = 0; c < tile_width; c++) {
-        for (uindex_t r = 0; r < tile_height; r++) {
-            REQUIRE(out_buffer_ac[c][r].r == r);
-            REQUIRE(out_buffer_ac[c][r].c == c);
         }
     }
 }

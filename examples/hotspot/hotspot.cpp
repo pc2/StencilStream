@@ -18,7 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <CL/sycl.hpp>
-#include <CL/sycl/INTEL/fpga_extensions.hpp>
+#include <ext/intel/fpga_extensions.hpp>
 #include <StencilStream/MonotileExecutor.hpp>
 #include <StencilStream/StencilExecutor.hpp>
 #include <fstream>
@@ -54,9 +54,9 @@ const uindex_t tile_height = 1024;
 const uindex_t burst_size = 1024;
 
 #ifdef HARDWARE
-using selector = INTEL::fpga_selector;
+using selector = ext::intel::fpga_selector;
 #else
-using selector = INTEL::fpga_emulator_selector;
+using selector = ext::intel::fpga_emulator_selector;
 #endif
 
 using Cell = vec<FLOAT, 2>;

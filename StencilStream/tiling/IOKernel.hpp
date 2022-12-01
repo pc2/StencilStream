@@ -56,7 +56,7 @@ namespace tiling {
  */
 template <typename T, uindex_t halo_height, uindex_t core_height, uindex_t burst_length,
           typename pipe, uindex_t n_halo_height_buffers, cl::sycl::access::mode access_mode,
-          cl::sycl::access::target access_target = cl::sycl::access::target::global_buffer>
+          cl::sycl::access::target access_target = cl::sycl::access::target::device>
 class IOKernel {
   public:
     /**

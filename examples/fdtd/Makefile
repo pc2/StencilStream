@@ -14,14 +14,14 @@ ifdef EBROOTGCC
 	ARGS += --gcc-toolchain=$(EBROOTGCC)
 endif
 
-ifdef AOCL_BOARD_PACKAGE_ROOT
-	ARGS += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
-endif
-
 EMU =
 HW = -DHARDWARE -Xshardware 
 MONOTILE = -DMONOTILE
 TILING =
+
+ifdef AOCL_BOARD_PACKAGE_ROOT
+	HW += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
+endif
 
 SOURCES = $(wildcard src/*.cpp)
 RESOURCES = $(wildcard src/*.hpp) $(wildcard StencilStream/*) Makefile

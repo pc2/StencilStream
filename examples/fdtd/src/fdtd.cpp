@@ -31,9 +31,9 @@ using Executor = StencilExecutor<FDTDCell, stencil_radius, FDTDKernel, pipeline_
 #endif
 
 #ifdef HARDWARE
-using selector = INTEL::fpga_selector;
+using selector = ext::intel::fpga_selector;
 #else
-using selector = INTEL::fpga_emulator_selector;
+using selector = ext::intel::fpga_emulator_selector;
 #endif
 
 auto exception_handler = [](cl::sycl::exception_list exceptions) {
