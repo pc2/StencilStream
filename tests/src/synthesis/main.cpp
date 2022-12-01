@@ -19,7 +19,7 @@
  */
 #include "../res/TransFuncs.hpp"
 #include <CL/sycl.hpp>
-#include <CL/sycl/INTEL/fpga_extensions.hpp>
+#include <ext/intel/fpga_extensions.hpp>
 #include <StencilStream/StencilExecutor.hpp>
 
 using namespace std;
@@ -51,9 +51,9 @@ void exception_handler(cl::sycl::exception_list exceptions) {
 
 int main() {
 #ifdef HARDWARE
-    INTEL::fpga_selector device_selector;
+    ext::intel::fpga_selector device_selector;
 #else
-    INTEL::fpga_emulator_selector device_selector;
+    ext::intel::fpga_emulator_selector device_selector;
 #endif
     cl::sycl::queue working_queue(device_selector, exception_handler);
 

@@ -154,7 +154,7 @@ class MonotileExecutor : public SingleQueueExecutor<T, stencil_radius, TransFunc
                     out_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
                 T halo_value = this->get_halo_value();
 
-                cgh.single_task<class MonotileInputKernel>([=]() {
+                cgh.single_task<class MonotileOutputKernel>([=]() {
                     [[intel::loop_coalesce(2)]] for (uindex_t c = 0; c < tile_width; c++) {
                         for (uindex_t r = 0; r < tile_height; r++) {
                             T value = out_pipe::read();

@@ -18,7 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <CL/sycl.hpp>
-#include <CL/sycl/INTEL/fpga_extensions.hpp>
+#include <ext/intel/fpga_extensions.hpp>
 #include <StencilStream/tiling/Grid.hpp>
 #include <res/catch.hpp>
 #include <res/constants.hpp>
@@ -80,9 +80,9 @@ TEST_CASE("Grid::submit_tile_input", "[Grid]") {
     buffer<ID, 2> out_buffer(range<2>(2 * halo_radius + tile_width, 2 * halo_radius + tile_height));
 
 #ifdef HARDWARE
-    INTEL::fpga_selector device_selector;
+    ext::intel::fpga_selector device_selector;
 #else
-    INTEL::fpga_emulator_selector device_selector;
+    ext::intel::fpga_emulator_selector device_selector;
 #endif
     cl::sycl::queue working_queue(device_selector);
 
@@ -126,9 +126,9 @@ TEST_CASE("Grid::submit_tile_output", "[Grid]") {
     TestGrid grid(tile_width, tile_height);
 
 #ifdef HARDWARE
-    INTEL::fpga_selector device_selector;
+    ext::intel::fpga_selector device_selector;
 #else
-    INTEL::fpga_emulator_selector device_selector;
+    ext::intel::fpga_emulator_selector device_selector;
 #endif
     cl::sycl::queue working_queue(device_selector);
 

@@ -28,7 +28,7 @@ As an example, we are going to implement a simple version of [Conway's Game of L
 First, create a new working directory for your project and copy the `StencilStream` folder into it. We will only need a single source file, so create a `conway.cpp` too! We are now going to walk through it:
 
 ``` C++
-#include <CL/sycl/INTEL/fpga_extensions.hpp>
+#include <ext/intel/fpga_extensions.hpp>
 #include <StencilStream/StencilExecutor.hpp>
 ```
 
@@ -176,12 +176,12 @@ ifdef EBROOTGCC
 	ARGS += --gcc-toolchain=$(EBROOTGCC)
 endif
 
-ifdef AOCL_BOARD_PACKAGE_ROOT
-	ARGS += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
-endif
-
 EMU_ARGS = $(ARGS)
 HW_ARGS = $(ARGS) -DHARDWARE -Xshardware
+
+ifdef AOCL_BOARD_PACKAGE_ROOT
+	HW_ARGS += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
+endif
 
 RESOURCES = conway.cpp $(wildcard StencilStream/*) Makefile
 

@@ -14,12 +14,12 @@ ifdef EBROOTGCC
 	ARGS += --gcc-toolchain=$(EBROOTGCC)
 endif
 
-ifdef AOCL_BOARD_PACKAGE_ROOT
-	ARGS += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
-endif
-
 EMU_ARGS = $(ARGS)
 HW_ARGS = $(ARGS) -DHARDWARE -Xshardware
+
+ifdef AOCL_BOARD_PACKAGE_ROOT
+	HW_ARGS += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
+endif
 
 RESOURCES = conway.cpp $(wildcard StencilStream/*) Makefile
 
