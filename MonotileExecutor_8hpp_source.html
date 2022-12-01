@@ -190,7 +190,7 @@ $(function() {
 <div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;                    out_buffer.template get_access&lt;cl::sycl::access::mode::discard_write&gt;(cgh);</div>
 <div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;                T halo_value = this-&gt;<a class="code" href="classstencil_1_1AbstractExecutor.html#aaed239df6a12f950056909adabf2d5cd">get_halo_value</a>();</div>
 <div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160; </div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;                cgh.single_task&lt;<span class="keyword">class </span>MonotileInputKernel&gt;([=]() {</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;                cgh.single_task&lt;<span class="keyword">class </span>MonotileOutputKernel&gt;([=]() {</div>
 <div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;                    [[intel::loop_coalesce(2)]] <span class="keywordflow">for</span> (uindex_t c = 0; c &lt; tile_width; c++) {</div>
 <div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;                        <span class="keywordflow">for</span> (uindex_t r = 0; r &lt; tile_height; r++) {</div>
 <div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;                            T value = out_pipe::read();</div>

@@ -84,7 +84,7 @@ Required Software</h2>
 A basic stencil kernel</h2>
 <p>As an example, we are going to implement a simple version of <a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">Conway's Game of Life</a>. However, please note that this isn't the most efficient way to do it, just an example.</p>
 <p>First, create a new working directory for your project and copy the <code>StencilStream</code> folder into it. We will only need a single source file, so create a <code>conway.cpp</code> too! We are now going to walk through it:</p>
-<div class="fragment"><div class="line">#include &lt;CL/sycl/INTEL/fpga_extensions.hpp&gt;</div>
+<div class="fragment"><div class="line">#include &lt;ext/intel/fpga_extensions.hpp&gt;</div>
 <div class="line">#include &lt;StencilStream/StencilExecutor.hpp&gt;</div>
 </div><!-- fragment --><p>First, we include StencilStream and some SYCL extensions by Intel. Normally, you would use the namespaces <code>cl::sycl</code> and <code>stencil</code>, but here we don't do that to show you which types come from which library.</p>
 <div class="fragment"><div class="line">using Cell = bool;</div>
@@ -191,12 +191,12 @@ A basic stencil kernel</h2>
 <div class="line">    ARGS += --gcc-toolchain=$(EBROOTGCC)</div>
 <div class="line">endif</div>
 <div class="line"> </div>
-<div class="line">ifdef AOCL_BOARD_PACKAGE_ROOT</div>
-<div class="line">    ARGS += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)</div>
-<div class="line">endif</div>
-<div class="line"> </div>
 <div class="line">EMU_ARGS = $(ARGS)</div>
 <div class="line">HW_ARGS = $(ARGS) -DHARDWARE -Xshardware</div>
+<div class="line"> </div>
+<div class="line">ifdef AOCL_BOARD_PACKAGE_ROOT</div>
+<div class="line">    HW_ARGS += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)</div>
+<div class="line">endif</div>
 <div class="line"> </div>
 <div class="line">RESOURCES = conway.cpp $(wildcard StencilStream/*) Makefile</div>
 <div class="line"> </div>
