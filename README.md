@@ -12,13 +12,12 @@ To be done.
 
 ### Required Software
 
-This library requires the "Intel® oneAPI Base Toolkit for Linux" as well as the "Intel® FPGA Add-On for oneAPI Base Toolkit", which you can download [here](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit/download.html#operatingsystem=Linux&#distributions=Web%20and%20Local%20Install&#options=Online). You also need to have a GCC toolchain with support for C++17 features installed and loaded as well the [boost libraries](https://www.boost.org), version 1.29.0 or newer. If your FPGA accelerator card isn't an Intel® PAC, you also need the board support package of your card.
+This library requires the "Intel® oneAPI Base Toolkit for Linux", version 2021.1.3 or newer, as well as the corresponding version of the "Intel® FPGA Add-On for oneAPI Base Toolkit", which you can download [here](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit/download.html#operatingsystem=Linux&#distributions=Web%20and%20Local%20Install&#options=Online). You also need to have a GCC toolchain with support for C++17 features installed and loaded as well the [boost libraries](https://www.boost.org), version 1.29.0 or newer. If your FPGA accelerator card isn't an Intel® PAC, you also need the board support package of your card.
 
-If you're working with [the Noctua super-computer by the Paderborn Center for Parallel Computing](https://pc2.uni-paderborn.de/hpc-services/available-systems/noctua/) and the Nallatech/Bittware 520N Board, you can easily load all required components by executing the following commands:
+If you're working with [the Noctua2 super-computer at the Paderborn Center for Parallel Computing](https://pc2.uni-paderborn.de/hpc-services/available-systems/noctua2) and the Nallatech/Bittware 520N Board, you can easily load all required components by executing the following command:
 
 ``` bash
-source /cm/shared/opt/intel_oneapi/{latest-version}/setvars.sh
-module load nalla_pcie compiler/GCC
+module load fpga devel intel/oneapi bittware/520n Boost
 ```
 
 Ubuntu 20.04 LTS is not supported since StencilStream uses fairly new C++20 features that aren't available in the long-term release. Be sure to use the current version.
@@ -30,7 +29,7 @@ As an example, we are going to implement a simple version of [Conway's Game of L
 First, create a new working directory for your project and copy the `StencilStream` folder into it. We will only need a single source file, so create a `conway.cpp` too! We are now going to walk through it:
 
 ``` C++
-#include <CL/sycl/INTEL/fpga_extensions.hpp>
+#include <ext/intel/fpga_extensions.hpp>
 #include <StencilStream/StencilExecutor.hpp>
 ```
 
@@ -172,20 +171,24 @@ One last thing we have to talk about is the build environment. The usual and rec
 CC = dpcpp
 STENCIL_STREAM_PATH = ./
 
-ARGS = -fintelfpga -Xsv -std=c++17 -I$(STENCIL_STREAM_PATH) -O3
+ARGS = -std=c++20 -I$(STENCIL_STREAM_PATH) -O3 -qactypes
 
 ifdef EBROOTGCC
 	ARGS += --gcc-toolchain=$(EBROOTGCC)
 endif
 
+CPU_ARGS = $(ARGS) -DCPU
+EMU_ARGS = $(ARGS) -fintelfpga -DEMULATOR
+HW_ARGS = $(ARGS) -fintelfpga -DHARDWARE -Xsv -Xshardware
+
 ifdef AOCL_BOARD_PACKAGE_ROOT
-	ARGS += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
+	HW_ARGS += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
 endif
 
-EMU_ARGS = $(ARGS)
-HW_ARGS = $(ARGS) -DHARDWARE -Xshardware
-
 RESOURCES = conway.cpp $(wildcard StencilStream/*) Makefile
+
+conway_cpu: $(RESOURCES)
+	$(CC) $(CPU_ARGS) conway.cpp -o conway_cpu
 
 conway_emu: $(RESOURCES)
 	$(CC) $(EMU_ARGS) conway.cpp -o conway_emu
