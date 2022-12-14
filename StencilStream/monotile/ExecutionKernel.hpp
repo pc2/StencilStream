@@ -90,7 +90,7 @@ requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
     using index_2d_t = ac_int<bits_2d + 1, true>;
     using uindex_2d_t = ac_int<bits_2d, false>;
 
-    static constexpr unsigned long bits_pes = std::bit_width(n_processing_elements);
+    static constexpr unsigned long bits_pes = std::max<int>(2, std::bit_width(n_processing_elements));
     using index_pes_t = ac_int<bits_pes + 1, true>;
     using uindex_pes_t = ac_int<bits_pes, false>;
 
