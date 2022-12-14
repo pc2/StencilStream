@@ -12,7 +12,7 @@ documentation:
         - docker-shared
     image: "alpine"
     before_script:
-        - apk add --no-cache doxygen graphviz
+        - apk add --no-cache doxygen graphviz font-noto
     script:
         - doxygen
     artifacts:
