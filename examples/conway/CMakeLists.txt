@@ -5,38 +5,39 @@
 # The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 # 
 # THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-CC = dpcpp
-STENCIL_STREAM_PATH = ./
 
-ARGS = -std=c++20 -I$(STENCIL_STREAM_PATH) -O3 -qactypes
+set(CMAKE_CXX_COMPILER dpcpp)
+cmake_minimum_required(VERSION 3.21)
 
-ifdef EBROOTGCC
-	ARGS += --gcc-toolchain=$(EBROOTGCC)
-endif
+project(Conway CXX)
+set(CMAKE_PROJECT_VERSION 0.1.0)
 
-CPU_ARGS = $(ARGS) -DCPU
-EMU_ARGS = $(ARGS) -fintelfpga -DEMULATOR
-HW_ARGS = $(ARGS) -fintelfpga -DHARDWARE -Xsv -Xshardware
+find_package(Boost 1.74.0 REQUIRED)
 
-ifdef AOCL_BOARD_PACKAGE_ROOT
-	HW_ARGS += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
-endif
+# Global settings
+include_directories(.)
+add_compile_options(-std=c++20 -qactypes)
+add_compile_definitions(STENCIL_INDEX_WIDTH=32)
 
-RESOURCES = conway.cpp $(wildcard StencilStream/*) Makefile
+# Pure CPU-based executable
+add_executable(conway_cpu conway.cpp)
+target_compile_definitions(conway_cpu PUBLIC CPU)
 
-conway_cpu: $(RESOURCES)
-	$(CC) $(CPU_ARGS) conway.cpp -o conway_cpu
+# Common settings for all FPGA-based executables
+add_compile_options(-fintelfpga)
+add_link_options(-fintelfpga)
 
-conway_emu: $(RESOURCES)
-	$(CC) $(EMU_ARGS) conway.cpp -o conway_emu
+# The emulation image
+add_executable(conway_emu conway.cpp)
+target_compile_definitions(conway_emu PUBLIC EMULATOR)
 
-conway_hw: $(RESOURCES)
-	$(CC) $(HW_ARGS) conway.cpp -o conway_hw
+# The hardware usage report
+add_executable(conway_hw_report conway.cpp)
+target_compile_definitions(conway_hw_report PUBLIC HARDWARE)
+target_link_options(conway_hw_report PUBLIC -fintelfpga -Xsv -Xshardware -fsycl-link)
 
-conway_hw.report.tar.gz: $(RESOURCES)
-	rm -f conway_hw
-	$(CC) $(HW_ARGS) -fsycl-link conway.cpp -o conway_hw
-	tar -caf conway_hw.report.tar.gz conway_hw.prj/reports
+# The hardware image
+add_executable(conway_hw conway.cpp)
+target_compile_definitions(conway_hw PUBLIC HARDWARE)
+target_link_options(conway_hw PUBLIC -fintelfpga -Xsv -Xshardware)
 
-clean:
-	git clean -dXf
