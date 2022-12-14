@@ -17,14 +17,13 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <catch2/catch_all.hpp>
 #include <StencilStream/monotile/ExecutionKernel.hpp>
 #include <StencilStream/tdv/InlineSupplier.hpp>
 #include <StencilStream/tdv/NoneSupplier.hpp>
-
-#include <res/HostPipe.hpp>
-#include <res/TransFuncs.hpp>
-#include <res/catch.hpp>
-#include <res/constants.hpp>
+#include "../HostPipe.hpp"
+#include "../TransFuncs.hpp"
+#include "../constants.hpp"
 
 using namespace stencil;
 using namespace std;

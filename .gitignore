@@ -24,4 +24,8 @@
 **/*.mp4
 **/*.png
 **/*.gch
+
+build
 doxygen
+
+!**/CMakeLists.txt
