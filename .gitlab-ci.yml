@@ -2,49 +2,19 @@ stages:
     - emulation
     - reports
 
-default:
-    before_script:
-        - "ml fpga devel intel/oneapi bittware/520n Boost"
-
-unit_test:
+documentation:
     stage: emulation
     only:
         - housekeeping
         - staging
         - main
-    variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal --time=00:15:00 --mem 4G -c 16"
-    script:
-        - cd tests
-        - make unit_test -j20
-        - ./unit_test
     tags:
-        - noctua2
-
-reports:
-    stage: reports
-    only:
-        - housekeeping
-        - staging
-        - main
-    variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal --time=00:45:00 --mem 64G -c 32 --mail-type=ALL --mail-user=joo@mail.upb.de"
+        - docker-shared
+    image: "alpine"
+    before_script:
+        - apk add --no-cache doxygen graphviz
     script:
-        - cd examples/conway
-        - make conway_hw.report.tar.gz > report.log &
-        - cd ../fdtd
-        - ./build_all_reports.sh
-        - cd ../hotspot
-        - make hotspot_mono.report.tar.gz > mono.log &
-        - make hotspot_tiling.report.tar.gz > tiling.log &
-        - wait
+        - doxygen
     artifacts:
         paths:
-            - examples/fdtd/*.log
-            - examples/fdtd/*.prj/reports
-            - examples/hotspot/*.log
-            - examples/hotspot/*.prj/reports
-            - examples/conway/report.log
-            - examples/conway/conway_hw.prj/reports
-    tags:
-        - noctua2
+            - "doxygen/html"
