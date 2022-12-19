@@ -27,7 +27,7 @@ unit-tests:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 0:05:00 --cpus-per-node 12 --mem-per-node 4G"
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 0:05:00 -c 12 --mem 4G"
     before_script:
         - "ml fpga devel intel/oneapi/22.2.0 bittware/520n Boost CMake"
     script:
