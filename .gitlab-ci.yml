@@ -1,8 +1,8 @@
 stages:
-    - build
+    - preevaluation
 
 documentation:
-    stage: build
+    stage: preevaluation
     only:
         - housekeeping
         - staging
@@ -18,8 +18,8 @@ documentation:
         paths:
             - "doxygen/html"
 
-unit-tests:
-    stage: build
+unit_test:
+    stage: preevaluation
     only:
         - housekeeping
         - staging
@@ -27,14 +27,37 @@ unit-tests:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 0:05:00 -c 12 --mem 4G"
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 0:05:00 -c 4 --mem 1G"
     before_script:
         - "ml fpga devel intel/oneapi/22.2.0 bittware/520n Boost CMake"
     script:
-        - "cd tests"
-        - "mkdir build"
-        - "cd build"
+        - "mkdir -p tests/build"
+        - "cd tests/build"
         - "cmake .."
-        - "make unit_test -j12"
+        - "make unit_test -j4"
         - "./unit_test"
+
+fdtd_preevaluation:
+    stage: preevaluation
+    only:
+        - housekeeping
+        - staging
+        - main
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 0:30:00 -c 12 --mem 16G"
+    before_script:
+        - "ml fpga devel intel/oneapi/22.2.0 bittware/520n Boost CMake"
+    script:
+        - "mkdir -p examples/fdtd/build"
+        - "cd examples/fdtd/build"
+        - "cmake .."
+        - "make fdtd_coef_inline_cpu -j12"
+        - "./fdtd_coef_inline_cpu -c ../experiments/default.json"
+        - "../plot_frames.py ."
+        - "make reports -j12"
+    artifacts:
+        paths:
+            - "examples/fdtd/build"
 
