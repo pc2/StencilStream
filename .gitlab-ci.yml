@@ -1,9 +1,8 @@
 stages:
-    - emulation
-    - reports
+    - build
 
 documentation:
-    stage: emulation
+    stage: build
     only:
         - housekeeping
         - staging
@@ -18,3 +17,24 @@ documentation:
     artifacts:
         paths:
             - "doxygen/html"
+
+unit-tests:
+    stage: build
+    only:
+        - housekeeping
+        - staging
+        - main
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 0:05:00 --cpus-per-node 12 --mem-per-node 4G"
+    before_script:
+        - "ml fpga devel intel/oneapi/22.2.0 bittware/520n Boost CMake"
+    script:
+        - "cd tests"
+        - "mkdir build"
+        - "cd build"
+        - "cmake .."
+        - "make unit_test -j12"
+        - "./unit_test"
+
