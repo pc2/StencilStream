@@ -44,7 +44,7 @@ reports:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 1:00:00 -c 21 --mem 16G"
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 1:00:00 -c 21 --mem 32G"
     before_script:
         - "ml fpga devel intel/oneapi bittware/520n Boost CMake"
     script:
