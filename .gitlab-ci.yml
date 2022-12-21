@@ -4,7 +4,6 @@ stages:
 documentation:
     stage: preevaluation
     only:
-        - housekeeping
         - staging
         - main
     tags:
@@ -27,7 +26,7 @@ unit_test:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 0:05:00 -c 4 --mem 1G"
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 0:05:00 -c 12 --mem 1G"
     before_script:
         - "ml fpga devel intel/oneapi/22.2.0 bittware/520n Boost CMake"
     script:
@@ -46,17 +45,17 @@ fdtd_preevaluation:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 0:30:00 -c 12 --mem 16G"
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 0:30:00 -c 18 --mem 16G"
     before_script:
         - "ml fpga devel intel/oneapi/22.2.0 bittware/520n Boost CMake"
     script:
         - "mkdir -p examples/fdtd/build"
         - "cd examples/fdtd/build"
         - "cmake .."
-        - "make fdtd_coef_inline_cpu -j12"
+        - "make fdtd_coef_inline_cpu -j18"
         - "./fdtd_coef_inline_cpu -c ../experiments/default.json"
         - "../plot_frames.py ."
-        - "make reports -j12"
+        - "make reports -j18"
     artifacts:
         paths:
             - "examples/fdtd/build"
