@@ -17,7 +17,7 @@ target_compile_definitions(hotspot_cpu PUBLIC EXECUTOR=2)
 
 # Common hardware options
 add_compile_options(-fintelfpga)
-add_link_options(-fintelfpga -Xshardware -Xsv)
+add_link_options(-fintelfpga -Xshardware)
 
 if(VERBOSE_SYNTHESIS)
     add_link_options(-Xsv)
