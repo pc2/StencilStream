@@ -14,11 +14,6 @@ set(CMAKE_PROJECT_VERSION 3.0.0)
 
 find_package(Boost 1.74.0 REQUIRED)
 
-add_custom_target(reports)
-add_custom_target(emus)
-add_custom_target(cpus)
-add_custom_target(hws)
-
 add_subdirectory(examples/conway)
 add_subdirectory(examples/fdtd)
 add_subdirectory(examples/hotspot)

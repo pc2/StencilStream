@@ -14,7 +14,6 @@ add_compile_definitions(STENCIL_INDEX_WIDTH=32)
 # Pure CPU-based executable
 add_executable(conway_cpu conway.cpp)
 target_compile_definitions(conway_cpu PUBLIC CPU)
-add_dependencies(cpus conway_cpu)
 
 # Common settings for all FPGA-based executables
 add_compile_options(-fintelfpga)
@@ -26,16 +25,13 @@ endif()
 # The emulation image
 add_executable(conway_emu conway.cpp)
 target_compile_definitions(conway_emu PUBLIC EMULATOR)
-add_dependencies(emus conway_emu)
 
 # The hardware usage report
 add_executable(conway_hw_report conway.cpp)
 target_compile_definitions(conway_hw_report PUBLIC HARDWARE)
 target_link_options(conway_hw_report PUBLIC -fintelfpga -Xshardware -fsycl-link)
-add_dependencies(reports conway_hw_report)
 
 # The hardware image
 add_executable(conway_hw conway.cpp)
 target_compile_definitions(conway_hw PUBLIC HARDWARE)
 target_link_options(conway_hw PUBLIC -fintelfpga -Xshardware)
-add_dependencies(hws conway_hw)

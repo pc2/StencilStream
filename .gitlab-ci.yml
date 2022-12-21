@@ -4,6 +4,7 @@ stages:
 documentation:
     stage: preevaluation
     only:
+        - housekeeping
         - staging
         - main
     tags:
@@ -20,6 +21,7 @@ documentation:
 unit_test:
     stage: preevaluation
     only:
+        - housekeeping
         - staging
         - main
     tags:
@@ -35,23 +37,46 @@ unit_test:
         - "make unit_test -j12"
         - "./unit_test"
 
-reports:
+fdtd_reports:
     stage: preevaluation
     only:
         - housekeeping
         - staging
         - main
+    when: manual
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 1:00:00 -c 21 --mem 32G"
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 1:00:00 -c 18 --mem 32G"
     before_script:
         - "ml fpga devel intel/oneapi bittware/520n Boost CMake"
     script:
         - "mkdir -p build"
         - "cd build"
         - "cmake .."
-        - "make reports -j21"
+        - "make fdtd_reports -j21"
     artifacts:
         paths:
-            - "build/examples/*/*.prj/reports"
+            - "build/examples/fdtd/*.prj/reports"
+
+hotspot_reports:
+    stage: preevaluation
+    only:
+        - housekeeping
+        - staging
+        - main
+    when: manual
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 1:00:00 -c 2 --mem 8G"
+    before_script:
+        - "ml fpga devel intel/oneapi bittware/520n Boost CMake"
+    script:
+        - "mkdir -p build"
+        - "cd build"
+        - "cmake .."
+        - "make hotspot_reports -j21"
+    artifacts:
+        paths:
+            - "build/examples/hotspot/*.prj/reports"
