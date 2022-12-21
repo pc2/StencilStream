@@ -27,7 +27,7 @@ unit_test:
     variables:
         SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 0:05:00 -c 12 --mem 1G"
     before_script:
-        - "ml fpga devel intel/oneapi/22.2.0 bittware/520n Boost CMake"
+        - "ml fpga devel intel/oneapi bittware/520n Boost CMake"
     script:
         - "mkdir -p tests/build"
         - "cd tests/build"
@@ -44,14 +44,14 @@ reports:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 0:10:00 -c 1 --mem 1G"
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 1:00:00 -c 21 --mem 16G"
     before_script:
-        - "ml fpga devel intel/oneapi/22.2.0 bittware/520n Boost CMake"
+        - "ml fpga devel intel/oneapi bittware/520n Boost CMake"
     script:
         - "mkdir -p build"
         - "cd build"
         - "cmake .."
-        - "make conway_hw_report"
+        - "make reports -j21"
     artifacts:
         paths:
             - "build/examples/*/*.prj/reports"
