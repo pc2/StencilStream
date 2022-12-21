@@ -33,8 +33,31 @@ unit_test:
         - "mkdir -p tests/build"
         - "cd tests/build"
         - "cmake .."
-        - "make unit_test -j4"
+        - "make unit_test -j12"
         - "./unit_test"
+
+conway_preevaluation:
+    stage: preevaluation
+    only:
+        - housekeeping
+        - staging
+        - main
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 0:05:00 -c 1 --mem 1G"
+    before_script:
+        - "ml fpga devel intel/oneapi/22.2.0 bittware/520n Boost CMake"
+    script:
+        - "mkdir -p examples/conway/build"
+        - "cd examples/conway/build"
+        - "cmake .."
+        - "make conway_cpu"
+        - "./conway_cpu 64 64 64 < ../input.csv"
+        - "make conway_hw_report"
+    artifacts:
+        paths:
+            - "examples/conway/build"
 
 fdtd_preevaluation:
     stage: preevaluation
@@ -59,4 +82,27 @@ fdtd_preevaluation:
     artifacts:
         paths:
             - "examples/fdtd/build"
+
+hotspot_preevaluation:
+    stage: preevaluation
+    only:
+        - housekeeping
+        - staging
+        - main
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 0:30:00 -c 2 --mem 4G"
+    before_script:
+        - "ml fpga devel intel/oneapi/22.2.0 bittware/520n Boost CMake"
+    script:
+        - "mkdir -p examples/hotspot/build"
+        - "cd examples/hotspot/build"
+        - "cmake .."
+        - "make hotspot_cpu -j2"
+        - "./hotspot_cpu 1024 1024 1024 ../data/temp_1024 ../data/power_1024 /dev/null"
+        - "make reports -j2"
+    artifacts:
+        paths:
+            - "examples/hotspot/build"
 
