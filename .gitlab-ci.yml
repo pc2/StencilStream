@@ -31,8 +31,8 @@ unit_test:
     before_script:
         - "ml fpga devel intel/oneapi bittware/520n Boost CMake"
     script:
-        - "mkdir -p tests/build"
-        - "cd tests/build"
+        - "mkdir -p build"
+        - "cd build"
         - "cmake .."
         - "make unit_test -j12"
         - "./unit_test"
