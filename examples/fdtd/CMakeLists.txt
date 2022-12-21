@@ -6,23 +6,9 @@
 # 
 # THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-set(CMAKE_CXX_COMPILER dpcpp)
-cmake_minimum_required(VERSION 3.21)
-
-project(FDTD CXX)
-set(CMAKE_PROJECT_VERSION 0.1.0)
-
-find_package(Boost 1.74.0 REQUIRED)
-
-# Global settings
 include_directories(.)
 add_compile_options(-std=c++20 -qactypes)
 add_compile_definitions(STENCIL_INDEX_WIDTH=32)
-
-add_custom_target(reports)
-add_custom_target(emus)
-add_custom_target(cpus)
-add_custom_target(hws)
 
 foreach(MATERIAL coef lut render)
     foreach(TDVS inline device host)

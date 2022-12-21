@@ -6,14 +6,6 @@
 # 
 # THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-set(CMAKE_CXX_COMPILER dpcpp)
-cmake_minimum_required(VERSION 3.21)
-
-project(Hotspot CXX)
-set(CMAKE_PROJECT_VERSION 0.1.0)
-
-find_package(Boost 1.74.0 REQUIRED)
-
 # Global settings
 include_directories(.)
 add_compile_options(-std=c++20 -qactypes)
@@ -44,7 +36,7 @@ foreach(EXECUTABLE hotspot_mono_report hotspot_tiling_report)
     target_link_options(${EXECUTABLE} PUBLIC -fsycl-link)
 endforeach()
 
-# Custom target for all reports
-add_custom_target(reports)
+add_dependencies(cpus hotspot_cpu)
 add_dependencies(reports hotspot_mono_report hotspot_tiling_report)
+add_dependencies(hws hotspot_mono hotspot_tiling)
 

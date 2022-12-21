@@ -6,29 +6,20 @@
 # 
 # THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-Include(FetchContent)
-FetchContent_Declare(
-  Catch2
-  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG        v3.2.1
-)
-FetchContent_MakeAvailable(Catch2)
+set(CMAKE_CXX_COMPILER dpcpp)
+cmake_minimum_required(VERSION 3.21)
 
-include_directories(../)
-add_compile_options(-std=c++20 -qactypes -fintelfpga -Wtautological-constant-compare)
-add_link_options(-std=c++20 -qactypes -fintelfpga -Wtautological-constant-compare)
-add_compile_definitions(STENCIL_INDEX_WIDTH=32)
+project(StencilStream CXX)
+set(CMAKE_PROJECT_VERSION 3.0.0)
 
-set(UNIT_TEST_SOURCES
-    HostPipe.cpp
-    Stencil.cpp
-    StencilExecutor.cpp
-    TimeDependentValueSupplier.cpp
-    monotile/ExecutionKernel.cpp
-    tiling/ExecutionKernel.cpp
-    tiling/Grid.cpp
-    tiling/Tile.cpp
-)
+find_package(Boost 1.74.0 REQUIRED)
 
-add_executable(unit_test ${UNIT_TEST_SOURCES})
-target_link_libraries(unit_test PRIVATE Catch2::Catch2WithMain)
+add_custom_target(reports)
+add_custom_target(emus)
+add_custom_target(cpus)
+add_custom_target(hws)
+
+add_subdirectory(examples/conway)
+add_subdirectory(examples/fdtd)
+add_subdirectory(examples/hotspot)
+add_subdirectory(tests)
