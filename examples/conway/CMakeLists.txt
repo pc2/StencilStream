@@ -19,6 +19,9 @@ add_dependencies(cpus conway_cpu)
 # Common settings for all FPGA-based executables
 add_compile_options(-fintelfpga)
 add_link_options(-fintelfpga)
+if(VERBOSE_SYNTHESIS)
+    add_link_options(-Xsv)
+endif()
 
 # The emulation image
 add_executable(conway_emu conway.cpp)
@@ -36,8 +39,3 @@ add_executable(conway_hw conway.cpp)
 target_compile_definitions(conway_hw PUBLIC HARDWARE)
 target_link_options(conway_hw PUBLIC -fintelfpga -Xshardware)
 add_dependencies(hws conway_hw)
-
-# Optionally adding the -Xsv option
-if(VERBOSE_SYNTHESIS)
-    target_compile_options(conway_hw_report conway_hw PUBLIC -Xsv)
-endif()
