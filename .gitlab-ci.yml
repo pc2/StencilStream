@@ -51,7 +51,7 @@ reports:
         - "mkdir -p build"
         - "cd build"
         - "cmake .."
-        - "make conway_hw_ report"
+        - "make conway_hw_report"
     artifacts:
         paths:
             - "build/**/*.prj/reports"
