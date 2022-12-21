@@ -53,7 +53,7 @@ conway_preevaluation:
         - "cd examples/conway/build"
         - "cmake .."
         - "make conway_cpu"
-        - "./conway_cpu 64 64 64 < ../input.csv"
+        - "./conway_cpu 64 64 64 < ../input.txt"
         - "make conway_hw_report"
     artifacts:
         paths:
