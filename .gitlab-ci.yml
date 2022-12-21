@@ -54,4 +54,4 @@ reports:
         - "make conway_hw_report"
     artifacts:
         paths:
-            - "build/**/*.prj/reports"
+            - "build/examples/*/*.prj/reports"

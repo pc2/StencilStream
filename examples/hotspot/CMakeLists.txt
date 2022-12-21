@@ -19,6 +19,10 @@ target_compile_definitions(hotspot_cpu PUBLIC EXECUTOR=2)
 add_compile_options(-fintelfpga)
 add_link_options(-fintelfpga -Xshardware -Xsv)
 
+if(VERBOSE_SYNTHESIS)
+    add_link_options(-Xsv)
+endif()
+
 # Monotile versions
 foreach(EXECUTABLE hotspot_mono hotspot_mono_report)
     add_executable(${EXECUTABLE} hotspot.cpp)

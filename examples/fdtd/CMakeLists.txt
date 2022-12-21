@@ -48,7 +48,7 @@ foreach(MATERIAL coef lut render)
                     target_compile_definitions(${EXECUTABLE} PUBLIC HARDWARE)
                     target_link_options(${EXECUTABLE} PUBLIC -reuse-exe=${EXECUTABLE} -Xshardware)
 
-                    if(FDTD_VERBOSE_SYNTHESIS)
+                    if(VERBOSE_SYNTHESIS)
                         target_link_options(${EXECUTABLE} PUBLIC -Xsv)
                     endif()
                 endif()
