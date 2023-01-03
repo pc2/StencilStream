@@ -35,7 +35,7 @@ unit_test:
         - "cd build"
         - "cmake .."
         - "make unit_test -j14"
-        - "./unit_test"
+        - "./tests/unit_test"
 
 fdtd_reports:
     stage: preevaluation
@@ -47,7 +47,7 @@ fdtd_reports:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 1:00:00 -c 18 --mem 64G"
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 1:30:00 -c 18 --mem 64G"
     before_script:
         - "ml fpga devel intel/oneapi bittware/520n Boost CMake"
     script:
