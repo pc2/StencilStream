@@ -1,9 +1,0 @@
-*.o
-*.err
-vgcore.*
-
-unit_test
-synthesis_emu
-synthesis_hw
-synthesis_report
-cpu_executor

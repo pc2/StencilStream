@@ -18,7 +18,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "catch.hpp"
 #include <CL/sycl.hpp>
 #include <StencilStream/GenericID.hpp>
 #include <StencilStream/Index.hpp>

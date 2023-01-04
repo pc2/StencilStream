@@ -1,19 +1,78 @@
 stages:
-    - emulation
+    - preevaluation
 
-default:
-    before_script:
-        - "ml fpga devel intel/oneapi bittware/520n Boost"
-
-unit_test:
-    stage: emulation
+documentation:
+    stage: preevaluation
     only:
-        - housekeeping
         - staging
         - main
-    variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal --time=00:15:00 --mem 4G --c 8"
+    tags:
+        - docker-shared
+    image: "alpine"
+    before_script:
+        - apk add --no-cache doxygen graphviz font-noto
     script:
-        - cd tests
-        - make unit_test -j8
-        - ./unit_test
+        - doxygen
+    artifacts:
+        paths:
+            - "doxygen/html"
+
+unit_test:
+    stage: preevaluation
+    only:
+        - staging
+        - main
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 0:05:00 -c 14 --mem 4G"
+    before_script:
+        - "ml fpga devel intel/oneapi bittware/520n Boost CMake"
+    script:
+        - "mkdir -p build"
+        - "cd build"
+        - "cmake .."
+        - "make unit_test -j14"
+        - "./tests/unit_test"
+
+fdtd_reports:
+    stage: preevaluation
+    only:
+        - staging
+        - main
+    when: manual
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 1:30:00 -c 18 --mem 64G"
+    before_script:
+        - "ml fpga devel intel/oneapi bittware/520n Boost CMake"
+    script:
+        - "mkdir -p build"
+        - "cd build"
+        - "cmake .."
+        - "make fdtd_reports -j18"
+    artifacts:
+        paths:
+            - "build/examples/fdtd/*.prj/reports"
+
+hotspot_reports:
+    stage: preevaluation
+    only:
+        - staging
+        - main
+    when: manual
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 1:00:00 -c 2 --mem 16G"
+    before_script:
+        - "ml fpga devel intel/oneapi bittware/520n Boost CMake"
+    script:
+        - "mkdir -p build"
+        - "cd build"
+        - "cmake .."
+        - "make hotspot_reports -j2"
+    artifacts:
+        paths:
+            - "build/examples/hotspot/*.prj/reports"

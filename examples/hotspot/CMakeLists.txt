@@ -5,38 +5,41 @@
 # The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 # 
 # THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-CC = dpcpp
-STENCIL_STREAM_PATH = ./
 
-ARGS = -std=c++20 -I$(STENCIL_STREAM_PATH) -O3 -qactypes
+# Global settings
+include_directories(.)
+add_compile_options(-std=c++20 -qactypes)
+add_compile_definitions(STENCIL_INDEX_WIDTH=32)
 
-ifdef EBROOTGCC
-	ARGS += --gcc-toolchain=$(EBROOTGCC)
-endif
+# Pure CPU-based executable
+add_executable(hotspot_cpu hotspot.cpp)
+target_compile_definitions(hotspot_cpu PUBLIC EXECUTOR=2)
 
-CPU_ARGS = $(ARGS) -DCPU
-EMU_ARGS = $(ARGS) -fintelfpga -DEMULATOR
-HW_ARGS = $(ARGS) -fintelfpga -DHARDWARE -Xsv -Xshardware
+# Common hardware options
+add_compile_options(-fintelfpga)
+add_link_options(-fintelfpga -Xshardware)
 
-ifdef AOCL_BOARD_PACKAGE_ROOT
-	HW_ARGS += -Xsboard=$(FPGA_BOARD_NAME) -Xsboard-package=$(AOCL_BOARD_PACKAGE_ROOT)
-endif
+if(VERBOSE_SYNTHESIS)
+    add_link_options(-Xsv)
+endif()
 
-RESOURCES = conway.cpp $(wildcard StencilStream/*) Makefile
+# Monotile versions
+foreach(EXECUTABLE hotspot_mono hotspot_mono_report)
+    add_executable(${EXECUTABLE} hotspot.cpp)
+    target_compile_definitions(${EXECUTABLE} PUBLIC EXECUTOR=0)
+endforeach()
 
-conway_cpu: $(RESOURCES)
-	$(CC) $(CPU_ARGS) conway.cpp -o conway_cpu
+# Tiling versions
+foreach(EXECUTABLE hotspot_tiling hotspot_tiling_report)
+    add_executable(${EXECUTABLE} hotspot.cpp)
+    target_compile_definitions(${EXECUTABLE} PUBLIC EXECUTOR=1)
+endforeach()
 
-conway_emu: $(RESOURCES)
-	$(CC) $(EMU_ARGS) conway.cpp -o conway_emu
+# Adding -fsycl-link to report executables
+foreach(EXECUTABLE hotspot_mono_report hotspot_tiling_report)
+    target_link_options(${EXECUTABLE} PUBLIC -fsycl-link)
+endforeach()
 
-conway_hw: $(RESOURCES)
-	$(CC) $(HW_ARGS) conway.cpp -o conway_hw
-
-conway_hw.report.tar.gz: $(RESOURCES)
-	rm -f conway_hw
-	$(CC) $(HW_ARGS) -fsycl-link conway.cpp -o conway_hw
-	tar -caf conway_hw.report.tar.gz conway_hw.prj/reports
-
-clean:
-	git clean -dXf
+# Adding a custom target for all Hotspot reports
+add_custom_target(hotspot_reports)
+add_dependencies(hotspot_reports hotspot_mono_report hotspot_tiling_report)

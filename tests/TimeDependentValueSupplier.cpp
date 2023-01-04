@@ -17,14 +17,12 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "res/catch.hpp"
-
+#include <catch2/catch_all.hpp>
 #include <StencilStream/Concepts.hpp>
 #include <StencilStream/tdv/DevicePrecomputeSupplier.hpp>
 #include <StencilStream/tdv/HostPrecomputeSupplier.hpp>
 #include <StencilStream/tdv/InlineSupplier.hpp>
 #include <StencilStream/tdv/NoneSupplier.hpp>
-
 #include <CL/sycl.hpp>
 #include <ext/intel/fpga_extensions.hpp>
 

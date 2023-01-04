@@ -1,37 +1,34 @@
-# Copyright © 2020-2022 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn University
+# Copyright © 2020-2022Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 # 
 # The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 # 
 # THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-CC = dpcpp
-STENCIL_PATH = ../
 
-ARGS = -std=c++20 -g -I$(STENCIL_PATH) -Isrc/ -DSTENCIL_INDEX_WIDTH=32 -qactypes
+Include(FetchContent)
+FetchContent_Declare(
+  Catch2
+  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+  GIT_TAG        v3.2.1
+)
+FetchContent_MakeAvailable(Catch2)
 
-ifdef OPTIMIZE
-	ARGS += -O3
-endif
+include_directories(../)
+add_compile_options(-std=c++20 -qactypes -fintelfpga -Wtautological-constant-compare)
+add_link_options(-std=c++20 -qactypes -fintelfpga -Wtautological-constant-compare)
+add_compile_definitions(STENCIL_INDEX_WIDTH=32)
 
-UNIT_ARGS = $(ARGS) -fintelfpga
-UNIT_SOURCES = $(wildcard src/units/*.cpp src/units/*/*.cpp)
-UNIT_OBJECTS = $(patsubst %.cpp,%.o,$(UNIT_SOURCES))
-RESOURCES = src/res/*.hpp ../StencilStream/** Makefile
+set(UNIT_TEST_SOURCES
+    HostPipe.cpp
+    Stencil.cpp
+    StencilExecutor.cpp
+    TimeDependentValueSupplier.cpp
+    monotile/ExecutionKernel.cpp
+    tiling/ExecutionKernel.cpp
+    tiling/Grid.cpp
+    tiling/Tile.cpp
+)
 
-SYNTH_ARGS = $(ARGS) -fintelfpga
-
-unit_test: $(UNIT_OBJECTS) $(RESOURCES)
-	$(CC) $(UNIT_ARGS) $(UNIT_OBJECTS) -o unit_test
-
-src/units/%.o: src/units/%.cpp $(RESOURCES)
-	$(CC) $(UNIT_ARGS) -c $< -o $@
-
-src/units/main.o: src/units/main.cpp src/res/*.hpp Makefile
-	$(CC) $(UNIT_ARGS) -c $< -o $@
-
-cpu_executor: src/cpu_executor/main.cpp $(RESOURCES)
-	$(CC) $(ARGS) src/cpu_executor/main.cpp -o cpu_executor
-
-clean:
-	git clean -dXf
+add_executable(unit_test ${UNIT_TEST_SOURCES})
+target_link_libraries(unit_test PRIVATE Catch2::Catch2WithMain)
