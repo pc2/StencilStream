@@ -6,16 +6,20 @@
 # 
 # THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-set(CMAKE_CXX_COMPILER dpcpp)
-cmake_minimum_required(VERSION 3.21)
+# Global settings
+include_directories(.)
+add_compile_options(-std=c++20 -qactypes)
+add_compile_definitions(STENCIL_INDEX_WIDTH=32)
 
-project(StencilStream CXX)
-set(CMAKE_PROJECT_VERSION 3.0.0)
+# Pure CPU-based executable
+add_executable(convection_cpu convection.cpp)
 
-find_package(Boost 1.74.0 REQUIRED)
+# Common hardware options
+add_compile_options(-fintelfpga)
+add_link_options(-fintelfpga -fsycl-link -Xshardware)
 
-add_subdirectory(examples/convection)
-add_subdirectory(examples/conway)
-add_subdirectory(examples/fdtd)
-add_subdirectory(examples/hotspot)
-add_subdirectory(tests)
+if(VERBOSE_SYNTHESIS)
+    add_link_options(-Xsv)
+endif()
+
+add_executable(convection_mono convection.cpp)
