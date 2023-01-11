@@ -13,13 +13,3 @@ add_compile_definitions(STENCIL_INDEX_WIDTH=32)
 
 # Pure CPU-based executable
 add_executable(convection_cpu convection.cpp)
-
-# Common hardware options
-add_compile_options(-fintelfpga)
-add_link_options(-fintelfpga -fsycl-link -Xshardware)
-
-if(VERBOSE_SYNTHESIS)
-    add_link_options(-Xsv)
-endif()
-
-add_executable(convection_mono convection.cpp)
