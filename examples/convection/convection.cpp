@@ -39,7 +39,7 @@ class PseudoTransientKernel {
     static constexpr uindex_t n_subgenerations = 4;
     using TimeDependentValue = std::monostate;
 
-    double nx, ny;
+    uindex_t nx, ny;
     double roh0_g_alpha;
     double delta_eta_delta_T;
     double eta0;
@@ -147,6 +147,72 @@ class PseudoTransientKernel {
     }
 };
 
+class ThermalSolverKernel {
+  public:
+    using Cell = ThermalConvectionCell;
+
+    static constexpr uindex_t stencil_radius = 2;
+    static constexpr uindex_t n_subgenerations = 4;
+    using TimeDependentValue = std::monostate;
+
+    uindex_t nx, ny;
+    double dx, dy, dt;
+    double DcT;
+
+    Cell operator()(Stencil<Cell, 2> const &stencil) const {
+        Cell new_cell = stencil[ID(0, 0)];
+        uindex_t c = stencil.id.c;
+        uindex_t r = stencil.id.r;
+
+        if (stencil.subgeneration == 0) {
+            // compute_qT!(...)
+            if (c < nx - 1 && r < nx - 2) {
+                new_cell.qTx = -DcT * D_XI(T) / dx;
+            }
+            if (c < nx - 2 && r < ny - 1) {
+                new_cell.qTy = -DcT * D_YI(T) / dy;
+            }
+        } else if (stencil.subgeneration == 1) {
+            // advect_T!(...)
+            if (c < nx - 2 && r < ny - 2) {
+                new_cell.dT_dt = -((stencil[ID(1, 0)].qTx - stencil[ID(0, 0)].qTx) / dx +
+                                   (stencil[ID(0, 1)].qTy - stencil[ID(0, 0)].qTy) / dy);
+                if (stencil[ID(1, 1)].Vx > 0) {
+                    new_cell.dT_dt -=
+                        stencil[ID(1, 1)].Vx * (stencil[ID(1, 1)].T - stencil[ID(0, 1)].T) / dx;
+                }
+                if (stencil[ID(2, 1)].Vx < 0) {
+                    new_cell.dT_dt -=
+                        stencil[ID(2, 1)].Vx * (stencil[ID(2, 1)].T - stencil[ID(1, 1)].T) / dx;
+                }
+                if (stencil[ID(1, 1)].Vy > 0) {
+                    new_cell.dT_dt -=
+                        stencil[ID(1, 1)].Vy * (stencil[ID(1, 1)].T - stencil[ID(1, 0)].T) / dy;
+                }
+                if (stencil[ID(1, 2)].Vy < 0) {
+                    new_cell.dT_dt -=
+                        stencil[ID(1, 2)].Vy * (stencil[ID(1, 2)].T - stencil[ID(1, 1)].T) / dy;
+                }
+            }
+        } else if (stencil.subgeneration == 2) {
+            // update_T!(...)
+            if (c > 0 && r > 0 && c < nx - 1 && r < ny - 1) {
+                new_cell.T = ALL(T) + stencil[ID(-1, -1)].dT_dt * dt;
+            }
+        } else if (stencil.subgeneration == 3) {
+            // no_fluxY_T!(...)
+            if (c == nx - 1 && r < ny) {
+                new_cell.T = stencil[ID(-1, 0)].T;
+            }
+            if (c == 0 && r < ny) {
+                new_cell.T = stencil[ID(1, 0)].T;
+            }
+        }
+
+        return new_cell;
+    }
+};
+
 int main() {
     // Physics - dimentionally independent scales
     double ly = 1.0;     // domain extend, m
@@ -166,15 +232,15 @@ int main() {
     double delta_eta_delta_T = 1e-10 / deltaT; // viscosity's temperature dependence
 
     // Numerics
-    double nx = 96 * ar - 1;
-    double ny = 96 - 1;     // numerical grid resolutions
-    double iterMax = 50000; // maximal number of pseudo-transient iterations
-    double nt = 3000;       // total number of timesteps
-    double nout = 10;       // frequency of plotting
-    double nerr = 100;      // frequency of error checking
-    double epsilon = 1e-4;  // nonlinear absolute tolerence
-    double dmp = 2;         // damping paramter
-    double st = 5;          // quiver plotting spatial step
+    uindex_t nx = 96 * ar - 1;
+    uindex_t ny = 96 - 1;     // numerical grid resolutions
+    uindex_t iterMax = 50000; // maximal number of pseudo-transient iterations
+    uindex_t nt = 3000;       // total number of timesteps
+    uindex_t nout = 10;       // frequency of plotting
+    uindex_t nerr = 100;      // frequency of error checking
+    double epsilon = 1e-4;    // nonlinear absolute tolerence
+    double dmp = 2;           // damping paramter
+    double st = 5;            // quiver plotting spatial step
 
     // Derived numerics
     double dx = lx / (nx - 1);
@@ -189,7 +255,7 @@ int main() {
     double dampX = 1.0 - dmp / nx; // damping term for the x-momentum equation
     double dampY = 1.0 - dmp / ny; // damping term for the y-momentum equation
 
-    PseudoTransientKernel kernel{
+    PseudoTransientKernel pseudo_transient_kernel{
         .nx = nx,
         .ny = ny,
         .roh0_g_alpha = roh0_g_alpha,
@@ -205,6 +271,13 @@ int main() {
         .dampY = dampY,
         .DcT = DcT,
     };
+    SimpleCPUExecutor<PseudoTransientKernel, tdv::NoneSupplier> pseudo_transient_executor(
+        ThermalConvectionCell(), pseudo_transient_kernel);
+
+    ThermalSolverKernel thermal_solver_kernel{
+        .nx = nx, .ny = ny, .dx = dx, .dy = dy, .dt = 0.0, .DcT = DcT};
+    SimpleCPUExecutor<ThermalSolverKernel, tdv::NoneSupplier> thermal_solver_executor(
+        ThermalConvectionCell(), thermal_solver_kernel);
 
     cl::sycl::buffer<ThermalConvectionCell, 2> grid = cl::sycl::range<2>(nx + 1, ny + 1);
     {
@@ -225,21 +298,17 @@ int main() {
         }
     }
 
-    SimpleCPUExecutor<PseudoTransientKernel, tdv::NoneSupplier> executor(ThermalConvectionCell(),
-                                                                         kernel);
-    executor.set_input(grid);
-
-    std::cout << "i\terrV\terrP" << std::endl;
-
-    for (uint32_t it = 0; it < 1; it++) {
+    for (uint32_t it = 0; it < nt; it++) {
         double errV = 2 * epsilon;
         double errP = 2 * epsilon;
         double max_ErrV, max_ErrP, max_Vx, max_Vy, max_Pt;
-        executor.set_i_generation(0);
+        pseudo_transient_executor.set_input(grid);
+        pseudo_transient_executor.set_i_generation(0);
 
-        while ((errV > epsilon || errP > epsilon) && executor.get_i_generation() < iterMax) {
-            executor.run(nerr);
-            executor.copy_output(grid);
+        while ((errV > epsilon || errP > epsilon) &&
+               pseudo_transient_executor.get_i_generation() < iterMax) {
+            pseudo_transient_executor.run(nerr);
+            pseudo_transient_executor.copy_output(grid);
 
             max_ErrV = max_ErrP = max_Vx = max_Vy = max_Pt =
                 -std::numeric_limits<double>::infinity();
@@ -268,16 +337,36 @@ int main() {
             }
             errV = max_ErrV / (1e-12 + max_Vy);
             errP = max_ErrP / (1e-12 + max_Pt);
-
-            std::cout << executor.get_i_generation() << "\t";
-            std::cout << errV << "\t";
-            std::cout << errP << std::endl;
         }
 
         double dt_adv = std::min(dx / max_Vx, dy / max_Vy) / 2.1;
         double dt = std::min(dt_diff, dt_adv);
 
-        // update T kernel
+        thermal_solver_kernel.dt = dt;
+        thermal_solver_executor.set_trans_func(thermal_solver_kernel);
+        thermal_solver_executor.set_input(grid);
+        thermal_solver_executor.run(1);
+        thermal_solver_executor.copy_output(grid);
+
+        printf("it = %d (iter = %d), errV=%1.3e, errP=%1.3e \n", it,
+               pseudo_transient_executor.get_i_generation(), errV, errP);
+
+        if (it > 0 && it % nout == 0) {
+            std::ofstream out_file("out/" + std::to_string(it) + ".csv");
+            {
+                auto ac = grid.get_access<cl::sycl::access::mode::read>();
+                for (uindex_t c = 0; c < nx; c++) {
+                    for (uindex_t r = 0; r < ny; r++) {
+                        out_file << ac[c][r].T;
+                        if (r != ny - 1) {
+                            out_file << ",";
+                        }
+                    }
+                    out_file << "\n";
+                }
+            }
+            out_file.close();
+        }
     }
     return 0;
 }

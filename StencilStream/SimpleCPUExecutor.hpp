@@ -64,7 +64,7 @@ class SimpleCPUExecutor : public SingleContextExecutor<TransFunc, TDVS> {
                     TransFunc trans_func = this->get_trans_func();
                     TDVKernelArgument global_state = this->get_tdvs().build_kernel_argument(cgh, gen, 1);
 
-                    cgh.parallel_for<class SimpleCPUExecutionKernel>(
+                    cgh.parallel_for(
                         in_ac.get_range(), [=](cl::sycl::id<2> idx) {
                             TDVLocalState local_state = global_state.build_local_state();
                             TDV tdv = local_state.get_value(0);
