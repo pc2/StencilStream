@@ -1,5 +1,6 @@
 #include <StencilStream/SimpleCPUExecutor.hpp>
 #include <StencilStream/tdv/NoneSupplier.hpp>
+#include <fstream>
 
 using namespace stencil;
 
@@ -73,7 +74,7 @@ class PseudoTransientKernel {
                 new_cell.RogT = roh0_g_alpha * ALL(T);
                 new_cell.eta = eta0 * (1.0 - delta_eta_delta_T * (ALL(T) + deltaT / 2.0));
                 new_cell.delta_V = D_XA(Vx) / dx + D_YA(Vy) / dy;
-                new_cell.Pt = ALL(Pt) + delta_tau_iter / beta * new_cell.delta_V;
+                new_cell.Pt = ALL(Pt) - delta_tau_iter / beta * new_cell.delta_V;
                 new_cell.tau_xx =
                     2.0 * new_cell.eta * (D_XA(Vx) / dx - (1.0 / 3.0) * new_cell.delta_V);
                 // The original implementation uses @av(eta) here, which would actually mean that
@@ -174,7 +175,7 @@ int main() {
     double iterMax = 50000; // maximal number of pseudo-transient iterations
     double nt = 3000;       // total number of timesteps
     double nout = 10;       // frequency of plotting
-    double nerr = 5;        // frequency of error checking
+    double nerr = 100;      // frequency of error checking
     double epsilon = 1e-4;  // nonlinear absolute tolerence
     double dmp = 2;         // damping paramter
     double st = 5;          // quiver plotting spatial step
@@ -232,7 +233,7 @@ int main() {
                                                                          kernel);
     executor.set_input(grid);
 
-    std::cout << "i\tVx\tVy\tRx\tRy" << std::endl;
+    std::cout << "i\terrV\terrP" << std::endl;
 
     for (uint32_t it = 0; it < 1; it++) {
         double errV = 2 * epsilon;
@@ -268,14 +269,13 @@ int main() {
                         }
                     }
                 }
-                std::cout << executor.get_i_generation() << "\t";
-                std::cout << ac[30][30].Vx << "\t";
-                std::cout << ac[30][30].Vy << "\t";
-                std::cout << ac[30][30].Rx << "\t";
-                std::cout << ac[30][30].Ry << std::endl;
             }
             errV = max_ErrV / (1e-12 + max_Vy);
             errP = max_ErrP / (1e-12 + max_Pt);
+
+            std::cout << executor.get_i_generation() << "\t";
+            std::cout << errV << "\t";
+            std::cout << errP << std::endl;
         }
 
         double dt_adv = std::min(dx / max_Vx, dy / max_Vy) / 2.1;
