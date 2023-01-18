@@ -36,7 +36,7 @@ class PseudoTransientKernel {
     using Cell = ThermalConvectionCell;
 
     static constexpr uindex_t stencil_radius = 1;
-    static constexpr uindex_t n_subgenerations = 9;
+    static constexpr uindex_t n_subgenerations = 4;
     using TimeDependentValue = std::monostate;
 
     double nx, ny;
@@ -62,13 +62,11 @@ class PseudoTransientKernel {
                 new_cell.ErrV = ALL(Vy);
             }
 
-        } else if (stencil.subgeneration == 1) {
             // assign!(ErrP, Pt)
             if (c < nx && r < ny) {
                 new_cell.ErrP = ALL(Pt);
             }
 
-        } else if (stencil.subgeneration == 2) {
             // compute_1!(...)
             if (c < nx && r < ny) {
                 new_cell.RogT = roh0_g_alpha * ALL(T);
@@ -87,7 +85,7 @@ class PseudoTransientKernel {
                 new_cell.sigma_xy = 2.0 * new_cell.eta * (0.5 * (D_YI(Vx) / dy + D_XI(Vy) / dx));
             }
 
-        } else if (stencil.subgeneration == 3) {
+        } else if (stencil.subgeneration == 1) {
             // compute_2!(...)
             if (c < nx - 1 && r < ny - 2) {
                 new_cell.Rx = 1.0 / rho * (D_XI(tau_xx) / dx + D_YA(sigma_xy) / dy - D_XI(Pt) / dx);
@@ -100,9 +98,10 @@ class PseudoTransientKernel {
                 new_cell.dVyd_tau = dampY * ALL(dVyd_tau) + new_cell.Ry * delta_tau_iter;
             }
 
-        } else if (stencil.subgeneration == 4) {
+        } else if (stencil.subgeneration == 2) {
             // update_V!(...)
             // Index shift since the original instructions assigned all to inner.
+            // TODO: Merge with previous subgeneration.
             if (c >= 1 && r >= 1) {
                 if (c < (nx + 1) - 1 && r < ny - 1) {
                     new_cell.Vx = ALL(Vx) + stencil[ID(-1, -1)].dVxd_tau * delta_tau_iter;
@@ -112,7 +111,7 @@ class PseudoTransientKernel {
                 }
             }
 
-        } else if (stencil.subgeneration == 5) {
+        } else if (stencil.subgeneration == 3) {
             // bc_y!(Vx)
             if (c < nx + 1 && r < ny) {
                 if (r == 0) {
@@ -123,7 +122,6 @@ class PseudoTransientKernel {
                 }
             }
 
-        } else if (stencil.subgeneration == 6) {
             // bc_x!(Vy)
             if (c < nx && r < ny + 1) {
                 if (c == 0) {
@@ -134,13 +132,11 @@ class PseudoTransientKernel {
                 }
             }
 
-        } else if (stencil.subgeneration == 7) {
             // compute_error!(ErrV, Vy)
             if (c < nx && r < ny + 1) {
-                new_cell.ErrV = ALL(ErrV) - ALL(Vy);
+                new_cell.ErrV = ALL(ErrV) - new_cell.Vy;
             }
 
-        } else if (stencil.subgeneration == 8) {
             // compute_error!(ErrP, Pt)
             if (c < nx && r < ny) {
                 new_cell.ErrP = ALL(ErrP) - ALL(Pt);
