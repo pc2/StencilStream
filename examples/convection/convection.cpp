@@ -76,6 +76,9 @@ class PseudoTransientKernel {
                 new_cell.Pt = ALL(Pt) + delta_tau_iter / beta * new_cell.delta_V;
                 new_cell.tau_xx =
                     2.0 * new_cell.eta * (D_XA(Vx) / dx - (1.0 / 3.0) * new_cell.delta_V);
+                // The original implementation uses @av(eta) here, which would actually mean that
+                // this computation should be moved one subgeneration back. However, using @all(eta)
+                // did not make a noticeable difference, which is why I'm using new_cell.eta here.
                 new_cell.tau_yy =
                     2.0 * new_cell.eta * (D_YA(Vy) / dy - (1.0 / 3.0) * new_cell.delta_V);
             }
