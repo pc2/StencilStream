@@ -355,10 +355,11 @@ int main() {
             std::ofstream out_file("out/" + std::to_string(it) + ".csv");
             {
                 auto ac = grid.get_access<cl::sycl::access::mode::read>();
-                for (uindex_t c = 0; c < nx; c++) {
-                    for (uindex_t r = 0; r < ny; r++) {
+                // Transposed output
+                for (uindex_t r = 0; r < ny; r++) {
+                    for (uindex_t c = 0; c < nx; c++) {
                         out_file << ac[c][r].T;
-                        if (r != ny - 1) {
+                        if (c != nx - 1) {
                             out_file << ",";
                         }
                     }
