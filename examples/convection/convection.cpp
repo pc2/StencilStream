@@ -9,17 +9,23 @@
 using namespace stencil;
 
 struct ThermalConvectionCell {
-    ThermalConvectionCell()
-        : T(0.0), Pt(0.0), Vx(0.0), Vy(0.0), Rx(0.0), Ry(0.0), tau_xx(0.0), tau_yy(0.0),
-          sigma_xy(0.0), RogT(0.0), eta(0.0), delta_V(0.0), dVxd_tau(0.0), dVyd_tau(0.0), ErrV(0.0),
-          ErrP(0.0), qTx(0.0), qTy(0.0), dT_dt(0.0) {}
-
     double T, Pt, Vx, Vy, Rx, Ry;
     double tau_xx, tau_yy, sigma_xy;
     double RogT, eta, delta_V;
     double dVxd_tau, dVyd_tau;
     double ErrV, ErrP;
     double qTx, qTy, dT_dt;
+
+    static ThermalConvectionCell halo_value() {
+        return ThermalConvectionCell {
+            .T = 0.0, .Pt = 0.0, .Vx = 0.0, .Vy = 0.0, .Rx = 0.0, .Ry = 0.0,
+            .tau_xx = 0.0, .tau_yy = 0.0, .sigma_xy = 0.0,
+            .RogT = 0.0, .eta = 0.0, .delta_V = 0.0,
+            .dVxd_tau = 0.0, .dVyd_tau = 0.0,
+            .ErrV = 0.0, .ErrP = 0.0, 
+            .qTx = 0.0, .qTy = 0.0, .dT_dt = 0.0,
+        };
+    }
 };
 
 #define ALL(FIELD) (stencil[ID(0, 0)].FIELD)
@@ -279,14 +285,14 @@ int main() {
 
 #if EXECUTOR == 0
     SimpleCPUExecutor<PseudoTransientKernel, tdv::NoneSupplier> pseudo_transient_executor(
-        ThermalConvectionCell(), pseudo_transient_kernel);
+        ThermalConvectionCell::halo_value(), pseudo_transient_kernel);
     SimpleCPUExecutor<ThermalSolverKernel, tdv::NoneSupplier> thermal_solver_executor(
-        ThermalConvectionCell(), thermal_solver_kernel);
+        ThermalConvectionCell::halo_value(), thermal_solver_kernel);
 #else
     MonotileExecutor<PseudoTransientKernel, tdv::NoneSupplier, 4> pseudo_transient_executor(
-        ThermalConvectionCell(), pseudo_transient_kernel);
+        ThermalConvectionCell::halo_value(), pseudo_transient_kernel);
     MonotileExecutor<ThermalSolverKernel, tdv::NoneSupplier, 4> thermal_solver_executor(
-        ThermalConvectionCell(), thermal_solver_kernel);
+        ThermalConvectionCell::halo_value(), thermal_solver_kernel);
 #if HARDWARE == 1
     pseudo_transient_executor.select_fpga();
     thermal_solver_executor.select_fpga();
@@ -299,7 +305,7 @@ int main() {
         auto ac = grid.template get_access<cl::sycl::access::mode::discard_write>();
         for (uint32_t x = 0; x < nx + 1; x++) {
             for (uint32_t y = 0; y < ny + 1; y++) {
-                ThermalConvectionCell cell;
+                ThermalConvectionCell cell = ThermalConvectionCell::halo_value();
                 if (y == 0) {
                     cell.T = deltaT / 2.0;
                 } else if (y == ny - 1) {
