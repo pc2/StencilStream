@@ -13,3 +13,18 @@ add_compile_definitions(STENCIL_INDEX_WIDTH=32)
 
 # Pure CPU-based executable
 add_executable(convection_cpu convection.cpp)
+target_compile_definitions(convection_cpu PUBLIC EXECUTOR=0 HARDWARE=0)
+
+add_compile_options(-fintelfpga)
+add_link_options(-fintelfpga)
+
+add_executable(convection convection.cpp)
+target_compile_definitions(convection PUBLIC EXECUTOR=1 HARDWARE=1)
+target_link_options(convection PUBLIC -Xshardware -Xsv)
+
+add_executable(convection_emu convection.cpp)
+target_compile_definitions(convection_emu PUBLIC EXECUTOR=1 HARDWARE=0)
+
+add_executable(convection_report convection.cpp)
+target_compile_definitions(convection_report PUBLIC EXECUTOR=1 HARDWARE=1)
+target_link_options(convection_report PUBLIC -fsycl-link -Xshardware -Xsv)

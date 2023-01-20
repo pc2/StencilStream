@@ -1,11 +1,14 @@
-#include <StencilStream/SimpleCPUExecutor.hpp>
+#if EXECUTOR == 0
+    #include <StencilStream/SimpleCPUExecutor.hpp>
+#else
+    #include <StencilStream/MonotileExecutor.hpp>
+#endif
 #include <StencilStream/tdv/NoneSupplier.hpp>
 #include <fstream>
 
 using namespace stencil;
 
 struct ThermalConvectionCell {
-
     ThermalConvectionCell()
         : T(0.0), Pt(0.0), Vx(0.0), Vy(0.0), Rx(0.0), Ry(0.0), tau_xx(0.0), tau_yy(0.0),
           sigma_xy(0.0), RogT(0.0), eta(0.0), delta_V(0.0), dVxd_tau(0.0), dVyd_tau(0.0), ErrV(0.0),
@@ -271,13 +274,25 @@ int main() {
         .dampY = dampY,
         .DcT = DcT,
     };
-    SimpleCPUExecutor<PseudoTransientKernel, tdv::NoneSupplier> pseudo_transient_executor(
-        ThermalConvectionCell(), pseudo_transient_kernel);
-
     ThermalSolverKernel thermal_solver_kernel{
         .nx = nx, .ny = ny, .dx = dx, .dy = dy, .dt = 0.0, .DcT = DcT};
+
+#if EXECUTOR == 0
+    SimpleCPUExecutor<PseudoTransientKernel, tdv::NoneSupplier> pseudo_transient_executor(
+        ThermalConvectionCell(), pseudo_transient_kernel);
     SimpleCPUExecutor<ThermalSolverKernel, tdv::NoneSupplier> thermal_solver_executor(
         ThermalConvectionCell(), thermal_solver_kernel);
+#else
+    MonotileExecutor<PseudoTransientKernel, tdv::NoneSupplier, 4> pseudo_transient_executor(
+        ThermalConvectionCell(), pseudo_transient_kernel);
+    MonotileExecutor<ThermalSolverKernel, tdv::NoneSupplier, 4> thermal_solver_executor(
+        ThermalConvectionCell(), thermal_solver_kernel);
+#if HARDWARE == 1
+    pseudo_transient_executor.select_fpga();
+    thermal_solver_executor.select_fpga();
+#endif
+#endif
+
 
     cl::sycl::buffer<ThermalConvectionCell, 2> grid = cl::sycl::range<2>(nx + 1, ny + 1);
     {
@@ -337,6 +352,7 @@ int main() {
             }
             errV = max_ErrV / (1e-12 + max_Vy);
             errP = max_ErrP / (1e-12 + max_Pt);
+            //printf("iter = %d, errV=%1.3e, errP=%1.3e\n", pseudo_transient_executor.get_i_generation(), errV, errP);
         }
 
         double dt_adv = std::min(dx / max_Vx, dy / max_Vy) / 2.1;

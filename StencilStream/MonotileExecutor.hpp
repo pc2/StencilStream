@@ -160,7 +160,7 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc, TDVS> {
             input_queue.submit([&](cl::sycl::handler &cgh) {
                 auto ac = read_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
 
-                cgh.single_task<class MonotileInputKernel>([=]() {
+                cgh.single_task([=]() {
                     [[intel::fpga_memory]] IOWord cache;
 
                     uindex_word_t word_i = 0;
@@ -181,7 +181,7 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc, TDVS> {
                 auto tdv_global_state = this->get_tdvs().build_kernel_argument(
                     cgh, this->get_i_generation(), delta_n_generations);
 
-                cgh.single_task<class MonotileExecutionKernel>(ExecutionKernelImpl(
+                cgh.single_task<ExecutionKernelImpl>(ExecutionKernelImpl(
                     this->get_trans_func(), this->get_i_generation(), target_i_generation,
                     grid_width, grid_height, this->get_halo_value(), tdv_global_state));
             });
@@ -190,7 +190,7 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc, TDVS> {
                 auto ac =
                     write_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
 
-                cgh.single_task<class MonotileOutputKernel>([=]() {
+                cgh.single_task([=]() {
                     [[intel::fpga_memory]] IOWord cache;
 
                     uindex_word_t word_i = 0;
