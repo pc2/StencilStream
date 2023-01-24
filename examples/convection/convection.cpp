@@ -289,7 +289,7 @@ int main() {
     SimpleCPUExecutor<ThermalSolverKernel, tdv::NoneSupplier> thermal_solver_executor(
         ThermalConvectionCell::halo_value(), thermal_solver_kernel);
 #else
-    MonotileExecutor<PseudoTransientKernel, tdv::NoneSupplier, 36> pseudo_transient_executor(
+    MonotileExecutor<PseudoTransientKernel, tdv::NoneSupplier, 32> pseudo_transient_executor(
         ThermalConvectionCell::halo_value(), pseudo_transient_kernel);
     MonotileExecutor<ThermalSolverKernel, tdv::NoneSupplier, 2> thermal_solver_executor(
         ThermalConvectionCell::halo_value(), thermal_solver_kernel);
