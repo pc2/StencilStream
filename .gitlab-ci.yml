@@ -35,6 +35,28 @@ unit_test:
         - "make unit_test -j14"
         - "./tests/unit_test"
 
+convection_reports:
+    stage: preevaluation
+    only:
+        - staging
+        - main
+        - convection
+    when: manual
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 00:30:00 -c 1 --mem 8G"
+    before_script:
+        - "ml fpga devel intel/oneapi bittware/520n Boost CMake"
+    script:
+        - "mkdir -p build"
+        - "cd build"
+        - "cmake .."
+        - "make convection_report"
+    artifacts:
+        paths:
+            - "build/examples/convection/convection_report.prj/reports"
+
 fdtd_reports:
     stage: preevaluation
     only:
