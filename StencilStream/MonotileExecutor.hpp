@@ -23,10 +23,19 @@
 #pragma once
 #include "SingleContextExecutor.hpp"
 #include "monotile/ExecutionKernel.hpp"
+#include <boost/preprocessor/cat.hpp>
 
 #include <numeric>
 
 namespace stencil {
+
+template<TransitionFunction TransFunc>
+class MonotileInputKernel;
+
+
+template<TransitionFunction TransFunc>
+class MonotileOutputKernel;
+
 template <TransitionFunction TransFunc, tdv::HostState TDVS, uindex_t n_processing_elements = 1,
           uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t word_size = 64>
 /**
@@ -181,7 +190,7 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc, TDVS> {
                 auto tdv_global_state = this->get_tdvs().build_kernel_argument(
                     cgh, this->get_i_generation(), delta_n_generations);
 
-                cgh.single_task<ExecutionKernelImpl>(ExecutionKernelImpl(
+                cgh.single_task<TransFunc>(ExecutionKernelImpl(
                     this->get_trans_func(), this->get_i_generation(), target_i_generation,
                     grid_width, grid_height, this->get_halo_value(), tdv_global_state));
             });

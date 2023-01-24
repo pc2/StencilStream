@@ -228,7 +228,7 @@ class TilingExecutor : public SingleContextExecutor<TransFunc, TDVS> {
                         required_columns[4]);
 
                     merge_queue.submit([&](cl::sycl::handler &cgh) {
-                        cgh.single_task<class TilingMergeKernel>([=]() {
+                        cgh.single_task([=]() {
                             constexpr unsigned long bits_width =
                                 std::bit_width(2 * halo_radius + tile_width);
                             constexpr unsigned long bits_height =
@@ -267,7 +267,7 @@ class TilingExecutor : public SingleContextExecutor<TransFunc, TDVS> {
                             auto global_state = this->get_tdvs().build_kernel_argument(
                                 cgh, this->get_i_generation(), delta_n_generations);
 
-                            cgh.single_task<class TilingExecutionKernel>(ExecutionKernelImpl(
+                            cgh.single_task<TransFunc>(ExecutionKernelImpl(
                                 this->get_trans_func(), this->get_i_generation(),
                                 target_i_generation, c * tile_width, r * tile_height, grid_width,
                                 grid_height, this->get_halo_value(), global_state));
@@ -275,7 +275,7 @@ class TilingExecutor : public SingleContextExecutor<TransFunc, TDVS> {
                     events.push_back(computation_event);
 
                     fork_queue.submit([&](cl::sycl::handler &cgh) {
-                        cgh.single_task<class TilingForkKernel>([=]() {
+                        cgh.single_task([=]() {
                             constexpr unsigned long bits_width = std::bit_width(tile_width);
                             constexpr unsigned long bits_height = std::bit_width(tile_height);
                             using uindex_width_t = ac_int<bits_width, false>;

@@ -181,7 +181,7 @@ class Grid {
             UID range = Tile::get_part_range(part);
             uindex_2d_t n_cells = uindex_t(n_columns * range.r);
 
-            cgh.single_task<pipe_id>([=]() {
+            cgh.single_task([=]() {
                 [[intel::fpga_register]] typename Tile::IOWord cache;
                 uindex_word_t word_i = 0;
                 uindex_cell_t cell_i = Tile::word_length;
@@ -212,7 +212,7 @@ class Grid {
             UID range = Tile::get_part_range(part);
             uindex_2d_t n_cells = uindex_t(n_columns * range.r);
 
-            cgh.single_task<pipe_id>([=]() {
+            cgh.single_task([=]() {
                 [[intel::fpga_memory]] typename Tile::IOWord cache;
                 uindex_word_t word_i = 0;
                 uindex_cell_t cell_i = 0;
