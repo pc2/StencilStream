@@ -1,5 +1,7 @@
 stages:
     - preevaluation
+    - synthesis
+    - benchmark
 
 documentation:
     stage: preevaluation
@@ -56,6 +58,56 @@ convection_reports:
     artifacts:
         paths:
             - "build/examples/convection/convection_report.prj/reports"
+
+convection_synthesis:
+    stage: synthesis
+    only:
+        - staging
+        - main
+        - convection
+    when: manual
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G"
+    before_script:
+        - "ml fpga devel intel/oneapi bittware/520n Boost CMake"
+    script:
+        - "mkdir -p build"
+        - "cd build"
+        - "cmake -DCMAKE_BUILD_TYPE=Release .."
+        - "make convection"
+    artifacts:
+        paths:
+            - "build/examples/convection/convection"
+            - "build/examples/convection/convection_report.prj/reports"
+
+convection_benchmark:
+    stage: benchmark
+    only:
+        - staging
+        - main
+        - convection
+    when: manual
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:30:00"
+    before_script:
+        - "ml fpga devel vis intel/oneapi bittware/520n Boost CMake FFmpeg"
+        - "python -m venv .venv"
+        - "source .venv/bin/activate"
+        - "pip install --upgrade pip"
+        - "pip install matplotlib"
+    script:
+        - "cd build"
+        - "mkdir out"
+        - "time ./examples/convection/convection"
+        - "../examples/convection/render_animation.py out/"
+    artifacts:
+        paths:
+            - "build/animation.mp4"
+            - "build/out"
 
 fdtd_reports:
     stage: preevaluation
