@@ -14,16 +14,30 @@ struct ThermalConvectionCell {
     double RogT, eta, delta_V;
     double dVxd_tau, dVyd_tau;
     double ErrV, ErrP;
-    double qTx, qTy, dT_dt;
+    double qTx, qTy, pre_dT_dt, dT_dt;
 
     static ThermalConvectionCell halo_value() {
-        return ThermalConvectionCell {
-            .T = 0.0, .Pt = 0.0, .Vx = 0.0, .Vy = 0.0, .Rx = 0.0, .Ry = 0.0,
-            .tau_xx = 0.0, .tau_yy = 0.0, .sigma_xy = 0.0,
-            .RogT = 0.0, .eta = 0.0, .delta_V = 0.0,
-            .dVxd_tau = 0.0, .dVyd_tau = 0.0,
-            .ErrV = 0.0, .ErrP = 0.0, 
-            .qTx = 0.0, .qTy = 0.0, .dT_dt = 0.0,
+        return ThermalConvectionCell{
+            .T = 0.0,
+            .Pt = 0.0,
+            .Vx = 0.0,
+            .Vy = 0.0,
+            .Rx = 0.0,
+            .Ry = 0.0,
+            .tau_xx = 0.0,
+            .tau_yy = 0.0,
+            .sigma_xy = 0.0,
+            .RogT = 0.0,
+            .eta = 0.0,
+            .delta_V = 0.0,
+            .dVxd_tau = 0.0,
+            .dVyd_tau = 0.0,
+            .ErrV = 0.0,
+            .ErrP = 0.0,
+            .qTx = 0.0,
+            .qTy = 0.0,
+            .pre_dT_dt = 0.0,
+            .dT_dt = 0.0,
         };
     }
 };
@@ -160,15 +174,15 @@ class ThermalSolverKernel {
   public:
     using Cell = ThermalConvectionCell;
 
-    static constexpr uindex_t stencil_radius = 2;
-    static constexpr uindex_t n_subgenerations = 4;
+    static constexpr uindex_t stencil_radius = 1;
+    static constexpr uindex_t n_subgenerations = 5;
     using TimeDependentValue = std::monostate;
 
     uindex_t nx, ny;
     double dx, dy, dt;
     double DcT;
 
-    Cell operator()(Stencil<Cell, 2> const &stencil) const {
+    Cell operator()(Stencil<Cell, 1> const &stencil) const {
         Cell new_cell = stencil[ID(0, 0)];
         uindex_t c = stencil.id.c;
         uindex_t r = stencil.id.r;
@@ -182,33 +196,37 @@ class ThermalSolverKernel {
                 new_cell.qTy = -DcT * D_YI(T) / dy;
             }
         } else if (stencil.subgeneration == 1) {
-            // advect_T!(...)
-            if (c < nx - 2 && r < ny - 2) {
-                new_cell.dT_dt = -((stencil[ID(1, 0)].qTx - stencil[ID(0, 0)].qTx) / dx +
-                                   (stencil[ID(0, 1)].qTy - stencil[ID(0, 0)].qTy) / dy);
-                if (stencil[ID(1, 1)].Vx > 0) {
-                    new_cell.dT_dt -=
-                        stencil[ID(1, 1)].Vx * (stencil[ID(1, 1)].T - stencil[ID(0, 1)].T) / dx;
+            // advect_T!(...) (part 1 of 2)
+            // The original implementation uses differences between cells with index ID(2, 1) or
+            // ID(1, 2) and ID(1, 1). Having a larger stencil radius is "bad" for StencilStream.
+            // Therefore, I've split these operations into separate subgenerations that can both work
+            // with a stencil radius of 1.
+            if (c < nx - 1 && r < ny - 1) {
+                new_cell.pre_dT_dt = 0.0;
+                if (stencil[ID(1, 0)].Vx < 0) {
+                    new_cell.pre_dT_dt -= stencil[ID(1, 0)].Vx * D_XA(T) / dx;
                 }
-                if (stencil[ID(2, 1)].Vx < 0) {
-                    new_cell.dT_dt -=
-                        stencil[ID(2, 1)].Vx * (stencil[ID(2, 1)].T - stencil[ID(1, 1)].T) / dx;
-                }
-                if (stencil[ID(1, 1)].Vy > 0) {
-                    new_cell.dT_dt -=
-                        stencil[ID(1, 1)].Vy * (stencil[ID(1, 1)].T - stencil[ID(1, 0)].T) / dy;
-                }
-                if (stencil[ID(1, 2)].Vy < 0) {
-                    new_cell.dT_dt -=
-                        stencil[ID(1, 2)].Vy * (stencil[ID(1, 2)].T - stencil[ID(1, 1)].T) / dy;
+                if (stencil[ID(0, 1)].Vy < 0) {
+                    new_cell.pre_dT_dt -= stencil[ID(0, 1)].Vy * D_YA(T) / dy;
                 }
             }
         } else if (stencil.subgeneration == 2) {
+            // advect_T!(...) (part 2 of 2)
+            if (c < nx - 2 && r < ny - 2) {
+                new_cell.dT_dt = -(D_XA(qTx) / dx + D_YA(qTx) / dy) + stencil[ID(1, 1)].pre_dT_dt;
+                if (stencil[ID(1, 1)].Vx > 0) {
+                    new_cell.dT_dt -= stencil[ID(1, 1)].Vx * D_YI(T) / dx;
+                }
+                if (stencil[ID(1, 1)].Vy > 0) {
+                    new_cell.dT_dt -= stencil[ID(1, 1)].Vy * D_XI(T) / dy;
+                }
+            }
+        } else if (stencil.subgeneration == 3) {
             // update_T!(...)
             if (c > 0 && r > 0 && c < nx - 1 && r < ny - 1) {
                 new_cell.T = ALL(T) + stencil[ID(-1, -1)].dT_dt * dt;
             }
-        } else if (stencil.subgeneration == 3) {
+        } else if (stencil.subgeneration == 4) {
             // no_fluxY_T!(...)
             if (c == nx - 1 && r < ny) {
                 new_cell.T = stencil[ID(-1, 0)].T;
@@ -291,14 +309,13 @@ int main() {
 #else
     MonotileExecutor<PseudoTransientKernel, tdv::NoneSupplier, 4> pseudo_transient_executor(
         ThermalConvectionCell::halo_value(), pseudo_transient_kernel);
-    MonotileExecutor<ThermalSolverKernel, tdv::NoneSupplier, 4> thermal_solver_executor(
+    MonotileExecutor<ThermalSolverKernel, tdv::NoneSupplier, 5> thermal_solver_executor(
         ThermalConvectionCell::halo_value(), thermal_solver_kernel);
-#if HARDWARE == 1
+    #if HARDWARE == 1
     pseudo_transient_executor.select_fpga();
     thermal_solver_executor.select_fpga();
+    #endif
 #endif
-#endif
-
 
     cl::sycl::buffer<ThermalConvectionCell, 2> grid = cl::sycl::range<2>(nx + 1, ny + 1);
     {
@@ -358,7 +375,8 @@ int main() {
             }
             errV = max_ErrV / (1e-12 + max_Vy);
             errP = max_ErrP / (1e-12 + max_Pt);
-            //printf("iter = %d, errV=%1.3e, errP=%1.3e\n", pseudo_transient_executor.get_i_generation(), errV, errP);
+            // printf("iter = %d, errV=%1.3e, errP=%1.3e\n",
+            // pseudo_transient_executor.get_i_generation(), errV, errP);
         }
 
         double dt_adv = std::min(dx / max_Vx, dy / max_Vy) / 2.1;
