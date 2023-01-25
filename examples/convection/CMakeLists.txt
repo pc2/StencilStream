@@ -20,7 +20,7 @@ add_link_options(-fintelfpga)
 
 add_executable(convection convection.cpp)
 target_compile_definitions(convection PUBLIC EXECUTOR=1 HARDWARE=1)
-target_link_options(convection PUBLIC -Xshardware -Xsv)
+target_link_options(convection PUBLIC -Xshardware -Xsv -Xsprofile)
 
 add_executable(convection_emu convection.cpp)
 target_compile_definitions(convection_emu PUBLIC EXECUTOR=1 HARDWARE=0)

@@ -80,7 +80,7 @@ convection_synthesis:
     artifacts:
         paths:
             - "build/examples/convection/convection"
-            - "build/examples/convection/convection_report.prj/reports"
+            - "build/examples/convection/convection.prj/reports"
 
 convection_benchmark:
     stage: benchmark
@@ -102,7 +102,7 @@ convection_benchmark:
     script:
         - "cd build"
         - "mkdir out"
-        - "time ./examples/convection/convection"
+        - "time aocl profile -e ./examples/convection/convection ./examples/convection/convection"
         - "../examples/convection/render_animation.py out/"
     artifacts:
         paths:
