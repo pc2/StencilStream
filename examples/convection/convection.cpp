@@ -289,10 +289,12 @@ int main() {
     SimpleCPUExecutor<ThermalSolverKernel, tdv::NoneSupplier> thermal_solver_executor(
         ThermalConvectionCell::halo_value(), thermal_solver_kernel);
 #else
-    MonotileExecutor<PseudoTransientKernel, tdv::NoneSupplier, 32> pseudo_transient_executor(
-        ThermalConvectionCell::halo_value(), pseudo_transient_kernel);
-    MonotileExecutor<ThermalSolverKernel, tdv::NoneSupplier, 2> thermal_solver_executor(
-        ThermalConvectionCell::halo_value(), thermal_solver_kernel);
+    MonotileExecutor<PseudoTransientKernel, tdv::NoneSupplier,
+                     PseudoTransientKernel::n_subgenerations * 12, 512, 512>
+        pseudo_transient_executor(ThermalConvectionCell::halo_value(), pseudo_transient_kernel);
+    MonotileExecutor<ThermalSolverKernel, tdv::NoneSupplier, ThermalSolverKernel::n_subgenerations,
+                     512, 512>
+        thermal_solver_executor(ThermalConvectionCell::halo_value(), thermal_solver_kernel);
     #if HARDWARE == 1
     pseudo_transient_executor.select_fpga();
     thermal_solver_executor.select_fpga();
