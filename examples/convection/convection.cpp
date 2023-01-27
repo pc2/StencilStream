@@ -290,7 +290,7 @@ int main() {
         ThermalConvectionCell::halo_value(), thermal_solver_kernel);
 #else
     MonotileExecutor<PseudoTransientKernel, tdv::NoneSupplier,
-                     PseudoTransientKernel::n_subgenerations * 12, 512, 512>
+                     PseudoTransientKernel::n_subgenerations * 10, 512, 512>
         pseudo_transient_executor(ThermalConvectionCell::halo_value(), pseudo_transient_kernel);
     MonotileExecutor<ThermalSolverKernel, tdv::NoneSupplier, ThermalSolverKernel::n_subgenerations,
                      512, 512>
