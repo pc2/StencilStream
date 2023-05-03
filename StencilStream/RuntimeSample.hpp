@@ -19,8 +19,6 @@
  */
 #pragma once
 #include "Index.hpp"
-#include <CL/sycl/buffer.hpp>
-#include <CL/sycl/event.hpp>
 
 namespace stencil {
 /**

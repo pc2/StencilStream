@@ -8,7 +8,8 @@
 
 # Global settings
 include_directories(.)
-add_compile_options(-std=c++20 -qactypes)
+add_compile_options(-fsycl -std=c++20 -qactypes)
+add_link_options(-fsycl)
 add_compile_definitions(STENCIL_INDEX_WIDTH=32)
 
 # Pure CPU-based executable

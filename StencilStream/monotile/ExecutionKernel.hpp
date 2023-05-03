@@ -24,7 +24,6 @@
 #include "../Index.hpp"
 #include "../Padded.hpp"
 
-#include <CL/sycl/accessor.hpp>
 #include <optional>
 
 namespace stencil {
@@ -51,8 +50,9 @@ namespace monotile {
 template <TransitionFunction TransFunc, tdv::KernelArgument TDVKernelArgument,
           uindex_t n_processing_elements, uindex_t tile_width, uindex_t tile_height,
           typename in_pipe, typename out_pipe>
-requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
-    (n_processing_elements % TransFunc::n_subgenerations == 0) class ExecutionKernel {
+    requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
+            (n_processing_elements % TransFunc::n_subgenerations == 0)
+class ExecutionKernel {
   public:
     using Cell = typename TransFunc::Cell;
 
@@ -90,7 +90,8 @@ requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&
     using index_2d_t = ac_int<bits_2d + 1, true>;
     using uindex_2d_t = ac_int<bits_2d, false>;
 
-    static constexpr unsigned long bits_pes = std::max<int>(2, std::bit_width(n_processing_elements));
+    static constexpr unsigned long bits_pes =
+        std::max<int>(2, std::bit_width(n_processing_elements));
     using index_pes_t = ac_int<bits_pes + 1, true>;
     using uindex_pes_t = ac_int<bits_pes, false>;
 

@@ -19,8 +19,6 @@
  */
 #pragma once
 #include "Index.hpp"
-#include <CL/sycl/access/access.hpp>
-#include <CL/sycl/id.hpp>
 #include <numeric>
 
 namespace stencil {
