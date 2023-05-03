@@ -19,7 +19,7 @@
  */
 #pragma once
 #include "Index.hpp"
-#include <CL/sycl/id.hpp>
+#include <CL/sycl.hpp>
 
 namespace stencil {
 

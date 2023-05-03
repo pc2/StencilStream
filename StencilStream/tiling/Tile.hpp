@@ -21,7 +21,6 @@
 #include "../Helpers.hpp"
 #include "../Index.hpp"
 #include "../Padded.hpp"
-#include <CL/sycl.hpp>
 #include <optional>
 #include <stdexcept>
 

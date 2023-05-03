@@ -20,9 +20,6 @@
 #pragma once
 #include "../GenericID.hpp"
 #include "Tile.hpp"
-#include <CL/sycl/accessor.hpp>
-#include <CL/sycl/buffer.hpp>
-#include <CL/sycl/queue.hpp>
 #include <bit>
 #include <memory>
 #include <numeric>

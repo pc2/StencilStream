@@ -21,35 +21,35 @@
 #include "Index.hpp"
 #include "Stencil.hpp"
 
-#include <CL/sycl/handler.hpp>
 #include <concepts>
 
 namespace stencil {
 
 template <typename T>
-concept TransitionFunction = requires {
-    // cell type
-    requires std::semiregular<typename T::Cell>;
-}
-&&requires {
-    // stencil radius
-    requires std::same_as<decltype(T::stencil_radius), const uindex_t>;
-    requires(T::stencil_radius >= 1);
-}
-&&requires {
-    // number of subgenerations
-    requires std::same_as<decltype(T::n_subgenerations), const uindex_t>;
-}
-&&requires {
-    // time-dependent value
-    requires std::copyable<typename T::TimeDependentValue>;
-}
-&&requires(
-    T trans_func,
-    Stencil<typename T::Cell, T::stencil_radius, typename T::TimeDependentValue> const &stencil) {
-    // update method
-    { trans_func(stencil) } -> std::convertible_to<typename T::Cell>;
-};
+concept TransitionFunction =
+    requires {
+        // cell type
+        requires std::semiregular<typename T::Cell>;
+    } &&
+    requires {
+        // stencil radius
+        requires std::same_as<decltype(T::stencil_radius), const uindex_t>;
+        requires(T::stencil_radius >= 1);
+    } &&
+    requires {
+        // number of subgenerations
+        requires std::same_as<decltype(T::n_subgenerations), const uindex_t>;
+    } &&
+    requires {
+        // time-dependent value
+        requires std::copyable<typename T::TimeDependentValue>;
+    } &&
+    requires(T trans_func,
+             Stencil<typename T::Cell, T::stencil_radius, typename T::TimeDependentValue> const
+                 &stencil) {
+        // update method
+        { trans_func(stencil) } -> std::convertible_to<typename T::Cell>;
+    };
 
 namespace tdv {
 
@@ -61,28 +61,28 @@ concept ValueFunction = requires(F const &function, uindex_t i_generation) {
 
 template <typename T>
 concept LocalState = std::copyable<typename T::Value> && std::copyable<T> &&
-    requires(T const &local_state, uindex_t i) {
-    { local_state.get_value(i) } -> std::convertible_to<typename T::Value>;
-};
+                     requires(T const &local_state, uindex_t i) {
+                         { local_state.get_value(i) } -> std::convertible_to<typename T::Value>;
+                     };
 
 template <typename T>
-concept KernelArgument = LocalState<typename T::LocalState> && std::copyable<T> &&
-    requires(T const &global_state) {
-    { global_state.build_local_state() } -> std::convertible_to<typename T::LocalState>;
-};
+concept KernelArgument =
+    LocalState<typename T::LocalState> && std::copyable<T> && requires(T const &global_state) {
+        { global_state.build_local_state() } -> std::convertible_to<typename T::LocalState>;
+    };
 
 template <typename T>
-concept HostState = KernelArgument<typename T::KernelArgument> &&
+concept HostState =
+    KernelArgument<typename T::KernelArgument> &&
     requires(T &supplier, cl::sycl::handler &cgh, uindex_t i_generation, uindex_t n_generations) {
-    {
-        // building the global state
-        supplier.build_kernel_argument(cgh, i_generation, n_generations)
+        {
+            // building the global state
+            supplier.build_kernel_argument(cgh, i_generation, n_generations)
         } -> std::convertible_to<typename T::KernelArgument>;
-
-} && requires(T &supplier, uindex_t i_generation, uindex_t n_generations) {
-    // preparing the global state
-    {supplier.prepare_range(i_generation, n_generations)};
-};
+    } && requires(T &supplier, uindex_t i_generation, uindex_t n_generations) {
+        // preparing the global state
+        { supplier.prepare_range(i_generation, n_generations) };
+    };
 
 } // namespace tdv
 } // namespace stencil

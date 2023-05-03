@@ -37,7 +37,7 @@ unit_test:
         - "make unit_test -j14"
         - "./tests/unit_test"
 
-convection_reports:
+reports:
     stage: preevaluation
     only:
         - staging
@@ -47,16 +47,18 @@ convection_reports:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 00:30:00 -c 1 --mem 8G"
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 1:30:00 -c 21 --mem 64G"
     before_script:
         - "ml fpga devel intel/oneapi bittware/520n Boost CMake"
     script:
         - "mkdir -p build"
         - "cd build"
         - "cmake .."
-        - "make convection_report"
+        - "make fdtd_reports hotspot_reports convection_report -j20"
     artifacts:
         paths:
+            - "build/examples/hotspot/*.prj/reports"
+            - "build/examples/fdtd/*.prj/reports"
             - "build/examples/convection/convection_report.prj/reports"
 
 convection_synthesis:
@@ -108,45 +110,3 @@ convection_benchmark:
         paths:
             - "build/animation.mp4"
             - "build/out"
-
-fdtd_reports:
-    stage: preevaluation
-    only:
-        - staging
-        - main
-    when: manual
-    tags:
-        - noctua2
-    variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 1:30:00 -c 18 --mem 64G"
-    before_script:
-        - "ml fpga devel intel/oneapi bittware/520n Boost CMake"
-    script:
-        - "mkdir -p build"
-        - "cd build"
-        - "cmake .."
-        - "make fdtd_reports -j18"
-    artifacts:
-        paths:
-            - "build/examples/fdtd/*.prj/reports"
-
-hotspot_reports:
-    stage: preevaluation
-    only:
-        - staging
-        - main
-    when: manual
-    tags:
-        - noctua2
-    variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 1:00:00 -c 2 --mem 16G"
-    before_script:
-        - "ml fpga devel intel/oneapi bittware/520n Boost CMake"
-    script:
-        - "mkdir -p build"
-        - "cd build"
-        - "cmake .."
-        - "make hotspot_reports -j2"
-    artifacts:
-        paths:
-            - "build/examples/hotspot/*.prj/reports"

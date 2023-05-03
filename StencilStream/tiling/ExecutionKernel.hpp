@@ -24,7 +24,6 @@
 #include "../Index.hpp"
 #include "../Padded.hpp"
 
-#include <CL/sycl/accessor.hpp>
 #include <optional>
 
 namespace stencil {

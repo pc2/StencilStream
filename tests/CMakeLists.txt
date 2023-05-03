@@ -10,13 +10,13 @@ Include(FetchContent)
 FetchContent_Declare(
   Catch2
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG        v3.2.1
+  GIT_TAG        v3.3.2
 )
 FetchContent_MakeAvailable(Catch2)
 
 include_directories(../)
-add_compile_options(-std=c++20 -qactypes -fintelfpga -Wtautological-constant-compare)
-add_link_options(-std=c++20 -qactypes -fintelfpga -Wtautological-constant-compare)
+add_compile_options(-fsycl -std=c++20 -qactypes -fintelfpga -Wtautological-constant-compare)
+add_link_options(-fsycl -std=c++20 -qactypes -fintelfpga -Wtautological-constant-compare)
 add_compile_definitions(STENCIL_INDEX_WIDTH=32)
 
 set(UNIT_TEST_SOURCES

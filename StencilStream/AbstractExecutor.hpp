@@ -23,7 +23,6 @@
 #include "Index.hpp"
 #include "RuntimeSample.hpp"
 
-#include <CL/sycl.hpp>
 #include <functional>
 
 namespace stencil {

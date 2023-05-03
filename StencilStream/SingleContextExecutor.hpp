@@ -138,14 +138,14 @@ class SingleContextExecutor : public AbstractExecutor<TransFunc, TDVS> {
         this->select_fpga();
     }
 
-    void select_cpu() { this->build_context(cl::sycl::cpu_selector().select_device()); }
+    void select_cpu() { this->build_context(cl::sycl::device{cl::sycl::cpu_selector_v}); }
 
     void select_emulator() {
-        this->build_context(cl::sycl::ext::intel::fpga_emulator_selector().select_device());
+        this->build_context(cl::sycl::device{cl::sycl::ext::intel::fpga_emulator_selector_v});
     }
 
     void select_fpga() {
-        this->build_context(cl::sycl::ext::intel::fpga_selector().select_device());
+        this->build_context(cl::sycl::device{cl::sycl::ext::intel::fpga_selector_v});
     }
 
     void build_context(cl::sycl::device device) {

@@ -17,13 +17,13 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <catch2/catch_all.hpp>
+#include <CL/sycl.hpp>
 #include <StencilStream/Concepts.hpp>
 #include <StencilStream/tdv/DevicePrecomputeSupplier.hpp>
 #include <StencilStream/tdv/HostPrecomputeSupplier.hpp>
 #include <StencilStream/tdv/InlineSupplier.hpp>
 #include <StencilStream/tdv/NoneSupplier.hpp>
-#include <CL/sycl.hpp>
+#include <catch2/catch_all.hpp>
 #include <ext/intel/fpga_extensions.hpp>
 
 using namespace stencil;
@@ -35,10 +35,8 @@ template <tdv::HostState TDVS, typename F> class TDVSTester {
     using Value = typename LocalState::Value;
 
     TDVSTester(TDVS tdvs, F verification_function)
-        : tdvs(tdvs), verification_function(verification_function), test_queue() {
-        cl::sycl::ext::intel::fpga_emulator_selector device_selector;
-        test_queue = device_selector;
-    }
+        : tdvs(tdvs), verification_function(verification_function),
+          test_queue(cl::sycl::ext::intel::fpga_emulator_selector_v) {}
 
     void run_test() {
         // Single pass
