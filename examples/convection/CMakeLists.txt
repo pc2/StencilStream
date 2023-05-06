@@ -12,6 +12,13 @@ add_compile_options(-fsycl -std=c++20 -qactypes)
 add_link_options(-fsycl)
 add_compile_definitions(STENCIL_INDEX_WIDTH=32)
 
+include(FetchContent)
+FetchContent_Declare(json
+    GIT_REPOSITORY https://github.com/nlohmann/json
+    GIT_TAG v3.11.2
+)
+FetchContent_MakeAvailable(json)
+
 # Pure CPU-based executable
 add_executable(convection_cpu convection.cpp)
 target_compile_definitions(convection_cpu PUBLIC EXECUTOR=0 HARDWARE=0)
@@ -29,3 +36,7 @@ target_compile_definitions(convection_emu PUBLIC EXECUTOR=1 HARDWARE=0)
 add_executable(convection_report convection.cpp)
 target_compile_definitions(convection_report PUBLIC EXECUTOR=1 HARDWARE=1)
 target_link_options(convection_report PUBLIC -fsycl-link -Xshardware -Xsv)
+
+foreach(TARGET convection convection_cpu convection_emu convection_report)
+    target_link_libraries(${TARGET} PRIVATE nlohmann_json::nlohmann_json)
+endforeach()

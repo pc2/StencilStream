@@ -11,6 +11,13 @@ add_compile_options(-fsycl -std=c++20 -qactypes)
 add_link_options(-fsycl)
 add_compile_definitions(STENCIL_INDEX_WIDTH=32)
 
+include(FetchContent)
+FetchContent_Declare(json
+    GIT_REPOSITORY https://github.com/nlohmann/json
+    GIT_TAG v3.11.2
+)
+FetchContent_MakeAvailable(json)
+
 add_custom_target(fdtd_reports)
 
 foreach(MATERIAL coef lut render)
@@ -18,6 +25,7 @@ foreach(MATERIAL coef lut render)
         foreach(EXECUTOR mono mono_emu mono_report tiling tiling_emu tiling_report cpu)
             set(EXECUTABLE "fdtd_${MATERIAL}_${TDVS}_${EXECUTOR}")
             add_executable(${EXECUTABLE} src/fdtd.cpp)
+            target_link_libraries(${EXECUTABLE} PRIVATE nlohmann_json::nlohmann_json)
 
             if(${MATERIAL} STREQUAL coef)
                 target_compile_definitions(${EXECUTABLE} PUBLIC MATERIAL=0)

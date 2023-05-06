@@ -5,6 +5,7 @@
 #endif
 #include <StencilStream/tdv/NoneSupplier.hpp>
 #include <fstream>
+#include <nlohmann/json.hpp>
 
 using namespace stencil;
 
