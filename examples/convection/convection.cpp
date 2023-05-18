@@ -4,10 +4,12 @@
     #include <StencilStream/MonotileExecutor.hpp>
 #endif
 #include <StencilStream/tdv/NoneSupplier.hpp>
+#include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
 
 using namespace stencil;
+using json = nlohmann::json;
 
 struct ThermalConvectionCell {
     double T, Pt, Vx, Vy;
@@ -223,34 +225,68 @@ class ThermalSolverKernel {
     }
 };
 
-int main() {
+int main(int argc, char **argv) {
+    if (argc != 3) {
+        std::cerr << "Usage: " << argv[0] << " <path to experiment>.json <path to output directory>"
+                  << std::endl;
+        return 1;
+    }
+
+    std::filesystem::path experiment_file_path(argv[1]);
+    std::filesystem::path output_dir_path(argv[2]);
+
+    if (!std::filesystem::is_regular_file(experiment_file_path)) {
+        std::cerr << "The experiment file does not exist or is not a regular file." << std::endl;
+        return 1;
+    }
+
+    if (!std::filesystem::is_directory(output_dir_path)) {
+        std::cerr << "The output directory does not exist or is not a directory." << std::endl;
+        return 1;
+    }
+
+    std::ifstream experiment_file(experiment_file_path);
+    if (!experiment_file.is_open()) {
+        std::cerr << "Could not open experiment file!" << std::endl;
+        return 1;
+    }
+
+    json experiment;
+    try {
+        experiment = json::parse(experiment_file);
+    } catch (json::parse_error e) {
+        std::cerr << "Could not parse experiment file:" << std::endl;
+        std::cerr << e.what() << std::endl;
+        return 1;
+    }
+
     // Physics - dimentionally independent scales
-    double ly = 1.0;     // domain extend, m
-    double eta0 = 1.0;   // viscosity, Pa*s
-    double DcT = 1.0;    // heat diffusivity, m^2/s
-    double deltaT = 1.0; // initial temperature perturbation K
+    double lx = experiment.at("lx");         // horizontal domain extend, m
+    double ly = experiment.at("ly");         // vertical domain extend, m
+    double eta0 = experiment.at("eta0");     // viscosity, Pa*s
+    double DcT = experiment.at("DcT");       // heat diffusivity, m^2/s
+    double deltaT = experiment.at("deltaT"); // initial temperature perturbation K
 
     // Physics - nondim numbers
-    double Ra = 1e7;  // Raleigh number = ρ0*g*α*ΔT*ly^3/η0/DcT
-    double Pra = 1e3; // Prandtl number = η0/ρ0/DcT
-    double ar = 3;    // aspect ratio
+    double Ra = experiment.at("Ra");   // Raleigh number = ρ0*g*α*ΔT*ly^3/η0/DcT
+    double Pra = experiment.at("Pra"); // Prandtl number = η0/ρ0/DcT
+    double ar = lx / ly;               // aspect ratio
 
     // Physics - dimentionally dependent parameters
-    double lx = ar * ly;  // domain extend, m
     double w = 1e-2 * ly; // initial perturbation standard deviation, m
     double roh0_g_alpha = Ra * eta0 * DcT / deltaT / std::pow(ly, 3); // thermal expansion
     double delta_eta_delta_T = 1e-10 / deltaT; // viscosity's temperature dependence
 
     // Numerics
-    uindex_t nx = 96 * ar - 1;
-    uindex_t ny = 96 - 1;     // numerical grid resolutions
-    uindex_t iterMax = 50000; // maximal number of pseudo-transient iterations
-    uindex_t nt = 3000;       // total number of timesteps
-    uindex_t nout = 10;       // frequency of plotting
-    uindex_t nerr = 100;      // frequency of error checking
-    double epsilon = 1e-4;    // nonlinear absolute tolerence
-    double dmp = 2;           // damping paramter
-    double st = 5;            // quiver plotting spatial step
+    uindex_t res = experiment.at("res");
+    uindex_t nx = res * lx - 1;
+    uindex_t ny = res * ly - 1;                  // numerical grid resolutions
+    uindex_t iterMax = experiment.at("iterMax"); // maximal number of pseudo-transient iterations
+    uindex_t nt = experiment.at("nt");           // total number of timesteps
+    uindex_t nout = experiment.at("nout");       // frequency of plotting
+    uindex_t nerr = experiment.at("nerr");       // frequency of error checking
+    double epsilon = experiment.at("epsilon");   // nonlinear absolute tolerence
+    double dmp = experiment.at("dmp");           // damping paramter
 
     // Derived numerics
     double dx = lx / (nx - 1);
@@ -377,7 +413,9 @@ int main() {
                pseudo_transient_executor.get_i_generation(), errV, errP);
 
         if (it > 0 && it % nout == 0) {
-            std::ofstream out_file("out/" + std::to_string(it) + ".csv");
+            std::filesystem::path output_file_path =
+                output_dir_path / std::filesystem::path(std::to_string(it) + ".csv");
+            std::ofstream out_file(output_file_path);
             {
                 auto ac = grid.get_access<cl::sycl::access::mode::read>();
                 // Transposed output
