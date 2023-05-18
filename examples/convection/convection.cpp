@@ -263,6 +263,8 @@ int main(int argc, char **argv) {
     // Physics - dimentionally independent scales
     double lx = experiment.at("lx");         // horizontal domain extend, m
     double ly = experiment.at("ly");         // vertical domain extend, m
+    double px = experiment.at("px");         // horizontal position of starting blob, m
+    double py = experiment.at("py");         // vertical position of starting blob, m
     double eta0 = experiment.at("eta0");     // viscosity, Pa*s
     double DcT = experiment.at("DcT");       // heat diffusivity, m^2/s
     double deltaT = experiment.at("deltaT"); // initial temperature perturbation K
@@ -349,8 +351,8 @@ int main(int argc, char **argv) {
                 } else if (y == ny - 1) {
                     cell.T = -deltaT / 2.0;
                 } else if (x < nx && y < ny) {
-                    cell.T = deltaT * std::exp(-std::pow((x * dx - 0.5 * lx) / w, 2) -
-                                               std::pow((y * dy - 0.5 * ly) / w, 2));
+                    cell.T = deltaT * std::exp(-std::pow((x * dx - px) / w, 2) -
+                                               std::pow((y * dy - py) / w, 2));
                 }
                 ac[x][y] = cell;
             }
