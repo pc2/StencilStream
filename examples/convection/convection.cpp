@@ -359,7 +359,9 @@ int main(int argc, char **argv) {
         }
     }
 
-    for (uint32_t it = 0; it < nt; it++) {
+    // Starting iteration with one and using an inclusive upper bound to stay compatible with the
+    // reference.
+    for (uint32_t it = 1; it <= nt; it++) {
         double errV = 2 * epsilon;
         double errP = 2 * epsilon;
         double max_ErrV, max_ErrP, max_Vx, max_Vy, max_Pt;
