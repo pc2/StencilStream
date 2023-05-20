@@ -422,9 +422,8 @@ int main(int argc, char **argv) {
             std::ofstream out_file(output_file_path);
             {
                 auto ac = grid.get_access<cl::sycl::access::mode::read>();
-                // Transposed output
-                for (uindex_t r = 0; r < ny; r++) {
-                    for (uindex_t c = 0; c < nx; c++) {
+                for (uindex_t c = 0; c < nx; c++) {
+                    for (uindex_t r = 0; r < ny; r++) {
                         out_file << ac[c][r].T;
                         if (c != nx - 1) {
                             out_file << ",";

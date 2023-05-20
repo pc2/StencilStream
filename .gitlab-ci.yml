@@ -37,30 +37,6 @@ unit_test:
         - "make unit_test -j14"
         - "./tests/unit_test"
 
-reports:
-    stage: preevaluation
-    only:
-        - staging
-        - main
-        - convection
-    when: manual
-    tags:
-        - noctua2
-    variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 1:30:00 -c 21 --mem 64G"
-    before_script:
-        - "ml fpga devel intel/oneapi bittware/520n Boost CMake"
-    script:
-        - "mkdir -p build"
-        - "cd build"
-        - "cmake .."
-        - "make fdtd_reports hotspot_reports convection_report -j20"
-    artifacts:
-        paths:
-            - "build/examples/hotspot/*.prj/reports"
-            - "build/examples/fdtd/*.prj/reports"
-            - "build/examples/convection/convection_report.prj/reports"
-
 convection_synthesis:
     stage: synthesis
     only:
@@ -96,17 +72,23 @@ convection_benchmark:
     variables:
         SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:30:00"
     before_script:
-        - "ml fpga devel vis intel/oneapi bittware/520n Boost CMake FFmpeg"
-        - "python -m venv .venv"
-        - "source .venv/bin/activate"
-        - "pip install --upgrade pip"
-        - "pip install matplotlib"
     script:
-        - "cd build"
+        - "cd examples/convection"
+        - "module reset"
+        - "module load fpga devel intel/oneapi bittware/520n Boost CMake"
         - "mkdir out"
-        - "time aocl profile -e ./examples/convection/convection ./examples/convection/convection"
-        - "../examples/convection/render_animation.py out/"
+        - "time aocl profile -e ../build/examples/convection/convection ../build/examples/convection/convection experiments/default.json out > convection.out &"
+
+        - "module reset"
+        - "module load lang JuliaHPC"
+        - "time julia --project -t128 -O3 ./ThermalConvection2D.jl > reference.out"
+        - "wait"
+
+        - "julia --project -t128 ./render_animation.jl out T_out"
     artifacts:
         paths:
-            - "build/animation.mp4"
-            - "build/out"
+            - "examples/convection/profile.json"
+            - "examples/convection/*.out"
+            - "examples/convection/out"
+            - "examples/convection/T_out"
+            - "examples/convection/animation.mp4"

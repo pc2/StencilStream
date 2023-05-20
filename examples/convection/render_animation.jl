@@ -29,7 +29,7 @@ else
 end
 
 function load_file(file_path)
-    readdlm(open(file_path), ',', Float64, '\n')'
+    readdlm(open(file_path), ',', Float64, '\n')
 end
 
 println("Reading files")
