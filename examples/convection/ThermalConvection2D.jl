@@ -172,8 +172,8 @@ end
     ErrP      = @zeros(nx  ,ny  )
     ErrV      = @zeros(nx  ,ny+1)
     # Preparation of visualisation
-    ENV["GKSwstype"]="nul"; if isdir("viz2D_out")==false mkdir("viz2D_out") end; loadpath = "./viz2D_out/"; anim = Animation(loadpath,String[])
-    println("Animation directory: $(anim.dir)")
+    #ENV["GKSwstype"]="nul"; if isdir("viz2D_out")==false mkdir("viz2D_out") end; loadpath = "./viz2D_out/"; anim = Animation(loadpath,String[])
+    #println("Animation directory: $(anim.dir)")
     if !isdir("T_out") mkdir("T_out") end; temppath = "./T_out/";
     println("Data directory: $(temppath)")
     X, Y   = -lx/2:dx:lx/2, -ly/2:dy:ly/2
@@ -212,17 +212,20 @@ end
         @printf("it = %d (iter = %d), errV=%1.3e, errP=%1.3e \n", it, niter, errV, errP)
         # Visualization
         if mod(it,nout)==0
-            heatmap(X, Y, Array(T)', aspect_ratio=1, xlims=(X[1], X[end]), ylims=(Y[1], Y[end]), c=:inferno, clims=(-0.1,0.1), title="T° (it = $it of $nt)")
             writedlm(temppath * string(it) * ".csv", Array(T), ",")
+
+            #=
+            heatmap(X, Y, Array(T)', aspect_ratio=1, xlims=(X[1], X[end]), ylims=(Y[1], Y[end]), c=:inferno, clims=(-0.1,0.1), title="T° (it = $it of $nt)")
 
             Vxp = 0.5*(Vx[1:st:end-1,1:st:end  ]+Vx[2:st:end,1:st:end])
             Vyp = 0.5*(Vy[1:st:end  ,1:st:end-1]+Vy[1:st:end,2:st:end])
             Vscale = 1/maximum(sqrt.(Vxp.^2 + Vyp.^2)) * dx*(st-1)
             quiver!(Xp[:], Yp[:], quiver=(Vxp[:]*Vscale, Vyp[:]*Vscale), lw=0.1, c=:blue); frame(anim)
             # display( quiver!(Xp[:], Yp[:], quiver=(Vxp[:]*Vscale, Vyp[:]*Vscale), lw=0.1, c=:blue) )
+            =#
         end
     end
-    gif(anim, "ThermalConvect2D.gif", fps = 15)
+    #gif(anim, "ThermalConvect2D.gif", fps = 15)
     return
 end
 

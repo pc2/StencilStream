@@ -37,7 +37,7 @@ unit_test:
         - "make unit_test -j14"
         - "./tests/unit_test"
 
-convection_synthesis:
+convection synthesis:
     stage: synthesis
     only:
         - staging
@@ -60,13 +60,15 @@ convection_synthesis:
             - "build/examples/convection/convection"
             - "build/examples/convection/convection.prj/reports"
 
-convection_benchmark:
+convection benchmark:
     stage: benchmark
     only:
         - staging
         - main
         - convection
     when: manual
+    needs: 
+        - "convection synthesis"
     tags:
         - noctua2
     variables:
@@ -77,7 +79,7 @@ convection_benchmark:
         - "module reset"
         - "module load fpga devel intel/oneapi bittware/520n Boost CMake"
         - "mkdir out"
-        - "time aocl profile -e ../build/examples/convection/convection ../build/examples/convection/convection experiments/default.json out > convection.out &"
+        - "time aocl profile -e ../../build/examples/convection/convection ../../build/examples/convection/convection experiments/default.json out > convection.out &"
 
         - "module reset"
         - "module load lang JuliaHPC"

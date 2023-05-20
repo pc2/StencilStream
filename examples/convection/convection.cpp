@@ -425,7 +425,7 @@ int main(int argc, char **argv) {
                 for (uindex_t c = 0; c < nx; c++) {
                     for (uindex_t r = 0; r < ny; r++) {
                         out_file << ac[c][r].T;
-                        if (c != nx - 1) {
+                        if (r != ny - 1) {
                             out_file << ",";
                         }
                     }
