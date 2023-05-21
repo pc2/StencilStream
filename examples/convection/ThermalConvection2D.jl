@@ -29,7 +29,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 =#
-const USE_GPU = false  # Use GPU? If this is set false, then no GPU needs to be available
+const USE_GPU = true  # Use GPU? If this is set false, then no GPU needs to be available
 using ParallelStencil
 using ParallelStencil.FiniteDifferences2D
 @static if USE_GPU

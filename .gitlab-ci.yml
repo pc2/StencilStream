@@ -76,15 +76,36 @@ convection benchmark:
         SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -c 16 -t 00:30:00"
     script:
         - "cd examples/convection"
-        - "julia --project -e 'using Pkg; Pkg.instantiate()'"
+        - "julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'"
         - "mkdir out"
-        - "../../build/examples/convection/convection_cpu experiments/default.json out | julia --project analyze_log.jl > ../../metrics.txt"
+        - "../../build/examples/convection/convection_cpu experiments/default.json out | julia --project analyze_log.jl fpga > metrics.txt"
         - "julia --project -t 16 render_animation.jl out"
     artifacts:
         reports:
-            metrics: metrics.txt
+            metrics: examples/convection/metrics.txt
         paths:
             - "examples/convection/profile.json"
             - "examples/convection/out"
             - "examples/convection/performance_fpga.csv"
             - "examples/convection/animation.mp4"
+
+convection reference benchmark:
+    stage: benchmark
+    only:
+        - staging
+        - main
+        - convection
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p gpu -G 1 -c 2 -t 00:30:00"
+    script:
+        - "cd examples/convection"
+        - "julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'"
+        - "julia --project ./ThermalConvection2D.jl | julia --project analyze_log.jl gpu > ../../metrics.txt"
+    artifacts:
+        reports:
+            metrics: examples/convection/metrics.txt
+        paths:
+            - "examples/convection/T_out"
+            - "examples/convection/performance_gpu.csv"
