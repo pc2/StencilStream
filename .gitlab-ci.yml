@@ -74,6 +74,7 @@ convection benchmark:
         - noctua2
     variables:
         SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -c 16 -t 00:30:00"
+        DPCPP_CPU_NUM_CUS: 16
     script:
         - "cd examples/convection"
         - "julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'"
@@ -102,7 +103,7 @@ convection reference benchmark:
     script:
         - "cd examples/convection"
         - "julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'"
-        - "julia --project ./ThermalConvection2D.jl | julia --project analyze_log.jl gpu > ../../metrics.txt"
+        - "julia --project ./ThermalConvection2D.jl | julia --project analyze_log.jl gpu > metrics.txt"
     artifacts:
         reports:
             metrics: examples/convection/metrics.txt
