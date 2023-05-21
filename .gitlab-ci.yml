@@ -7,6 +7,8 @@ default:
     before_script:
         - "module reset"
         - "module load lang fpga devel intel/oneapi bittware/520n Boost CMake Julia"
+        - "icpx --version"
+        - "julia --version"
 
 documentation:
     stage: preevaluation
@@ -73,6 +75,7 @@ convection benchmark:
     variables:
         SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -c 16 -t 00:30:00"
     script:
+        - "julia --project -e 'using Pkg; Pkg.instantiate()'"
         - "cd examples/convection"
         - "mkdir out"
         - "../../build/examples/convection/convection_cpu experiments/default.json out | julia --project analyze_log.jl > ../../metrics.txt"
