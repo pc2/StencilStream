@@ -52,16 +52,18 @@ convection synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 00:10:00 -c 1"
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G"
     script:
         - "mkdir -p build"
         - "cd build"
         - "cmake -DCMAKE_BUILD_TYPE=Release .."
-        - "make convection_cpu"
+        - "make convection"
     artifacts:
         when: always
         paths:
-            - "build/examples/convection/convection_cpu"
+            - "build/examples/convection/convection"
+            - "build/examples/convection/convection.prj/reports"
+
 
 convection benchmark:
     stage: benchmark
@@ -74,13 +76,12 @@ convection benchmark:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -c 16 -t 00:30:00"
-        DPCPP_CPU_NUM_CUS: 16
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00"
     script:
         - "cd examples/convection"
         - "julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'"
         - "mkdir out"
-        - "../../build/examples/convection/convection_cpu experiments/default.json out | julia --project analyze_log.jl fpga > metrics.txt"
+        - "aocl profile ../../build/examples/convection/convection_cpu experiments/default.json out | julia --project analyze_log.jl fpga > metrics.txt"
     artifacts:
         reports:
             metrics: examples/convection/metrics.txt
