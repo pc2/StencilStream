@@ -29,7 +29,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 =#
-const USE_GPU = true  # Use GPU? If this is set false, then no GPU needs to be available
+const USE_GPU = false  # Use GPU? If this is set false, then no GPU needs to be available
 using ParallelStencil
 using ParallelStencil.FiniteDifferences2D
 @static if USE_GPU
@@ -172,8 +172,8 @@ end
     ErrP      = @zeros(nx  ,ny  )
     ErrV      = @zeros(nx  ,ny+1)
     # Preparation of visualisation
-    if !isdir("T_out") mkdir("T_out") end; temppath = "./T_out/";
-    println("Data directory: $(temppath)")
+    out_path = "./reference_out/"; if !isdir(out_path) mkpath(out_path) end;
+    println("Data directory: $(out_path)")
     X, Y   = -lx/2:dx:lx/2, -ly/2:dy:ly/2
     Xc, Yc = [x for x=X, y=Y], [y for x=X,y=Y]
     Xp, Yp = Xc[1:st:end,1:st:end], Yc[1:st:end,1:st:end]
@@ -210,7 +210,7 @@ end
         @printf("it = %d (iter = %d, time = %e), errV=%1.3e, errP=%1.3e \n", it, niter, transient_runtime, errV, errP)
         # Visualization
         if mod(it,nout)==0
-            writedlm(temppath * string(it) * ".csv", Array(T), ",")
+            writedlm(out_path * string(it) * ".csv", Array(T), ",")
         end
     end
     println("Total time = $total_runtime")

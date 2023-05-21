@@ -32,7 +32,6 @@ function load_file(file_path)
     readdlm(open(file_path), ',', Float64, '\n')
 end
 
-println("Reading files")
 temps = Vector{Matrix}(undef, size(temp_files))
 diffs = Vector{Matrix}(undef, size(temp_files))
 Threads.@threads for i in eachindex(temp_files)
@@ -44,9 +43,17 @@ Threads.@threads for i in eachindex(temp_files)
         diffs[i] = abs.(temps[i] .- reference_temp)
     end
 end
-diffs
 
-println("Visualizing")
+temps = reduce((x,y) -> cat(x, y, dims=3), temps)
+if reference_output_directory !== nothing
+    diffs = reduce((x,y) -> cat(x, y, dims=3), diffs)
+    
+    println("error_mean{example=\"convection\"} $(mean(diffs))")
+    println("error_std{example=\"convection\"} $(std(diffs))")
+    println("error_min{example=\"convection\"} $(minimum(diffs))")
+    println("error_max{example=\"convection\"} $(maximum(diffs))")
+end
+
 index = Observable(1)
 if reference_output_directory === nothing
     figure_height = 500
@@ -55,23 +62,23 @@ else
 end
 fig = Figure(resolution=(1500, figure_height))
 
-temp_map = @lift(temps[$index])
-min_temp = minimum(minimum.(temps))
-max_temp = maximum(maximum.(temps))
+temp_map = @lift(temps[:,:,$index])
+min_temp = minimum(temps)
+max_temp = maximum(temps)
 
 Axis(fig[1,1], title="Simulated temperature", aspect=DataAspect())
 heatmap!(fig[1,1], temp_map, interpolate=true; colorrange=(min_temp, max_temp), colormap=:inferno)
 Colorbar(fig[1,2], limits=(min_temp, max_temp), colormap=:inferno, label="T°")
 
 if reference_output_directory !== nothing
-    diff_map = @lift(diffs[$index])
-    max_diff = maximum(maximum.(diffs))
+    diff_map = @lift(diffs[:,:,$index])
+    max_diff = maximum(diffs)
 
     Axis(fig[2,1], title="Difference to reference", aspect=DataAspect())
     heatmap!(fig[2,1], diff_map, interpolate=true; colorrange=(0, max_diff), colormap=:inferno)
     Colorbar(fig[2,2], limits=(0, max_diff), colormap=:inferno, label="T°")
 end
 
-record(fig, "animation.mp4", eachindex(diffs); framereate=15) do i
+record(fig, "animation.mp4", 1:size(diffs,3); framereate=15) do i
     index[] = i
 end
