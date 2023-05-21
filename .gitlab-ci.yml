@@ -98,11 +98,11 @@ convection reference benchmark:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal --exclusive -t 00:10:00"
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -c 16 -t 00:10:00"
     script:
         - "cd examples/convection"
         - "julia --project -O3 -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'"
-        - "julia --project -t128 -O3 ./ThermalConvection2D.jl | julia --project -O3 analyze_log.jl cpu > metrics.txt"
+        - "julia --project -t16 -O3 ./ThermalConvection2D.jl | julia --project -O3 analyze_log.jl cpu > metrics.txt"
     artifacts:
         reports:
             metrics: examples/convection/metrics.txt
