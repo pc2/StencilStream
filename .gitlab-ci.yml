@@ -43,7 +43,6 @@ convection synthesis:
         - staging
         - main
         - convection
-    when: manual
     tags:
         - noctua2
     variables:
@@ -56,6 +55,7 @@ convection synthesis:
         - "cmake -DCMAKE_BUILD_TYPE=Release .."
         - "make convection"
     artifacts:
+        when: always
         paths:
             - "build/examples/convection/convection"
             - "build/examples/convection/convection.prj/reports"
@@ -66,7 +66,6 @@ convection benchmark:
         - staging
         - main
         - convection
-    when: manual
     needs: 
         - "convection synthesis"
     tags:
