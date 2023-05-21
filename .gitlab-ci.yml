@@ -3,6 +3,11 @@ stages:
     - synthesis
     - benchmark
 
+default:
+    before_script:
+        - "module reset"
+        - "module load fpga devel intel/oneapi bittware/520n Boost CMake Julia"
+
 documentation:
     stage: preevaluation
     only:
@@ -28,8 +33,6 @@ unit_test:
         - noctua2
     variables:
         SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 0:05:00 -c 14 --mem 4G"
-    before_script:
-        - "ml fpga devel intel/oneapi bittware/520n Boost CMake"
     script:
         - "mkdir -p build"
         - "cd build"
@@ -46,19 +49,16 @@ convection synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G"
-    before_script:
-        - "ml fpga devel intel/oneapi bittware/520n Boost CMake"
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 00:10:00 -c 1"
     script:
         - "mkdir -p build"
         - "cd build"
         - "cmake -DCMAKE_BUILD_TYPE=Release .."
-        - "make convection"
+        - "make convection_cpu"
     artifacts:
         when: always
         paths:
-            - "build/examples/convection/convection"
-            - "build/examples/convection/convection.prj/reports"
+            - "build/examples/convection/convection_cpu"
 
 convection benchmark:
     stage: benchmark
@@ -71,25 +71,17 @@ convection benchmark:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:30:00"
-    before_script:
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -c 16 -t 00:30:00"
     script:
         - "cd examples/convection"
-        - "module reset"
-        - "module load fpga devel intel/oneapi bittware/520n Boost CMake"
         - "mkdir out"
-        - "time aocl profile -e ../../build/examples/convection/convection ../../build/examples/convection/convection experiments/default.json out > convection.out &"
-
-        - "module reset"
-        - "module load lang JuliaHPC"
-        - "time julia --project -t128 -O3 ./ThermalConvection2D.jl > reference.out"
-        - "wait"
-
-        - "julia --project -t128 ./render_animation.jl out T_out"
+        - "../../build/examples/convection/convection_cpu experiments/default.json out | julia --project analyze_log.jl > ../../metrics.txt"
+        - "julia --project -t 16 render_animation.jl out"
     artifacts:
+        reports:
+            metrics: metrics.txt
         paths:
             - "examples/convection/profile.json"
-            - "examples/convection/*.out"
             - "examples/convection/out"
-            - "examples/convection/T_out"
+            - "examples/convection/performance_fpga.csv"
             - "examples/convection/animation.mp4"

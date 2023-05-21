@@ -76,7 +76,9 @@
         "codecvt": "cpp",
         "shared_mutex": "cpp",
         "forward_list": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "any": "cpp"
     },
     "C_Cpp.clang_format_style": "{ BasedOnStyle: LLVM, IndentWidth: 4, TabWidth: 4, ColumnLimit: 100, IndentPPDirectives: BeforeHash }",
+    "julia.environmentPath": "/scratch/hpc-lco-kenter/joo/StencilStream/examples/convection",
 }

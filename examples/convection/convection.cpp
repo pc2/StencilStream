@@ -4,6 +4,7 @@
     #include <StencilStream/MonotileExecutor.hpp>
 #endif
 #include <StencilStream/tdv/NoneSupplier.hpp>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -361,6 +362,7 @@ int main(int argc, char **argv) {
 
     // Starting iteration with one and using an inclusive upper bound to stay compatible with the
     // reference.
+    auto computation_start = std::chrono::system_clock::now();
     for (uint32_t it = 1; it <= nt; it++) {
         double errV = 2 * epsilon;
         double errP = 2 * epsilon;
@@ -368,6 +370,7 @@ int main(int argc, char **argv) {
         pseudo_transient_executor.set_input(grid);
         pseudo_transient_executor.set_i_generation(0);
 
+        auto transients_start = std::chrono::high_resolution_clock::now();
         while ((errV > epsilon || errP > epsilon) &&
                pseudo_transient_executor.get_i_generation() < iterMax) {
             pseudo_transient_executor.run(nerr);
@@ -403,6 +406,7 @@ int main(int argc, char **argv) {
             // printf("iter = %d, errV=%1.3e, errP=%1.3e\n",
             // pseudo_transient_executor.get_i_generation(), errV, errP);
         }
+        auto transients_end = std::chrono::high_resolution_clock::now();
 
         double dt_adv = std::min(dx / max_Vx, dy / max_Vy) / 2.1;
         double dt = std::min(dt_diff, dt_adv);
@@ -413,8 +417,13 @@ int main(int argc, char **argv) {
         thermal_solver_executor.run(1);
         thermal_solver_executor.copy_output(grid);
 
-        printf("it = %d (iter = %d), errV=%1.3e, errP=%1.3e \n", it,
-               pseudo_transient_executor.get_i_generation(), errV, errP);
+        auto transients_computation_time =
+            std::chrono::duration_cast<std::chrono::duration<double>>(transients_end -
+                                                                      transients_start);
+
+        printf("it = %d (iter = %d, time = %e), errV=%1.3e, errP=%1.3e \n", it,
+               pseudo_transient_executor.get_i_generation(), transients_computation_time.count(),
+               errV, errP);
 
         if (it > 0 && it % nout == 0) {
             std::filesystem::path output_file_path =
@@ -435,5 +444,9 @@ int main(int argc, char **argv) {
             out_file.close();
         }
     }
+    auto computation_end = std::chrono::system_clock::now();
+    auto computation_time = std::chrono::duration_cast<std::chrono::duration<double>>(
+        computation_end - computation_start);
+    std::cout << "Total time = " << computation_time.count() << std::endl;
     return 0;
 }

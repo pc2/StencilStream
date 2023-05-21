@@ -1,4 +1,8 @@
 out
 *_out
 *.out
+*.csv
+*.png
+*.gif
+*.mp4
 Manifest.toml
