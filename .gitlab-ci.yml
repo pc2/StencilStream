@@ -6,7 +6,7 @@ stages:
 default:
     before_script:
         - "module reset"
-        - "module load fpga devel intel/oneapi bittware/520n Boost CMake Julia"
+        - "module load lang fpga devel intel/oneapi bittware/520n Boost CMake Julia"
 
 documentation:
     stage: preevaluation
