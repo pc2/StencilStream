@@ -79,6 +79,6 @@ if reference_output_directory !== nothing
     Colorbar(fig[2,2], limits=(0, max_diff), colormap=:inferno, label="T°")
 end
 
-record(fig, "animation.mp4", 1:size(diffs,3); framereate=15) do i
+record(fig, "animation.mp4", 1:size(temps,3); framereate=15) do i
     index[] = i
 end

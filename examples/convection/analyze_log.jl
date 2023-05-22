@@ -1,4 +1,6 @@
 using DataFrames
+using CSV
+using Statistics
 
 iteration_re = r"it = ([0-9]+) \(iter = ([0-9]+), time = ([^)]+)\)"
 total_re = r"Total time = (.+)$"
@@ -28,10 +30,6 @@ while isopen(stdin)
     end
 end
 
-using CSV
-using Statistics
-using CairoMakie
-
 target_name = ARGS[1]
 
 CSV.write("performance_$target_name.csv", log_entries)
@@ -50,10 +48,3 @@ println("throughput_max_steps_per_second{example=\"convection\",target=\"$target
 overhead = total_runtime - sum(log_entries[:, :runtime])
 println("overhead_seconds{example=\"convection\",target=\"$target_name\"} $overhead")
 println("overhead_seconds_per_step{example=\"convection\",target=\"$target_name\"} $(overhead/ size(log_entries,1))")
-
-fig, ax, p_throughput = lines(log_entries[:, :i_iteration], log_entries[:, :throughput])
-ax.title = "Performance"
-ax.xlabel = "Time [it]"
-ax.ylabel = "Throughput [pseudo-steps/s]"
-ylims!(ax, 0, max_throughput*1.1)
-save("performance_$target_name.png", fig)
