@@ -81,7 +81,7 @@ convection benchmark:
         - "cd examples/convection"
         - "julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'"
         - "mkdir out"
-        - "../../build/examples/convection/convection_cpu experiments/default.json out | julia --project analyze_log.jl fpga > metrics.txt"
+        - "../../build/examples/convection/convection experiments/default.json out | julia --project analyze_log.jl fpga > metrics.txt"
     artifacts:
         reports:
             metrics: examples/convection/metrics.txt
