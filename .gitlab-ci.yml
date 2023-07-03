@@ -48,7 +48,6 @@ convection synthesis:
     only:
         - staging
         - main
-        - convection
     tags:
         - noctua2
     variables:
@@ -70,7 +69,6 @@ convection benchmark:
     only:
         - staging
         - main
-        - convection
     needs: 
         - "convection synthesis"
     tags:
@@ -95,7 +93,6 @@ convection reference benchmark:
     only:
         - staging
         - main
-        - convection
     tags:
         - noctua2
     variables:
@@ -116,7 +113,6 @@ convection benchmark analysis:
     only:
         - staging
         - main
-        - convection
     needs: 
         - "convection benchmark"
         - "convection reference benchmark"
