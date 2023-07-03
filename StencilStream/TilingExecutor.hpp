@@ -267,7 +267,7 @@ class TilingExecutor : public SingleContextExecutor<TransFunc, TDVS> {
                             auto global_state = this->get_tdvs().build_kernel_argument(
                                 cgh, this->get_i_generation(), delta_n_generations);
 
-                            cgh.single_task<TransFunc>(ExecutionKernelImpl(
+                            cgh.single_task(ExecutionKernelImpl(
                                 this->get_trans_func(), this->get_i_generation(),
                                 target_i_generation, c * tile_width, r * tile_height, grid_width,
                                 grid_height, this->get_halo_value(), global_state));

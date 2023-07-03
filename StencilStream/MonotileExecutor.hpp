@@ -190,7 +190,7 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc, TDVS> {
                 auto tdv_global_state = this->get_tdvs().build_kernel_argument(
                     cgh, this->get_i_generation(), delta_n_generations);
 
-                cgh.single_task<TransFunc>(ExecutionKernelImpl(
+                cgh.single_task(ExecutionKernelImpl(
                     this->get_trans_func(), this->get_i_generation(), target_i_generation,
                     grid_width, grid_height, this->get_halo_value(), tdv_global_state));
             });
