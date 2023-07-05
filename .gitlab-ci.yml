@@ -13,9 +13,6 @@ default:
 
 documentation:
     stage: preevaluation
-    only:
-        - staging
-        - main
     tags:
         - docker-shared
     image: "alpine"
@@ -29,9 +26,6 @@ documentation:
 
 unit_test:
     stage: preevaluation
-    only:
-        - staging
-        - main
     tags:
         - noctua2
     variables:
@@ -45,9 +39,7 @@ unit_test:
 
 convection synthesis:
     stage: synthesis
-    only:
-        - staging
-        - main
+    when: manual
     tags:
         - noctua2
     variables:
@@ -66,9 +58,7 @@ convection synthesis:
 
 convection benchmark:
     stage: benchmark
-    only:
-        - staging
-        - main
+    when: manual
     needs: 
         - "convection synthesis"
     tags:
@@ -90,9 +80,7 @@ convection benchmark:
 
 convection reference benchmark:
     stage: benchmark
-    only:
-        - staging
-        - main
+    when: manual
     tags:
         - noctua2
     variables:
@@ -110,9 +98,7 @@ convection reference benchmark:
 
 convection benchmark analysis:
     stage: analysis
-    only:
-        - staging
-        - main
+    when: manual
     needs: 
         - "convection benchmark"
         - "convection reference benchmark"
