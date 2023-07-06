@@ -52,7 +52,7 @@ class PseudoTransientKernel {
     using Cell = ThermalConvectionCell;
 
     static constexpr uindex_t stencil_radius = 1;
-    static constexpr uindex_t n_subgenerations = 4;
+    static constexpr uindex_t n_subgenerations = 3;
     using TimeDependentValue = std::monostate;
 
     uindex_t nx, ny;
@@ -101,31 +101,30 @@ class PseudoTransientKernel {
             }
 
         } else if (stencil.subgeneration == 1) {
-            // compute_2!(...)
-            if (c < nx - 1 && r < ny - 2) {
-                double Rx = 1.0 / rho * (D_XI(tau_xx) / dx + D_YA(sigma_xy) / dy - D_XI(Pt) / dx);
-                new_cell.dVxd_tau = dampX * ALL(dVxd_tau) + Rx * delta_tau_iter;
-            }
-            if (c < nx - 2 && r < ny - 1) {
-                double Ry = 1.0 / rho *
-                            (D_YI(tau_yy) / dy + D_XA(sigma_xy) / dx - D_YI(Pt) / dy +
-                             roh0_g_alpha * AV_YI(T));
-                new_cell.dVyd_tau = dampY * ALL(dVyd_tau) + Ry * delta_tau_iter;
+            // compute_2!(...) and update_V!(...)
+            if (c >= 1 && r >= 1) {
+                if (c < (nx + 1) - 1 && r < ny - 1) {
+                    double Rx = 1.0 / rho * (
+                        (stencil[ID(0, 0)].tau_xx - stencil[ID(-1, 0)].tau_xx) / dx +
+                        (stencil[ID(-1, 0)].sigma_xy - stencil[ID(-1, -1)].sigma_xy) / dy -
+                        (stencil[ID(0, 0)].Pt - stencil[ID(-1, 0)].Pt) / dx
+                    );
+                    new_cell.dVxd_tau = dampX * ALL(dVxd_tau) + Rx * delta_tau_iter;
+                    new_cell.Vx = ALL(Vx) + new_cell.dVxd_tau * delta_tau_iter;
+                }
+                if (c < nx - 1 && r < (ny + 1) - 1) {
+                    double Ry = 1.0 / rho * (
+                        (stencil[ID(0, 0)].tau_yy - stencil[ID(0, -1)].tau_yy) / dy +
+                        (stencil[ID(0, -1)].sigma_xy - stencil[ID(-1, -1)].sigma_xy) / dx -
+                        (stencil[ID(0, 0)].Pt - stencil[ID(0, -1)].Pt) / dy +
+                        roh0_g_alpha * ((stencil[ID(0, -1)].T + stencil[ID(0, 0)].T) * 0.5)
+                    );
+                    new_cell.dVyd_tau = dampY * ALL(dVyd_tau) + Ry * delta_tau_iter;
+                    new_cell.Vy = ALL(Vy) + new_cell.dVyd_tau * delta_tau_iter;
+                }
             }
 
         } else if (stencil.subgeneration == 2) {
-            // update_V!(...)
-            // Index shift since the original instructions assigned all to inner.
-            if (c >= 1 && r >= 1) {
-                if (c < (nx + 1) - 1 && r < ny - 1) {
-                    new_cell.Vx = ALL(Vx) + stencil[ID(-1, -1)].dVxd_tau * delta_tau_iter;
-                }
-                if (c < nx - 1 && r < (ny + 1) - 1) {
-                    new_cell.Vy = ALL(Vy) + stencil[ID(-1, -1)].dVyd_tau * delta_tau_iter;
-                }
-            }
-
-        } else if (stencil.subgeneration == 3) {
             // bc_y!(Vx)
             if (c < nx + 1 && r < ny) {
                 if (r == 0) {
