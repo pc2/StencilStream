@@ -14,6 +14,7 @@ using json = nlohmann::json;
 
 struct ThermalConvectionCell {
     double T, Pt, Vx, Vy;
+    double tau_xx, tau_yy, sigma_xy;
     double dVxd_tau, dVyd_tau;
     double ErrV, ErrP;
 
@@ -23,6 +24,9 @@ struct ThermalConvectionCell {
             .Pt = 0.0,
             .Vx = 0.0,
             .Vy = 0.0,
+            .tau_xx = 0.0,
+            .tau_yy = 0.0,
+            .sigma_xy = 0.0,
             .dVxd_tau = 0.0,
             .dVyd_tau = 0.0,
             .ErrV = 0.0,
@@ -48,7 +52,7 @@ class PseudoTransientKernel {
     using Cell = ThermalConvectionCell;
 
     static constexpr uindex_t stencil_radius = 1;
-    static constexpr uindex_t n_subgenerations = 2;
+    static constexpr uindex_t n_subgenerations = 3;
     using TimeDependentValue = std::monostate;
 
     uindex_t nx, ny;
@@ -80,60 +84,39 @@ class PseudoTransientKernel {
             }
 
             // compute_1!(...)
-            double delta_V_00 = (stencil[(ID(1, 0))].Vx - stencil[ID(0, 0)].Vx) / dx + (stencil[ID(0, 1)].Vy - stencil[ID(0, 0)].Vy) / dy;
-            double delta_V_m0 = (stencil[(ID(0, 0))].Vx - stencil[ID(-1, 0)].Vx) / dx + (stencil[ID(-1, 1)].Vy - stencil[ID(-1, 0)].Vy) / dy;
-            double delta_V_0m = (stencil[(ID(1, -1))].Vx - stencil[ID(0, -1)].Vx) / dx + (stencil[ID(0, 0)].Vy - stencil[ID(0, -1)].Vy) / dy;
-
-            double eta_00 = eta0 * (1.0 - delta_eta_delta_T * (stencil[ID(0, 0)].T + deltaT / 2.0));
-            double eta_m0 = eta0 * (1.0 - delta_eta_delta_T * (stencil[ID(-1, 0)].T + deltaT / 2.0));
-            double eta_0m = eta0 * (1.0 - delta_eta_delta_T * (stencil[ID(0, -1)].T + deltaT / 2.0));
-            double eta_mm = eta0 * (1.0 - delta_eta_delta_T * (stencil[ID(-1, -1)].T + deltaT / 2.0));
-
-            double Pt_00 = stencil[ID(0, 0)].Pt - delta_tau_iter / beta * delta_V_00;
-            double Pt_m0 = stencil[ID(-1, 0)].Pt - delta_tau_iter / beta * delta_V_m0;
-            double Pt_0m = stencil[ID(0, -1)].Pt - delta_tau_iter / beta * delta_V_0m;
-
-            double tau_xx_00 = 2.0 * eta_00 * ((stencil[ID(1, 0)].Vx - stencil[ID(0, 0)].Vx) / dx - (1.0 / 3.0) * delta_V_00);
-            double tau_xx_m0 = 2.0 * eta_m0 * ((stencil[ID(0, 0)].Vx - stencil[ID(-1, 0)].Vx) / dx - (1.0 / 3.0) * delta_V_m0);
-            double tau_xx_0m = 2.0 * eta_0m * ((stencil[ID(1, -1)].Vx - stencil[ID(0, -1)].Vx) / dx - (1.0 / 3.0) * delta_V_0m);
-
-            double tau_yy_00 = 2.0 * eta_00 * ((stencil[ID(0, 1)].Vy - stencil[ID(0, 0)].Vy) / dy - (1.0 / 3.0) * delta_V_00);
-            double tau_yy_m0 = 2.0 * eta_m0 * ((stencil[ID(-1, 1)].Vy - stencil[ID(-1, 0)].Vy) / dy - (1.0 / 3.0) * delta_V_m0);
-            double tau_yy_0m = 2.0 * eta_0m * ((stencil[ID(0, 0)].Vy - stencil[ID(0, -1)].Vy) / dy - (1.0 / 3.0) * delta_V_0m);
-
-            double sigma_xy_00 = 2.0 * eta_00 * (0.5 * (
-                (stencil[ID(1, 1)].Vx - stencil[ID(1, 0)].Vx) / dy + (stencil[ID(1, 1)].Vy - stencil[ID(0, 1)].Vy) / dx)
-            );
-            double sigma_xy_m0 = 2.0 * eta_m0 * (0.5 * (
-                (stencil[ID(0, 1)].Vx - stencil[ID(0, 0)].Vx) / dy + (stencil[ID(0, 1)].Vy - stencil[ID(-1, 1)].Vy) / dx)
-            );
-            double sigma_xy_0m = 2.0 * eta_0m * (0.5 * (
-                (stencil[ID(1, 0)].Vx - stencil[ID(1, -1)].Vx) / dy + (stencil[ID(1, 0)].Vy - stencil[ID(0, 0)].Vy) / dx)
-            );
-            double sigma_xy_mm = 2.0 * eta_mm * (0.5 * (
-                (stencil[ID(0, 0)].Vx - stencil[ID(0, -1)].Vx) / dy + (stencil[ID(0, 0)].Vy - stencil[ID(-1, 0)].Vy) / dx)
-            );
-
             if (c < nx && r < ny) {
-                new_cell.Pt = Pt_00;
+                double delta_V = D_XA(Vx) / dx + D_YA(Vy) / dy;
+                double eta = eta0 * (1.0 - delta_eta_delta_T * (ALL(T) + deltaT / 2.0));
+
+                new_cell.Pt = ALL(Pt) - delta_tau_iter / beta * delta_V;
+                new_cell.tau_xx = 2.0 * eta * (D_XA(Vx) / dx - (1.0 / 3.0) * delta_V);
+                // The original implementation uses @av(eta) here, which would actually mean that
+                // this computation should be moved one subgeneration back. However, using @all(eta)
+                // did not make a noticeable difference, which is why I'm using new_cell.eta here.
+                new_cell.tau_yy = 2.0 * eta * (D_YA(Vy) / dy - (1.0 / 3.0) * delta_V);
+
+                if (c < nx - 1 && r < ny - 1) {
+                    new_cell.sigma_xy = 2.0 * eta * (0.5 * (D_YI(Vx) / dy + D_XI(Vy) / dx));
+                }
             }
 
+        } else if (stencil.subgeneration == 1) {
             // compute_2!(...) and update_V!(...)
             if (c >= 1 && r >= 1) {
                 if (c < (nx + 1) - 1 && r < ny - 1) {
                     double Rx = 1.0 / rho * (
-                        (tau_xx_00 - tau_xx_m0) / dx +
-                        (sigma_xy_m0 - sigma_xy_mm) / dy -
-                        (Pt_00 - Pt_m0) / dx
+                        (stencil[ID(0, 0)].tau_xx - stencil[ID(-1, 0)].tau_xx) / dx +
+                        (stencil[ID(-1, 0)].sigma_xy - stencil[ID(-1, -1)].sigma_xy) / dy -
+                        (stencil[ID(0, 0)].Pt - stencil[ID(-1, 0)].Pt) / dx
                     );
                     new_cell.dVxd_tau = dampX * ALL(dVxd_tau) + Rx * delta_tau_iter;
                     new_cell.Vx = ALL(Vx) + new_cell.dVxd_tau * delta_tau_iter;
                 }
                 if (c < nx - 1 && r < (ny + 1) - 1) {
                     double Ry = 1.0 / rho * (
-                        (tau_yy_00 - tau_yy_0m) / dy +
-                        (sigma_xy_0m - sigma_xy_mm) / dx -
-                        (Pt_00 - Pt_0m) / dy +
+                        (stencil[ID(0, 0)].tau_yy - stencil[ID(0, -1)].tau_yy) / dy +
+                        (stencil[ID(0, -1)].sigma_xy - stencil[ID(-1, -1)].sigma_xy) / dx -
+                        (stencil[ID(0, 0)].Pt - stencil[ID(0, -1)].Pt) / dy +
                         roh0_g_alpha * ((stencil[ID(0, -1)].T + stencil[ID(0, 0)].T) * 0.5)
                     );
                     new_cell.dVyd_tau = dampY * ALL(dVyd_tau) + Ry * delta_tau_iter;
@@ -141,7 +124,7 @@ class PseudoTransientKernel {
                 }
             }
 
-        } else if (stencil.subgeneration == 1) {
+        } else if (stencil.subgeneration == 2) {
             // bc_y!(Vx)
             if (c < nx + 1 && r < ny) {
                 if (r == 0) {
