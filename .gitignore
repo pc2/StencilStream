@@ -24,8 +24,10 @@
 **/*.mp4
 **/*.png
 **/*.gch
+**/*.zip
 
 build
 doxygen
+Manifest.toml
 
 !**/CMakeLists.txt
