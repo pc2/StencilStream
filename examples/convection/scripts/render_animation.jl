@@ -1,3 +1,4 @@
+#!/usr/bin/env -S julia --project=../..
 using DelimitedFiles
 using Statistics
 using CairoMakie
