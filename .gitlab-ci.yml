@@ -50,7 +50,6 @@ convection synthesis:
         - "cd build"
         - "cmake -DCMAKE_BUILD_TYPE=Release .."
         - "make convection_cpu"
-        - "mv examples/convection/convection_cpu examples/convection/convection"
     artifacts:
         when: always
         paths:
