@@ -3,6 +3,7 @@ stages:
     - synthesis
     - benchmark
     - analysis
+    - release
 
 default:
     before_script:
@@ -50,13 +51,10 @@ convection synthesis:
         - "cmake -DCMAKE_BUILD_TYPE=Release .."
         - "make convection_cpu"
         - "mv examples/convection/convection_cpu examples/convection/convection"
-        - "make convection_report"
-        - "mv examples/convection/convection_report.prj examples/convection/convection.prj"
     artifacts:
         when: always
         paths:
-            - "build/examples/convection/convection"
-            - "build/examples/convection/convection.prj/reports"
+            - "build/examples/convection/convection_cpu"
 
 
 convection benchmark:
@@ -71,11 +69,29 @@ convection benchmark:
     script:
         - "cd examples/convection"
         - "julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'"
-        - "./scripts/benchmark.jl default ../../build/examples/convection/convection"
-        - "./scripts/render_animation.jl out/"
+        - "./scripts/benchmark.jl default ../../build/examples/convection/convection_cpu"
+        #- "./scripts/render_animation.jl out/"
     artifacts:
         paths:
-            - "examples/convection/out"
-            - "examples/animation.mp4"
+            #- "examples/convection/out"
+            #- "examples/animation.mp4"
             - "examples/convection/metrics.json"
-            - "examples/convection/pseudo_transient_runtimes.csv"
+            #- "examples/convection/pseudo_transient_runtimes.csv"
+
+release:
+    stage: release
+    needs:
+        - "convection benchmark"
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -c 8 --mem 2G -t 00:05:00"
+    script:
+        - "git clone git@git.uni-paderborn.de:pc2/sycl-stencil.wiki.git wiki"
+        - "cd wiki"
+        - "julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'"
+        - "./Performance-tracking/add_data.jl Convection build-$CI_PIPELINE_IID ../examples/convection/metrics.jl"
+        - "./Performance-tracking/render-site.jl"
+        - "git stage Performance-tracking.md Performance-tracking/data.csv"
+        - "git commit -m 'Adding performance data of build-$CI_PIPELINE_IID'"
+        - "git push"
