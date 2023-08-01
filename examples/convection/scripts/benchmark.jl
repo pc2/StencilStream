@@ -161,9 +161,20 @@ function default_benchmark()
         model_accurracy = measured_performance / model_performance
 
         gflops = OPERATIONS_PER_CELL * measured_performance * 1e-9
-        mem_throughput = 2.0 * CELL_SIZE * measured_performance / N_CUS
+        mem_throughput = CELL_SIZE * measured_performance / N_CUS
 
-        println("$N_CUS,$f,$occupancy,$measured_performance,$model_accurracy,$gflops,$mem_throughput")
+        metrics = Dict(
+            "n_cus" => N_CUS,
+            "f" => f,
+            "occupancy" => occupancy,
+            "measured" => measured_performance,
+            "accuracy" => model_accurracy,
+            "GFLOPS" => gflops,
+            "mem_throughput" => mem_throughput
+        )
+        open("metrics.json", "w") do metrics_file
+            JSON.print(metrics_file, metrics)
+        end
     end
 end
 
