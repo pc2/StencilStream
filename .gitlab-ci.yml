@@ -89,7 +89,7 @@ release:
         - "git clone git@git.uni-paderborn.de:pc2/sycl-stencil.wiki.git wiki"
         - "cd wiki"
         - "julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'"
-        - "./Performance-tracking/add_data.jl Convection build-$CI_PIPELINE_IID ../examples/convection/metrics.jl"
+        - "./Performance-tracking/add_data.jl Convection build-$CI_PIPELINE_IID ../examples/convection/metrics.json"
         - "./Performance-tracking/render-site.jl"
         - "git stage Performance-tracking.md Performance-tracking/data.csv"
         - "git commit -m 'Adding performance data of build-$CI_PIPELINE_IID'"
