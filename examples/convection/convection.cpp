@@ -96,7 +96,7 @@ class PseudoTransientKernel {
                 new_cell.tau_yy = 2.0 * eta * (D_YA(Vy) / dy - (1.0 / 3.0) * delta_V);
 
                 if (c < nx - 1 && r < ny - 1) {
-                    new_cell.sigma_xy = 2.0 * eta * (0.5 * (D_YI(Vx) / dy + D_XI(Vy) / dx));
+                    new_cell.sigma_xy = eta * (D_YI(Vx) / dy + D_XI(Vy) / dx);
                 }
             }
 
