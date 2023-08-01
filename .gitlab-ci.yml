@@ -86,11 +86,11 @@ release:
     variables:
         SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -c 8 --mem 2G -t 00:05:00"
     script:
-        - "git clone git@git.uni-paderborn.de:pc2/sycl-stencil.wiki.git wiki"
-        - "cd wiki"
-        - "julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'"
-        - "./Performance-tracking/add_data.jl Convection build-$CI_PIPELINE_IID ../examples/convection/metrics.json"
-        - "./Performance-tracking/render-site.jl"
-        - "git stage Performance-tracking.md Performance-tracking/data.csv"
-        - "git commit -m 'Adding performance data of build-$CI_PIPELINE_IID'"
-        - "git push"
+        - git clone git@git.uni-paderborn.de:pc2/sycl-stencil.wiki.git wiki
+        - cd wiki
+        - julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+        - ./Performance-tracking/add_data.jl Convection build-$CI_PIPELINE_IID ../examples/convection/metrics.json
+        - ./Performance-tracking/render-site.jl > Performance-tracking.md
+        - git stage Performance-tracking.md Performance-tracking/data.csv
+        - git commit -m "Adding performance data of build-$CI_PIPELINE_IID"
+        - git push
