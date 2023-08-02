@@ -6,6 +6,9 @@ stages:
     - release
 
 default:
+    variables:
+        TAG_NAME: "cibuild-$CI_PIPELINE_IID"
+        RELEASE_NAME: "CI build $CI_PIPELINE_IID"
     before_script:
         - "module reset"
         - "module load lang fpga devel intel/oneapi bittware/520n Boost CMake Julia"
@@ -46,14 +49,21 @@ convection synthesis:
         #SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G"
         SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 00:05:00 -c 8 --mem 8G"
     script:
-        - "mkdir -p build"
-        - "cd build"
-        - "cmake -DCMAKE_BUILD_TYPE=Release .."
-        - "make convection_cpu"
+        - mkdir -p build
+        - cd build
+        - cmake -DCMAKE_BUILD_TYPE=Release ..
+        - make convection_cpu
+        - make convection_report
+        - cd examples/convection
+        - mv convection_cpu convection
+        - mv convection_report.prj convection.prj
+        - tar -caf convection.tar.gz convection convection.prj/reports
+        - curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file convection.tar.gz "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/convection/${TAG_NAME}"
     artifacts:
         when: always
         paths:
-            - "build/examples/convection/convection_cpu"
+            - "build/examples/convection/convection"
+            - "build/examples/convection/convection.prj/reports"
 
 
 convection benchmark:
@@ -68,12 +78,10 @@ convection benchmark:
     script:
         - "cd examples/convection"
         - "julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'"
-        - "./scripts/benchmark.jl default ../../build/examples/convection/convection_cpu"
-        #- "./scripts/render_animation.jl out/"
+        - "./scripts/benchmark.jl default ../../build/examples/convection/convection"
     artifacts:
         paths:
-            #- "examples/convection/out"
-            #- "examples/animation.mp4"
+            - "examples/convection/out"
             - "examples/convection/metrics.json"
             #- "examples/convection/pseudo_transient_runtimes.csv"
 
@@ -86,11 +94,23 @@ release:
     variables:
         SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -c 8 --mem 2G -t 00:05:00"
     script:
+        # Adding the performance data to the table
         - git clone git@git.uni-paderborn.de:pc2/sycl-stencil.wiki.git wiki
         - cd wiki
         - julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
-        - ./Performance-tracking/add_data.jl Convection build-$CI_PIPELINE_IID ../examples/convection/metrics.json
+        - ./Performance-tracking/add_data.jl Convection $TAG_NAME ../examples/convection/metrics.json
         - ./Performance-tracking/render-site.jl > Performance-tracking.md
         - git stage Performance-tracking.md Performance-tracking/data.csv
-        - git commit -m "Adding performance data of build-$CI_PIPELINE_IID"
-        - git push
+        - git commit -m "Adding performance data of $TAG_NAME"
+        #- git push # Don't push yet, I don't want to revert all these commits manually
+        - cd ..
+
+        # Downloading the release cli tool
+        - curl -L https://gitlab.com/gitlab-org/release-cli/-/releases/v0.15.0/downloads/bin/release-cli-linux-amd64 > release-cli
+        - echo "d59169bab5dfe4693af4f181b08bf11ef1c96a4da30eff0f04abb236c54e62e9  release-cli" | sha256sum -c
+        - chmod +x release-cli
+
+        # Creating the release
+        - ./release-cli create \
+            --name "$RELEASE_NAME" --tag-name "$TAG_NAME" --ref "$CI_COMMIT_SHA" \
+            --assets-link "{\"name\": \"$RELEASE_NAME\", \"url\": \"${PACKAGE_REGISTRY_URL}/convection.tar.gz\"}"
