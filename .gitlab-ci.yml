@@ -89,6 +89,10 @@ convection benchmark:
 
 release:
     stage: release
+    only:
+        #- staging
+        #- main
+        - continous_benchmarking
     needs:
         - convection benchmark
     tags:
