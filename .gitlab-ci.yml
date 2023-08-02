@@ -8,6 +8,7 @@ stages:
 variables:
     TAG_NAME: cibuild-${CI_PIPELINE_IID}
     RELEASE_NAME: CI build ${CI_PIPELINE_IID}
+    PACKAGE_REGISTRY_URL: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic
 
 default:
     before_script:
@@ -59,7 +60,7 @@ convection synthesis:
         - mv convection_cpu convection
         - mv convection_report.prj convection.prj
         - tar -caf convection.tar.gz convection convection.prj/reports
-        - 'curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file convection.tar.gz "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/convection/${TAG_NAME}/convection.tar.gz"'
+        - 'curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file convection.tar.gz "${PACKAGE_REGISTRY_URL}/convection/${TAG_NAME}/convection.tar.gz"'
     artifacts:
         when: always
         paths:
@@ -114,4 +115,4 @@ release:
         # Creating the release
         - ./release-cli create
             --name "${RELEASE_NAME}" --tag-name "${TAG_NAME}" --ref "${CI_COMMIT_SHA}"
-            --assets-link "{\"name\":\"convection.tar.gz\",\"url\":\"${PACKAGE_REGISTRY_URL}/convection.tar.gz\"}"
+            --assets-link "{\"name\":\"convection.tar.gz\",\"url\":\"${PACKAGE_REGISTRY_URL}/convection/${TAG_NAME}/convection.tar.gz\"}"
