@@ -5,49 +5,50 @@ stages:
     - analysis
     - release
 
+variables:
+    TAG_NAME: cibuild-${CI_PIPELINE_IID}
+    RELEASE_NAME: CI build ${CI_PIPELINE_IID}
+
 default:
-    variables:
-        TAG_NAME: "cibuild-$CI_PIPELINE_IID"
-        RELEASE_NAME: "CI build $CI_PIPELINE_IID"
     before_script:
-        - "module reset"
-        - "module load lang fpga devel intel/oneapi bittware/520n Boost CMake Julia"
-        - "icpx --version"
-        - "julia --version"
+        - module reset
+        - module load lang fpga devel intel/oneapi bittware/520n Boost CMake Julia
+        - icpx --version
+        - julia --version
 
 documentation:
     stage: preevaluation
     tags:
         - docker-shared
-    image: "alpine"
+    image: alpine
     before_script:
         - apk add --no-cache doxygen graphviz font-noto
     script:
         - doxygen
     artifacts:
         paths:
-            - "doxygen/html"
+            - doxygen/html
 
 unit_test:
     stage: preevaluation
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 0:05:00 -c 14 --mem 4G"
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 0:05:00 -c 14 --mem 4G
     script:
-        - "mkdir -p build"
-        - "cd build"
-        - "cmake .."
-        - "make unit_test -j14"
-        - "./tests/unit_test"
+        - mkdir -p build
+        - cd build
+        - cmake ..
+        - make unit_test -j14
+        - ./tests/unit_test
 
 convection synthesis:
     stage: synthesis
     tags:
         - noctua2
     variables:
-        #SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G"
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -t 00:05:00 -c 8 --mem 8G"
+        #SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 00:05:00 -c 8 --mem 8G
     script:
         - mkdir -p build
         - cd build
@@ -58,41 +59,41 @@ convection synthesis:
         - mv convection_cpu convection
         - mv convection_report.prj convection.prj
         - tar -caf convection.tar.gz convection convection.prj/reports
-        - curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file convection.tar.gz "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/convection/${TAG_NAME}"
+        - 'curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file convection.tar.gz "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/convection/${TAG_NAME}"'
     artifacts:
         when: always
         paths:
-            - "build/examples/convection/convection"
-            - "build/examples/convection/convection.prj/reports"
+            - build/examples/convection/convection
+            - build/examples/convection/convection.prj/reports
 
 
 convection benchmark:
     stage: benchmark
     needs: 
-        - "convection synthesis"
+        - convection synthesis
     tags:
         - noctua2
     variables:
-        #SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00"
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -c 16 --mem 8G -t 00:30:00"
+        #SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -c 16 --mem 8G -t 00:30:00
     script:
-        - "cd examples/convection"
-        - "julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'"
-        - "./scripts/benchmark.jl default ../../build/examples/convection/convection"
+        - cd examples/convection
+        - julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+        - ./scripts/benchmark.jl default ../../build/examples/convection/convection
     artifacts:
         paths:
-            - "examples/convection/out"
-            - "examples/convection/metrics.json"
-            #- "examples/convection/pseudo_transient_runtimes.csv"
+            - examples/convection/out
+            - examples/convection/metrics.json
+            #- examples/convection/pseudo_transient_runtimes.csv
 
 release:
     stage: release
     needs:
-        - "convection benchmark"
+        - convection benchmark
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: "-A hpc-lco-kenter -p normal -c 8 --mem 2G -t 00:05:00"
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -c 8 --mem 2G -t 00:05:00
     script:
         # Adding the performance data to the table
         - git clone git@git.uni-paderborn.de:pc2/sycl-stencil.wiki.git wiki
@@ -112,5 +113,5 @@ release:
 
         # Creating the release
         - ./release-cli create \
-            --name "$RELEASE_NAME" --tag-name "$TAG_NAME" --ref "$CI_COMMIT_SHA" \
-            --assets-link "{\"name\": \"$RELEASE_NAME\", \"url\": \"${PACKAGE_REGISTRY_URL}/convection.tar.gz\"}"
+            --name "${RELEASE_NAME}" --tag-name "${TAG_NAME}" --ref "${CI_COMMIT_SHA}" \
+            --assets-link "{\"name\":\"convection.tar.gz\",\"url\":\"${PACKAGE_REGISTRY_URL}/convection.tar.gz\"}"
