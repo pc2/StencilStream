@@ -112,6 +112,6 @@ release:
         - chmod +x release-cli
 
         # Creating the release
-        - ./release-cli create \
-            --name "${RELEASE_NAME}" --tag-name "${TAG_NAME}" --ref "${CI_COMMIT_SHA}" \
+        - ./release-cli create
+            --name "${RELEASE_NAME}" --tag-name "${TAG_NAME}" --ref "${CI_COMMIT_SHA}"
             --assets-link "{\"name\":\"convection.tar.gz\",\"url\":\"${PACKAGE_REGISTRY_URL}/convection.tar.gz\"}"
