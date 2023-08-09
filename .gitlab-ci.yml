@@ -37,12 +37,12 @@ documentation:
         paths:
             - doxygen/html
 
-unit_test:
+unit test:
     stage: preevaluation
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 0:05:00 -c 8 --mem 4G
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 0:10:00 -c 8 --mem 4G
     script:
         - mkdir -p build
         - cd build
