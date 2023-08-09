@@ -16,6 +16,7 @@ default:
         - module load lang fpga devel intel/oneapi bittware/520n Boost CMake Julia
         - icpx --version
         - julia --version
+        - julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
 
 workflow:
     rules:
@@ -41,12 +42,12 @@ unit_test:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 0:05:00 -c 14 --mem 4G
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 0:05:00 -c 8 --mem 4G
     script:
         - mkdir -p build
         - cd build
         - cmake ..
-        - make unit_test -j14
+        - make unit_test -j8
         - ./tests/unit_test
 
 convection synthesis:
@@ -54,17 +55,13 @@ convection synthesis:
     tags:
         - noctua2
     variables:
-        #SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 00:05:00 -c 8 --mem 8G
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
     script:
         - mkdir -p build
         - cd build
         - cmake -DCMAKE_BUILD_TYPE=Release ..
-        - make convection_cpu
-        - make convection_report
+        - make convection
         - cd examples/convection
-        - mv convection_cpu convection
-        - mv convection_report.prj convection.prj
         - tar -caf convection.tar.gz convection convection.prj/reports
         - 'curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file convection.tar.gz "${PACKAGE_REGISTRY_URL}/convection/${TAG_NAME}/convection.tar.gz"'
     artifacts:
@@ -81,24 +78,18 @@ convection benchmark:
     tags:
         - noctua2
     variables:
-        #SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -c 16 --mem 8G -t 00:30:00
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
     script:
         - cd examples/convection
-        - julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
         - ./scripts/benchmark.jl default ../../build/examples/convection/convection
     artifacts:
         paths:
             - examples/convection/out
             - examples/convection/metrics.json
-            #- examples/convection/pseudo_transient_runtimes.csv
+            - examples/convection/pseudo_transient_runtimes.csv
 
 release:
     stage: release
-    only:
-        #- staging
-        #- main
-        - continous_benchmarking
     needs:
         - convection benchmark
     tags:
@@ -109,12 +100,11 @@ release:
         # Adding the performance data to the table
         - git clone git@git.uni-paderborn.de:pc2/sycl-stencil.wiki.git wiki
         - cd wiki
-        - julia --project -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
         - ./Performance-tracking/add_data.jl Convection $TAG_NAME ../examples/convection/metrics.json
         - ./Performance-tracking/render-site.jl > Performance-tracking.md
         - git stage Performance-tracking.md Performance-tracking/data.csv
         - git commit -m "Adding performance data of $TAG_NAME"
-        #- git push # Don't push yet, I don't want to revert all these commits manually
+        - git push
         - cd ..
 
         # Downloading the release cli tool
