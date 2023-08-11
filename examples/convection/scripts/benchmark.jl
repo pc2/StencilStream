@@ -139,9 +139,7 @@ end
 function default_benchmark()
     exe = ARGS[2]
     report_path = exe * ".prj/reports"
-    #f, loop_latency = load_report_details(report_path)
-    f = 350e6
-    loop_latency = 2000
+    f, loop_latency = load_report_details(report_path)
 
     experiment_path = "experiments/default.json"
     experiment_data = JSON.parsefile(experiment_path)
