@@ -160,7 +160,7 @@ function default_benchmark()
         occupancy = measured_performance / max_peak_performance
         model_accurracy = measured_performance / model_performance
 
-        gflops = OPERATIONS_PER_CELL * measured_performance * 1e-9
+        flops = OPERATIONS_PER_CELL * measured_performance
         mem_throughput = CELL_SIZE * measured_performance / N_CUS
 
         metrics = Dict(
@@ -169,7 +169,7 @@ function default_benchmark()
             "occupancy" => occupancy,
             "measured" => measured_performance,
             "accuracy" => model_accurracy,
-            "GFLOPS" => gflops,
+            "FLOPS" => flops,
             "mem_throughput" => mem_throughput
         )
         open("metrics.json", "w") do metrics_file
