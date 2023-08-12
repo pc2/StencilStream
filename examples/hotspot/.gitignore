@@ -3,3 +3,4 @@ out
 profile.*
 1
 *.csv
+*.json

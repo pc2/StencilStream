@@ -1,55 +1,12 @@
 #!/usr/bin/env -S julia --project=../..
-using DataFrames
-using CSV
-using Statistics
-using JSON
+include("../../../scripts/benchmark-common.jl")
 
 const N_SUBGENERATIONS = 3
 const N_REPLICATIONS = 5
 const N_CUS = N_SUBGENERATIONS * N_REPLICATIONS
 const OPERATIONS_PER_CELL = (5+5+3+6+6+6) + (10+3+2+14+3+2) + 2
 const CELL_SIZE = 128 # bytes, with padding
-
-function parse_report_js(path)
-    fields = Dict{String,Any}()
-    for line in readlines(path)
-        if occursin("fileJSON", line)
-            continue # Avoiding to load all source files. They're too big for REs.
-        end
-
-        matched_line = match(r"var (.+)=(\{.+\});$", line)
-        if matched_line === nothing
-            continue
-        end
-        
-        name = matched_line[1]
-        data = replace(matched_line[2], "\\'" => "'")
-        fields[name] = JSON.parse(data)
-    end
-    return fields
-end
-
-function load_report_details(report_path)
-    quartus_data = parse_report_js("$report_path/resources/quartus_data.js")
-    f = parse(Float32, quartus_data["quartusJSON"]["quartusFitClockSummary"]["nodes"][1]["kernel clock fmax"]) * 1e6
-
-    report_data = parse_report_js("$report_path/resources/report_data.js")
-    kernels = report_data["loop_attrJSON"]["nodes"]
-    loops = Iterators.flatmap(kernel -> kernel["children"], kernels)
-    loop_latency = sum(Iterators.map(loop -> parse(Float32, loop["lt"]), loops))
-
-    return f, loop_latency
-end
-
-function model_throughput(f, loop_latency, n_rows, n_cols)
-    cu_latency = n_rows + 1
-    pipeline_latency = N_CUS * cu_latency
-    n_iterations = pipeline_latency + (n_rows * n_cols)
-    stall_ratio = 0.5
-    n_cycles = n_iterations / stall_ratio  + loop_latency
-    work = (n_rows * n_cols) * N_REPLICATIONS
-    work / n_cycles * f
-end
+const TILE_SIZE = 512
 
 function analyze_log(logfile)
     iteration_re = r"it = ([0-9]+) \(iter = ([0-9]+), time = ([^)]+)\)"
@@ -155,23 +112,20 @@ function default_benchmark()
         CSV.write("pseudo_transient_runtimes.csv", pseudo_transient_runtimes)
 
         measured_performance = maximum((ly * lx * res^2) .* pseudo_transient_runtimes.pseudo_steps ./ pseudo_transient_runtimes.runtime)
-        model_performance = model_throughput(f, loop_latency, ly * res, lx * res)
-        max_peak_performance = f * N_REPLICATIONS
-        occupancy = measured_performance / max_peak_performance
-        model_accurracy = measured_performance / model_performance
-
-        flops = OPERATIONS_PER_CELL * measured_performance
-        mem_throughput = CELL_SIZE * measured_performance / N_CUS
-
-        metrics = Dict(
-            "n_cus" => N_CUS,
-            "f" => f,
-            "occupancy" => occupancy,
-            "measured" => measured_performance,
-            "accuracy" => model_accurracy,
-            "FLOPS" => flops,
-            "mem_throughput" => mem_throughput
+        metrics = build_metrics(
+            measured_performance,
+            :monotile,
+            f,
+            loop_latency,
+            ly * res,
+            lx * res,
+            TILE_SIZE,
+            TILE_SIZE,
+            N_CUS,
+            OPERATIONS_PER_CELL,
+            CELL_SIZE
         )
+        
         open("metrics.json", "w") do metrics_file
             JSON.print(metrics_file, metrics)
         end
