@@ -50,6 +50,10 @@ unit test:
         - make unit_test -j16
         - ./tests/unit_test
 
+# ==========
+# Convection
+# ==========
+
 convection synthesis:
     stage: synthesis
     tags:
@@ -70,7 +74,6 @@ convection synthesis:
             - build/examples/convection/convection
             - build/examples/convection/convection.prj/reports
 
-
 convection benchmark:
     stage: benchmark
     needs: 
@@ -88,19 +91,104 @@ convection benchmark:
             - examples/convection/metrics.json
             - examples/convection/pseudo_transient_runtimes.csv
 
+# ==================
+# Hotspot (monotile)
+# ==================
+
+hotspot (monotile) synthesis:
+    stage: synthesis
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
+    script:
+        - mkdir -p build
+        - cd build
+        - cmake -DCMAKE_BUILD_TYPE=Release ..
+        - make hotspot_monotile
+        - cd examples/hotspot
+        - tar -caf hotspot_monotile.tar.gz hotspot_monotile hotspot_monotile.prj/reports
+        - 'curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file hotspot_monotile.tar.gz "${PACKAGE_REGISTRY_URL}/hotspot_monotile/${TAG_NAME}/hotspot_monotile.tar.gz"'
+    artifacts:
+        when: always
+        paths:
+            - build/examples/convection/hotspot_monotile
+            - build/examples/convection/hotspot_monotile.prj/reports
+
+hotspot (monotile) benchmark:
+    stage: benchmark
+    needs: 
+        - hotspot (monotile) synthesis
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
+    script:
+        - cd examples/hotspot
+        - ./scripts/benchmark.jl ../../build/examples/hotspot/hotspot_monotile monotile
+    artifacts:
+        paths:
+            - examples/hotspot/metrics.monotile.json
+
+# ================
+# Hotspot (tiling)
+# ================
+
+hotspot (tiling) synthesis:
+    stage: synthesis
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
+    script:
+        - mkdir -p build
+        - cd build
+        - cmake -DCMAKE_BUILD_TYPE=Release ..
+        - make hotspot_tiling
+        - cd examples/hotspot
+        - tar -caf hotspot_tiling.tar.gz hotspot_tiling hotspot_tiling.prj/reports
+        - 'curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file hotspot_tiling.tar.gz "${PACKAGE_REGISTRY_URL}/hotspot_tiling/${TAG_NAME}/hotspot_tiling.tar.gz"'
+    artifacts:
+        when: always
+        paths:
+            - build/examples/convection/hotspot_tiling
+            - build/examples/convection/hotspot_tiling.prj/reports
+
+hotspot (tiling) benchmark:
+    stage: benchmark
+    needs: 
+        - hotspot (tiling) synthesis
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
+    script:
+        - cd examples/hotspot
+        - ./scripts/benchmark.jl ../../build/examples/hotspot/hotspot_tiling tiling
+    artifacts:
+        paths:
+            - examples/hotspot/metrics.tiling.json
+
+# =======
+# Release
+# =======
+
 release:
     stage: release
-    needs:
-        - convection benchmark
     tags:
         - noctua2
     variables:
         SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -c 8 --mem 2G -t 00:05:00
     script:
+        # TODO: Add handling for the case that synthesis/benchmarks fail.
+        # TODO: Add hotspot packages to the release.
+
         # Adding the performance data to the table
         - git clone git@git.uni-paderborn.de:pc2/sycl-stencil.wiki.git wiki
         - cd wiki
         - ./Performance-tracking/add_data.jl Convection $TAG_NAME ../examples/convection/metrics.json
+        - ./Performance-tracking/add_data.jl "Hotspot, Monotile" $TAG_NAME ../examples/hotspot/metrics.monotile.json
+        - ./Performance-tracking/add_data.jl "Hotspot, Tiling" $TAG_NAME ../examples/hotspot/metrics.tiling.json
         - ./Performance-tracking/render-site.jl > Performance-tracking.md
         - git stage Performance-tracking.md Performance-tracking/data.csv
         - git commit -m "Adding performance data of $TAG_NAME"

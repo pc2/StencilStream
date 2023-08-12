@@ -27,7 +27,7 @@ else
     println(stderr, "Unknown variant '$variant'")
     exit(1)
 end
-n_gens = 10 * n_cus
+n_gens = 100 * n_cus
 
 
 open(`$exec 1024 1024 $n_gens ./data/temp_1024 ./data/power_1024 /dev/null`, "r") do process_in
