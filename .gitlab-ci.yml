@@ -73,6 +73,7 @@ convection synthesis:
         paths:
             - build/examples/convection/convection
             - build/examples/convection/convection.prj/reports
+            - build/examples/convection/convection.tar.gz
 
 convection benchmark:
     stage: benchmark
@@ -116,6 +117,7 @@ hotspot (monotile) synthesis:
         paths:
             - build/examples/convection/hotspot_monotile
             - build/examples/convection/hotspot_monotile.prj/reports
+            - build/examples/convection/hotspot_monotile.tar.gz
 
 hotspot (monotile) benchmark:
     stage: benchmark
@@ -155,6 +157,7 @@ hotspot (tiling) synthesis:
         paths:
             - build/examples/convection/hotspot_tiling
             - build/examples/convection/hotspot_tiling.prj/reports
+            - build/examples/convection/hotspot_tiling.tar.gz
 
 hotspot (tiling) benchmark:
     stage: benchmark
