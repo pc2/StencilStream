@@ -59,20 +59,20 @@ convection synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 00:15:00 -c 8 --mem 4G
     script:
         - mkdir -p build
         - cd build
         - cmake -DCMAKE_BUILD_TYPE=Release ..
-        - make convection
+        - make convection_cpu
         - cd examples/convection
-        - tar -caf convection.tar.gz convection convection.prj/reports
+        - mv convection_cpu convection
+        - tar -caf convection.tar.gz convection
         - 'curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file convection.tar.gz "${PACKAGE_REGISTRY_URL}/convection/${TAG_NAME}/convection.tar.gz"'
     artifacts:
         when: always
         paths:
             - build/examples/convection/convection
-            - build/examples/convection/convection.prj/reports
             - build/examples/convection/convection.tar.gz
 
 convection benchmark:
@@ -82,7 +82,8 @@ convection benchmark:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 00:15:00 -c 16 --mem 32G
+        DPCPP_CPU_NUM_CUS: 16
     script:
         - cd examples/convection
         - ./scripts/benchmark.jl default ../../build/examples/convection/convection
@@ -103,20 +104,20 @@ hotspot (monotile) synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 00:15:00 -c 8 --mem 4G
     script:
         - mkdir -p build
         - cd build
         - cmake -DCMAKE_BUILD_TYPE=Release ..
-        - make hotspot_monotile
+        - make hotspot_cpu
         - cd examples/hotspot
-        - tar -caf hotspot_monotile.tar.gz hotspot_monotile hotspot_monotile.prj/reports
+        - mv hotspot_cpu hotspot_monotile
+        - tar -caf hotspot_monotile.tar.gz hotspot_monotile
         - 'curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file hotspot_monotile.tar.gz "${PACKAGE_REGISTRY_URL}/hotspot_monotile/${TAG_NAME}/hotspot_monotile.tar.gz"'
     artifacts:
         when: always
         paths:
             - build/examples/convection/hotspot_monotile
-            - build/examples/convection/hotspot_monotile.prj/reports
             - build/examples/convection/hotspot_monotile.tar.gz
 
 hotspot (monotile) benchmark:
@@ -126,7 +127,8 @@ hotspot (monotile) benchmark:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 00:15:00 -c 16 --mem 32G
+        DPCPP_CPU_NUM_CUS: 16
     script:
         - cd examples/hotspot
         - ./scripts/benchmark.jl ../../build/examples/hotspot/hotspot_monotile monotile
@@ -143,20 +145,20 @@ hotspot (tiling) synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
+        SCHEDULER_PARAMETERS:  -A hpc-lco-kenter -p normal -t 00:15:00 -c 8 --mem 4G
     script:
         - mkdir -p build
         - cd build
         - cmake -DCMAKE_BUILD_TYPE=Release ..
-        - make hotspot_tiling
+        - make hotspot_cpu
         - cd examples/hotspot
-        - tar -caf hotspot_tiling.tar.gz hotspot_tiling hotspot_tiling.prj/reports
+        - mv hotspot_cpu hotspot_tiling
+        - tar -caf hotspot_tiling.tar.gz hotspot_tiling
         - 'curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file hotspot_tiling.tar.gz "${PACKAGE_REGISTRY_URL}/hotspot_tiling/${TAG_NAME}/hotspot_tiling.tar.gz"'
     artifacts:
         when: always
         paths:
             - build/examples/convection/hotspot_tiling
-            - build/examples/convection/hotspot_tiling.prj/reports
             - build/examples/convection/hotspot_tiling.tar.gz
 
 hotspot (tiling) benchmark:
@@ -166,7 +168,8 @@ hotspot (tiling) benchmark:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 00:15:00 -c 16 --mem 32G
+        DPCPP_CPU_NUM_CUS: 16
     script:
         - cd examples/hotspot
         - ./scripts/benchmark.jl ../../build/examples/hotspot/hotspot_tiling tiling
