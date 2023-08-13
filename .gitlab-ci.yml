@@ -117,8 +117,8 @@ hotspot (monotile) synthesis:
     artifacts:
         when: always
         paths:
-            - build/examples/convection/hotspot_monotile
-            - build/examples/convection/hotspot_monotile.tar.gz
+            - build/examples/hotspot/hotspot_monotile
+            - build/examples/hotspot/hotspot_monotile.tar.gz
 
 hotspot (monotile) benchmark:
     stage: benchmark
@@ -158,8 +158,8 @@ hotspot (tiling) synthesis:
     artifacts:
         when: always
         paths:
-            - build/examples/convection/hotspot_tiling
-            - build/examples/convection/hotspot_tiling.tar.gz
+            - build/examples/hotspot/hotspot_tiling
+            - build/examples/hotspot/hotspot_tiling.tar.gz
 
 hotspot (tiling) benchmark:
     stage: benchmark
