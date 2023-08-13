@@ -85,9 +85,11 @@ convection benchmark:
     script:
         - cd examples/convection
         - ./scripts/benchmark.jl default ../../build/examples/convection/convection
+        - ./scripts/render_animation.jl out
     artifacts:
         paths:
             - examples/convection/out
+            - examples/convection/animation.mp4
             - examples/convection/metrics.json
             - examples/convection/pseudo_transient_runtimes.csv
 
