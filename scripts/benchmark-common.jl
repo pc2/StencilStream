@@ -63,7 +63,7 @@ function model_tiling_throughput(f, loop_latency, n_grid_rows, n_grid_cols, n_ti
     work / n_cycles * f
 end
 
-function build_metrics(measured_performance, variant, f, loop_latency, n_grid_rows, n_grid_cols, n_tile_rows, n_tile_cols, n_cus, ops_per_cell, cell_size)
+function build_metrics(target, measured_performance, variant, f, loop_latency, n_grid_rows, n_grid_cols, n_tile_rows, n_tile_cols, n_cus, ops_per_cell, cell_size)
     if variant == :monotile
         model_performance = model_monotile_throughput(f, loop_latency, n_grid_rows, n_grid_cols, n_cus)
     elseif variant == :tiling
@@ -76,6 +76,7 @@ function build_metrics(measured_performance, variant, f, loop_latency, n_grid_ro
     mem_throughput = cell_size * measured_performance / n_cus
 
     return Dict(
+        "target" => target,
         "n_cus" => n_cus,
         "f" => f,
         "occupancy" => occupancy,

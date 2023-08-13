@@ -113,6 +113,7 @@ function default_benchmark()
 
         measured_performance = maximum((ly * lx * res^2) .* pseudo_transient_runtimes.pseudo_steps ./ pseudo_transient_runtimes.runtime)
         metrics = build_metrics(
+            "Convection",
             measured_performance,
             :monotile,
             f,

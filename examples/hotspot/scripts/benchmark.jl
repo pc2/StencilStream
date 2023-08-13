@@ -43,7 +43,13 @@ open(`$exec 1024 1024 $n_gens ./data/temp_1024 ./data/power_1024 /dev/null`, "r"
     end
 
     measured_performance = 1024^2 * n_gens / runtime
+    if variant == :monotile
+        target = "Hotspot, Monotile"
+    else
+        target = "Hotspot, Tiling"
+    end
     metrics = build_metrics(
+        target,
         measured_performance,
         variant,
         f,
