@@ -175,32 +175,10 @@ hotspot (tiling) benchmark:
 
 release:
     stage: release
+    when: always
     tags:
         - noctua2
     variables:
         SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -c 8 --mem 2G -t 00:05:00
     script:
-        # TODO: Add handling for the case that synthesis/benchmarks fail.
-        # TODO: Add hotspot packages to the release.
-
-        # Adding the performance data to the table
-        - git clone git@git.uni-paderborn.de:pc2/sycl-stencil.wiki.git wiki
-        - cd wiki
-        - ./Performance-tracking/add_data.jl Convection $TAG_NAME ../examples/convection/metrics.json
-        - ./Performance-tracking/add_data.jl "Hotspot, Monotile" $TAG_NAME ../examples/hotspot/metrics.monotile.json
-        - ./Performance-tracking/add_data.jl "Hotspot, Tiling" $TAG_NAME ../examples/hotspot/metrics.tiling.json
-        - ./Performance-tracking/render-site.jl > Performance-tracking.md
-        - git stage Performance-tracking.md Performance-tracking/data.csv
-        - git commit -m "Adding performance data of $TAG_NAME"
-        - git push
-        - cd ..
-
-        # Downloading the release cli tool
-        - curl -L https://gitlab.com/gitlab-org/release-cli/-/releases/v0.15.0/downloads/bin/release-cli-linux-amd64 > release-cli
-        - echo "d59169bab5dfe4693af4f181b08bf11ef1c96a4da30eff0f04abb236c54e62e9  release-cli" | sha256sum -c
-        - chmod +x release-cli
-
-        # Creating the release
-        - ./release-cli create
-            --name "${RELEASE_NAME}" --tag-name "${TAG_NAME}" --ref "${CI_COMMIT_SHA}"
-            --assets-link "{\"name\":\"convection.tar.gz\",\"url\":\"${PACKAGE_REGISTRY_URL}/convection/${TAG_NAME}/convection.tar.gz\"}"
+        - ./scripts/publish-release.sh ${RELEASE_NAME} ${TAG_NAME} ${CI_COMMIT_SHA}
