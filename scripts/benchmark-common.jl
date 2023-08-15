@@ -25,7 +25,7 @@ end
 function load_report_details(report_path)
     if !isdir(report_path)
         println(stderr, "Could not find synthesis report, using stand-in numbers for testing")
-        return 350e9, 2000
+        return 350e6, 2000
     end
 
     quartus_data = parse_report_js("$report_path/resources/quartus_data.js")

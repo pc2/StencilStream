@@ -6,5 +6,4 @@ fdtd_*
 *.gz
 profile.*
 1
-
-experiment.json
+*.json

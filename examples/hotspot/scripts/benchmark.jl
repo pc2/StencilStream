@@ -8,7 +8,7 @@ const N_TILING_CUS = 280
 const TILE_SIZE = 1024
 
 if size(ARGS) != (2,)
-    println(stderr, "Usage: $PROGRAM_FILE <path to executable> <no. of CUs>")
+    println(stderr, "Usage: $PROGRAM_FILE <path to executable> <variant>")
     exit(1)
 end
 
@@ -43,13 +43,8 @@ open(`$exec 1024 1024 $n_gens ./data/temp_1024 ./data/power_1024 /dev/null`, "r"
     end
 
     measured_performance = 1024^2 * n_gens / runtime
-    if variant == :monotile
-        target = "Hotspot, Monotile"
-    else
-        target = "Hotspot, Tiling"
-    end
     metrics = build_metrics(
-        target,
+        (variant == :monotile) ? "Hotspot, Monotile" : "Hotspot, Tiling",
         measured_performance,
         variant,
         f,
