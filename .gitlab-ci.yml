@@ -189,4 +189,4 @@ release:
     variables:
         SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -c 8 --mem 2G -t 00:05:00
     script:
-        - ./scripts/publish-release.sh "${RELEASE_NAME}" "${TAG_NAME}" "${CI_COMMIT_SHA}"
+        - ./scripts/publish-release.sh
