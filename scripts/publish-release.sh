@@ -4,11 +4,6 @@ set -e
 module reset
 module load lang Julia
 
-if [ $# -ne 3 ]; then
-    echo "Usage: $0 <release name> <tag name> <commit sha>" 1>&2
-    exit 1
-fi
-
 # Cloning the wiki and adding the new performance metrics.
 git clone git@git.uni-paderborn.de:pc2/sycl-stencil.wiki.git wiki
 cd wiki
