@@ -37,6 +37,64 @@ documentation:
         paths:
             - doxygen/html
 
+unit test:
+    stage: preevaluation
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 0:10:00 -c 16 --mem 4G
+    script:
+        - mkdir -p build
+        - cd build
+        - cmake ..
+        - make unit_test -j16
+        - ./tests/unit_test
+
+# ==========
+# Convection
+# ==========
+
+convection synthesis:
+    stage: synthesis
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 00:15:00 -c 8 --mem 4G
+    script:
+        - mkdir -p build
+        - cd build
+        - cmake -DCMAKE_BUILD_TYPE=Release ..
+        - make convection_cpu
+        - cd examples/convection
+        - mv convection_cpu convection
+        - tar -caf convection.tar.gz convection
+        - 'curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file convection.tar.gz "${PACKAGE_REGISTRY_URL}/convection/${TAG_NAME}/convection.tar.gz"'
+    artifacts:
+        when: always
+        paths:
+            - build/examples/convection/convection
+            - build/examples/convection/convection.tar.gz
+
+convection benchmark:
+    stage: benchmark
+    needs: 
+        - convection synthesis
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 00:15:00 -c 16 --mem 32G
+        DPCPP_CPU_NUM_CUS: 16
+    script:
+        - cd examples/convection
+        - ./scripts/benchmark.jl default ../../build/examples/convection/convection
+        - ./scripts/render_animation.jl out
+    artifacts:
+        paths:
+            - examples/convection/out
+            - examples/convection/animation.mp4
+            - examples/convection/metrics.json
+            - examples/convection/pseudo_transient_runtimes.csv
+
 # ==================
 # Hotspot (monotile)
 # ==================
