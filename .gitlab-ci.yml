@@ -37,18 +37,18 @@ documentation:
         paths:
             - doxygen/html
 
-#unit test:
-#    stage: preevaluation
-#    tags:
-#        - noctua2
-#    variables:
-#        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 0:10:00 -c 16 --mem 4G
-#    script:
-#        - mkdir -p build
-#        - cd build
-#        - cmake ..
-#        - make unit_test -j16
-#        - ./tests/unit_test
+unit test:
+    stage: preevaluation
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 0:10:00 -c 16 --mem 4G
+    script:
+        - mkdir -p build
+        - cd build
+        - cmake ..
+        - make unit_test -j16
+        - ./tests/unit_test
 
 # ==========
 # Convection
@@ -59,14 +59,15 @@ convection synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 00:15:00 -c 8 --mem 4G
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 240G
     script:
-        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "convection" "convection_cpu"
+        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "convection" "convection"
     artifacts:
         when: always
         paths:
-            - build/examples/convection/convection_cpu
-            - build/examples/convection/convection_cpu.tar.gz
+            - build/examples/convection/convection
+            - build/examples/convection/convection.prj/reports
+            - build/examples/convection/convection.tar.gz
 
 convection benchmark:
     stage: benchmark
@@ -75,11 +76,10 @@ convection benchmark:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 00:15:00 -c 16 --mem 32G
-        DPCPP_CPU_NUM_CUS: 16
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
     script:
         - cd examples/convection
-        - ./scripts/benchmark.jl default ../../build/examples/convection/convection_cpu
+        - ./scripts/benchmark.jl default ../../build/examples/convection/convection
         - ./scripts/render_animation.jl out
     artifacts:
         paths:
@@ -89,72 +89,146 @@ convection benchmark:
             - examples/convection/pseudo_transient_runtimes.csv
 
 # ==================
-# Hotspot (CPU)
+# Hotspot (Monotile)
 # ==================
 
-hotspot (cpu) synthesis:
+hotspot (monotile) synthesis:
     stage: synthesis
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 00:15:00 -c 8 --mem 4G
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 240G
     script:
-        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "hotspot" "hotspot_cpu"
+        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "hotspot" "hotspot_monotile"
     artifacts:
         when: always
         paths:
-            - build/examples/hotspot/hotspot_cpu
-            - build/examples/hotspot/hotspot_cpu.tar.gz
+            - build/examples/hotspot/hotspot_monotile
+            - build/examples/hotspot/hotspot_monotile.prj/reports
+            - build/examples/hotspot/hotspot_monotile.tar.gz
 
-hotspot (cpu) benchmark:
+hotspot (monotile) benchmark:
     stage: benchmark
     needs: 
-        - hotspot (cpu) synthesis
+        - hotspot (monotile) synthesis
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 00:15:00 -c 16 --mem 32G
-        DPCPP_CPU_NUM_CUS: 16
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
     script:
         - cd examples/hotspot
-        - ./scripts/benchmark.jl ../../build/examples/hotspot/hotspot_cpu monotile
+        - ./scripts/benchmark.jl ../../build/examples/hotspot/hotspot_monotile monotile
     artifacts:
         paths:
             - examples/hotspot/metrics.monotile.json
 
-# ==================
-# FDTD (CPU)
-# ==================
+# ================
+# Hotspot (Tiling)
+# ================
 
-fdtd (cpu) synthesis:
+hotspot (tiling) synthesis:
     stage: synthesis
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 00:15:00 -c 8 --mem 4G
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 240G
     script:
-        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "fdtd" "fdtd_coef_device_cpu"
+        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "hotspot" "hotspot_tiling"
     artifacts:
         when: always
         paths:
-            - build/examples/fdtd/fdtd_coef_device_cpu
-            - build/examples/fdtd/fdtd_coef_device_cpu.tar.gz
+            - build/examples/hotspot/hotspot_tiling
+            - build/examples/hotspot/hotspot_tiling.prj/reports
+            - build/examples/hotspot/hotspot_tiling.tar.gz
 
-fdtd (cpu) benchmark:
+hotspot (tiling) benchmark:
     stage: benchmark
     needs: 
-        - fdtd (cpu) synthesis
+        - hotspot (tiling) synthesis
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 00:15:00 -c 16 --mem 32G
-        DPCPP_CPU_NUM_CUS: 16
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
     script:
-        - cd examples/fdtd
-        - ./scripts/benchmark.jl ../../build/examples/fdtd/fdtd_coef_device_cpu monotile
+        - cd examples/hotspot
+        - ./scripts/benchmark.jl ../../build/examples/hotspot/hotspot_tiling tiling
     artifacts:
         paths:
-            - examples/hotspot/metrics.monotile.json
+            - examples/hotspot/metrics.tiling.json
+
+# ===============
+# FDTD (Monotile)
+# ===============
+
+fdtd (monotile) synthesis:
+    stage: synthesis
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 240G
+    script:
+        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "fdtd" "fdtd_coef_device_monotile"
+    artifacts:
+        when: always
+        paths:
+            - build/examples/fdtd/fdtd_coef_device_monotile
+            - build/examples/fdtd/fdtd_coef_device_monotile.prj/reports
+            - build/examples/fdtd/fdtd_coef_device_monotile.tar.gz
+
+fdtd (monotile) benchmark:
+    stage: benchmark
+    needs: 
+        - fdtd (monotile) synthesis
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
+    script:
+        - cd examples/fdtd
+        - ./scripts/benchmark.jl ../../build/examples/fdtd/fdtd_coef_device_monotile monotile
+        - ./scripts/plot_frames.jl frames .
+    artifacts:
+        paths:
+            - examples/fdtd/*.csv
+            - examples/fdtd/*.png
+            - examples/fdtd/metrics.monotile.json
+
+# =============
+# FDTD (Tiling)
+# =============
+
+fdtd (tiling) synthesis:
+    stage: synthesis
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 240G
+    script:
+        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "fdtd" "fdtd_coef_device_tiling"
+    artifacts:
+        when: always
+        paths:
+            - build/examples/fdtd/fdtd_coef_device_tiling
+            - build/examples/fdtd/fdtd_coef_device_tiling.prj/reports
+            - build/examples/fdtd/fdtd_coef_device_tiling.tar.gz
+
+fdtd (tiling) benchmark:
+    stage: benchmark
+    needs: 
+        - fdtd (tiling) synthesis
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
+    script:
+        - cd examples/fdtd
+        - ./scripts/benchmark.jl ../../build/examples/fdtd/fdtd_coef_device_tiling tiling
+        - ./scripts/plot_frames.jl frames .
+    artifacts:
+        paths:
+            - examples/fdtd/*.csv
+            - examples/fdtd/*.png
+            - examples/fdtd/metrics.tiling.json
 
 # =======
 # Release

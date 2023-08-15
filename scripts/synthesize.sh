@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH -A hpc-lco-kenter -p normal -t 00:15:00 -c 8 --mem 4G
+#SBATCH -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 240G
 
 if [ $# -ne 4 ]; then
     echo "Usage: $0 <package registry url> <tag name> <application> <target>" 1>&2
@@ -15,5 +15,5 @@ cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make $TARGET
 cd examples/$APPLICATION
-tar -caf $TARGET.tar.gz $TARGET
+tar -caf $TARGET.tar.gz $TARGET $TARGET.prj/reports
 curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file ${TARGET}.tar.gz "${PACKAGE_REGISTRY_URL}/${TARGET}/${TAG_NAME}/${TARGET}.tar.gz"
