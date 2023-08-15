@@ -99,13 +99,13 @@ hotspot (monotile) synthesis:
     variables:
         SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
     script:
-        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "hotspot" "hotspot_monotile"
+        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "hotspot" "hotspot_mono"
     artifacts:
         when: always
         paths:
-            - build/examples/hotspot/hotspot_monotile
-            - build/examples/hotspot/hotspot_monotile.prj/reports
-            - build/examples/hotspot/hotspot_monotile.tar.gz
+            - build/examples/hotspot/hotspot_mono
+            - build/examples/hotspot/hotspot_mono.prj/reports
+            - build/examples/hotspot/hotspot_mono.tar.gz
 
 hotspot (monotile) benchmark:
     stage: benchmark
@@ -117,7 +117,7 @@ hotspot (monotile) benchmark:
         SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
     script:
         - cd examples/hotspot
-        - ./scripts/benchmark.jl ../../build/examples/hotspot/hotspot_monotile monotile
+        - ./scripts/benchmark.jl ../../build/examples/hotspot/hotspot_mono monotile
     artifacts:
         paths:
             - examples/hotspot/metrics.monotile.json
@@ -167,13 +167,13 @@ fdtd (monotile) synthesis:
     variables:
         SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
     script:
-        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "fdtd" "fdtd_coef_device_monotile"
+        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "fdtd" "fdtd_coef_device_mono"
     artifacts:
         when: always
         paths:
-            - build/examples/fdtd/fdtd_coef_device_monotile
-            - build/examples/fdtd/fdtd_coef_device_monotile.prj/reports
-            - build/examples/fdtd/fdtd_coef_device_monotile.tar.gz
+            - build/examples/fdtd/fdtd_coef_device_mono
+            - build/examples/fdtd/fdtd_coef_device_mono.prj/reports
+            - build/examples/fdtd/fdtd_coef_device_mono.tar.gz
 
 fdtd (monotile) benchmark:
     stage: benchmark
@@ -185,7 +185,7 @@ fdtd (monotile) benchmark:
         SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
     script:
         - cd examples/fdtd
-        - ./scripts/benchmark.jl ../../build/examples/fdtd/fdtd_coef_device_monotile monotile
+        - ./scripts/benchmark.jl ../../build/examples/fdtd/fdtd_coef_device_mono monotile
         - ./scripts/plot_frames.jl frames .
     artifacts:
         paths:

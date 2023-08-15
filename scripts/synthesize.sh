@@ -12,8 +12,8 @@ TARGET=$4
 
 mkdir -p build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make $TARGET
+cmake -DCMAKE_BUILD_TYPE=Release .. || exit 1
+make $TARGET || exit 1
 cd examples/$APPLICATION
-tar -caf $TARGET.tar.gz $TARGET $TARGET.prj/reports
-curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file ${TARGET}.tar.gz "${PACKAGE_REGISTRY_URL}/${TARGET}/${TAG_NAME}/${TARGET}.tar.gz"
+tar -caf $TARGET.tar.gz $TARGET $TARGET.prj/reports || exit 1
+curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file ${TARGET}.tar.gz "${PACKAGE_REGISTRY_URL}/${TARGET}/${TAG_NAME}/${TARGET}.tar.gz" || exit 1
