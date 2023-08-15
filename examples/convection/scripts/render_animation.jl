@@ -12,7 +12,7 @@ end
 
 output_directory_path = ARGS[1]
 if !isdir(output_directory_path)
-    println("Output directory "* output_directory_path * "does not exist or is not a directory!")
+    println("Output directory "* output_directory_path * " does not exist or is not a directory!")
     exit(1)
 end
 temp_indices = [parse(Int, first(eachsplit(filename, "."))) for filename in readdir(output_directory_path)]
