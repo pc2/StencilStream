@@ -59,7 +59,7 @@ convection synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 240G
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
     script:
         - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "convection" "convection"
     artifacts:
@@ -97,7 +97,7 @@ hotspot (monotile) synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 240G
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
     script:
         - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "hotspot" "hotspot_monotile"
     artifacts:
@@ -131,7 +131,7 @@ hotspot (tiling) synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 240G
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
     script:
         - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "hotspot" "hotspot_tiling"
     artifacts:
@@ -165,7 +165,7 @@ fdtd (monotile) synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 240G
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
     script:
         - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "fdtd" "fdtd_coef_device_monotile"
     artifacts:
@@ -202,7 +202,7 @@ fdtd (tiling) synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 240G
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
     script:
         - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "fdtd" "fdtd_coef_device_tiling"
     artifacts:

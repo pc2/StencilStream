@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 240G
+#SBATCH -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
 
 if [ $# -ne 4 ]; then
     echo "Usage: $0 <package registry url> <tag name> <application> <target>" 1>&2
