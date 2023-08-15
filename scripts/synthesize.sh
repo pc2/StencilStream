@@ -16,4 +16,4 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 make $TARGET
 cd examples/$APPLICATION
 tar -caf $TARGET.tar.gz $TARGET
-curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file ${TARGET}.tar.gz "${PACKAGE_REGISTRY_URL}/${TARGET}/${TAG_NAME}/${TARGET}.tar.gz"'
+curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file ${TARGET}.tar.gz "${PACKAGE_REGISTRY_URL}/${TARGET}/${TAG_NAME}/${TARGET}.tar.gz"
