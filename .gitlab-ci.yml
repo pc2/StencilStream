@@ -61,7 +61,7 @@ convection synthesis:
     variables:
         SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 00:15:00 -c 8 --mem 4G
     script:
-        - ./scripts/synthesize.sh ${PACKAGE_REGISTRY_URL} ${TAG_NAME} convection convection_cpu
+        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "convection" "convection_cpu"
     artifacts:
         when: always
         paths:
@@ -99,7 +99,7 @@ hotspot (cpu) synthesis:
     variables:
         SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 00:15:00 -c 8 --mem 4G
     script:
-        - ./scripts/synthesize.sh ${PACKAGE_REGISTRY_URL} ${TAG_NAME} hotspot hotspot_cpu
+        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "hotspot" "hotspot_cpu"
     artifacts:
         when: always
         paths:
@@ -133,7 +133,7 @@ fdtd (cpu) synthesis:
     variables:
         SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 00:15:00 -c 8 --mem 4G
     script:
-        - ./scripts/synthesize.sh ${PACKAGE_REGISTRY_URL} ${TAG_NAME} fdtd fdtd_coef_device_cpu
+        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "fdtd" "fdtd_coef_device_cpu"
     artifacts:
         when: always
         paths:

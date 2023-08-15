@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #SBATCH -A hpc-lco-kenter -p normal -t 00:15:00 -c 8 --mem 4G
 
-if [ $# -ne 2 ]; then
+if [ $# -ne 4 ]; then
     echo "Usage: $0 <package registry url> <tag name> <application> <target>" 1>&2
     exit 1
 fi
