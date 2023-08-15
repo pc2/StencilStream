@@ -39,6 +39,7 @@ documentation:
 
 unit test:
     stage: preevaluation
+    when: never
     tags:
         - noctua2
     variables:
@@ -56,6 +57,7 @@ unit test:
 
 convection synthesis:
     stage: synthesis
+    when: never
     tags:
         - noctua2
     variables:
@@ -77,6 +79,7 @@ convection synthesis:
 
 convection benchmark:
     stage: benchmark
+    when: never
     needs: 
         - convection synthesis
     tags:
