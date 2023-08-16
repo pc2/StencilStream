@@ -73,7 +73,7 @@ function build_metrics(target, measured_performance, variant, f, loop_latency, n
     occupancy = measured_performance / max_peak_performance
     model_accurracy = measured_performance / model_performance
     flops = ops_per_cell * measured_performance
-    mem_throughput = cell_size * measured_performance / n_cus
+    mem_throughput = 2.0 * cell_size * measured_performance / n_cus
 
     return Dict(
         "target" => target,
