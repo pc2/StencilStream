@@ -51,10 +51,10 @@ open(`$exe -c ./experiments/default.json`, "r") do process_in
         end
     end
 
-    measured_performance = grid_wh^2 * n_timesteps * N_SUBGENERATIONS / runtime
     metrics = build_metrics(
         (variant == :monotile) ? "FDTD, Monotile" : "FDTD, Tiling",
-        measured_performance,
+        runtime,
+        n_timesteps * N_SUBGENERATIONS,
         variant,
         f,
         loop_latency,
