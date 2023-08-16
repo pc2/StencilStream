@@ -111,7 +111,7 @@ function default_benchmark()
         _, pseudo_transient_runtimes = analyze_log(process_in)
         CSV.write("pseudo_transient_runtimes.csv", pseudo_transient_runtimes)
 
-        measured_performance = maximum((ly * lx * res^2) .* pseudo_transient_runtimes.pseudo_steps ./ pseudo_transient_runtimes.runtime)
+        measured_performance = maximum((ly * lx * res^2) .* pseudo_transient_runtimes.pseudo_steps .* N_SUBGENERATIONS ./ pseudo_transient_runtimes.runtime)
         metrics = build_metrics(
             "Convection",
             measured_performance,
