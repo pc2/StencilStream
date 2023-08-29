@@ -18,9 +18,56 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
+#include "Grid.hpp"
 #include "SingleContextExecutor.hpp"
 
 namespace stencil {
+
+template <typename Cell> class SimpleCPUGrid : public Grid<Cell> {
+  public:
+    SimpleCPUGrid(uindex_t width, uindex_t height)
+        : grid_buffer(cl::sycl::range<2>(width, height)), Grid<Cell>(width, height) {}
+
+    SimpleCPUGrid(cl::sycl::buffer<Cell, 2> input_buffer)
+        : grid_buffer(input_buffer.get_range()), Grid<Cell>(input_buffer) {
+        copy_from_buffer(input_buffer);
+    }
+
+    void copy_from_buffer(cl::sycl::buffer<Cell, 2> input_buffer) override {
+        if (input_buffer.get_range() != grid_buffer.get_range()) {
+            throw std::range_error("The input buffer range does not match the grid range.");
+        }
+
+        auto in_ac = input_buffer.template get_access<cl::sycl::access::mode::read>();
+        auto grid_ac = grid_buffer.template get_access<cl::sycl::access::mode::discard_write>();
+
+        for (uindex_t c = 0; c < input_buffer.get_range()[0]; c++) {
+            for (uindex_t r = 0; r < input_buffer.get_range()[1]; r++) {
+                grid_ac[c][r] = in_ac[c][r];
+            }
+        }
+    }
+
+    void copy_to_buffer(cl::sycl::buffer<Cell, 2> output_buffer) override {
+        if (output_buffer.get_range() != grid_buffer.get_range()) {
+            throw std::range_error("The input buffer range does not match the grid range.");
+        }
+
+        auto in_ac = grid_buffer.template get_access<cl::sycl::access::mode::read>();
+        auto out_ac = output_buffer.template get_access<cl::sycl::access::mode::discard_write>();
+
+        for (uindex_t c = 0; c < output_buffer.get_range()[0]; c++) {
+            for (uindex_t r = 0; r < output_buffer.get_range()[1]; r++) {
+                out_ac[c][r] = in_ac[c][r];
+            }
+        }
+    }
+
+    cl::sycl::buffer<Cell, 2> &get_buffer() { return grid_buffer; }
+
+  private:
+    cl::sycl::buffer<Cell, 2> grid_buffer;
+};
 
 template <TransitionFunction TransFunc, tdv::HostState TDVS>
 class SimpleCPUExecutor : public SingleContextExecutor<TransFunc, TDVS> {
@@ -28,14 +75,12 @@ class SimpleCPUExecutor : public SingleContextExecutor<TransFunc, TDVS> {
     using Cell = typename TransFunc::Cell;
 
     SimpleCPUExecutor(Cell halo_value, TransFunc trans_func)
-        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func),
-          grid(cl::sycl::range<2>(1, 1)) {
+        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func), grid(1, 1) {
         this->select_cpu();
     }
 
     SimpleCPUExecutor(Cell halo_value, TransFunc trans_func, TDVS tdvs)
-        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func, tdvs),
-          grid(cl::sycl::range<2>(1, 1)) {
+        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func, tdvs), grid(1, 1) {
         this->select_cpu();
     }
 
@@ -47,92 +92,72 @@ class SimpleCPUExecutor : public SingleContextExecutor<TransFunc, TDVS> {
         this->get_tdvs().prepare_range(this->get_i_generation(), n_generations);
 
         cl::sycl::queue queue = this->new_queue();
-        cl::sycl::buffer<Cell, 2> in_buffer = grid;
-        cl::sycl::buffer<Cell, 2> out_buffer(grid.get_range());
+        SimpleCPUGrid<Cell> in_grid = grid;
+        SimpleCPUGrid<Cell> out_grid(grid.get_grid_width(), grid.get_grid_height());
 
         for (uindex_t i_generation = 0; i_generation < n_generations; i_generation++) {
             for (uindex_t i_subgeneration = 0; i_subgeneration < TransFunc::n_subgenerations;
                  i_subgeneration++) {
                 cl::sycl::event event = queue.submit([&](cl::sycl::handler &cgh) {
-                    auto in_ac = in_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
+                    auto in_ac =
+                        in_grid.get_buffer().template get_access<cl::sycl::access::mode::read>(cgh);
                     auto out_ac =
-                        out_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
+                        out_grid.get_buffer()
+                            .template get_access<cl::sycl::access::mode::discard_write>(cgh);
+
                     uindex_t gen = this->get_i_generation() + i_generation;
                     uindex_t grid_width = in_ac.get_range()[0];
                     uindex_t grid_height = in_ac.get_range()[1];
                     Cell halo_value = this->get_halo_value();
                     TransFunc trans_func = this->get_trans_func();
-                    TDVKernelArgument global_state = this->get_tdvs().build_kernel_argument(cgh, gen, 1);
+                    TDVKernelArgument global_state =
+                        this->get_tdvs().build_kernel_argument(cgh, gen, 1);
 
-                    cgh.parallel_for(
-                        in_ac.get_range(), [=](cl::sycl::id<2> idx) {
-                            TDVLocalState local_state = global_state.build_local_state();
-                            TDV tdv = local_state.get_value(0);
-                            Stencil<Cell, TransFunc::stencil_radius, TDV> stencil(
-                                idx, in_ac.get_range(), gen, i_subgeneration, 0, tdv);
+                    cgh.parallel_for(in_ac.get_range(), [=](cl::sycl::id<2> idx) {
+                        TDVLocalState local_state = global_state.build_local_state();
+                        TDV tdv = local_state.get_value(0);
+                        Stencil<Cell, TransFunc::stencil_radius, TDV> stencil(
+                            idx, in_ac.get_range(), gen, i_subgeneration, 0, tdv);
 
-                            for (index_t delta_c = -TransFunc::stencil_radius;
-                                 delta_c <= index_t(TransFunc::stencil_radius); delta_c++) {
-                                for (index_t delta_r = -TransFunc::stencil_radius;
-                                     delta_r <= index_t(TransFunc::stencil_radius); delta_r++) {
-                                    index_t c = index_t(idx[0]) + delta_c;
-                                    index_t r = index_t(idx[1]) + delta_r;
-                                    if (c < 0 || r < 0 || c >= grid_width || r >= grid_height) {
-                                        stencil[ID(delta_c, delta_r)] = halo_value;
-                                    } else {
-                                        stencil[ID(delta_c, delta_r)] = in_ac[c][r];
-                                    }
+                        for (index_t delta_c = -TransFunc::stencil_radius;
+                             delta_c <= index_t(TransFunc::stencil_radius); delta_c++) {
+                            for (index_t delta_r = -TransFunc::stencil_radius;
+                                 delta_r <= index_t(TransFunc::stencil_radius); delta_r++) {
+                                index_t c = index_t(idx[0]) + delta_c;
+                                index_t r = index_t(idx[1]) + delta_r;
+                                if (c < 0 || r < 0 || c >= grid_width || r >= grid_height) {
+                                    stencil[ID(delta_c, delta_r)] = halo_value;
+                                } else {
+                                    stencil[ID(delta_c, delta_r)] = in_ac[c][r];
                                 }
                             }
+                        }
 
-                            out_ac[idx] = trans_func(stencil);
-                        });
+                        out_ac[idx] = trans_func(stencil);
+                    });
                 });
                 this->get_runtime_sample().add_pass(event);
-                std::swap(in_buffer, out_buffer);
+                std::swap(in_grid, out_grid);
             }
         }
 
         queue.wait_and_throw();
-        grid = in_buffer;
+        grid = in_grid;
         this->inc_i_generation(n_generations);
     }
 
-    virtual void set_input(cl::sycl::buffer<Cell, 2> input_buffer) override {
-        grid = input_buffer.get_range();
-
-        auto in_ac = input_buffer.template get_access<cl::sycl::access::mode::read>();
-        auto out_ac = grid.template get_access<cl::sycl::access::mode::discard_write>();
-
-        for (uindex_t c = 0; c < input_buffer.get_range()[0]; c++) {
-            for (uindex_t r = 0; r < input_buffer.get_range()[1]; r++) {
-                out_ac[c][r] = in_ac[c][r];
-            }
-        }
-    }
+    virtual void set_input(cl::sycl::buffer<Cell, 2> input_buffer) override { grid = input_buffer; }
 
     virtual void copy_output(cl::sycl::buffer<Cell, 2> output_buffer) override {
-        if (grid.get_range() != output_buffer.get_range()) {
-            throw std::range_error(
-                "The given output buffer doesn't have the same range as the grid.");
-        }
-
-        auto in_ac = grid.template get_access<cl::sycl::access::mode::read>();
-        auto out_ac = output_buffer.template get_access<cl::sycl::access::mode::discard_write>();
-
-        for (uindex_t c = 0; c < output_buffer.get_range()[0]; c++) {
-            for (uindex_t r = 0; r < output_buffer.get_range()[1]; r++) {
-                out_ac[c][r] = in_ac[c][r];
-            }
-        }
+        grid.copy_to_buffer(output_buffer);
     }
 
     virtual UID get_grid_range() const override {
-        return UID(grid.get_range()[0], grid.get_range()[1]);
+        return UID(grid.get_grid_width(), grid.get_grid_height());
     }
 
   private:
-    cl::sycl::buffer<Cell, 2> grid;
+    SimpleCPUGrid<Cell> grid;
 };
 
 } // namespace stencil
