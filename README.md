@@ -208,4 +208,25 @@ If you just run `make conway_emu`, an emulation image will be created that can b
 
 ### Going further
 
-This example only showed the general way StencilStream is used. More optimised and non-trivial examples can be found in the [examples folder](https://github.com/pc2/StencilStream/tree/master/examples). However, in order to fully understand the way StencilStream works and to optimize your application, you should take a look at [the documentation](https://pc2.github.io/StencilStream/index.html) and especially at the [architecture document](https://pc2.github.io/StencilStream/Architecture.html). Future releases will also feature an optimization guide that discusses the different optimization parameters and gives advice for good designs.
+This example only showed the general way StencilStream is used. More optimised and non-trivial examples can be found in the [examples folder](https://github.com/pc2/StencilStream/tree/master/examples). However, in order to fully understand the way StencilStream works and to optimize your application, you should take a look at [the documentation](https://pc2.github.io/StencilStream/index.html) and especially at the [architecture document](https://pc2.github.io/StencilStream/Architecture.html). Future releases will also feature an optimization guide that discusses the different optimization parameters and advises on good designs.
+
+## Gitlab CI pipeline
+
+The CI pipeline described in [.gitlab-ci.yml](.gitlab-ci.yml) contains jobs to run the unit tests, build the hardware executables, benchmark the designs, and make the resulting packages and performance data available. Most of the jobs run as batch jobs on Noctua 2, using a Jacamar runner via Jan-Oliver's IMT account. It has been configured as described in [the wiki](https://upb-pc2.atlassian.net/wiki/spaces/PC2DOK/pages/1901376/Continuous+Integration+with+GitLab) (retrieved 29.08.2023).
+
+The pre-evaluation stage builds the Doxygen documentation and runs the unit tests. The synthesis stage builds executables for the different applications. For most applications, a monotile version and a tiling version are built. The jobs also upload the executable and the synthesis report to the [Gitlab package registry](https://git.uni-paderborn.de/pc2/sycl-stencil/-/packages). Unlike job artifacts, these packages will not be automatically removed.
+
+The jobs in the benchmark stage automatically benchmark the built binaries once they are available. Their most important artifact is a `metrics.json` file which contains the retrieved and measured metrics of the executable. It contains a dictionary with the following fields:
+
+| field name | type [unit] | description |
+|------------|------|-------------|
+| `f` | float [Hz] | Clock frequency of the design |
+| `mem_throughput` | float [B/s] | total, sustain memory throughput |
+| `measured` | float [cells/s] | measured throughput in executed cell updates per second (Not counting overhead updates of the tiling architecture) |
+| `occupancy` | float [fraction] | Mean occupancy of the implemented processing elements |
+| `target` | string | Name of the target or executable |
+| `accuracy` | float [fraction] | Accuracy of the performance model |
+| `n_cus` | int | Number of implemented processing elements |
+| `FLOPS` | float [FLOP/s] | Measured floating-point operations per second |
+
+Lastly, the release job reads the metric files, adds their information to the [performance tracking wiki page](https://git.uni-paderborn.de/pc2/sycl-stencil/-/wikis/Performance-tracking), and creates a [Gitlab Release and git tag](https://git.uni-paderborn.de/pc2/sycl-stencil/-/releases). The performance tracking page is updated by checking out the wiki repo, adding the data to the [`data.csv`](https://git.uni-paderborn.de/pc2/sycl-stencil/-/wikis/Performance-tracking/data.csv), rendering the site from this table with the [`render-site.jl`](https://git.uni-paderborn.de/pc2/sycl-stencil/-/wikis/Performance-tracking/render-site.jl) script, and committing the changes to the repo.
