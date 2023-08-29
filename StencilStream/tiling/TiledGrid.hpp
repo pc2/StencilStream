@@ -171,23 +171,214 @@ class TiledGrid : public Grid<Cell> {
      * \throws std::out_of_range Thrown if the tile id is outside the range of tiles, as returned by
      * \ref TiledGrid.get_tile_range.
      */
-    Tile &get_tile(ID tile_id) {
-        uindex_t tile_c = tile_id.c + 1;
-        uindex_t tile_r = tile_id.r + 1;
-        return tiles.at(tile_c).at(tile_r);
+    Tile &get_tile(index_t tile_c, index_t tile_r) { return tiles.at(tile_c + 1).at(tile_r + 1); }
+
+    template <typename in_pipe>
+    void submit_read(cl::sycl::queue queue, index_t tile_c, index_t tile_r) {
+        using feed_in_pipe_0 = cl::sycl::pipe<class feed_in_pipe_0_id, Cell>;
+        using feed_in_pipe_1 = cl::sycl::pipe<class feed_in_pipe_1_id, Cell>;
+        using feed_in_pipe_2 = cl::sycl::pipe<class feed_in_pipe_2_id, Cell>;
+        using feed_in_pipe_3 = cl::sycl::pipe<class feed_in_pipe_3_id, Cell>;
+        using feed_in_pipe_4 = cl::sycl::pipe<class feed_in_pipe_4_id, Cell>;
+
+        uindex_t grid_width = this->get_grid_width();
+        uindex_t grid_height = this->get_grid_height();
+
+        if (tile_c >= get_tile_range().c || tile_r >= get_tile_range().r) {
+            throw std::range_error("Tile ID out of range!");
+        }
+
+        auto part_widths = get_part_widths(tile_c);
+
+        submit_read_part<feed_in_pipe_0>(queue, tile_c - 1, tile_r - 1,
+                                         Tile::Part::SOUTH_EAST_CORNER, part_widths[0]);
+        submit_read_part<feed_in_pipe_0>(queue, tile_c, tile_r - 1, Tile::Part::SOUTH_WEST_CORNER,
+                                         part_widths[1]);
+        submit_read_part<feed_in_pipe_0>(queue, tile_c, tile_r - 1, Tile::Part::SOUTH_BORDER,
+                                         part_widths[2]);
+        submit_read_part<feed_in_pipe_0>(queue, tile_c, tile_r - 1, Tile::Part::SOUTH_EAST_CORNER,
+                                         part_widths[3]);
+        submit_read_part<feed_in_pipe_0>(queue, tile_c + 1, tile_r - 1,
+                                         Tile::Part::SOUTH_WEST_CORNER, part_widths[4]);
+
+        submit_read_part<feed_in_pipe_1>(queue, tile_c - 1, tile_r, Tile::Part::NORTH_EAST_CORNER,
+                                         part_widths[0]);
+        submit_read_part<feed_in_pipe_1>(queue, tile_c, tile_r, Tile::Part::NORTH_WEST_CORNER,
+                                         part_widths[1]);
+        submit_read_part<feed_in_pipe_1>(queue, tile_c, tile_r, Tile::Part::NORTH_BORDER,
+                                         part_widths[2]);
+        submit_read_part<feed_in_pipe_1>(queue, tile_c, tile_r, Tile::Part::NORTH_EAST_CORNER,
+                                         part_widths[3]);
+        submit_read_part<feed_in_pipe_1>(queue, tile_c + 1, tile_r, Tile::Part::NORTH_WEST_CORNER,
+                                         part_widths[4]);
+
+        submit_read_part<feed_in_pipe_2>(queue, tile_c - 1, tile_r, Tile::Part::EAST_BORDER,
+                                         part_widths[0]);
+        submit_read_part<feed_in_pipe_2>(queue, tile_c, tile_r, Tile::Part::WEST_BORDER,
+                                         part_widths[1]);
+        submit_read_part<feed_in_pipe_2>(queue, tile_c, tile_r, Tile::Part::CORE, part_widths[2]);
+        submit_read_part<feed_in_pipe_2>(queue, tile_c, tile_r, Tile::Part::EAST_BORDER,
+                                         part_widths[3]);
+        submit_read_part<feed_in_pipe_2>(queue, tile_c + 1, tile_r, Tile::Part::WEST_BORDER,
+                                         part_widths[4]);
+
+        submit_read_part<feed_in_pipe_3>(queue, tile_c - 1, tile_r, Tile::Part::SOUTH_EAST_CORNER,
+                                         part_widths[0]);
+        submit_read_part<feed_in_pipe_3>(queue, tile_c, tile_r, Tile::Part::SOUTH_WEST_CORNER,
+                                         part_widths[1]);
+        submit_read_part<feed_in_pipe_3>(queue, tile_c, tile_r, Tile::Part::SOUTH_BORDER,
+                                         part_widths[2]);
+        submit_read_part<feed_in_pipe_3>(queue, tile_c, tile_r, Tile::Part::SOUTH_EAST_CORNER,
+                                         part_widths[3]);
+        submit_read_part<feed_in_pipe_3>(queue, tile_c + 1, tile_r, Tile::Part::SOUTH_WEST_CORNER,
+                                         part_widths[4]);
+
+        submit_read_part<feed_in_pipe_4>(queue, tile_c - 1, tile_r + 1,
+                                         Tile::Part::NORTH_EAST_CORNER, part_widths[0]);
+        submit_read_part<feed_in_pipe_4>(queue, tile_c, tile_r + 1, Tile::Part::NORTH_WEST_CORNER,
+                                         part_widths[1]);
+        submit_read_part<feed_in_pipe_4>(queue, tile_c, tile_r + 1, Tile::Part::NORTH_BORDER,
+                                         part_widths[2]);
+        submit_read_part<feed_in_pipe_4>(queue, tile_c, tile_r + 1, Tile::Part::NORTH_EAST_CORNER,
+                                         part_widths[3]);
+        submit_read_part<feed_in_pipe_4>(queue, tile_c + 1, tile_r + 1,
+                                         Tile::Part::NORTH_WEST_CORNER, part_widths[4]);
+
+        queue.submit([&](cl::sycl::handler &cgh) {
+            uindex_t n_inner_columns = part_widths[1] + part_widths[2] + part_widths[3];
+
+            cgh.single_task([=]() {
+                constexpr unsigned long bits_width = std::bit_width(2 * halo_radius + tile_width);
+                constexpr unsigned long bits_height = std::bit_width(2 * halo_radius + tile_height);
+                using uindex_width_t = ac_int<bits_width, false>;
+                using uindex_height_t = ac_int<bits_height, false>;
+
+                [[intel::loop_coalesce(2)]] for (uindex_width_t c = 0;
+                                                 c <
+                                                 uindex_width_t(2 * halo_radius + n_inner_columns);
+                                                 c++) {
+                    for (uindex_height_t r = 0; r < uindex_height_t(2 * halo_radius + tile_height);
+                         r++) {
+                        Cell value;
+                        if (r < uindex_height_t(halo_radius)) {
+                            value = feed_in_pipe_0::read();
+                        } else if (r < uindex_height_t(2 * halo_radius)) {
+                            value = feed_in_pipe_1::read();
+                        } else if (r < uindex_height_t(2 * halo_radius + core_height)) {
+                            value = feed_in_pipe_2::read();
+                        } else if (r < uindex_height_t(3 * halo_radius + core_height)) {
+                            value = feed_in_pipe_3::read();
+                        } else {
+                            value = feed_in_pipe_4::read();
+                        }
+                        in_pipe::write(value);
+                    }
+                }
+            });
+        });
     }
 
-    template <typename pipe_id>
-    void submit_read(cl::sycl::queue fpga_queue, ID tile_id, typename Tile::Part part,
-                     uindex_t n_columns) {
+    template <typename out_pipe>
+    void submit_write(cl::sycl::queue queue, index_t tile_c, index_t tile_r) {
+        using feed_out_pipe_0 = cl::sycl::pipe<class feed_out_pipe_0_id, Cell>;
+        using feed_out_pipe_1 = cl::sycl::pipe<class feed_out_pipe_1_id, Cell>;
+        using feed_out_pipe_2 = cl::sycl::pipe<class feed_out_pipe_2_id, Cell>;
+
+        uindex_t grid_width = this->get_grid_width();
+        uindex_t grid_height = this->get_grid_height();
+
+        if (tile_c >= get_tile_range().c || tile_r >= get_tile_range().r) {
+            throw std::range_error("Tile ID out of range!");
+        }
+
+        auto part_widths = get_part_widths(tile_c);
+
+        queue.submit([&](cl::sycl::handler &cgh) {
+            uindex_t n_inner_columns = part_widths[1] + part_widths[2] + part_widths[3];
+
+            cgh.single_task([=]() {
+                constexpr unsigned long bits_width = std::bit_width(tile_width);
+                constexpr unsigned long bits_height = std::bit_width(tile_height);
+                using uindex_width_t = ac_int<bits_width, false>;
+                using uindex_height_t = ac_int<bits_height, false>;
+
+                [[intel::loop_coalesce(2)]] for (uindex_width_t c = 0;
+                                                 c < uindex_width_t(n_inner_columns); c++) {
+                    for (uindex_height_t r = 0; r < uindex_height_t(tile_height); r++) {
+                        Cell value = out_pipe::read();
+                        if (r < uindex_height_t(halo_radius)) {
+                            feed_out_pipe_0::write(value);
+                        } else if (r < uindex_height_t(tile_height - halo_radius)) {
+                            feed_out_pipe_1::write(value);
+                        } else {
+                            feed_out_pipe_2::write(value);
+                        }
+                    }
+                }
+            });
+        });
+
+        submit_write_part<feed_out_pipe_0>(queue, tile_c, tile_r, Tile::Part::NORTH_WEST_CORNER,
+                                           part_widths[1]);
+        submit_write_part<feed_out_pipe_0>(queue, tile_c, tile_r, Tile::Part::NORTH_BORDER,
+                                           part_widths[2]);
+        submit_write_part<feed_out_pipe_0>(queue, tile_c, tile_r, Tile::Part::NORTH_EAST_CORNER,
+                                           part_widths[3]);
+
+        submit_write_part<feed_out_pipe_1>(queue, tile_c, tile_r, Tile::Part::WEST_BORDER,
+                                           part_widths[1]);
+        submit_write_part<feed_out_pipe_1>(queue, tile_c, tile_r, Tile::Part::CORE, part_widths[2]);
+        submit_write_part<feed_out_pipe_1>(queue, tile_c, tile_r, Tile::Part::EAST_BORDER,
+                                           part_widths[3]);
+
+        submit_write_part<feed_out_pipe_2>(queue, tile_c, tile_r, Tile::Part::SOUTH_WEST_CORNER,
+                                           part_widths[1]);
+        submit_write_part<feed_out_pipe_2>(queue, tile_c, tile_r, Tile::Part::SOUTH_BORDER,
+                                           part_widths[2]);
+        submit_write_part<feed_out_pipe_2>(queue, tile_c, tile_r, Tile::Part::SOUTH_EAST_CORNER,
+                                           part_widths[3]);
+    }
+
+  private:
+    std::array<uindex_t, 5> get_part_widths(index_t tile_c) const {
+        uindex_t column_offset = tile_c * tile_width;
+        uindex_t n_inner_columns = std::min(tile_width, this->get_grid_width() - column_offset);
+
+        std::array<uindex_t, 5> part_widths;
+        part_widths[0] = halo_radius;
+
+        part_widths[1] = std::min(n_inner_columns, halo_radius);
+
+        if (n_inner_columns > halo_radius) {
+            part_widths[2] = std::min(n_inner_columns - halo_radius, Tile::core_width);
+        } else {
+            part_widths[2] = 0;
+        }
+
+        if (n_inner_columns > halo_radius + Tile::core_width) {
+            part_widths[3] =
+                std::min(n_inner_columns - halo_radius - Tile::core_width, halo_radius);
+        } else {
+            part_widths[3] = 0;
+        }
+
+        part_widths[4] = halo_radius;
+
+        assert(part_widths[1] + part_widths[2] + part_widths[3] == n_inner_columns);
+
+        return part_widths;
+    }
+
+    template <typename in_pipe>
+    void submit_read_part(cl::sycl::queue queue, index_t tile_c, index_t tile_r,
+                          typename Tile::Part part, uindex_t n_columns) {
         if (n_columns == 0) {
             return;
         }
 
-        fpga_queue.submit([&](cl::sycl::handler &cgh) {
-            auto ac =
-                this->get_tile(tile_id)[part].template get_access<cl::sycl::access::mode::read>(
-                    cgh);
+        queue.submit([&](cl::sycl::handler &cgh) {
+            auto ac = this->get_tile(tile_c, tile_r)[part]
+                          .template get_access<cl::sycl::access::mode::read>(cgh);
             UID range = Tile::get_part_range(part);
             uindex_2d_t n_cells = uindex_t(n_columns * range.r);
 
@@ -202,22 +393,22 @@ class TiledGrid : public Grid<Cell> {
                         word_i++;
                         cell_i = 0;
                     }
-                    cl::sycl::pipe<pipe_id, Cell>::write(cache[cell_i].value);
+                    in_pipe::write(cache[cell_i].value);
                     cell_i++;
                 }
             });
         });
     }
 
-    template <typename pipe_id>
-    void submit_write(cl::sycl::queue fpga_queue, ID tile_id, typename Tile::Part part,
-                      uindex_t n_columns) {
+    template <typename out_pipe>
+    void submit_write_part(cl::sycl::queue queue, index_t tile_c, index_t tile_r,
+                           typename Tile::Part part, uindex_t n_columns) {
         if (n_columns == 0) {
             return;
         }
 
-        fpga_queue.submit([&](cl::sycl::handler &cgh) {
-            auto ac = this->get_tile(tile_id)[part]
+        queue.submit([&](cl::sycl::handler &cgh) {
+            auto ac = this->get_tile(tile_c, tile_r)[part]
                           .template get_access<cl::sycl::access::mode::discard_write>(cgh);
             UID range = Tile::get_part_range(part);
             uindex_2d_t n_cells = uindex_t(n_columns * range.r);
@@ -233,7 +424,7 @@ class TiledGrid : public Grid<Cell> {
                         word_i++;
                         cell_i = 0;
                     }
-                    cache[cell_i].value = cl::sycl::pipe<pipe_id, Cell>::read();
+                    cache[cell_i].value = out_pipe::read();
                     cell_i++;
                 }
 
@@ -244,7 +435,6 @@ class TiledGrid : public Grid<Cell> {
         });
     }
 
-  private:
     void allocate_tiles() {
         tiles.clear();
 
