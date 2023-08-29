@@ -20,7 +20,7 @@
 #pragma once
 #include "SingleContextExecutor.hpp"
 #include "tiling/ExecutionKernel.hpp"
-#include "tiling/Grid.hpp"
+#include "tiling/TiledGrid.hpp"
 
 #include <algorithm>
 
@@ -76,7 +76,7 @@ class TilingExecutor : public SingleContextExecutor<TransFunc, TDVS> {
     }
 
     void copy_output(cl::sycl::buffer<Cell, 2> output_buffer) override {
-        input_grid.copy_to(output_buffer);
+        input_grid.copy_to_buffer(output_buffer);
     }
 
     UID get_grid_range() const override { return input_grid.get_grid_range(); }
@@ -345,7 +345,7 @@ class TilingExecutor : public SingleContextExecutor<TransFunc, TDVS> {
     }
 
   private:
-    using GridImpl = tiling::Grid<Cell, tile_width, tile_height, halo_radius>;
+    using GridImpl = tiling::TiledGrid<Cell, tile_width, tile_height, halo_radius>;
     using TileImpl = typename GridImpl::Tile;
     GridImpl input_grid;
 };

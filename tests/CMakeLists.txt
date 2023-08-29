@@ -26,7 +26,7 @@ set(UNIT_TEST_SOURCES
     TimeDependentValueSupplier.cpp
     monotile/ExecutionKernel.cpp
     tiling/ExecutionKernel.cpp
-    tiling/Grid.cpp
+    tiling/TiledGrid.cpp
     tiling/Tile.cpp
 )
 

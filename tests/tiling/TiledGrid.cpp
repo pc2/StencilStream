@@ -17,10 +17,10 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <catch2/catch_all.hpp>
-#include <CL/sycl.hpp>
-#include <StencilStream/tiling/Grid.hpp>
 #include "../constants.hpp"
+#include <CL/sycl.hpp>
+#include <StencilStream/tiling/TiledGrid.hpp>
+#include <catch2/catch_all.hpp>
 #include <unordered_set>
 
 using namespace stencil;
@@ -31,9 +31,9 @@ using namespace std;
 const uindex_t add_grid_width = grid_width + 1;
 const uindex_t add_grid_height = grid_height + 1;
 
-using TestGrid = Grid<ID, tile_width, tile_height, halo_radius>;
+using TestGrid = TiledGrid<ID, tile_width, tile_height, halo_radius>;
 
-TEST_CASE("Grid::Grid(uindex_t, uindex_t, T)", "[Grid]") {
+TEST_CASE("TiledGrid::TiledGrid(uindex_t, uindex_t, T)", "[TiledGrid]") {
     TestGrid grid(add_grid_width, add_grid_height);
 
     GenericID<uindex_t> tile_range = grid.get_tile_range();
@@ -41,7 +41,7 @@ TEST_CASE("Grid::Grid(uindex_t, uindex_t, T)", "[Grid]") {
     REQUIRE(tile_range.r == add_grid_height / tile_height + 1);
 }
 
-TEST_CASE("Grid::Grid(cl::sycl::buffer<T, 2>, T)", "[Grid]") {
+TEST_CASE("TiledGrid::TiledGrid(cl::sycl::buffer<T, 2>, T)", "[TiledGrid]") {
     buffer<ID, 2> in_buffer(range<2>(add_grid_width, add_grid_height));
     {
         auto in_buffer_ac = in_buffer.get_access<access::mode::discard_write>();
@@ -59,7 +59,7 @@ TEST_CASE("Grid::Grid(cl::sycl::buffer<T, 2>, T)", "[Grid]") {
     REQUIRE(tile_range.r == add_grid_height / tile_height + 1);
 
     buffer<ID, 2> out_buffer(range<2>(add_grid_width, add_grid_height));
-    grid.copy_to(out_buffer);
+    grid.copy_to_buffer(out_buffer);
 
     {
         auto out_buffer_ac = out_buffer.get_access<access::mode::read>();

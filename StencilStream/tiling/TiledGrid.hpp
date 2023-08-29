@@ -19,6 +19,7 @@
  */
 #pragma once
 #include "../GenericID.hpp"
+#include "../Grid.hpp"
 #include "Tile.hpp"
 #include <bit>
 #include <memory>
@@ -47,7 +48,7 @@ namespace tiling {
  */
 template <typename Cell, uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius,
           uindex_t word_size = 64>
-class Grid {
+class TiledGrid : public Grid<Cell> {
   public:
     static_assert(2 * halo_radius < tile_height && 2 * halo_radius < tile_width);
     static constexpr uindex_t core_height = tile_height - 2 * halo_radius;
@@ -77,7 +78,11 @@ class Grid {
      * \param width The number of columns of the grid.
      * \param height The number of rows of the grid.
      */
-    Grid(uindex_t width, uindex_t height) : tiles(), grid_range(width, height) { allocate_tiles(); }
+    TiledGrid(uindex_t width, uindex_t height) : tiles(), Grid<Cell>(width, height) {
+        allocate_tiles();
+    }
+    TiledGrid(UID grid_range) : tiles(), Grid<Cell>(grid_range) { allocate_tiles(); }
+    TiledGrid(cl::sycl::range<2> grid_range) : tiles(), Grid<Cell>(grid_range) { allocate_tiles(); }
 
     /**
      * \brief Create a grid that contains the cells of a buffer.
@@ -87,8 +92,25 @@ class Grid {
      *
      * \param in_buffer The buffer to copy the cells from.
      */
-    Grid(cl::sycl::buffer<Cell, 2> in_buffer) : tiles(), grid_range(in_buffer.get_range()) {
-        copy_from(in_buffer);
+    TiledGrid(cl::sycl::buffer<Cell, 2> in_buffer) : tiles(), Grid<Cell>(in_buffer) {
+        copy_from_buffer(in_buffer);
+    }
+
+    virtual void copy_from_buffer(cl::sycl::buffer<Cell, 2> input_buffer) override {
+        if (input_buffer.get_range() !=
+            cl::sycl::range<2>(this->get_grid_width(), this->get_grid_height())) {
+            throw std::range_error("The target buffer has not the same size as the grid");
+        }
+
+        allocate_tiles();
+
+        for (uindex_t tile_column = 1; tile_column < tiles.size() - 1; tile_column++) {
+            for (uindex_t tile_row = 1; tile_row < tiles[tile_column].size() - 1; tile_row++) {
+                cl::sycl::id<2> offset((tile_column - 1) * tile_width,
+                                       (tile_row - 1) * tile_height);
+                tiles[tile_column][tile_row].copy_from(input_buffer, offset);
+            }
+        }
     }
 
     /**
@@ -100,8 +122,9 @@ class Grid {
      * \param out_buffer The buffer to copy the cells to.
      * \throws std::range_error The buffer's size is not the same as the grid's size.
      */
-    void copy_to(cl::sycl::buffer<Cell, 2> &out_buffer) {
-        if (out_buffer.get_range() != grid_range) {
+    virtual void copy_to_buffer(cl::sycl::buffer<Cell, 2> output_buffer) override {
+        if (output_buffer.get_range() !=
+            cl::sycl::range<2>(this->get_grid_width(), this->get_grid_height())) {
             throw std::range_error("The target buffer has not the same size as the grid");
         }
 
@@ -109,7 +132,7 @@ class Grid {
             for (uindex_t tile_row = 1; tile_row < tiles[tile_column].size() - 1; tile_row++) {
                 cl::sycl::id<2> offset((tile_column - 1) * tile_width,
                                        (tile_row - 1) * tile_height);
-                tiles[tile_column][tile_row].copy_to(out_buffer, offset);
+                tiles[tile_column][tile_row].copy_to(output_buffer, offset);
             }
         }
     }
@@ -121,8 +144,8 @@ class Grid {
      *
      * \return The new grid.
      */
-    Grid make_output_grid() const {
-        Grid output_grid(grid_range[0], grid_range[1]);
+    TiledGrid make_output_grid() const {
+        TiledGrid output_grid(this->get_grid_range());
 
         return output_grid;
     }
@@ -131,8 +154,8 @@ class Grid {
      * \brief Return the range of (central) tiles of the grid.
      *
      * This is not the range of a single tile nor is the range of the grid. It is the range of valid
-     * arguments for \ref Grid.get_tile. For example, if the grid is 60 by 60 cells in size and a
-     * tile is 32 by 32 cells in size, the tile range would be 2 by 2 tiles.
+     * arguments for \ref TiledGrid.get_tile. For example, if the grid is 60 by 60 cells in size and
+     * a tile is 32 by 32 cells in size, the tile range would be 2 by 2 tiles.
      *
      * \return The range of tiles of the grid.
      */
@@ -141,22 +164,12 @@ class Grid {
     }
 
     /**
-     * \brief Return the range of the grid in cells.
-     *
-     * If the grid was constructed from a buffer, this will be the range of this buffer. If the grid
-     * was constructed with width and height arguments, this will be this exact range.
-     *
-     * \return The range of cells of the grid.
-     */
-    GenericID<uindex_t> get_grid_range() const { return grid_range; }
-
-    /**
      * \brief Get the tile at the given index.
      *
      * \param tile_id The id of the tile to return.
      * \return The tile.
      * \throws std::out_of_range Thrown if the tile id is outside the range of tiles, as returned by
-     * \ref Grid.get_tile_range.
+     * \ref TiledGrid.get_tile_range.
      */
     Tile &get_tile(ID tile_id) {
         uindex_t tile_c = tile_id.c + 1;
@@ -232,31 +245,15 @@ class Grid {
     }
 
   private:
-    void copy_from(cl::sycl::buffer<Cell, 2> in_buffer) {
-        if (in_buffer.get_range() != grid_range) {
-            throw std::range_error("The target buffer has not the same size as the grid");
-        }
-
-        allocate_tiles();
-
-        for (uindex_t tile_column = 1; tile_column < tiles.size() - 1; tile_column++) {
-            for (uindex_t tile_row = 1; tile_row < tiles[tile_column].size() - 1; tile_row++) {
-                cl::sycl::id<2> offset((tile_column - 1) * tile_width,
-                                       (tile_row - 1) * tile_height);
-                tiles[tile_column][tile_row].copy_from(in_buffer, offset);
-            }
-        }
-    }
-
     void allocate_tiles() {
         tiles.clear();
 
-        uindex_t n_tile_columns = grid_range[0] / tile_width;
-        if (grid_range[0] % tile_width != 0) {
+        uindex_t n_tile_columns = this->get_grid_width() / tile_width;
+        if (this->get_grid_width() % tile_width != 0) {
             n_tile_columns++;
         }
-        uindex_t n_tile_rows = grid_range[1] / tile_height;
-        if (grid_range[1] % tile_height != 0) {
+        uindex_t n_tile_rows = this->get_grid_height() / tile_height;
+        if (this->get_grid_height() % tile_height != 0) {
             n_tile_rows++;
         }
 
@@ -272,7 +269,6 @@ class Grid {
     }
 
     std::vector<std::vector<Tile>> tiles;
-    cl::sycl::range<2> grid_range;
 };
 
 } // namespace tiling
