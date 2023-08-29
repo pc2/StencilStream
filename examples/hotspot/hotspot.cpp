@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2022Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
+ * Copyright © 2020-2023 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
  * University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
