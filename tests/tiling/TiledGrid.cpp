@@ -33,14 +33,17 @@ const uindex_t add_grid_height = grid_height + 1;
 
 using TestGrid = TiledGrid<ID, tile_width, tile_height, halo_radius>;
 
-TEST_CASE("TiledGrid::TiledGrid(uindex_t, uindex_t, T)", "[TiledGrid]") {
-    TestGrid grid(add_grid_width, add_grid_height);
+// Assert that the tiled grid fulfills the grid concept.
+static_assert(Grid<TestGrid, ID>);
+
+TEST_CASE("TiledGrid::TiledGrid(uindex_t, uindex_t, uindex_t)", "[TiledGrid]") {
+    TestGrid grid(add_grid_width, add_grid_height, 0);
 
     GenericID<uindex_t> tile_range = grid.get_tile_range();
     REQUIRE(tile_range.c == add_grid_width / tile_width + 1);
     REQUIRE(tile_range.r == add_grid_height / tile_height + 1);
 }
-
+/*
 TEST_CASE("TiledGrid::TiledGrid(cl::sycl::buffer<T, 2>, T)", "[TiledGrid]") {
     buffer<ID, 2> in_buffer(range<2>(add_grid_width, add_grid_height));
     {
@@ -70,4 +73,4 @@ TEST_CASE("TiledGrid::TiledGrid(cl::sycl::buffer<T, 2>, T)", "[TiledGrid]") {
             }
         }
     }
-}
+}*/

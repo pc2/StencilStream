@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2022 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
+ * Copyright © 2020-2023 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
  * University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -17,24 +17,16 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
-#include "Concepts.hpp"
-#include "Index.hpp"
-#include <CL/sycl.hpp>
-#include <concepts>
+#include "../constants.hpp"
+#include <StencilStream/Grid.hpp>
+#include <StencilStream/monotile/MonotileGrid.hpp>
 
-namespace stencil {
+using namespace stencil;
+using namespace stencil::monotile;
+using namespace cl::sycl;
+using namespace std;
 
-template <typename G, typename Cell>
-concept Grid = requires(G grid, cl::sycl::buffer<Cell, 2> buffer, uindex_t i) {
-    { grid.copy_from_buffer(buffer) } -> std::same_as<void>;
-    { grid.copy_to_buffer(buffer) } -> std::same_as<void>;
-    { grid.get_grid_width() } -> std::convertible_to<uindex_t>;
-    { grid.get_grid_height() } -> std::convertible_to<uindex_t>;
-    { grid.get_i_generation() } -> std::convertible_to<uindex_t>;
-    { grid.set_i_generation(i) } -> std::same_as<void>;
-    { grid.inc_i_generation(i) } -> std::same_as<void>;
-    { grid.make_similar() } -> std::same_as<G>;
-};
+using TestGrid = MonotileGrid<ID, tile_width, tile_height, 64>;
 
-} // namespace stencil
+// Assert that the monotile grid fulfills the grid concept.
+static_assert(Grid<TestGrid, ID>);

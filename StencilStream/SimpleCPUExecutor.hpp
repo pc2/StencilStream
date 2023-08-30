@@ -23,17 +23,26 @@
 
 namespace stencil {
 
-template <typename Cell> class SimpleCPUGrid : public Grid<Cell> {
+template <typename Cell> class SimpleCPUGrid {
   public:
-    SimpleCPUGrid(uindex_t width, uindex_t height)
-        : grid_buffer(cl::sycl::range<2>(width, height)), Grid<Cell>(width, height) {}
+    SimpleCPUGrid(uindex_t grid_width, uindex_t grid_height, uindex_t i_generation)
+        : grid_buffer(cl::sycl::range<2>(grid_width, grid_height)), i_generation(i_generation) {}
 
-    SimpleCPUGrid(cl::sycl::buffer<Cell, 2> input_buffer)
-        : grid_buffer(input_buffer.get_range()), Grid<Cell>(input_buffer) {
-        copy_from_buffer(input_buffer);
+    SimpleCPUGrid make_similar() const {
+        return SimpleCPUGrid(get_grid_width(), get_grid_height(), i_generation);
     }
 
-    void copy_from_buffer(cl::sycl::buffer<Cell, 2> input_buffer) override {
+    uindex_t get_grid_width() const { return grid_buffer.get_range()[0]; }
+
+    uindex_t get_grid_height() const { return grid_buffer.get_range()[1]; }
+
+    uindex_t get_i_generation() const { return i_generation; }
+
+    void set_i_generation(uindex_t new_i_generation) { i_generation = new_i_generation; }
+
+    void inc_i_generation(uindex_t delta_i_generation) { i_generation += delta_i_generation; }
+
+    void copy_from_buffer(cl::sycl::buffer<Cell, 2> input_buffer) {
         if (input_buffer.get_range() != grid_buffer.get_range()) {
             throw std::range_error("The input buffer range does not match the grid range.");
         }
@@ -48,7 +57,7 @@ template <typename Cell> class SimpleCPUGrid : public Grid<Cell> {
         }
     }
 
-    void copy_to_buffer(cl::sycl::buffer<Cell, 2> output_buffer) override {
+    void copy_to_buffer(cl::sycl::buffer<Cell, 2> output_buffer) {
         if (output_buffer.get_range() != grid_buffer.get_range()) {
             throw std::range_error("The input buffer range does not match the grid range.");
         }
@@ -67,6 +76,7 @@ template <typename Cell> class SimpleCPUGrid : public Grid<Cell> {
 
   private:
     cl::sycl::buffer<Cell, 2> grid_buffer;
+    uindex_t i_generation;
 };
 
 template <TransitionFunction TransFunc, tdv::HostState TDVS>
@@ -75,12 +85,12 @@ class SimpleCPUExecutor : public SingleContextExecutor<TransFunc, TDVS> {
     using Cell = typename TransFunc::Cell;
 
     SimpleCPUExecutor(Cell halo_value, TransFunc trans_func)
-        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func), grid(1, 1) {
+        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func), grid(1, 1, 0) {
         this->select_cpu();
     }
 
     SimpleCPUExecutor(Cell halo_value, TransFunc trans_func, TDVS tdvs)
-        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func, tdvs), grid(1, 1) {
+        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func, tdvs), grid(1, 1, 0) {
         this->select_cpu();
     }
 
@@ -93,7 +103,7 @@ class SimpleCPUExecutor : public SingleContextExecutor<TransFunc, TDVS> {
 
         cl::sycl::queue queue = this->new_queue();
         SimpleCPUGrid<Cell> in_grid = grid;
-        SimpleCPUGrid<Cell> out_grid(grid.get_grid_width(), grid.get_grid_height());
+        SimpleCPUGrid<Cell> out_grid = grid.make_similar();
 
         for (uindex_t i_generation = 0; i_generation < n_generations; i_generation++) {
             for (uindex_t i_subgeneration = 0; i_subgeneration < TransFunc::n_subgenerations;
@@ -146,7 +156,10 @@ class SimpleCPUExecutor : public SingleContextExecutor<TransFunc, TDVS> {
         this->inc_i_generation(n_generations);
     }
 
-    virtual void set_input(cl::sycl::buffer<Cell, 2> input_buffer) override { grid = input_buffer; }
+    virtual void set_input(cl::sycl::buffer<Cell, 2> input_buffer) override {
+        grid = SimpleCPUGrid<Cell>(input_buffer.get_range()[0], input_buffer.get_range()[1], 0);
+        grid.copy_from_buffer(input_buffer);
+    }
 
     virtual void copy_output(cl::sycl::buffer<Cell, 2> output_buffer) override {
         grid.copy_to_buffer(output_buffer);

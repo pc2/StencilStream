@@ -64,22 +64,24 @@ class TilingExecutor : public SingleContextExecutor<TransFunc, TDVS> {
      * \param trans_func An instance of the transition function type.
      */
     TilingExecutor(Cell halo_value, TransFunc trans_func)
-        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func),
-          input_grid(cl::sycl::buffer<Cell, 2>(cl::sycl::range<2>(0, 0))) {}
+        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func), input_grid(1, 1, 0) {}
 
     TilingExecutor(Cell halo_value, TransFunc trans_func, TDVS tdvs)
         : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func, tdvs),
-          input_grid(cl::sycl::buffer<Cell, 2>(cl::sycl::range<2>(0, 0))) {}
+          input_grid(1, 1, 0) {}
 
     void set_input(cl::sycl::buffer<Cell, 2> input_buffer) override {
-        this->input_grid = GridImpl(input_buffer);
+        input_grid = GridImpl(input_buffer.get_range()[0], input_buffer.get_range()[1], 0);
+        input_grid.copy_from_buffer(input_buffer);
     }
 
     void copy_output(cl::sycl::buffer<Cell, 2> output_buffer) override {
         input_grid.copy_to_buffer(output_buffer);
     }
 
-    UID get_grid_range() const override { return input_grid.get_grid_range(); }
+    UID get_grid_range() const override {
+        return UID(input_grid.get_grid_width(), input_grid.get_grid_height());
+    }
 
     void run(uindex_t n_generations) override {
         using in_pipe = cl::sycl::pipe<class tiling_in_pipe, Cell>;
@@ -94,11 +96,11 @@ class TilingExecutor : public SingleContextExecutor<TransFunc, TDVS> {
         cl::sycl::queue work_queue = this->new_queue();
 
         uindex_t target_i_generation = this->get_i_generation() + n_generations;
-        uindex_t grid_width = input_grid.get_grid_range().c;
-        uindex_t grid_height = input_grid.get_grid_range().r;
+        uindex_t grid_width = input_grid.get_grid_width();
+        uindex_t grid_height = input_grid.get_grid_height();
 
         while (this->get_i_generation() < target_i_generation) {
-            GridImpl output_grid = input_grid.make_output_grid();
+            GridImpl output_grid = input_grid.make_similar();
 
             uindex_t delta_n_generations = std::min(target_i_generation - this->get_i_generation(),
                                                     ExecutionKernelImpl::gens_per_pass);

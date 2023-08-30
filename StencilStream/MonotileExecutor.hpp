@@ -62,10 +62,10 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc, TDVS> {
      * \param trans_func An instance of the transition function type.
      */
     MonotileExecutor(Cell halo_value, TransFunc trans_func)
-        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func), grid(1, 1) {}
+        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func), grid(1, 1, 0) {}
 
     MonotileExecutor(Cell halo_value, TransFunc trans_func, TDVS tdvs)
-        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func, tdvs), grid(1, 1) {}
+        : SingleContextExecutor<TransFunc, TDVS>(halo_value, trans_func, tdvs), grid(1, 1, 0) {}
 
     /**
      * \brief Set the internal state of the grid.
@@ -79,14 +79,17 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc, TDVS> {
      * state.
      */
     void set_input(cl::sycl::buffer<Cell, 2> input_buffer) override {
-        grid = input_buffer;
+        grid = GridImpl(input_buffer.get_range()[0], input_buffer.get_range()[1], 0);
+        grid.copy_from_buffer(input_buffer);
     }
 
     void copy_output(cl::sycl::buffer<Cell, 2> output_buffer) override {
         grid.copy_to_buffer(output_buffer);
     }
 
-    UID get_grid_range() const override { return grid.get_grid_range(); }
+    UID get_grid_range() const override {
+        return UID(grid.get_grid_width(), grid.get_grid_height());
+    }
 
     void run(uindex_t n_generations) override {
         using in_pipe = cl::sycl::pipe<class monotile_in_pipe, Cell>;
@@ -105,7 +108,7 @@ class MonotileExecutor : public SingleContextExecutor<TransFunc, TDVS> {
         uindex_t grid_height = grid.get_grid_height();
 
         GridImpl read_buffer = grid;
-        GridImpl write_buffer = GridImpl(grid_width, grid_height);
+        GridImpl write_buffer = grid.make_similar();
 
         while (this->get_i_generation() < target_i_generation) {
             uindex_t delta_n_generations = std::min(target_i_generation - this->get_i_generation(),
