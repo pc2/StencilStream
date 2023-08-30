@@ -83,6 +83,12 @@ class TiledGrid {
         allocate_tiles();
     }
 
+    TiledGrid(cl::sycl::buffer<Cell, 2> input_buffer)
+        : tiles(), grid_width(input_buffer.get_range()[0]),
+          grid_height(input_buffer.get_range()[1]), i_generation(0) {
+        copy_from_buffer(input_buffer);
+    }
+
     void copy_from_buffer(cl::sycl::buffer<Cell, 2> input_buffer) {
         if (input_buffer.get_range() !=
             cl::sycl::range<2>(this->get_grid_width(), this->get_grid_height())) {
