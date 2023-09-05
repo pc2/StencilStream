@@ -21,8 +21,10 @@
 #include "../Helpers.hpp"
 #include "../Index.hpp"
 #include "../Padded.hpp"
+#include <bit>
 #include <optional>
 #include <stdexcept>
+#include <sycl/ext/intel/ac_types/ac_int.hpp>
 
 namespace stencil {
 namespace tiling {
@@ -56,13 +58,21 @@ class Tile {
     static constexpr uindex_t core_height = height - 2 * halo_radius;
     using IOWord = std::array<Padded<Cell>, word_length>;
 
-    /**
-     * \brief Create a new tile.
-     *
-     * Logically, the contents of the newly created tile are undefined since no memory resources are
-     * allocated during construction and no initialization is done by the indexing operation.
-     */
-    Tile() : part{std::nullopt} {}
+    static constexpr uindex_t max_n_cells =
+        std::max(halo_radius, width) * std::max(halo_radius, height);
+    static constexpr uindex_t max_n_words = n_cells_to_n_words(max_n_cells, word_length);
+
+    static constexpr unsigned long bits_cell = std::bit_width(word_length);
+    using index_cell_t = ac_int<bits_cell + 1, true>;
+    using uindex_cell_t = ac_int<bits_cell, false>;
+
+    static constexpr unsigned long bits_word = std::bit_width(max_n_words);
+    using index_word_t = ac_int<bits_word + 1, true>;
+    using uindex_word_t = ac_int<bits_word, false>;
+
+    static constexpr unsigned long bits_2d = std::bit_width(max_n_cells);
+    using index_2d_t = ac_int<bits_2d + 1, true>;
+    using uindex_2d_t = ac_int<bits_2d, false>;
 
     /**
      * \brief Enumeration to address individual parts of the tile.
@@ -78,6 +88,20 @@ class Tile {
         WEST_BORDER,
         CORE,
     };
+
+    static uindex_t get_part_words(Part part) {
+        UID range = get_part_range(part);
+        uindex_t n_cells = range.c * range.r;
+        return n_cells_to_n_words(n_cells, word_length);
+    }
+
+    /**
+     * \brief Create a new tile.
+     *
+     * Logically, the contents of the newly created tile are undefined since no memory resources are
+     * allocated during construction and no initialization is done by the indexing operation.
+     */
+    Tile() : part{std::nullopt} {}
 
     /**
      * \brief Array with all \ref Part variants to allow iteration over them.
@@ -145,24 +169,6 @@ class Tile {
             throw std::invalid_argument("Invalid grid tile part specified");
         }
     }
-
-    static constexpr uindex_t n_cells_to_n_words(uindex_t n_cells) {
-        return (n_cells / word_length) + (n_cells % word_length == 0 ? 0 : 1);
-    }
-
-    static uindex_t get_part_words(Part part) {
-        UID range = get_part_range(part);
-        uindex_t n_cells = range.c * range.r;
-        return n_cells_to_n_words(n_cells);
-    }
-
-    static constexpr uindex_t max_n_cells() {
-        uindex_t lhs = halo_radius >= width ? halo_radius : width;
-        uindex_t rhs = halo_radius >= height ? halo_radius : height;
-        return lhs * rhs;
-    }
-
-    static constexpr uindex_t max_n_words() { return n_cells_to_n_words(max_n_cells()); }
 
     /**
      * \brief Return the buffer with the contents of the given part.
@@ -273,6 +279,69 @@ class Tile {
         copy_part(accessor, Part::SOUTH_WEST_CORNER, offset, false);
         copy_part(accessor, Part::WEST_BORDER, offset, false);
         copy_part(accessor, Part::CORE, offset, false);
+    }
+
+    template <typename in_pipe>
+    void submit_read_part(cl::sycl::queue queue, Part part, uindex_t n_columns) {
+        if (n_columns == 0) {
+            return;
+        }
+
+        queue.submit([&](cl::sycl::handler &cgh) {
+            auto ac = operator[](part).template get_access<cl::sycl::access::mode::read>(cgh);
+            UID range = get_part_range(part);
+            uindex_2d_t n_cells = uindex_t(n_columns * range.r);
+
+            cgh.single_task([=]() {
+                [[intel::fpga_register]] IOWord cache;
+                uindex_word_t word_i = 0;
+                uindex_cell_t cell_i = word_length;
+
+                for (uindex_2d_t i = 0; i < n_cells; i++) {
+                    if (cell_i == uindex_cell_t(word_length)) {
+                        cache = ac[word_i.to_uint64()];
+                        word_i++;
+                        cell_i = 0;
+                    }
+                    in_pipe::write(cache[cell_i].value);
+                    cell_i++;
+                }
+            });
+        });
+    }
+
+    template <typename out_pipe>
+    void submit_write_part(cl::sycl::queue queue, Part part, uindex_t n_columns) {
+        if (n_columns == 0) {
+            return;
+        }
+
+        queue.submit([&](cl::sycl::handler &cgh) {
+            auto ac = operator[](part).template get_access<cl::sycl::access::mode::discard_write>(
+                cgh);
+            UID range = get_part_range(part);
+            uindex_2d_t n_cells = uindex_t(n_columns * range.r);
+
+            cgh.single_task([=]() {
+                [[intel::fpga_memory]] IOWord cache;
+                uindex_word_t word_i = 0;
+                uindex_cell_t cell_i = 0;
+
+                for (uindex_2d_t i = 0; i < n_cells; i++) {
+                    if (cell_i == uindex_cell_t(word_length)) {
+                        ac[word_i.to_uint64()] = cache;
+                        word_i++;
+                        cell_i = 0;
+                    }
+                    cache[cell_i].value = out_pipe::read();
+                    cell_i++;
+                }
+
+                if (cell_i != 0) {
+                    ac[word_i.to_uint64()] = cache;
+                }
+            });
+        });
     }
 
   private:

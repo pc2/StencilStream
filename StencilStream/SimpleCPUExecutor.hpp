@@ -18,7 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "Grid.hpp"
+#include "Concepts.hpp"
 #include "SingleContextExecutor.hpp"
 
 namespace stencil {

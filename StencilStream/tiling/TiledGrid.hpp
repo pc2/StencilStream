@@ -18,13 +18,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
+#include "../Concepts.hpp"
 #include "../GenericID.hpp"
-#include "../Grid.hpp"
 #include "Tile.hpp"
-#include <bit>
 #include <memory>
 #include <numeric>
-#include <sycl/ext/intel/ac_types/ac_int.hpp>
 #include <vector>
 
 namespace stencil {
@@ -55,18 +53,6 @@ class TiledGrid {
     static constexpr uindex_t core_width = tile_width - 2 * halo_radius;
 
     using Tile = Tile<Cell, tile_width, tile_height, halo_radius, word_size>;
-
-    static constexpr unsigned long bits_cell = std::bit_width(Tile::word_length);
-    using index_cell_t = ac_int<bits_cell + 1, true>;
-    using uindex_cell_t = ac_int<bits_cell, false>;
-
-    static constexpr unsigned long bits_word = std::bit_width(Tile::max_n_words());
-    using index_word_t = ac_int<bits_word + 1, true>;
-    using uindex_word_t = ac_int<bits_word, false>;
-
-    static constexpr unsigned long bits_2d = std::bit_width(Tile::max_n_cells());
-    using index_2d_t = ac_int<bits_2d + 1, true>;
-    using uindex_2d_t = ac_int<bits_2d, false>;
 
     /**
      * \brief Create a grid with undefined contents.
@@ -186,59 +172,84 @@ class TiledGrid {
 
         auto part_widths = get_part_widths(tile_c);
 
-        submit_read_part<feed_in_pipe_0>(queue, tile_c - 1, tile_r - 1,
-                                         Tile::Part::SOUTH_EAST_CORNER, part_widths[0]);
-        submit_read_part<feed_in_pipe_0>(queue, tile_c, tile_r - 1, Tile::Part::SOUTH_WEST_CORNER,
-                                         part_widths[1]);
-        submit_read_part<feed_in_pipe_0>(queue, tile_c, tile_r - 1, Tile::Part::SOUTH_BORDER,
-                                         part_widths[2]);
-        submit_read_part<feed_in_pipe_0>(queue, tile_c, tile_r - 1, Tile::Part::SOUTH_EAST_CORNER,
-                                         part_widths[3]);
-        submit_read_part<feed_in_pipe_0>(queue, tile_c + 1, tile_r - 1,
-                                         Tile::Part::SOUTH_WEST_CORNER, part_widths[4]);
+        get_tile(tile_c - 1, tile_r - 1)
+            .template submit_read_part<feed_in_pipe_0>(queue, Tile::Part::SOUTH_EAST_CORNER,
+                                                       part_widths[0]);
+        get_tile(tile_c, tile_r - 1)
+            .template submit_read_part<feed_in_pipe_0>(queue, Tile::Part::SOUTH_WEST_CORNER,
+                                                       part_widths[1]);
+        get_tile(tile_c, tile_r - 1)
+            .template submit_read_part<feed_in_pipe_0>(queue, Tile::Part::SOUTH_BORDER,
+                                                       part_widths[2]);
+        get_tile(tile_c, tile_r - 1)
+            .template submit_read_part<feed_in_pipe_0>(queue, Tile::Part::SOUTH_EAST_CORNER,
+                                                       part_widths[3]);
+        get_tile(tile_c + 1, tile_r - 1)
+            .template submit_read_part<feed_in_pipe_0>(queue, Tile::Part::SOUTH_WEST_CORNER,
+                                                       part_widths[4]);
 
-        submit_read_part<feed_in_pipe_1>(queue, tile_c - 1, tile_r, Tile::Part::NORTH_EAST_CORNER,
-                                         part_widths[0]);
-        submit_read_part<feed_in_pipe_1>(queue, tile_c, tile_r, Tile::Part::NORTH_WEST_CORNER,
-                                         part_widths[1]);
-        submit_read_part<feed_in_pipe_1>(queue, tile_c, tile_r, Tile::Part::NORTH_BORDER,
-                                         part_widths[2]);
-        submit_read_part<feed_in_pipe_1>(queue, tile_c, tile_r, Tile::Part::NORTH_EAST_CORNER,
-                                         part_widths[3]);
-        submit_read_part<feed_in_pipe_1>(queue, tile_c + 1, tile_r, Tile::Part::NORTH_WEST_CORNER,
-                                         part_widths[4]);
+        get_tile(tile_c - 1, tile_r)
+            .template submit_read_part<feed_in_pipe_1>(queue, Tile::Part::NORTH_EAST_CORNER,
+                                                       part_widths[0]);
+        get_tile(tile_c, tile_r)
+            .template submit_read_part<feed_in_pipe_1>(queue, Tile::Part::NORTH_WEST_CORNER,
+                                                       part_widths[1]);
+        get_tile(tile_c, tile_r)
+            .template submit_read_part<feed_in_pipe_1>(queue, Tile::Part::NORTH_BORDER,
+                                                       part_widths[2]);
+        get_tile(tile_c, tile_r)
+            .template submit_read_part<feed_in_pipe_1>(queue, Tile::Part::NORTH_EAST_CORNER,
+                                                       part_widths[3]);
+        get_tile(tile_c + 1, tile_r)
+            .template submit_read_part<feed_in_pipe_1>(queue, Tile::Part::NORTH_WEST_CORNER,
+                                                       part_widths[4]);
 
-        submit_read_part<feed_in_pipe_2>(queue, tile_c - 1, tile_r, Tile::Part::EAST_BORDER,
-                                         part_widths[0]);
-        submit_read_part<feed_in_pipe_2>(queue, tile_c, tile_r, Tile::Part::WEST_BORDER,
-                                         part_widths[1]);
-        submit_read_part<feed_in_pipe_2>(queue, tile_c, tile_r, Tile::Part::CORE, part_widths[2]);
-        submit_read_part<feed_in_pipe_2>(queue, tile_c, tile_r, Tile::Part::EAST_BORDER,
-                                         part_widths[3]);
-        submit_read_part<feed_in_pipe_2>(queue, tile_c + 1, tile_r, Tile::Part::WEST_BORDER,
-                                         part_widths[4]);
+        get_tile(tile_c - 1, tile_r)
+            .template submit_read_part<feed_in_pipe_2>(queue, Tile::Part::EAST_BORDER,
+                                                       part_widths[0]);
+        get_tile(tile_c, tile_r)
+            .template submit_read_part<feed_in_pipe_2>(queue, Tile::Part::WEST_BORDER,
+                                                       part_widths[1]);
+        get_tile(tile_c, tile_r)
+            .template submit_read_part<feed_in_pipe_2>(queue, Tile::Part::CORE, part_widths[2]);
+        get_tile(tile_c, tile_r)
+            .template submit_read_part<feed_in_pipe_2>(queue, Tile::Part::EAST_BORDER,
+                                                       part_widths[3]);
+        get_tile(tile_c + 1, tile_r)
+            .template submit_read_part<feed_in_pipe_2>(queue, Tile::Part::WEST_BORDER,
+                                                       part_widths[4]);
 
-        submit_read_part<feed_in_pipe_3>(queue, tile_c - 1, tile_r, Tile::Part::SOUTH_EAST_CORNER,
-                                         part_widths[0]);
-        submit_read_part<feed_in_pipe_3>(queue, tile_c, tile_r, Tile::Part::SOUTH_WEST_CORNER,
-                                         part_widths[1]);
-        submit_read_part<feed_in_pipe_3>(queue, tile_c, tile_r, Tile::Part::SOUTH_BORDER,
-                                         part_widths[2]);
-        submit_read_part<feed_in_pipe_3>(queue, tile_c, tile_r, Tile::Part::SOUTH_EAST_CORNER,
-                                         part_widths[3]);
-        submit_read_part<feed_in_pipe_3>(queue, tile_c + 1, tile_r, Tile::Part::SOUTH_WEST_CORNER,
-                                         part_widths[4]);
+        get_tile(tile_c - 1, tile_r)
+            .template submit_read_part<feed_in_pipe_3>(queue, Tile::Part::SOUTH_EAST_CORNER,
+                                                       part_widths[0]);
+        get_tile(tile_c, tile_r)
+            .template submit_read_part<feed_in_pipe_3>(queue, Tile::Part::SOUTH_WEST_CORNER,
+                                                       part_widths[1]);
+        get_tile(tile_c, tile_r)
+            .template submit_read_part<feed_in_pipe_3>(queue, Tile::Part::SOUTH_BORDER,
+                                                       part_widths[2]);
+        get_tile(tile_c, tile_r)
+            .template submit_read_part<feed_in_pipe_3>(queue, Tile::Part::SOUTH_EAST_CORNER,
+                                                       part_widths[3]);
+        get_tile(tile_c + 1, tile_r)
+            .template submit_read_part<feed_in_pipe_3>(queue, Tile::Part::SOUTH_WEST_CORNER,
+                                                       part_widths[4]);
 
-        submit_read_part<feed_in_pipe_4>(queue, tile_c - 1, tile_r + 1,
-                                         Tile::Part::NORTH_EAST_CORNER, part_widths[0]);
-        submit_read_part<feed_in_pipe_4>(queue, tile_c, tile_r + 1, Tile::Part::NORTH_WEST_CORNER,
-                                         part_widths[1]);
-        submit_read_part<feed_in_pipe_4>(queue, tile_c, tile_r + 1, Tile::Part::NORTH_BORDER,
-                                         part_widths[2]);
-        submit_read_part<feed_in_pipe_4>(queue, tile_c, tile_r + 1, Tile::Part::NORTH_EAST_CORNER,
-                                         part_widths[3]);
-        submit_read_part<feed_in_pipe_4>(queue, tile_c + 1, tile_r + 1,
-                                         Tile::Part::NORTH_WEST_CORNER, part_widths[4]);
+        get_tile(tile_c - 1, tile_r + 1)
+            .template submit_read_part<feed_in_pipe_4>(queue, Tile::Part::NORTH_EAST_CORNER,
+                                                       part_widths[0]);
+        get_tile(tile_c, tile_r + 1)
+            .template submit_read_part<feed_in_pipe_4>(queue, Tile::Part::NORTH_WEST_CORNER,
+                                                       part_widths[1]);
+        get_tile(tile_c, tile_r + 1)
+            .template submit_read_part<feed_in_pipe_4>(queue, Tile::Part::NORTH_BORDER,
+                                                       part_widths[2]);
+        get_tile(tile_c, tile_r + 1)
+            .template submit_read_part<feed_in_pipe_4>(queue, Tile::Part::NORTH_EAST_CORNER,
+                                                       part_widths[3]);
+        get_tile(tile_c + 1, tile_r + 1)
+            .template submit_read_part<feed_in_pipe_4>(queue, Tile::Part::NORTH_WEST_CORNER,
+                                                       part_widths[4]);
 
         queue.submit([&](cl::sycl::handler &cgh) {
             uindex_t n_inner_columns = part_widths[1] + part_widths[2] + part_widths[3];
@@ -311,25 +322,26 @@ class TiledGrid {
             });
         });
 
-        submit_write_part<feed_out_pipe_0>(queue, tile_c, tile_r, Tile::Part::NORTH_WEST_CORNER,
-                                           part_widths[1]);
-        submit_write_part<feed_out_pipe_0>(queue, tile_c, tile_r, Tile::Part::NORTH_BORDER,
-                                           part_widths[2]);
-        submit_write_part<feed_out_pipe_0>(queue, tile_c, tile_r, Tile::Part::NORTH_EAST_CORNER,
-                                           part_widths[3]);
+        Tile &tile = get_tile(tile_c, tile_r);
+        tile.template submit_write_part<feed_out_pipe_0>(queue, Tile::Part::NORTH_WEST_CORNER,
+                                                         part_widths[1]);
+        tile.template submit_write_part<feed_out_pipe_0>(queue, Tile::Part::NORTH_BORDER,
+                                                         part_widths[2]);
+        tile.template submit_write_part<feed_out_pipe_0>(queue, Tile::Part::NORTH_EAST_CORNER,
+                                                         part_widths[3]);
 
-        submit_write_part<feed_out_pipe_1>(queue, tile_c, tile_r, Tile::Part::WEST_BORDER,
-                                           part_widths[1]);
-        submit_write_part<feed_out_pipe_1>(queue, tile_c, tile_r, Tile::Part::CORE, part_widths[2]);
-        submit_write_part<feed_out_pipe_1>(queue, tile_c, tile_r, Tile::Part::EAST_BORDER,
-                                           part_widths[3]);
+        tile.template submit_write_part<feed_out_pipe_1>(queue, Tile::Part::WEST_BORDER,
+                                                         part_widths[1]);
+        tile.template submit_write_part<feed_out_pipe_1>(queue, Tile::Part::CORE, part_widths[2]);
+        tile.template submit_write_part<feed_out_pipe_1>(queue, Tile::Part::EAST_BORDER,
+                                                         part_widths[3]);
 
-        submit_write_part<feed_out_pipe_2>(queue, tile_c, tile_r, Tile::Part::SOUTH_WEST_CORNER,
-                                           part_widths[1]);
-        submit_write_part<feed_out_pipe_2>(queue, tile_c, tile_r, Tile::Part::SOUTH_BORDER,
-                                           part_widths[2]);
-        submit_write_part<feed_out_pipe_2>(queue, tile_c, tile_r, Tile::Part::SOUTH_EAST_CORNER,
-                                           part_widths[3]);
+        tile.template submit_write_part<feed_out_pipe_2>(queue, Tile::Part::SOUTH_WEST_CORNER,
+                                                         part_widths[1]);
+        tile.template submit_write_part<feed_out_pipe_2>(queue, Tile::Part::SOUTH_BORDER,
+                                                         part_widths[2]);
+        tile.template submit_write_part<feed_out_pipe_2>(queue, Tile::Part::SOUTH_EAST_CORNER,
+                                                         part_widths[3]);
     }
 
   private:
@@ -360,72 +372,6 @@ class TiledGrid {
         assert(part_widths[1] + part_widths[2] + part_widths[3] == n_inner_columns);
 
         return part_widths;
-    }
-
-    template <typename in_pipe>
-    void submit_read_part(cl::sycl::queue queue, index_t tile_c, index_t tile_r,
-                          typename Tile::Part part, uindex_t n_columns) {
-        if (n_columns == 0) {
-            return;
-        }
-
-        queue.submit([&](cl::sycl::handler &cgh) {
-            auto ac = this->get_tile(tile_c, tile_r)[part]
-                          .template get_access<cl::sycl::access::mode::read>(cgh);
-            UID range = Tile::get_part_range(part);
-            uindex_2d_t n_cells = uindex_t(n_columns * range.r);
-
-            cgh.single_task([=]() {
-                [[intel::fpga_register]] typename Tile::IOWord cache;
-                uindex_word_t word_i = 0;
-                uindex_cell_t cell_i = Tile::word_length;
-
-                for (uindex_2d_t i = 0; i < n_cells; i++) {
-                    if (cell_i == uindex_cell_t(Tile::word_length)) {
-                        cache = ac[word_i.to_uint64()];
-                        word_i++;
-                        cell_i = 0;
-                    }
-                    in_pipe::write(cache[cell_i].value);
-                    cell_i++;
-                }
-            });
-        });
-    }
-
-    template <typename out_pipe>
-    void submit_write_part(cl::sycl::queue queue, index_t tile_c, index_t tile_r,
-                           typename Tile::Part part, uindex_t n_columns) {
-        if (n_columns == 0) {
-            return;
-        }
-
-        queue.submit([&](cl::sycl::handler &cgh) {
-            auto ac = this->get_tile(tile_c, tile_r)[part]
-                          .template get_access<cl::sycl::access::mode::discard_write>(cgh);
-            UID range = Tile::get_part_range(part);
-            uindex_2d_t n_cells = uindex_t(n_columns * range.r);
-
-            cgh.single_task([=]() {
-                [[intel::fpga_memory]] typename Tile::IOWord cache;
-                uindex_word_t word_i = 0;
-                uindex_cell_t cell_i = 0;
-
-                for (uindex_2d_t i = 0; i < n_cells; i++) {
-                    if (cell_i == uindex_cell_t(Tile::word_length)) {
-                        ac[word_i.to_uint64()] = cache;
-                        word_i++;
-                        cell_i = 0;
-                    }
-                    cache[cell_i].value = out_pipe::read();
-                    cell_i++;
-                }
-
-                if (cell_i != 0) {
-                    ac[word_i.to_uint64()] = cache;
-                }
-            });
-        });
     }
 
     void allocate_tiles() {

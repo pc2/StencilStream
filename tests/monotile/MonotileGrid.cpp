@@ -18,7 +18,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "../constants.hpp"
-#include <StencilStream/Grid.hpp>
 #include <StencilStream/monotile/MonotileGrid.hpp>
 
 using namespace stencil;

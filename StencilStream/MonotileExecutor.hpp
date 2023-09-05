@@ -30,10 +30,6 @@
 
 namespace stencil {
 
-template <TransitionFunction TransFunc> class MonotileInputKernel;
-
-template <TransitionFunction TransFunc> class MonotileOutputKernel;
-
 template <TransitionFunction TransFunc, tdv::HostState TDVS, uindex_t n_processing_elements = 1,
           uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t word_size = 64>
 /**
