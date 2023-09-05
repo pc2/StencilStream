@@ -22,33 +22,27 @@
 #include "Stencil.hpp"
 
 #include <concepts>
+#include <type_traits>
 
 namespace stencil {
 
 template <typename T>
 concept TransitionFunction =
-    requires {
-        // cell type
-        requires std::semiregular<typename T::Cell>;
-    } &&
-    requires {
-        // stencil radius
-        requires std::same_as<decltype(T::stencil_radius), const uindex_t>;
-        requires(T::stencil_radius >= 1);
-    } &&
-    requires {
-        // number of subgenerations
-        requires std::same_as<decltype(T::n_subgenerations), const uindex_t>;
-    } &&
-    requires {
-        // time-dependent value
-        requires std::copyable<typename T::TimeDependentValue>;
-    } &&
+    // Cells must to be semiregular.
+    std::semiregular<typename T::Cell> &&
+    // Time-dependent values must be copyable.
+    std::copyable<typename T::TimeDependentValue> &&
+    // The stencil radius must be a constant greater than 1.
+    std::same_as<decltype(T::stencil_radius), const uindex_t> && (T::stencil_radius >= 1) &&
+    // The number of subgenerations must be a constant greater than 1.
+    std::same_as<decltype(T::n_subgenerations), const uindex_t> && (T::n_subgenerations >= 1) &&
+    // The transition function must be invocable. Its argument must be a stencil and its return
+    // value must be a cell.
     requires(T trans_func,
              Stencil<typename T::Cell, T::stencil_radius, typename T::TimeDependentValue> const
                  &stencil) {
         // update method
-        { trans_func(stencil) } -> std::convertible_to<typename T::Cell>;
+        { trans_func(stencil) } -> std::same_as<typename T::Cell>;
     };
 
 template <typename G, typename Cell>
