@@ -22,7 +22,6 @@ add_compile_definitions(STENCIL_INDEX_WIDTH=32)
 set(UNIT_TEST_SOURCES
     HostPipe.cpp
     Stencil.cpp
-    StencilExecutor.cpp
     TimeDependentValueSupplier.cpp
     monotile/ExecutionKernel.cpp
     monotile/MonotileGrid.cpp
