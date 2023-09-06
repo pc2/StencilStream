@@ -46,7 +46,7 @@ namespace tiling {
  */
 template <typename Cell, uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius,
           uindex_t word_size = 64>
-class TiledGrid {
+class Grid {
   public:
     static_assert(2 * halo_radius < tile_height && 2 * halo_radius < tile_width);
     static constexpr uindex_t core_height = tile_height - 2 * halo_radius;
@@ -64,12 +64,12 @@ class TiledGrid {
      * \param grid_width The number of columns of the grid.
      * \param grid_height The number of rows of the grid.
      */
-    TiledGrid(uindex_t grid_width, uindex_t grid_height)
+    Grid(uindex_t grid_width, uindex_t grid_height)
         : tiles(), grid_width(grid_width), grid_height(grid_height) {
         allocate_tiles();
     }
 
-    TiledGrid(cl::sycl::buffer<Cell, 2> input_buffer)
+    Grid(cl::sycl::buffer<Cell, 2> input_buffer)
         : tiles(), grid_width(input_buffer.get_range()[0]),
           grid_height(input_buffer.get_range()[1]) {
         copy_from_buffer(input_buffer);
@@ -123,7 +123,7 @@ class TiledGrid {
      *
      * \return The new grid.
      */
-    TiledGrid make_similar() const { return TiledGrid(grid_width, grid_height); }
+    Grid make_similar() const { return Grid(grid_width, grid_height); }
 
     uindex_t get_grid_width() const { return grid_width; }
 
@@ -133,7 +133,7 @@ class TiledGrid {
      * \brief Return the range of (central) tiles of the grid.
      *
      * This is not the range of a single tile nor is the range of the grid. It is the range of valid
-     * arguments for \ref TiledGrid.get_tile. For example, if the grid is 60 by 60 cells in size and
+     * arguments for \ref Grid.get_tile. For example, if the grid is 60 by 60 cells in size and
      * a tile is 32 by 32 cells in size, the tile range would be 2 by 2 tiles.
      *
      * \return The range of tiles of the grid.
@@ -148,7 +148,7 @@ class TiledGrid {
      * \param tile_id The id of the tile to return.
      * \return The tile.
      * \throws std::out_of_range Thrown if the tile id is outside the range of tiles, as returned by
-     * \ref TiledGrid.get_tile_range.
+     * \ref Grid.get_tile_range.
      */
     Tile &get_tile(index_t tile_c, index_t tile_r) { return tiles.at(tile_c + 1).at(tile_r + 1); }
 

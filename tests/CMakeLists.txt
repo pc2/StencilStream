@@ -24,9 +24,9 @@ set(UNIT_TEST_SOURCES
     Stencil.cpp
     TimeDependentValueSupplier.cpp
     monotile/ExecutionKernel.cpp
-    monotile/MonotileGrid.cpp
+    monotile/Grid.cpp
     tiling/ExecutionKernel.cpp
-    tiling/TiledGrid.cpp
+    tiling/Grid.cpp
     tiling/Tile.cpp
 )
 

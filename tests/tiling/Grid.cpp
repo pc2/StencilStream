@@ -20,7 +20,7 @@
 #include "../GridTest.hpp"
 #include "../constants.hpp"
 #include <CL/sycl.hpp>
-#include <StencilStream/tiling/TiledGrid.hpp>
+#include <StencilStream/tiling/Grid.hpp>
 #include <catch2/catch_all.hpp>
 #include <unordered_set>
 
@@ -32,24 +32,24 @@ using namespace std;
 const uindex_t add_grid_width = grid_width + 1;
 const uindex_t add_grid_height = grid_height + 1;
 
-using TestGrid = TiledGrid<ID, tile_width, tile_height, halo_radius>;
+using TestGrid = Grid<ID, tile_width, tile_height, halo_radius>;
 
 // Assert that the tiled grid fulfills the grid concept.
-static_assert(Grid<TestGrid, ID>);
+static_assert(concepts::Grid<TestGrid, ID>);
 
-TEST_CASE("TiledGrid::TiledGrid", "[TiledGrid]") {
+TEST_CASE("tiling::Grid::Grid", "[tiling::Grid]") {
     grid_test::test_constructors<TestGrid>(add_grid_width, add_grid_height);
 }
 
-TEST_CASE("TiledGrid::copy_{from|to}_buffer", "[TiledGrid]") {
+TEST_CASE("tiling::Grid::copy_{from|to}_buffer", "[tiling::Grid]") {
     grid_test::test_copy_from_to_buffer<TestGrid>(add_grid_width, add_grid_height);
 }
 
-TEST_CASE("TiledGrid::make_similar", "[TiledGrid]") {
+TEST_CASE("tiling::Grid::make_similar", "[tiling::Grid]") {
     grid_test::test_make_similar<TestGrid>(add_grid_width, add_grid_height);
 }
 
-TEST_CASE("TiledGrid::submit_read", "[TiledGrid]") {
+TEST_CASE("tiling::Grid::submit_read", "[tiling::Grid]") {
     buffer<ID, 2> in_buffer(range<2>(3 * tile_width, 3 * tile_height));
     {
         auto in_buffer_ac = in_buffer.get_access<access::mode::discard_write>();
@@ -90,7 +90,7 @@ TEST_CASE("TiledGrid::submit_read", "[TiledGrid]") {
     REQUIRE(result_ac[0]);
 }
 
-TEST_CASE("TiledGrid::submit_write", "[TiledGrid]") {
+TEST_CASE("tiling::Grid::submit_write", "[tiling::Grid]") {
     using out_pipe = cl::sycl::pipe<class tiled_grid_submit_write_test_id, ID>;
 
     cl::sycl::queue queue;

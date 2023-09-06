@@ -43,10 +43,11 @@ namespace tiling {
  * \tparam in_pipe The pipe to read from.
  * \tparam out_pipe The pipe to write to.
  */
-template <TransitionFunction TransFunc, tdv::KernelArgument TDVKernelArgument,
+template <concepts::TransitionFunction TransFunc, concepts::tdv::KernelArgument TDVKernelArgument,
           uindex_t n_processing_elements, uindex_t output_tile_width, uindex_t output_tile_height,
           typename in_pipe, typename out_pipe>
-requires(n_processing_elements % TransFunc::n_subgenerations == 0) class ExecutionKernel {
+    requires(n_processing_elements % TransFunc::n_subgenerations == 0)
+class ExecutionKernel {
   public:
     using Cell = typename TransFunc::Cell;
 
@@ -94,9 +95,10 @@ requires(n_processing_elements % TransFunc::n_subgenerations == 0) class Executi
     using index_2d_t = ac_int<bits_2d + 1, true>;
     using uindex_2d_t = ac_int<bits_2d, false>;
 
-    // bits_pes must not be 1 since modulo operations on ac_int<1, false> don't work with oneAPI 2022.2.
-    // If they work with a future version of oneAPI, this can be reverted.
-    static constexpr unsigned long bits_pes = std::max<int>(2, std::bit_width(n_processing_elements));
+    // bits_pes must not be 1 since modulo operations on ac_int<1, false> don't work with oneAPI
+    // 2022.2. If they work with a future version of oneAPI, this can be reverted.
+    static constexpr unsigned long bits_pes =
+        std::max<int>(2, std::bit_width(n_processing_elements));
     using index_pes_t = ac_int<bits_pes + 1, true>;
     using uindex_pes_t = ac_int<bits_pes, false>;
 

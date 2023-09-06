@@ -34,7 +34,7 @@ class NoneSupplier {
     void prepare_range(uindex_t i_generation, uindex_t n_generations) {}
 
     NoneSupplier build_kernel_argument(cl::sycl::handler &cgh, uindex_t i_generation,
-                                    uindex_t n_generation) const {
+                                       uindex_t n_generation) const {
         return NoneSupplier();
     }
 
@@ -43,7 +43,7 @@ class NoneSupplier {
     std::monostate get_value(uindex_t i) const { return std::monostate(); }
 };
 
-static_assert(HostState<NoneSupplier>);
+static_assert(concepts::tdv::HostState<NoneSupplier>);
 
 } // namespace tdv
 } // namespace stencil

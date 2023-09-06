@@ -24,7 +24,7 @@
 namespace stencil {
 namespace monotile {
 template <class Cell, uindex_t tile_width, uindex_t tile_height, uindex_t word_size>
-class MonotileGrid {
+class Grid {
   public:
     static constexpr uindex_t word_length =
         std::lcm(sizeof(Padded<Cell>), word_size) / sizeof(Padded<Cell>);
@@ -41,7 +41,7 @@ class MonotileGrid {
     using index_word_t = ac_int<bits_word + 1, true>;
     using uindex_word_t = ac_int<bits_word, false>;
 
-    MonotileGrid(uindex_t grid_width, uindex_t grid_height)
+    Grid(uindex_t grid_width, uindex_t grid_height)
         : tile_buffer(
               cl::sycl::range<1>(n_cells_to_n_words(grid_width * grid_height, word_length))),
           grid_width(grid_width), grid_height(grid_height) {
@@ -52,7 +52,7 @@ class MonotileGrid {
         }
     }
 
-    MonotileGrid(cl::sycl::buffer<Cell, 2> buffer)
+    Grid(cl::sycl::buffer<Cell, 2> buffer)
         : tile_buffer(1), grid_width(buffer.get_range()[0]), grid_height(buffer.get_range()[1]) {
         if (grid_width > tile_width || grid_height > tile_height) {
             throw std::range_error("The grid is bigger than the tile. The monotile architecture "
@@ -63,7 +63,7 @@ class MonotileGrid {
         copy_from_buffer(buffer);
     }
 
-    MonotileGrid make_similar() const { return MonotileGrid(grid_width, grid_height); }
+    Grid make_similar() const { return Grid(grid_width, grid_height); }
 
     uindex_t get_grid_width() const { return grid_width; }
 

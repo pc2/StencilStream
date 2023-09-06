@@ -26,7 +26,7 @@
 namespace stencil {
 namespace tdv {
 
-template <ValueFunction F, uindex_t max_n_generations> class HostPrecomputeSupplier {
+template <concepts::tdv::ValueFunction F, uindex_t max_n_generations> class HostPrecomputeSupplier {
   public:
     HostPrecomputeSupplier(F function)
         : function(function), generation_offset(0), value_buffer(cl::sycl::range<1>(1)) {
@@ -70,14 +70,14 @@ template <ValueFunction F, uindex_t max_n_generations> class HostPrecomputeSuppl
     }
 
     KernelArgument build_kernel_argument(cl::sycl::handler &cgh, uindex_t i_generation,
-                                   uindex_t n_generations) {
+                                         uindex_t n_generations) {
         assert(n_generations <= max_n_generations);
         assert(i_generation >= generation_offset);
         assert(i_generation + n_generations <= generation_offset + value_buffer.get_range()[0]);
 
-        return KernelArgument{.buffer_offset = i_generation - generation_offset,
-                           .ac =
-                               value_buffer.template get_access<cl::sycl::access::mode::read>(cgh)};
+        return KernelArgument{
+            .buffer_offset = i_generation - generation_offset,
+            .ac = value_buffer.template get_access<cl::sycl::access::mode::read>(cgh)};
     }
 
   private:

@@ -23,7 +23,7 @@
 namespace stencil {
 namespace tdv {
 
-template <ValueFunction F> class InlineSupplier {
+template <concepts::tdv::ValueFunction F> class InlineSupplier {
   public:
     struct KernelArgument {
         using LocalState = KernelArgument;
@@ -42,7 +42,7 @@ template <ValueFunction F> class InlineSupplier {
     void prepare_range(uindex_t i_generation, uindex_t n_generations) {}
 
     KernelArgument build_kernel_argument(cl::sycl::handler &cgh, uindex_t i_generation,
-                                   uindex_t n_generations) {
+                                         uindex_t n_generations) {
         return KernelArgument{.function = function, .i_generation = i_generation};
     }
 

@@ -47,7 +47,7 @@ namespace monotile {
  * \tparam in_pipe The pipe to read from.
  * \tparam out_pipe The pipe to write to.
  */
-template <TransitionFunction TransFunc, tdv::KernelArgument TDVKernelArgument,
+template <concepts::TransitionFunction TransFunc, concepts::tdv::KernelArgument TDVKernelArgument,
           uindex_t n_processing_elements, uindex_t tile_width, uindex_t tile_height,
           typename in_pipe, typename out_pipe>
     requires(TransFunc::stencil_radius <= std::min(tile_width, tile_height)) &&

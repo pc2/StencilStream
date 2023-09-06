@@ -28,7 +28,7 @@
 
 using namespace stencil;
 
-template <tdv::HostState TDVS, typename F> class TDVSTester {
+template <concepts::tdv::HostState TDVS, typename F> class TDVSTester {
   public:
     using KernelArgument = typename TDVS::KernelArgument;
     using LocalState = typename KernelArgument::LocalState;

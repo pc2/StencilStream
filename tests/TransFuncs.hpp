@@ -22,6 +22,7 @@
 #include <StencilStream/GenericID.hpp>
 #include <StencilStream/Index.hpp>
 #include <StencilStream/Stencil.hpp>
+#include <catch2/catch_all.hpp>
 
 enum class CellStatus {
     Normal,
@@ -45,8 +46,7 @@ struct GenerationFunction {
     stencil::uindex_t operator()(stencil::uindex_t i_generation) const { return i_generation; }
 };
 
-template <stencil::uindex_t radius>
-class FPGATransFunc {
+template <stencil::uindex_t radius> class FPGATransFunc {
   public:
     using Cell = Cell;
     using TimeDependentValue = stencil::uindex_t;

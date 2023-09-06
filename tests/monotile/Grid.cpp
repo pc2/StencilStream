@@ -19,31 +19,31 @@
  */
 #include "../GridTest.hpp"
 #include "../constants.hpp"
-#include <StencilStream/monotile/MonotileGrid.hpp>
+#include <StencilStream/monotile/Grid.hpp>
 
 using namespace stencil;
 using namespace stencil::monotile;
 using namespace cl::sycl;
 using namespace std;
 
-using TestGrid = MonotileGrid<ID, tile_width, tile_height, 64>;
+using TestGrid = Grid<ID, tile_width, tile_height, 64>;
 
 // Assert that the monotile grid fulfills the grid concept.
-static_assert(Grid<TestGrid, ID>);
+static_assert(concepts::Grid<TestGrid, ID>);
 
-TEST_CASE("MonotileGrid::MonotileGrid", "[MonotileGrid]") {
+TEST_CASE("monotile::Grid::Grid", "[monotile::Grid]") {
     grid_test::test_constructors<TestGrid>(tile_width, tile_height);
 }
 
-TEST_CASE("MonotileGrid::copy_{from|to}_buffer", "[MonotileGrid]") {
+TEST_CASE("monotile::Grid::copy_{from|to}_buffer", "[monotile::Grid]") {
     grid_test::test_copy_from_to_buffer<TestGrid>(tile_width, tile_height);
 }
 
-TEST_CASE("MonotileGrid::make_similar", "[MonotileGrid]") {
+TEST_CASE("monotile::Grid::make_similar", "[monotile::Grid]") {
     grid_test::test_make_similar<TestGrid>(tile_width, tile_height);
 }
 
-TEST_CASE("MonotileGrid::submit_read", "[MonotileGrid]") {
+TEST_CASE("monotile::Grid::submit_read", "[monotile::Grid]") {
     buffer<ID, 2> in_buffer = range<2>(tile_width, tile_height);
     buffer<ID, 2> out_buffer = range<2>(tile_width, tile_height);
     {
@@ -81,7 +81,7 @@ TEST_CASE("MonotileGrid::submit_read", "[MonotileGrid]") {
     }
 }
 
-TEST_CASE("MonotileGrid::submit_write", "[MonotileGrid]") {
+TEST_CASE("monotile::Grid::submit_write", "[monotile::Grid]") {
     using out_pipe = cl::sycl::pipe<class monotile_grid_submit_write_test_id, ID>;
 
     cl::sycl::queue queue;

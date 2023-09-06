@@ -25,7 +25,7 @@
 #include <type_traits>
 
 namespace stencil {
-
+namespace concepts {
 template <typename T>
 concept TransitionFunction =
     // Cells must to be semiregular.
@@ -90,4 +90,5 @@ concept HostState =
     };
 
 } // namespace tdv
+} // namespace concepts
 } // namespace stencil

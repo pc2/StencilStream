@@ -26,7 +26,8 @@
 namespace stencil {
 namespace tdv {
 
-template <ValueFunction F, uindex_t max_n_generations> class DevicePrecomputeSupplier {
+template <concepts::tdv::ValueFunction F, uindex_t max_n_generations>
+class DevicePrecomputeSupplier {
   public:
     DevicePrecomputeSupplier(F function) : function(function) {}
 

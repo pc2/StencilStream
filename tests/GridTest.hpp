@@ -24,7 +24,7 @@
 #include <catch2/catch_all.hpp>
 
 namespace grid_test {
-template <stencil::Grid<stencil::ID> G>
+template <stencil::concepts::Grid<stencil::ID> G>
 void test_constructors(stencil::uindex_t grid_width, stencil::uindex_t grid_height) {
     G grid(1, 1);
     REQUIRE(grid.get_grid_width() == 1);
@@ -65,7 +65,7 @@ void test_constructors(stencil::uindex_t grid_width, stencil::uindex_t grid_heig
     }
 }
 
-template <stencil::Grid<stencil::ID> G>
+template <stencil::concepts::Grid<stencil::ID> G>
 void test_copy_from_to_buffer(stencil::uindex_t grid_width, stencil::uindex_t grid_height) {
     cl::sycl::buffer<stencil::ID, 2> in_buffer = cl::sycl::range<2>(grid_width, grid_height);
     cl::sycl::buffer<stencil::ID, 2> out_buffer = cl::sycl::range<2>(grid_width, grid_height);
@@ -92,7 +92,7 @@ void test_copy_from_to_buffer(stencil::uindex_t grid_width, stencil::uindex_t gr
     }
 }
 
-template <stencil::Grid<stencil::ID> G>
+template <stencil::concepts::Grid<stencil::ID> G>
 void test_make_similar(stencil::uindex_t grid_width, stencil::uindex_t grid_height) {
     G grid(grid_width, grid_height);
     G similar_grid = grid.make_similar();

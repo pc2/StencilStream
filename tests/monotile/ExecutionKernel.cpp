@@ -17,15 +17,16 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <catch2/catch_all.hpp>
-#include <StencilStream/monotile/ExecutionKernel.hpp>
-#include <StencilStream/tdv/InlineSupplier.hpp>
-#include <StencilStream/tdv/NoneSupplier.hpp>
 #include "../HostPipe.hpp"
 #include "../TransFuncs.hpp"
 #include "../constants.hpp"
+#include <StencilStream/monotile/ExecutionKernel.hpp>
+#include <StencilStream/tdv/InlineSupplier.hpp>
+#include <StencilStream/tdv/NoneSupplier.hpp>
+#include <catch2/catch_all.hpp>
 
 using namespace stencil;
+using namespace stencil::monotile;
 using namespace std;
 using namespace cl::sycl;
 
@@ -34,9 +35,8 @@ void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t ta
     using in_pipe = HostPipe<class MonotileExecutionKernelInPipeID, Cell>;
     using out_pipe = HostPipe<class MonotileExecutionKernelOutPipeID, Cell>;
     using KernelArgument = tdv::InlineSupplier<GenerationFunction>::KernelArgument;
-    using TestExecutionKernel =
-        monotile::ExecutionKernel<TransFunc, KernelArgument, n_processing_elements, tile_width,
-                                  tile_height, in_pipe, out_pipe>;
+    using TestExecutionKernel = ExecutionKernel<TransFunc, KernelArgument, n_processing_elements,
+                                                tile_width, tile_height, in_pipe, out_pipe>;
 
     for (uindex_t c = 0; c < grid_width; c++) {
         for (uindex_t r = 0; r < grid_height; r++) {
@@ -107,7 +107,7 @@ TEST_CASE("monotile::ExecutionKernel: Incomplete Pipeline with i_generation != 0
     using in_pipe = HostPipe<class IncompletePipelineInPipeID, uint8_t>;
     using out_pipe = HostPipe<class IncompletePipelineOutPipeID, uint8_t>;
     using TestExecutionKernel =
-        monotile::ExecutionKernel<IncompletePipelineKernel, tdv::NoneSupplier, 16, 64, 64, in_pipe, out_pipe>;
+        ExecutionKernel<IncompletePipelineKernel, tdv::NoneSupplier, 16, 64, 64, in_pipe, out_pipe>;
 
     for (int c = 0; c < 64; c++) {
         for (int r = 0; r < 64; r++) {
@@ -115,7 +115,7 @@ TEST_CASE("monotile::ExecutionKernel: Incomplete Pipeline with i_generation != 0
         }
     }
 
-    TestExecutionKernel kernel(IncompletePipelineKernel(), 16, 20, 64, 64, 0, tdv::NoneSupplier {});
+    TestExecutionKernel kernel(IncompletePipelineKernel(), 16, 20, 64, 64, 0, tdv::NoneSupplier{});
     kernel.operator()();
 
     REQUIRE(in_pipe::empty());
