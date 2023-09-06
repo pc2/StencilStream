@@ -17,6 +17,7 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "../GridTest.hpp"
 #include "../constants.hpp"
 #include <CL/sycl.hpp>
 #include <StencilStream/tiling/TiledGrid.hpp>
@@ -36,50 +37,19 @@ using TestGrid = TiledGrid<ID, tile_width, tile_height, halo_radius>;
 // Assert that the tiled grid fulfills the grid concept.
 static_assert(Grid<TestGrid, ID>);
 
-TEST_CASE("TiledGrid::TiledGrid(uindex_t, uindex_t, uindex_t)", "[TiledGrid]") {
-    TestGrid grid(add_grid_width, add_grid_height, 42);
-
-    GenericID<uindex_t> tile_range = grid.get_tile_range();
-    REQUIRE(tile_range.c == add_grid_width / tile_width + 1);
-    REQUIRE(tile_range.r == add_grid_height / tile_height + 1);
-    REQUIRE(grid.get_i_generation() == 42);
+TEST_CASE("TiledGrid::TiledGrid", "[TiledGrid]") {
+    grid_test::test_constructors<TestGrid>(add_grid_width, add_grid_height);
 }
 
-TEST_CASE("TiledGrid::copy_{from|to}_buffer(cl::sycl::buffer<Cell, 2>)", "[TiledGrid]") {
-    buffer<ID, 2> in_buffer(range<2>(add_grid_width, add_grid_height));
-    buffer<ID, 2> out_buffer(range<2>(add_grid_width, add_grid_height));
-    {
-        auto in_buffer_ac = in_buffer.get_access<access::mode::discard_write>();
-        for (uindex_t c = 0; c < add_grid_width; c++) {
-            for (uindex_t r = 0; r < add_grid_height; r++) {
-                in_buffer_ac[c][r] = ID(c, r);
-            }
-        }
-    }
-
-    TestGrid grid(add_grid_width, add_grid_height, 0);
-    grid.copy_from_buffer(in_buffer);
-    grid.copy_to_buffer(out_buffer);
-
-    {
-        auto out_buffer_ac = out_buffer.get_access<access::mode::read>();
-        for (uindex_t c = 0; c < add_grid_width; c++) {
-            for (uindex_t r = 0; r < add_grid_height; r++) {
-                REQUIRE(out_buffer_ac[c][r] == ID(c, r));
-            }
-        }
-    }
+TEST_CASE("TiledGrid::copy_{from|to}_buffer", "[TiledGrid]") {
+    grid_test::test_copy_from_to_buffer<TestGrid>(add_grid_width, add_grid_height);
 }
 
-TEST_CASE("TiledGrid::make_similar()", "[TiledGrid]") {
-    TestGrid grid(add_grid_width, add_grid_height, 42);
-    TestGrid similar_grid = grid.make_similar();
-    REQUIRE(similar_grid.get_grid_width() == add_grid_width);
-    REQUIRE(similar_grid.get_grid_height() == add_grid_height);
-    REQUIRE(similar_grid.get_i_generation() == 42);
+TEST_CASE("TiledGrid::make_similar", "[TiledGrid]") {
+    grid_test::test_make_similar<TestGrid>(add_grid_width, add_grid_height);
 }
 
-TEST_CASE("TiledGrid::submit_read(cl::sycl::queue, index_t, index_t)", "[TiledGrid]") {
+TEST_CASE("TiledGrid::submit_read", "[TiledGrid]") {
     buffer<ID, 2> in_buffer(range<2>(3 * tile_width, 3 * tile_height));
     {
         auto in_buffer_ac = in_buffer.get_access<access::mode::discard_write>();
@@ -104,7 +74,7 @@ TEST_CASE("TiledGrid::submit_read(cl::sycl::queue, index_t, index_t)", "[TiledGr
         uindex_t r_start = tile_height - halo_radius;
         uindex_t r_end = 2 * tile_height + halo_radius;
 
-        cgh.single_task([=]() {
+        cgh.single_task<class tiled_grid_submit_read_test_kernel>([=]() {
             bool correct_input = true;
             for (uindex_t c = c_start; c < c_end; c++) {
                 for (uindex_t r = r_start; r < r_end; r++) {
@@ -120,12 +90,12 @@ TEST_CASE("TiledGrid::submit_read(cl::sycl::queue, index_t, index_t)", "[TiledGr
     REQUIRE(result_ac[0]);
 }
 
-TEST_CASE("TiledGrid::submit_write(cl::sycl::queue, index_t index_t)", "[TiledGrid]") {
+TEST_CASE("TiledGrid::submit_write", "[TiledGrid]") {
     using out_pipe = cl::sycl::pipe<class tiled_grid_submit_write_test_id, ID>;
 
     cl::sycl::queue queue;
     queue.submit([&](cl::sycl::handler &cgh) {
-        cgh.single_task([=]() {
+        cgh.single_task<class tiled_grid_submit_write_test_kernel>([=]() {
             for (uindex_t c = tile_width; c < 2 * tile_width; c++) {
                 for (uindex_t r = tile_height; r < 2 * tile_height; r++) {
                     out_pipe::write(ID(c, r));
@@ -134,7 +104,7 @@ TEST_CASE("TiledGrid::submit_write(cl::sycl::queue, index_t index_t)", "[TiledGr
         });
     });
 
-    TestGrid grid(3 * tile_width, 3 * tile_height, 0);
+    TestGrid grid(3 * tile_width, 3 * tile_height);
     grid.template submit_write<out_pipe>(queue, 1, 1);
 
     cl::sycl::buffer<ID, 2> out_buffer = cl::sycl::range<2>(3 * tile_width, 3 * tile_height);

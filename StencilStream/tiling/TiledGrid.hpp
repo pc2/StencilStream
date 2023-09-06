@@ -64,14 +64,14 @@ class TiledGrid {
      * \param grid_width The number of columns of the grid.
      * \param grid_height The number of rows of the grid.
      */
-    TiledGrid(uindex_t grid_width, uindex_t grid_height, uindex_t i_generation)
-        : tiles(), grid_width(grid_width), grid_height(grid_height), i_generation(i_generation) {
+    TiledGrid(uindex_t grid_width, uindex_t grid_height)
+        : tiles(), grid_width(grid_width), grid_height(grid_height) {
         allocate_tiles();
     }
 
     TiledGrid(cl::sycl::buffer<Cell, 2> input_buffer)
         : tiles(), grid_width(input_buffer.get_range()[0]),
-          grid_height(input_buffer.get_range()[1]), i_generation(0) {
+          grid_height(input_buffer.get_range()[1]) {
         copy_from_buffer(input_buffer);
     }
 
@@ -123,17 +123,11 @@ class TiledGrid {
      *
      * \return The new grid.
      */
-    TiledGrid make_similar() const { return TiledGrid(grid_width, grid_height, i_generation); }
+    TiledGrid make_similar() const { return TiledGrid(grid_width, grid_height); }
 
     uindex_t get_grid_width() const { return grid_width; }
 
     uindex_t get_grid_height() const { return grid_height; }
-
-    uindex_t get_i_generation() const { return i_generation; }
-
-    void set_i_generation(uindex_t new_i_generation) { i_generation = new_i_generation; }
-
-    void inc_i_generation(uindex_t delta_i_generation) { i_generation += delta_i_generation; }
 
     /**
      * \brief Return the range of (central) tiles of the grid.
@@ -398,7 +392,7 @@ class TiledGrid {
     }
 
     std::vector<std::vector<Tile>> tiles;
-    uindex_t grid_width, grid_height, i_generation;
+    uindex_t grid_width, grid_height;
 };
 
 } // namespace tiling

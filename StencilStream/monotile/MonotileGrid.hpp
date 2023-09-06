@@ -41,10 +41,10 @@ class MonotileGrid {
     using index_word_t = ac_int<bits_word + 1, true>;
     using uindex_word_t = ac_int<bits_word, false>;
 
-    MonotileGrid(uindex_t grid_width, uindex_t grid_height, uindex_t i_generation)
+    MonotileGrid(uindex_t grid_width, uindex_t grid_height)
         : tile_buffer(
               cl::sycl::range<1>(n_cells_to_n_words(grid_width * grid_height, word_length))),
-          grid_width(grid_width), grid_height(grid_height), i_generation(i_generation) {
+          grid_width(grid_width), grid_height(grid_height) {
         if (grid_width > tile_width || grid_height > tile_height) {
             throw std::range_error("The grid is bigger than the tile. The monotile architecture "
                                    "requires that grid ranges are smaller or equal to the tile "
@@ -52,19 +52,22 @@ class MonotileGrid {
         }
     }
 
-    MonotileGrid make_similar() const {
-        return MonotileGrid(grid_width, grid_height, i_generation);
+    MonotileGrid(cl::sycl::buffer<Cell, 2> buffer)
+        : tile_buffer(1), grid_width(buffer.get_range()[0]), grid_height(buffer.get_range()[1]) {
+        if (grid_width > tile_width || grid_height > tile_height) {
+            throw std::range_error("The grid is bigger than the tile. The monotile architecture "
+                                   "requires that grid ranges are smaller or equal to the tile "
+                                   "range");
+        }
+        tile_buffer = cl::sycl::range<1>(n_cells_to_n_words(grid_width * grid_height, word_length));
+        copy_from_buffer(buffer);
     }
+
+    MonotileGrid make_similar() const { return MonotileGrid(grid_width, grid_height); }
 
     uindex_t get_grid_width() const { return grid_width; }
 
     uindex_t get_grid_height() const { return grid_height; }
-
-    uindex_t get_i_generation() const { return i_generation; }
-
-    void set_i_generation(uindex_t new_i_generation) { i_generation = new_i_generation; }
-
-    void inc_i_generation(uindex_t delta_i_generation) { i_generation += delta_i_generation; }
 
     void copy_from_buffer(cl::sycl::buffer<Cell, 2> input_buffer) {
         uindex_t width = this->get_grid_width();
@@ -156,7 +159,7 @@ class MonotileGrid {
 
   private:
     cl::sycl::buffer<IOWord, 1> tile_buffer;
-    uindex_t grid_width, grid_height, i_generation;
+    uindex_t grid_width, grid_height;
 };
 } // namespace monotile
 } // namespace stencil

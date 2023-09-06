@@ -46,14 +46,13 @@ concept TransitionFunction =
     };
 
 template <typename G, typename Cell>
-concept Grid = requires(G grid, cl::sycl::buffer<Cell, 2> buffer, uindex_t i) {
+concept Grid = requires(G grid, cl::sycl::buffer<Cell, 2> buffer, uindex_t c, uindex_t r) {
+    { G(c, r) } -> std::same_as<G>;
+    { G(buffer) } -> std::same_as<G>;
     { grid.copy_from_buffer(buffer) } -> std::same_as<void>;
     { grid.copy_to_buffer(buffer) } -> std::same_as<void>;
     { grid.get_grid_width() } -> std::convertible_to<uindex_t>;
     { grid.get_grid_height() } -> std::convertible_to<uindex_t>;
-    { grid.get_i_generation() } -> std::convertible_to<uindex_t>;
-    { grid.set_i_generation(i) } -> std::same_as<void>;
-    { grid.inc_i_generation(i) } -> std::same_as<void>;
     { grid.make_similar() } -> std::same_as<G>;
 };
 
