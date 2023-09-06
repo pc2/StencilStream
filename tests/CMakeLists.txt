@@ -23,9 +23,10 @@ set(UNIT_TEST_SOURCES
     HostPipe.cpp
     Stencil.cpp
     TimeDependentValueSupplier.cpp
-    monotile/ExecutionKernel.cpp
+    #monotile/ExecutionKernel.cpp
     monotile/Grid.cpp
-    tiling/ExecutionKernel.cpp
+    monotile/StencilUpdate.cpp
+    #tiling/ExecutionKernel.cpp
     tiling/Grid.cpp
     tiling/Tile.cpp
 )
