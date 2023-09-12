@@ -51,34 +51,28 @@ struct ConwayKernel {
 };
 
 stencil::monotile::Grid<bool> read(stencil::uindex_t width, stencil::uindex_t height) {
-    cl::sycl::buffer<bool, 2> input_buffer(cl::sycl::range<2>(width, height));
+    stencil::monotile::Grid<bool> input_grid(width, height);
     {
-        auto buffer_ac = input_buffer.get_access<cl::sycl::access::mode::write>();
+        auto grid_ac = input_grid.get_access<cl::sycl::access::mode::discard_write>();
 
         for (stencil::uindex_t r = 0; r < height; r++) {
             for (stencil::uindex_t c = 0; c < width; c++) {
                 char Cell;
                 std::cin >> Cell;
                 assert(Cell == 'X' || Cell == '.');
-                buffer_ac[c][r] = Cell == 'X';
+                grid_ac.set(c, r, Cell == 'X');
             }
         }
     }
-    return stencil::monotile::Grid<bool>(input_buffer);
+    return input_grid;
 }
 
 void write(stencil::monotile::Grid<bool> output_grid) {
-    cl::sycl::buffer<bool, 2> output_buffer(
-        cl::sycl::range<2>(output_grid.get_grid_width(), output_grid.get_grid_height()));
-    output_grid.copy_to_buffer(output_buffer);
-    auto buffer_ac = output_buffer.get_access<cl::sycl::access::mode::read>();
+    auto grid_ac = output_grid.get_access<cl::sycl::access::mode::read>();
 
-    stencil::uindex_t width = output_buffer.get_range()[0];
-    stencil::uindex_t height = output_buffer.get_range()[1];
-
-    for (stencil::uindex_t r = 0; r < height; r++) {
-        for (stencil::uindex_t c = 0; c < width; c++) {
-            if (buffer_ac[c][r]) {
+    for (stencil::uindex_t r = 0; r < output_grid.get_grid_height(); r++) {
+        for (stencil::uindex_t c = 0; c < output_grid.get_grid_width(); c++) {
+            if (grid_ac.get(c, r)) {
                 std::cout << "X";
             } else {
                 std::cout << ".";

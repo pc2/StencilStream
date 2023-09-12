@@ -44,23 +44,22 @@ TEST_CASE("monotile::Grid::make_similar", "[monotile::Grid]") {
 }
 
 TEST_CASE("monotile::Grid::submit_read", "[monotile::Grid]") {
-    buffer<ID, 2> in_buffer = range<2>(tile_width, tile_height);
-    buffer<ID, 2> out_buffer = range<2>(tile_width, tile_height);
+    TestGrid in_grid(tile_width, tile_height);
     {
-        auto in_buffer_ac = in_buffer.get_access<cl::sycl::access::mode::discard_write>();
-        for (stencil::index_t c = 0; c < tile_width; c++) {
-            for (stencil::index_t r = 0; r < tile_height; r++) {
-                in_buffer_ac[c][r] = stencil::ID(c, r);
+        auto in_grid_ac = in_grid.get_access<cl::sycl::access::mode::discard_write>();
+        for (stencil::uindex_t c = 0; c < tile_width; c++) {
+            for (stencil::uindex_t r = 0; r < tile_height; r++) {
+                in_grid_ac.set(c, r, ID(c, r));
             }
         }
     }
 
     cl::sycl::queue queue;
 
-    TestGrid grid = in_buffer;
     using in_pipe = cl::sycl::pipe<class monotile_grid_submit_read_test_id, ID>;
-    grid.template submit_read<in_pipe>(queue);
+    in_grid.template submit_read<in_pipe>(queue);
 
+    buffer<ID, 2> out_buffer = range<2>(tile_width, tile_height);
     queue.submit([&](handler &cgh) {
         auto out_ac = out_buffer.get_access<access::mode::discard_write>(cgh);
 
@@ -98,13 +97,10 @@ TEST_CASE("monotile::Grid::submit_write", "[monotile::Grid]") {
     TestGrid grid(tile_width, tile_height);
     grid.template submit_write<out_pipe>(queue);
 
-    cl::sycl::buffer<ID, 2> out_buffer = cl::sycl::range<2>(tile_width, tile_height);
-    grid.copy_to_buffer(out_buffer);
-
-    auto out_ac = out_buffer.get_access<cl::sycl::access::mode::read>();
+    auto out_ac = grid.get_access<cl::sycl::access::mode::read>();
     for (uindex_t c = 0; c < tile_width; c++) {
         for (uindex_t r = 0; r < tile_height; r++) {
-            REQUIRE(out_ac[c][r] == ID(c, r));
+            REQUIRE(out_ac.get(c, r) == ID(c, r));
         }
     }
 }
