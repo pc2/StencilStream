@@ -28,6 +28,7 @@ set(UNIT_TEST_SOURCES
     monotile/StencilUpdate.cpp
     #tiling/ExecutionKernel.cpp
     tiling/Grid.cpp
+    tiling/StencilUpdate.cpp
     tiling/Tile.cpp
 )
 
