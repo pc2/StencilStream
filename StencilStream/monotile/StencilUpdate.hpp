@@ -32,18 +32,14 @@ class StencilUpdate {
     using Cell = F::Cell;
     using GridImpl = Grid<Cell, tile_width, tile_height, word_size>;
 
-    StencilUpdate(F transition_function, Cell halo_value)
-        : transition_function(transition_function), n_generations(1), halo_value(halo_value) {}
+    struct Params {
+        F transition_function;
+        Cell halo_value = Cell();
+        uindex_t n_generations = 1;
+        cl::sycl::queue queue = cl::sycl::queue();
+    };
 
-    F &get_transition_function() { return transition_function; }
-
-    void set_transition_function(F transition_function) {
-        this->transition_function = transition_function;
-    }
-
-    uindex_t get_n_generations() { return n_generations; }
-
-    void set_n_generations(uindex_t n_generations) { this->n_generations = n_generations; }
+    StencilUpdate(Params params) : params(params) {}
 
     GridImpl operator()(GridImpl &source_grid) {
         using in_pipe = cl::sycl::pipe<class monotile_in_pipe, Cell>;
@@ -54,21 +50,20 @@ class StencilUpdate {
         GridImpl swap_grid_a = source_grid.make_similar();
         GridImpl swap_grid_b = source_grid.make_similar();
 
-        cl::sycl::queue queue;
-
         uindex_t gens_per_pass = ExecutionKernelImpl::gens_per_pass;
         GridImpl &pass_source = source_grid;
         GridImpl &pass_target = swap_grid_b;
 
-        for (uindex_t i_gen = 0; i_gen < n_generations; i_gen += gens_per_pass) {
-            pass_source.template submit_read<in_pipe>(queue);
-            queue.submit([&](cl::sycl::handler &cgh) {
-                ExecutionKernelImpl exec_kernel(
-                    transition_function, i_gen, n_generations, source_grid.get_grid_width(),
-                    source_grid.get_grid_height(), halo_value, tdv::NoneSupplier());
+        for (uindex_t i_gen = 0; i_gen < params.n_generations; i_gen += gens_per_pass) {
+            pass_source.template submit_read<in_pipe>(params.queue);
+            params.queue.submit([&](cl::sycl::handler &cgh) {
+                ExecutionKernelImpl exec_kernel(params.transition_function, i_gen,
+                                                params.n_generations, source_grid.get_grid_width(),
+                                                source_grid.get_grid_height(), params.halo_value,
+                                                tdv::NoneSupplier());
                 cgh.single_task<ExecutionKernelImpl>(exec_kernel);
             });
-            pass_target.template submit_write<out_pipe>(queue);
+            pass_target.template submit_write<out_pipe>(params.queue);
 
             if (i_gen == 0) {
                 pass_source = swap_grid_b;
@@ -82,9 +77,7 @@ class StencilUpdate {
     }
 
   private:
-    F transition_function;
-    uindex_t n_generations;
-    Cell halo_value;
+    Params params;
 };
 
 } // namespace monotile

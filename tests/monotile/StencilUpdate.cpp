@@ -42,8 +42,11 @@ void test_monotile_stencil_update(uindex_t grid_width, uindex_t grid_height,
     }
     GridImpl input_grid = input_buffer;
 
-    StencilUpdateImpl update(FPGATransFunc<1>(), Cell::halo());
-    update.set_n_generations(n_generations);
+    StencilUpdateImpl update({
+        .transition_function = FPGATransFunc<1>(),
+        .halo_value = Cell::halo(),
+        .n_generations = n_generations,
+    });
 
     GridImpl output_grid = update(input_grid);
 

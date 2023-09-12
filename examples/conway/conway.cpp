@@ -17,14 +17,14 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <StencilStream/SimpleCPUExecutor.hpp>
-#include <StencilStream/TilingExecutor.hpp>
+#include <StencilStream/monotile/Grid.hpp>
+#include <StencilStream/monotile/StencilUpdate.hpp>
 #include <StencilStream/tdv/NoneSupplier.hpp>
 
 struct ConwayKernel {
     using Cell = bool;
     using TimeDependentValue = std::monostate;
-    
+
     static constexpr stencil::uindex_t stencil_radius = 1;
     static constexpr stencil::uindex_t n_subgenerations = 1;
 
@@ -50,23 +50,27 @@ struct ConwayKernel {
     }
 };
 
-cl::sycl::buffer<bool, 2> read(stencil::uindex_t width, stencil::uindex_t height) {
+stencil::monotile::Grid<bool> read(stencil::uindex_t width, stencil::uindex_t height) {
     cl::sycl::buffer<bool, 2> input_buffer(cl::sycl::range<2>(width, height));
-    auto buffer_ac = input_buffer.get_access<cl::sycl::access::mode::write>();
+    {
+        auto buffer_ac = input_buffer.get_access<cl::sycl::access::mode::write>();
 
-    for (stencil::uindex_t r = 0; r < height; r++) {
-        for (stencil::uindex_t c = 0; c < width; c++) {
-            char Cell;
-            std::cin >> Cell;
-            assert(Cell == 'X' || Cell == '.');
-            buffer_ac[c][r] = Cell == 'X';
+        for (stencil::uindex_t r = 0; r < height; r++) {
+            for (stencil::uindex_t c = 0; c < width; c++) {
+                char Cell;
+                std::cin >> Cell;
+                assert(Cell == 'X' || Cell == '.');
+                buffer_ac[c][r] = Cell == 'X';
+            }
         }
     }
-
-    return input_buffer;
+    return stencil::monotile::Grid<bool>(input_buffer);
 }
 
-void write(cl::sycl::buffer<bool, 2> output_buffer) {
+void write(stencil::monotile::Grid<bool> output_grid) {
+    cl::sycl::buffer<bool, 2> output_buffer(
+        cl::sycl::range<2>(output_grid.get_grid_width(), output_grid.get_grid_height()));
+    output_grid.copy_to_buffer(output_buffer);
     auto buffer_ac = output_buffer.get_access<cl::sycl::access::mode::read>();
 
     stencil::uindex_t width = output_buffer.get_range()[0];
@@ -94,31 +98,15 @@ int main(int argc, char **argv) {
     stencil::uindex_t height = std::stoi(argv[2]);
     stencil::uindex_t n_generations = std::stoi(argv[3]);
 
-    cl::sycl::buffer<bool, 2> grid_buffer = read(width, height);
+    stencil::monotile::Grid<bool> grid = read(width, height);
 
-#ifdef CPU
-    using Executor = stencil::SimpleCPUExecutor<ConwayKernel, stencil::tdv::NoneSupplier>;
-#else
-    using Executor = stencil::TilingExecutor<ConwayKernel, stencil::tdv::NoneSupplier>;
-#endif
+    stencil::monotile::StencilUpdate<ConwayKernel> update({
+        .transition_function = ConwayKernel(),
+        .n_generations = n_generations,
+    });
+    grid = update(grid);
 
-    Executor executor(false, ConwayKernel());
-
-#ifdef HARDWARE
-    executor.select_fpga();
-#endif
-#ifdef EMULATOR
-    executor.select_emulator();
-#endif
-#ifdef CPU
-    executor.select_cpu();
-#endif
-
-    executor.set_input(grid_buffer);
-    executor.run(n_generations);
-
-    executor.copy_output(grid_buffer);
-    write(grid_buffer);
+    write(grid);
 
     return 0;
 }
