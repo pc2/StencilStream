@@ -24,6 +24,7 @@ set(UNIT_TEST_SOURCES
     Stencil.cpp
     TimeDependentValueSupplier.cpp
     cpu/Grid.cpp
+    cpu/StencilUpdate.cpp
     #monotile/ExecutionKernel.cpp
     monotile/Grid.cpp
     monotile/StencilUpdate.cpp
