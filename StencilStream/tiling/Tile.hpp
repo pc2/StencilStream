@@ -319,63 +319,70 @@ class Tile {
     }
 
     template <typename in_pipe>
-    void submit_read_part(cl::sycl::queue queue, Part part, uindex_t n_columns) {
-        if (n_columns == 0) {
+    void submit_read_part(cl::sycl::queue queue, Part part, uindex_t n_columns, uindex_t n_rows,
+                          uindex_t c_offset, uindex_t r_offset) {
+        if (n_columns == 0 || n_rows == 0) {
             return;
         }
 
+        UID range = get_part_range(part);
+        assert(c_offset <= range.c && r_offset <= range.r);
+        assert(c_offset + n_columns <= range.c && r_offset + n_rows <= range.r);
+
         queue.submit([&](cl::sycl::handler &cgh) {
             auto ac = operator[](part).template get_access<cl::sycl::access::mode::read>(cgh);
-            UID range = get_part_range(part);
-            uindex_2d_t n_cells = uindex_t(n_columns * range.r);
 
             cgh.single_task([=]() {
-                [[intel::fpga_register]] IOWord cache;
-                uindex_word_t word_i = 0;
-                uindex_cell_t cell_i = word_length;
+                for (uindex_2d_t c = 0; c < n_columns; c++) {
+                    [[intel::fpga_register]] IOWord cache;
 
-                for (uindex_2d_t i = 0; i < n_cells; i++) {
-                    if (cell_i == uindex_cell_t(word_length)) {
-                        cache = ac[word_i.to_uint64()];
-                        word_i++;
-                        cell_i = 0;
+                    for (uindex_2d_t r = 0; r < n_rows; r++) {
+                        uindex_2d_t i = (c + c_offset) * n_rows + (r + r_offset);
+                        uindex_2d_t word_i = i / uindex_2d_t(word_length);
+                        uindex_2d_t cell_i = i % uindex_2d_t(word_length);
+                        if (r == 0 || cell_i == 0) {
+                            cache = ac[word_i.to_uint64()];
+                        }
+                        in_pipe::write(cache[cell_i].value);
                     }
-                    in_pipe::write(cache[cell_i].value);
-                    cell_i++;
                 }
             });
         });
     }
 
     template <typename out_pipe>
-    void submit_write_part(cl::sycl::queue queue, Part part, uindex_t n_columns) {
-        if (n_columns == 0) {
+    void submit_write_part(cl::sycl::queue queue, Part part, uindex_t n_columns, uindex_t n_rows,
+                           uindex_t c_offset, uindex_t r_offset) {
+        if (n_columns == 0 || n_rows == 0) {
             return;
         }
+
+        UID range = get_part_range(part);
+        assert(c_offset <= range.c && r_offset <= range.r);
+        assert(c_offset + n_columns <= range.c && r_offset + n_rows <= range.r);
 
         queue.submit([&](cl::sycl::handler &cgh) {
             auto ac = operator[](part).template get_access<cl::sycl::access::mode::discard_write>(
                 cgh);
-            UID range = get_part_range(part);
-            uindex_2d_t n_cells = uindex_t(n_columns * range.r);
 
             cgh.single_task([=]() {
-                [[intel::fpga_memory]] IOWord cache;
-                uindex_word_t word_i = 0;
-                uindex_cell_t cell_i = 0;
+                for (uindex_2d_t c = 0; c < n_columns; c++) {
+                    [[intel::fpga_memory]] IOWord cache;
+                    uindex_2d_t word_i, cell_i;
 
-                for (uindex_2d_t i = 0; i < n_cells; i++) {
-                    if (cell_i == uindex_cell_t(word_length)) {
-                        ac[word_i.to_uint64()] = cache;
-                        word_i++;
-                        cell_i = 0;
+                    for (uindex_2d_t r = 0; r < n_rows; r++) {
+                        uindex_2d_t i = (c + c_offset) * n_rows + (r + r_offset);
+                        word_i = i / uindex_2d_t(word_length);
+                        cell_i = i % uindex_2d_t(word_length);
+                        cache[cell_i].value = out_pipe::read();
+                        if (cell_i == uindex_2d_t(word_length) - 1 || r == n_rows - 1) {
+                            ac[word_i.to_uint64()] = cache;
+                        }
                     }
-                    cache[cell_i].value = out_pipe::read();
-                    cell_i++;
-                }
 
-                if (cell_i != 0) {
-                    ac[word_i.to_uint64()] = cache;
+                    if (cell_i != uindex_2d_t(word_length) - 1) {
+                        ac[word_i.to_uint64()] = cache;
+                    }
                 }
             });
         });
