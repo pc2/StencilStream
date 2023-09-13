@@ -52,23 +52,19 @@ void test_constructors(stencil::uindex_t grid_width, stencil::uindex_t grid_heig
     REQUIRE(grid.get_grid_width() == grid_width);
     REQUIRE(grid.get_grid_height() == grid_height);
 
-    cl::sycl::buffer<stencil::ID, 2> out_buffer = cl::sycl::range<2>(grid_width, grid_height);
-    grid.copy_to_buffer(out_buffer);
-
     {
-        auto out_buffer_ac = out_buffer.get_access<cl::sycl::access::mode::read>();
+        auto out_buffer_ac = grid.template get_access<cl::sycl::access::mode::read>();
         for (stencil::index_t c = 0; c < grid_width; c++) {
             for (stencil::index_t r = 0; r < grid_height; r++) {
-                REQUIRE(out_buffer_ac[c][r] == stencil::ID(c, r));
+                REQUIRE(out_buffer_ac.get(c, r) == stencil::ID(c, r));
             }
         }
     }
 }
 
 template <stencil::concepts::Grid<stencil::ID> G>
-void test_copy_from_to_buffer(stencil::uindex_t grid_width, stencil::uindex_t grid_height) {
+void test_copy_from_buffer(stencil::uindex_t grid_width, stencil::uindex_t grid_height) {
     cl::sycl::buffer<stencil::ID, 2> in_buffer = cl::sycl::range<2>(grid_width, grid_height);
-    cl::sycl::buffer<stencil::ID, 2> out_buffer = cl::sycl::range<2>(grid_width, grid_height);
     {
         auto in_buffer_ac = in_buffer.get_access<cl::sycl::access::mode::discard_write>();
         for (stencil::index_t c = 0; c < grid_width; c++) {
@@ -80,13 +76,36 @@ void test_copy_from_to_buffer(stencil::uindex_t grid_width, stencil::uindex_t gr
 
     G grid(grid_width, grid_height);
     grid.copy_from_buffer(in_buffer);
-    grid.copy_to_buffer(out_buffer);
 
     {
-        auto out_buffer_ac = out_buffer.get_access<cl::sycl::access::mode::read>();
-        for (stencil::index_t c = 0; c < grid_width; c++) {
-            for (stencil::index_t r = 0; r < grid_height; r++) {
-                REQUIRE(out_buffer_ac[c][r] == stencil::ID(c, r));
+        auto grid_ac = grid.template get_access<cl::sycl::access::mode::read>();
+        for (stencil::uindex_t c = 0; c < grid_width; c++) {
+            for (stencil::uindex_t r = 0; r < grid_height; r++) {
+                REQUIRE(grid_ac.get(c, r) == stencil::ID(c, r));
+            }
+        }
+    }
+}
+
+template <stencil::concepts::Grid<stencil::ID> G>
+void test_copy_to_buffer(stencil::uindex_t grid_width, stencil::uindex_t grid_height) {
+    G grid(grid_width, grid_height);
+    {
+        auto grid_ac = grid.template get_access<cl::sycl::access::mode::discard_write>();
+        for (stencil::uindex_t c = 0; c < grid_width; c++) {
+            for (stencil::uindex_t r = 0; r < grid_height; r++) {
+                grid_ac.set(c, r, stencil::ID(c, r));
+            }
+        }
+    }
+
+    cl::sycl::buffer<stencil::ID, 2> out_buffer = cl::sycl::range<2>(grid_width, grid_height);
+    grid.copy_to_buffer(out_buffer);
+    {
+        auto ac = out_buffer.template get_access<cl::sycl::access::mode::read>();
+        for (stencil::uindex_t c = 0; c < grid_width; c++) {
+            for (stencil::uindex_t r = 0; r < grid_height; r++) {
+                REQUIRE(ac[c][r] == stencil::ID(c, r));
             }
         }
     }

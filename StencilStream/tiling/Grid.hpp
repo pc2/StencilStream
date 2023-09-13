@@ -104,7 +104,7 @@ class Grid {
         for (uindex_t tile_c = 0; tile_c < get_tile_range().c; tile_c++) {
             tile_acs.push_back(std::vector<TileAC>());
             for (uindex_t tile_r = 0; tile_r < get_tile_range().r; tile_r++) {
-                auto next_ac = tiles[tile_c][tile_r].template get_access<access_mode>();
+                auto next_ac = get_tile(tile_c, tile_r).template get_access<access_mode>();
                 tile_acs.back().push_back(next_ac);
             }
         }

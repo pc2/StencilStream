@@ -35,8 +35,12 @@ TEST_CASE("monotile::Grid::Grid", "[monotile::Grid]") {
     grid_test::test_constructors<TestGrid>(tile_width, tile_height);
 }
 
-TEST_CASE("monotile::Grid::copy_{from|to}_buffer", "[monotile::Grid]") {
-    grid_test::test_copy_from_to_buffer<TestGrid>(tile_width, tile_height);
+TEST_CASE("monotile::Grid::copy_from_buffer", "[monotile::Grid]") {
+    grid_test::test_copy_from_buffer<TestGrid>(tile_width, tile_height);
+}
+
+TEST_CASE("monotile::Grid::copy_to_buffer", "[monotile::Grid]") {
+    grid_test::test_copy_to_buffer<TestGrid>(tile_width, tile_height);
 }
 
 TEST_CASE("monotile::Grid::make_similar", "[monotile::Grid]") {
