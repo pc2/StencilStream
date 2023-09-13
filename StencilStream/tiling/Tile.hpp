@@ -89,20 +89,6 @@ class Tile {
         CORE,
     };
 
-    static uindex_t get_part_words(Part part) {
-        UID range = get_part_range(part);
-        uindex_t n_cells = range.c * range.r;
-        return n_cells_to_n_words(n_cells, word_length);
-    }
-
-    /**
-     * \brief Create a new tile.
-     *
-     * Logically, the contents of the newly created tile are undefined since no memory resources are
-     * allocated during construction and no initialization is done by the indexing operation.
-     */
-    Tile() : part{std::nullopt} {}
-
     /**
      * \brief Array with all \ref Part variants to allow iteration over them.
      */
@@ -111,6 +97,56 @@ class Tile {
         Part::EAST_BORDER,       Part::SOUTH_EAST_CORNER, Part::SOUTH_BORDER,
         Part::SOUTH_WEST_CORNER, Part::WEST_BORDER,       Part::CORE,
     };
+
+    /**
+     * \brief Create a new tile.
+     *
+     * Logically, the contents of the newly created tile are undefined since no memory resources are
+     * allocated during construction and no initialization is done by the indexing operation.
+     */
+    Tile()
+        : part_buffer{
+              {cl::sycl::range<1>(get_part_words(Part::NORTH_WEST_CORNER)),
+               cl::sycl::range<1>(get_part_words(Part::WEST_BORDER)),
+               cl::sycl::range<1>(get_part_words(Part::SOUTH_WEST_CORNER))},
+              {cl::sycl::range<1>(get_part_words(Part::NORTH_BORDER)),
+               cl::sycl::range<1>(get_part_words(Part::CORE)),
+               cl::sycl::range<1>(get_part_words(Part::SOUTH_BORDER))},
+              {cl::sycl::range<1>(get_part_words(Part::NORTH_EAST_CORNER)),
+               cl::sycl::range<1>(get_part_words(Part::EAST_BORDER)),
+               cl::sycl::range<1>(get_part_words(Part::SOUTH_EAST_CORNER))},
+          } {}
+
+    static uindex_t get_part_words(Part part) {
+        UID range = get_part_range(part);
+        uindex_t n_cells = range.c * range.r;
+        return n_cells_to_n_words(n_cells, word_length);
+    }
+
+    static UID get_part_id(Part tile_part) {
+        switch (tile_part) {
+        case Part::NORTH_WEST_CORNER:
+            return UID(0, 0);
+        case Part::NORTH_BORDER:
+            return UID(1, 0);
+        case Part::NORTH_EAST_CORNER:
+            return UID(2, 0);
+        case Part::EAST_BORDER:
+            return UID(2, 1);
+        case Part::SOUTH_EAST_CORNER:
+            return UID(2, 2);
+        case Part::SOUTH_BORDER:
+            return UID(1, 2);
+        case Part::SOUTH_WEST_CORNER:
+            return UID(0, 2);
+        case Part::WEST_BORDER:
+            return UID(0, 1);
+        case Part::CORE:
+            return UID(1, 1);
+        default:
+            throw std::invalid_argument("Invalid grid tile part specified");
+        }
+    }
 
     /**
      * \brief Calculate the range of a given Part.
@@ -183,53 +219,8 @@ class Tile {
      * \return The buffer of the part.
      */
     cl::sycl::buffer<IOWord, 1> operator[](Part tile_part) {
-        uindex_t part_column, part_row;
-        switch (tile_part) {
-        case Part::NORTH_WEST_CORNER:
-            part_column = 0;
-            part_row = 0;
-            break;
-        case Part::NORTH_BORDER:
-            part_column = 1;
-            part_row = 0;
-            break;
-        case Part::NORTH_EAST_CORNER:
-            part_column = 2;
-            part_row = 0;
-            break;
-        case Part::EAST_BORDER:
-            part_column = 2;
-            part_row = 1;
-            break;
-        case Part::SOUTH_EAST_CORNER:
-            part_column = 2;
-            part_row = 2;
-            break;
-        case Part::SOUTH_BORDER:
-            part_column = 1;
-            part_row = 2;
-            break;
-        case Part::SOUTH_WEST_CORNER:
-            part_column = 0;
-            part_row = 2;
-            break;
-        case Part::WEST_BORDER:
-            part_column = 0;
-            part_row = 1;
-            break;
-        case Part::CORE:
-            part_column = 1;
-            part_row = 1;
-            break;
-        default:
-            throw std::invalid_argument("Invalid grid tile part specified");
-        }
-
-        if (!part[part_column][part_row].has_value()) {
-            cl::sycl::buffer<IOWord, 1> new_part = cl::sycl::range<1>(get_part_words(tile_part));
-            part[part_column][part_row] = new_part;
-        }
-        return *part[part_column][part_row];
+        UID part_id = get_part_id(tile_part);
+        return part_buffer[part_id.c][part_id.r];
     }
 
     /**
@@ -245,15 +236,9 @@ class Tile {
      */
     void copy_from(cl::sycl::buffer<Cell, 2> buffer, cl::sycl::id<2> offset) {
         auto accessor = buffer.template get_access<cl::sycl::access::mode::read_write>();
-        copy_part(accessor, Part::NORTH_WEST_CORNER, offset, true);
-        copy_part(accessor, Part::NORTH_BORDER, offset, true);
-        copy_part(accessor, Part::NORTH_EAST_CORNER, offset, true);
-        copy_part(accessor, Part::EAST_BORDER, offset, true);
-        copy_part(accessor, Part::SOUTH_EAST_CORNER, offset, true);
-        copy_part(accessor, Part::SOUTH_BORDER, offset, true);
-        copy_part(accessor, Part::SOUTH_WEST_CORNER, offset, true);
-        copy_part(accessor, Part::WEST_BORDER, offset, true);
-        copy_part(accessor, Part::CORE, offset, true);
+        for (Part part : all_parts) {
+            copy_part(accessor, part, offset, true);
+        }
     }
 
     /**
@@ -270,15 +255,9 @@ class Tile {
      */
     void copy_to(cl::sycl::buffer<Cell, 2> buffer, cl::sycl::id<2> offset) {
         auto accessor = buffer.template get_access<cl::sycl::access::mode::read_write>();
-        copy_part(accessor, Part::NORTH_WEST_CORNER, offset, false);
-        copy_part(accessor, Part::NORTH_BORDER, offset, false);
-        copy_part(accessor, Part::NORTH_EAST_CORNER, offset, false);
-        copy_part(accessor, Part::EAST_BORDER, offset, false);
-        copy_part(accessor, Part::SOUTH_EAST_CORNER, offset, false);
-        copy_part(accessor, Part::SOUTH_BORDER, offset, false);
-        copy_part(accessor, Part::SOUTH_WEST_CORNER, offset, false);
-        copy_part(accessor, Part::WEST_BORDER, offset, false);
-        copy_part(accessor, Part::CORE, offset, false);
+        for (Part part : all_parts) {
+            copy_part(accessor, part, offset, false);
+        }
     }
 
     template <typename in_pipe>
@@ -382,7 +361,7 @@ class Tile {
         }
     }
 
-    std::optional<cl::sycl::buffer<IOWord, 1>> part[3][3];
+    cl::sycl::buffer<IOWord, 1> part_buffer[3][3];
 };
 
 } // namespace tiling
