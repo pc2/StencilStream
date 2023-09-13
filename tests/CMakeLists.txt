@@ -23,6 +23,7 @@ set(UNIT_TEST_SOURCES
     HostPipe.cpp
     Stencil.cpp
     TimeDependentValueSupplier.cpp
+    cpu/Grid.cpp
     #monotile/ExecutionKernel.cpp
     monotile/Grid.cpp
     monotile/StencilUpdate.cpp
