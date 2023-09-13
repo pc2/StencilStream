@@ -206,6 +206,64 @@ class Tile {
         }
     }
 
+    template <cl::sycl::access::mode access_mode> struct TileAccessor {
+        using accessor_t =
+            cl::sycl::accessor<IOWord, 1, access_mode, cl::sycl::access::target::host_buffer>;
+
+        Cell get(uindex_t c, uindex_t r) const {
+            std::array<uindex_t, 4> i = transform_indices(c, r);
+            return part_ac[i[0]][i[1]][i[2]][i[3]].value;
+        }
+
+        void set(uindex_t c, uindex_t r, Cell cell) {
+            std::array<uindex_t, 4> i = transform_indices(c, r);
+            part_ac[i[0]][i[1]][i[2]][i[3]].value = cell;
+        }
+
+        static std::array<uindex_t, 4> transform_indices(uindex_t c, uindex_t r) {
+            uindex_t part_c;
+            if (c < halo_radius) {
+                part_c = 0;
+            } else if (c < width - halo_radius) {
+                part_c = 1;
+                c -= halo_radius;
+            } else {
+                part_c = 2;
+                c -= width - halo_radius;
+            }
+            uindex_t part_r, part_height;
+            if (r < halo_radius) {
+                part_r = 0;
+                part_height = halo_radius;
+            } else if (r < height - halo_radius) {
+                part_r = 1;
+                part_height = height - 2 * halo_radius;
+                r -= halo_radius;
+            } else {
+                part_r = 2;
+                part_height = halo_radius;
+                r -= height - halo_radius;
+            }
+            uindex_t linear_index = c * part_height + r;
+            uindex_t word_i = linear_index / word_length;
+            uindex_t element_i = linear_index % word_length;
+            return {part_c, part_r, word_i, element_i};
+        }
+
+        std::array<std::array<accessor_t, 3>, 3> part_ac;
+    };
+
+    template <cl::sycl::access::mode access_mode> TileAccessor<access_mode> get_access() {
+        using accessor_t = typename TileAccessor<access_mode>::accessor_t;
+        std::array<std::array<accessor_t, 3>, 3> part_ac;
+        for (uindex_t c = 0; c < 3; c++) {
+            for (uindex_t r = 0; r < 3; r++) {
+                part_ac[c][r] = part_buffer[c][r].template get_access<access_mode>();
+            }
+        }
+        return TileAccessor<access_mode>{.part_ac = part_ac};
+    }
+
     /**
      * \brief Return the buffer with the contents of the given part.
      *

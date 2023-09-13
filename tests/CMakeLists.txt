@@ -15,8 +15,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 include_directories(../)
-add_compile_options(-fsycl -std=c++20 -qactypes -fintelfpga -Wtautological-constant-compare)
-add_link_options(-fsycl -std=c++20 -qactypes -fintelfpga -Wtautological-constant-compare)
+add_compile_options(-fsycl -std=c++20 -qactypes -fintelfpga -Wtautological-constant-compare -Rno-debug-disables-optimization)
+add_link_options(-fsycl -std=c++20 -qactypes -fintelfpga -Wtautological-constant-compare -Rno-debug-disables-optimization)
 add_compile_definitions(STENCIL_INDEX_WIDTH=32)
 
 set(UNIT_TEST_SOURCES

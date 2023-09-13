@@ -17,11 +17,11 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <catch2/catch_all.hpp>
+#include "../constants.hpp"
 #include <CL/sycl.hpp>
 #include <StencilStream/GenericID.hpp>
 #include <StencilStream/tiling/Tile.hpp>
-#include "../constants.hpp"
+#include <catch2/catch_all.hpp>
 
 using namespace stencil;
 using namespace cl::sycl;
@@ -43,20 +43,17 @@ TEST_CASE("Tile::operator[]", "[Tile]") {
     }
 }
 
-void copy_from_test_impl(uindex_t tile_width, uindex_t tile_height) {
-    buffer<ID, 2> in_buffer(range<2>(tile_width, tile_height));
+TEST_CASE("Tile::get_access", "[Tile]") {
+    TileImpl tile;
 
     {
-        auto in_buffer_ac = in_buffer.get_access<access::mode::discard_write>();
+        auto tile_ac = tile.get_access<cl::sycl::access::mode::discard_write>();
         for (uindex_t c = 0; c < tile_width; c++) {
             for (uindex_t r = 0; r < tile_height; r++) {
-                in_buffer_ac[c][r] = ID(c, r);
+                tile_ac.set(c, r, ID(c, r));
             }
         }
     }
-
-    TileImpl tile;
-    tile.copy_from(in_buffer, id<2>(0, 0));
 
     for (TileImpl::Part part : TileImpl::all_parts) {
         auto true_range = TileImpl::get_part_range(part);
@@ -78,6 +75,40 @@ void copy_from_test_impl(uindex_t tile_width, uindex_t tile_height) {
             }
         }
     }
+
+    {
+        auto tile_ac = tile.get_access<cl::sycl::access::mode::read>();
+        for (uindex_t c = 0; c < tile_width; c++) {
+            for (uindex_t r = 0; r < tile_height; r++) {
+                REQUIRE(tile_ac.get(c, r) == ID(c, r));
+            }
+        }
+    }
+}
+
+void copy_from_test_impl(uindex_t tile_width, uindex_t tile_height) {
+    buffer<ID, 2> in_buffer(range<2>(tile_width, tile_height));
+
+    {
+        auto in_buffer_ac = in_buffer.get_access<access::mode::discard_write>();
+        for (uindex_t c = 0; c < tile_width; c++) {
+            for (uindex_t r = 0; r < tile_height; r++) {
+                in_buffer_ac[c][r] = ID(c, r);
+            }
+        }
+    }
+
+    TileImpl tile;
+    tile.copy_from(in_buffer, id<2>(0, 0));
+
+    {
+        auto tile_ac = tile.get_access<cl::sycl::access::mode::read>();
+        for (uindex_t c = 0; c < tile_width; c++) {
+            for (uindex_t r = 0; r < tile_height; r++) {
+                REQUIRE(tile_ac.get(c, r) == ID(c, r));
+            }
+        }
+    }
 }
 
 TEST_CASE("Tile::copy_from", "[Tile]") {
@@ -90,16 +121,11 @@ TEST_CASE("Tile::copy_from", "[Tile]") {
 void copy_to_test_impl(uindex_t tile_width, uindex_t tile_height) {
     TileImpl tile;
 
-    for (TileImpl::Part part : TileImpl::all_parts) {
-        auto true_range = TileImpl::get_part_range(part);
-        auto content_offset = TileImpl::get_part_offset(part);
-        auto part_ac = tile[part].get_access<access::mode::read_write>();
-
-        for (uindex_t c = 0; c < true_range.c; c++) {
-            for (uindex_t r = 0; r < true_range.r; r++) {
-                uindex_t word_i = (c * true_range.r + r) / word_length;
-                uindex_t cell_i = (c * true_range.r + r) % word_length;
-                part_ac[word_i][cell_i].value = ID(c + content_offset[0], r + content_offset[1]);
+    {
+        auto tile_ac = tile.get_access<cl::sycl::access::mode::discard_write>();
+        for (uindex_t c = 0; c < tile_width; c++) {
+            for (uindex_t r = 0; r < tile_height; r++) {
+                tile_ac.set(c, r, ID(c, r));
             }
         }
     }
