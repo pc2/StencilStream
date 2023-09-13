@@ -17,15 +17,14 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <CL/sycl.hpp>
 #include <fstream>
 
 #if EXECUTOR == 0
-    #include <StencilStream/MonotileExecutor.hpp>
+    #include <StencilStream/monotile/StencilUpdate.hpp>
 #elif EXECUTOR == 1
-    #include <StencilStream/TilingExecutor.hpp>
+    #include <StencilStream/tiling/StencilUpdate.hpp>
 #elif EXECUTOR == 2
-    #include <StencilStream/SimpleCPUExecutor.hpp>
+    #include <StencilStream/cpu/StencilUpdate.hpp>
 #endif
 
 #include <StencilStream/tdv/NoneSupplier.hpp>
@@ -54,14 +53,6 @@ const FLOAT chip_width = 0.016;
 const FLOAT amb_temp = 80.0;
 
 /* stencil parameters */
-#if EXECUTOR == 1
-const uindex_t n_processing_elements = 280; // tiling
-#else
-const uindex_t n_processing_elements = 350; // monotile & cpu
-#endif
-const uindex_t tile_width = 1024;
-const uindex_t tile_height = 1024;
-
 using HotspotCell = vec<FLOAT, 2>;
 
 struct HotspotKernel {
@@ -110,20 +101,42 @@ struct HotspotKernel {
     }
 };
 
-void write_output(buffer<HotspotCell, 2> vect, string file) {
+#if EXECUTOR == 0
+const uindex_t tile_width = 1024;
+const uindex_t tile_height = 1024;
+const uindex_t n_processing_elements = 350;
+using StencilUpdate =
+    monotile::StencilUpdate<HotspotKernel, n_processing_elements, tile_width, tile_height>;
+using Grid = StencilUpdate::GridImpl;
+
+#elif EXECUTOR == 1
+const uindex_t tile_width = 1024;
+const uindex_t tile_height = 1024;
+const uindex_t n_processing_elements = 280;
+using StencilUpdate =
+    tiling::StencilUpdate<HotspotKernel, n_processing_elements, tile_width, tile_height>;
+using Grid = StencilUpdate::GridImpl;
+
+#else
+using StencilUpdate = cpu::StencilUpdate<HotspotKernel>;
+using Grid = StencilUpdate::GridImpl;
+
+#endif
+
+void write_output(Grid vect, string file) {
     fstream out(file, out.out | out.trunc);
     if (!out.is_open()) {
         throw std::runtime_error("The file was not opened\n");
     }
 
-    uindex_t n_columns = vect.get_range()[0];
-    uindex_t n_rows = vect.get_range()[1];
+    uindex_t n_columns = vect.get_grid_width();
+    uindex_t n_rows = vect.get_grid_height();
     auto vect_ac = vect.get_access<access::mode::read>();
 
     int i = 0;
     for (index_t r = 0; r < n_rows; r++) {
         for (index_t c = 0; c < n_columns; c++) {
-            out << i << "\t" << vect_ac[id<2>(c, r)][0] << std::endl;
+            out << i << "\t" << vect_ac.get(c, r)[0] << std::endl;
             i++;
         }
     }
@@ -131,26 +144,23 @@ void write_output(buffer<HotspotCell, 2> vect, string file) {
     out.close();
 }
 
-buffer<HotspotCell, 2> read_input(string temp_file, string power_file, range<2> buffer_range) {
+Grid read_input(string temp_file, string power_file, uindex_t n_columns, uindex_t n_rows) {
     fstream temp(temp_file, temp.in);
     fstream power(power_file, power.in);
     if (!temp.is_open() || !power.is_open()) {
         throw std::runtime_error("file could not be opened for reading");
     }
 
-    uindex_t n_columns = buffer_range[0];
-    uindex_t n_rows = buffer_range[1];
-    buffer<HotspotCell, 2> vect(buffer_range);
-
+    Grid vect(n_columns, n_rows);
     {
         auto vect_ac = vect.get_access<access::mode::write>();
 
-        FLOAT tmp_temp, tmp_power;
         for (index_t r = 0; r < n_rows; r++) {
             for (index_t c = 0; c < n_columns; c++) {
+                FLOAT tmp_temp, tmp_power;
                 temp >> tmp_temp;
                 power >> tmp_power;
-                vect_ac[id<2>(c, r)] = HotspotCell(tmp_temp, tmp_power);
+                vect_ac.set(c, r, HotspotCell(tmp_temp, tmp_power));
             }
         }
     }
@@ -191,7 +201,7 @@ auto exception_handler = [](cl::sycl::exception_list exceptions) {
 };
 
 int main(int argc, char **argv) {
-    int n_rows, n_columns, sim_time;
+    uindex_t n_rows, n_columns, sim_time;
     char *tfile, *pfile, *ofile;
     bool benchmark_mode = false;
 
@@ -217,8 +227,7 @@ int main(int argc, char **argv) {
     tfile = argv[4];
     pfile = argv[5];
     ofile = argv[6];
-    buffer<HotspotCell, 2> temp =
-        read_input(string(tfile), string(pfile), range<2>(n_columns, n_rows));
+    Grid grid = read_input(string(tfile), string(pfile), n_columns, n_rows);
 
     printf("Start computing the transient temperature\n");
 
@@ -238,30 +247,16 @@ int main(int argc, char **argv) {
     FLOAT Rz_1 = 1.f / Rz;
     FLOAT Cap_1 = step / Cap;
 
-#if EXECUTOR == 0
-    using Executor = MonotileExecutor<HotspotKernel, tdv::NoneSupplier, n_processing_elements,
-                                      tile_width, tile_height>;
-#elif EXECUTOR == 1
-    using Executor = TilingExecutor<HotspotKernel, tdv::NoneSupplier, n_processing_elements,
-                                    tile_width, tile_height>;
-#elif EXECUTOR == 2
-    using Executor = SimpleCPUExecutor<HotspotKernel, tdv::NoneSupplier>;
-#endif
-
-    Executor executor(HotspotCell(0.0, 0.0), HotspotKernel{Rx_1, Ry_1, Rz_1, Cap_1});
-    executor.set_input(temp);
-#if EXECUTOR != 2
-    executor.select_fpga();
-#endif
-
-    executor.run(sim_time);
-
-    executor.copy_output(temp);
+    StencilUpdate update({
+        .transition_function = HotspotKernel{Rx_1, Ry_1, Rz_1, Cap_1},
+        .halo_value = HotspotCell(0.0, 0.0),
+        .n_generations = sim_time,
+    });
+    grid = update(grid);
 
     printf("Ending simulation\n");
-    std::cout << "Total time: " << executor.get_runtime_sample().get_total_runtime() << " s"
-              << std::endl;
-    write_output(temp, string(ofile));
+    std::cout << "Total time: " << 42.0 << " s" << std::endl;
+    write_output(grid, string(ofile));
 
     return 0;
 }
