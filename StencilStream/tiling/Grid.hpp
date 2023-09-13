@@ -75,6 +75,43 @@ class Grid {
         copy_from_buffer(input_buffer);
     }
 
+    template <cl::sycl::access::mode access_mode> class GridAccessor {
+      public:
+        using TileAccessor = typename Tile::template TileAccessor<access_mode>;
+
+        GridAccessor(std::vector<std::vector<TileAccessor>> tile_acs, uindex_t grid_width,
+                     uindex_t grid_height)
+            : tile_acs(tile_acs), grid_width(grid_width), grid_height(grid_height) {}
+
+        Cell get(uindex_t c, uindex_t r) const {
+            return tile_acs[c / tile_width][r / tile_height].get(c % tile_width, r % tile_height);
+        }
+
+        void set(uindex_t c, uindex_t r, Cell cell) {
+            tile_acs[c / tile_width][r / tile_height].set(c % tile_width, r % tile_height, cell);
+        }
+
+      private:
+        std::vector<std::vector<TileAccessor>> tile_acs;
+        uindex_t grid_width, grid_height;
+    };
+
+    template <cl::sycl::access::mode access_mode> GridAccessor<access_mode> get_access() {
+        using GridAC = GridAccessor<access_mode>;
+        using TileAC = GridAC::TileAccessor;
+
+        std::vector<std::vector<TileAC>> tile_acs;
+        for (uindex_t tile_c = 0; tile_c < get_tile_range().c; tile_c++) {
+            tile_acs.push_back(std::vector<TileAC>());
+            for (uindex_t tile_r = 0; tile_r < get_tile_range().r; tile_r++) {
+                auto next_ac = tiles[tile_c][tile_r].template get_access<access_mode>();
+                tile_acs.back().push_back(next_ac);
+            }
+        }
+
+        return GridAC(tile_acs, grid_width, grid_height);
+    }
+
     void copy_from_buffer(cl::sycl::buffer<Cell, 2> input_buffer) {
         if (input_buffer.get_range() !=
             cl::sycl::range<2>(this->get_grid_width(), this->get_grid_height())) {

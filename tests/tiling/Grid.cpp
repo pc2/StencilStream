@@ -41,6 +41,28 @@ TEST_CASE("tiling::Grid::Grid", "[tiling::Grid]") {
     grid_test::test_constructors<TestGrid>(add_grid_width, add_grid_height);
 }
 
+TEST_CASE("tiling::Grid::get_access", "[tiling::Grid]") {
+    TestGrid grid(add_grid_width, add_grid_height);
+
+    {
+        auto ac = grid.get_access<cl::sycl::access::mode::discard_write>();
+        for (uindex_t c = 0; c < add_grid_width; c++) {
+            for (uindex_t r = 0; r < add_grid_height; r++) {
+                ac.set(c, r, ID(c, r));
+            }
+        }
+    }
+
+    {
+        auto ac = grid.get_access<cl::sycl::access::mode::read>();
+        for (uindex_t c = 0; c < add_grid_width; c++) {
+            for (uindex_t r = 0; r < add_grid_height; r++) {
+                REQUIRE(ac.get(c, r) == ID(c, r));
+            }
+        }
+    }
+}
+
 TEST_CASE("tiling::Grid::copy_{from|to}_buffer", "[tiling::Grid]") {
     grid_test::test_copy_from_to_buffer<TestGrid>(add_grid_width, add_grid_height);
 }
