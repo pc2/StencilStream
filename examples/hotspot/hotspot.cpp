@@ -17,6 +17,7 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <chrono>
 #include <fstream>
 
 #if EXECUTOR == 0
@@ -252,10 +253,14 @@ int main(int argc, char **argv) {
         .halo_value = HotspotCell(0.0, 0.0),
         .n_generations = sim_time,
     });
+
+    auto start = std::chrono::high_resolution_clock::now();
     grid = update(grid);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> runtime = end - start;
 
     printf("Ending simulation\n");
-    std::cout << "Total time: " << 42.0 << " s" << std::endl;
+    std::cout << "Total time: " << runtime.count() << " s" << std::endl;
     write_output(grid, string(ofile));
 
     return 0;

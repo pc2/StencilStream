@@ -73,6 +73,8 @@ class StencilUpdate {
             }
         }
 
+        params.queue.wait();
+
         return pass_source;
     }
 

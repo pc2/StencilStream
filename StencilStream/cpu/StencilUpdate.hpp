@@ -56,6 +56,8 @@ template <concepts::TransitionFunction F> class StencilUpdate {
             }
         }
 
+        params.queue.wait();
+
         return pass_source;
     }
 
