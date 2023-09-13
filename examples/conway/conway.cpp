@@ -17,32 +17,41 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <StencilStream/cpu/Grid.hpp>
+#include <StencilStream/cpu/StencilUpdate.hpp>
 #include <StencilStream/monotile/Grid.hpp>
 #include <StencilStream/monotile/StencilUpdate.hpp>
 #include <StencilStream/tdv/NoneSupplier.hpp>
+
+using namespace stencil;
+#ifdef CPU
+using namespace stencil::cpu;
+#else
+using namespace stencil::monotile;
+#endif
 
 struct ConwayKernel {
     using Cell = bool;
     using TimeDependentValue = std::monostate;
 
-    static constexpr stencil::uindex_t stencil_radius = 1;
-    static constexpr stencil::uindex_t n_subgenerations = 1;
+    static constexpr uindex_t stencil_radius = 1;
+    static constexpr uindex_t n_subgenerations = 1;
 
-    bool operator()(stencil::Stencil<Cell, stencil_radius> const &stencil) const {
-        stencil::ID idx = stencil.id;
+    bool operator()(Stencil<Cell, stencil_radius> const &stencil) const {
+        ID idx = stencil.id;
 
         uint8_t alive_neighbours = 0;
 #pragma unroll
-        for (stencil::index_t c = -1; c <= 1; c++) {
+        for (index_t c = -1; c <= 1; c++) {
 #pragma unroll
-            for (stencil::index_t r = -1; r <= 1; r++) {
-                if (stencil[stencil::ID(c, r)] && !(c == 0 && r == 0)) {
+            for (index_t r = -1; r <= 1; r++) {
+                if (stencil[ID(c, r)] && !(c == 0 && r == 0)) {
                     alive_neighbours += 1;
                 }
             }
         }
 
-        if (stencil[stencil::ID(0, 0)]) {
+        if (stencil[ID(0, 0)]) {
             return alive_neighbours == 2 || alive_neighbours == 3;
         } else {
             return alive_neighbours == 3;
@@ -50,13 +59,13 @@ struct ConwayKernel {
     }
 };
 
-stencil::monotile::Grid<bool> read(stencil::uindex_t width, stencil::uindex_t height) {
-    stencil::monotile::Grid<bool> input_grid(width, height);
+Grid<bool> read(uindex_t width, uindex_t height) {
+    Grid<bool> input_grid(width, height);
     {
         auto grid_ac = input_grid.get_access<cl::sycl::access::mode::discard_write>();
 
-        for (stencil::uindex_t r = 0; r < height; r++) {
-            for (stencil::uindex_t c = 0; c < width; c++) {
+        for (uindex_t r = 0; r < height; r++) {
+            for (uindex_t c = 0; c < width; c++) {
                 char Cell;
                 std::cin >> Cell;
                 assert(Cell == 'X' || Cell == '.');
@@ -67,11 +76,11 @@ stencil::monotile::Grid<bool> read(stencil::uindex_t width, stencil::uindex_t he
     return input_grid;
 }
 
-void write(stencil::monotile::Grid<bool> output_grid) {
+void write(Grid<bool> output_grid) {
     auto grid_ac = output_grid.get_access<cl::sycl::access::mode::read>();
 
-    for (stencil::uindex_t r = 0; r < output_grid.get_grid_height(); r++) {
-        for (stencil::uindex_t c = 0; c < output_grid.get_grid_width(); c++) {
+    for (uindex_t r = 0; r < output_grid.get_grid_height(); r++) {
+        for (uindex_t c = 0; c < output_grid.get_grid_width(); c++) {
             if (grid_ac.get(c, r)) {
                 std::cout << "X";
             } else {
@@ -88,13 +97,13 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    stencil::uindex_t width = std::stoi(argv[1]);
-    stencil::uindex_t height = std::stoi(argv[2]);
-    stencil::uindex_t n_generations = std::stoi(argv[3]);
+    uindex_t width = std::stoi(argv[1]);
+    uindex_t height = std::stoi(argv[2]);
+    uindex_t n_generations = std::stoi(argv[3]);
 
-    stencil::monotile::Grid<bool> grid = read(width, height);
+    Grid<bool> grid = read(width, height);
 
-    stencil::monotile::StencilUpdate<ConwayKernel> update({
+    StencilUpdate<ConwayKernel> update({
         .transition_function = ConwayKernel(),
         .n_generations = n_generations,
     });

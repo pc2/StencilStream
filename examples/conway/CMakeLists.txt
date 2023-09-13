@@ -35,4 +35,4 @@ target_link_options(conway_hw_report PUBLIC -fintelfpga -Xshardware -fsycl-link)
 # The hardware image
 add_executable(conway_hw conway.cpp)
 target_compile_definitions(conway_hw PUBLIC HARDWARE)
-target_link_options(conway_hw PUBLIC -fintelfpga)
+target_link_options(conway_hw PUBLIC -fintelfpga -Xshardware)

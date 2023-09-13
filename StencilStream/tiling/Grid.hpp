@@ -44,8 +44,8 @@ namespace tiling {
  * \tparam tile_height The number of rows of a tile.
  * \tparam halo_radius The radius (aka width and height) of the tile halo.
  */
-template <typename Cell, uindex_t tile_width, uindex_t tile_height, uindex_t halo_radius,
-          uindex_t word_size = 64>
+template <typename Cell, uindex_t tile_width = 1024, uindex_t tile_height = 1024,
+          uindex_t halo_radius = 1, uindex_t word_size = 64>
 class Grid {
   public:
     static_assert(2 * halo_radius < tile_height && 2 * halo_radius < tile_width);
