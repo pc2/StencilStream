@@ -58,22 +58,6 @@ class Tile {
     static constexpr uindex_t core_height = height - 2 * halo_radius;
     using IOWord = std::array<Padded<Cell>, word_length>;
 
-    static constexpr uindex_t max_n_cells =
-        std::max(halo_radius, width) * std::max(halo_radius, height);
-    static constexpr uindex_t max_n_words = n_cells_to_n_words(max_n_cells, word_length);
-
-    static constexpr unsigned long bits_cell = std::bit_width(word_length);
-    using index_cell_t = ac_int<bits_cell + 1, true>;
-    using uindex_cell_t = ac_int<bits_cell, false>;
-
-    static constexpr unsigned long bits_word = std::bit_width(max_n_words);
-    using index_word_t = ac_int<bits_word + 1, true>;
-    using uindex_word_t = ac_int<bits_word, false>;
-
-    static constexpr unsigned long bits_2d = std::bit_width(max_n_cells);
-    using index_2d_t = ac_int<bits_2d + 1, true>;
-    using uindex_2d_t = ac_int<bits_2d, false>;
-
     /**
      * \brief Enumeration to address individual parts of the tile.
      */
@@ -117,10 +101,14 @@ class Tile {
                cl::sycl::range<1>(get_part_words(Part::SOUTH_EAST_CORNER))},
           } {}
 
+    static uindex_t get_part_words_in_column(Part part) {
+        UID range = get_part_range(part);
+        return n_cells_to_n_words(range.r, word_length);
+    }
+
     static uindex_t get_part_words(Part part) {
         UID range = get_part_range(part);
-        uindex_t n_cells = range.c * range.r;
-        return n_cells_to_n_words(n_cells, word_length);
+        return range.c * get_part_words_in_column(part);
     }
 
     static UID get_part_id(Part tile_part) {
@@ -231,22 +219,21 @@ class Tile {
                 part_c = 2;
                 c -= width - halo_radius;
             }
-            uindex_t part_r, part_height;
+            uindex_t part_r, part_words_per_column;
             if (r < halo_radius) {
                 part_r = 0;
-                part_height = halo_radius;
+                part_words_per_column = n_cells_to_n_words(halo_radius, word_length);
             } else if (r < height - halo_radius) {
                 part_r = 1;
-                part_height = height - 2 * halo_radius;
+                part_words_per_column = n_cells_to_n_words(height - 2 * halo_radius, word_length);
                 r -= halo_radius;
             } else {
                 part_r = 2;
-                part_height = halo_radius;
+                part_words_per_column = n_cells_to_n_words(halo_radius, word_length);
                 r -= height - halo_radius;
             }
-            uindex_t linear_index = c * part_height + r;
-            uindex_t word_i = linear_index / word_length;
-            uindex_t element_i = linear_index % word_length;
+            uindex_t word_i = (c * part_words_per_column) + (r / word_length);
+            uindex_t element_i = r % word_length;
             return {part_c, part_r, word_i, element_i};
         }
 
@@ -331,17 +318,19 @@ class Tile {
 
         queue.submit([&](cl::sycl::handler &cgh) {
             auto ac = operator[](part).template get_access<cl::sycl::access::mode::read>(cgh);
+            uindex_t words_in_column = get_part_words_in_column(part);
 
             cgh.single_task([=]() {
-                for (uindex_2d_t c = 0; c < n_columns; c++) {
-                    [[intel::fpga_register]] IOWord cache;
+                for (uindex_t c = 0; c < n_columns; c++) {
+                    IOWord cache;
+                    uindex_t word_offset = (c + c_offset) * words_in_column;
 
-                    for (uindex_2d_t r = 0; r < n_rows; r++) {
-                        uindex_2d_t i = (c + c_offset) * n_rows + (r + r_offset);
-                        uindex_2d_t word_i = i / uindex_2d_t(word_length);
-                        uindex_2d_t cell_i = i % uindex_2d_t(word_length);
+                    for (uindex_t r = 0; r < n_rows; r++) {
+                        uindex_t word_i = word_offset + ((r + r_offset) / word_length);
+                        uindex_t cell_i = (r + r_offset) % word_length;
+
                         if (r == 0 || cell_i == 0) {
-                            cache = ac[word_i.to_uint64()];
+                            cache = ac[word_i];
                         }
                         in_pipe::write(cache[cell_i].value);
                     }
@@ -364,24 +353,24 @@ class Tile {
         queue.submit([&](cl::sycl::handler &cgh) {
             auto ac = operator[](part).template get_access<cl::sycl::access::mode::discard_write>(
                 cgh);
+            uindex_t words_in_column = get_part_words_in_column(part);
 
             cgh.single_task([=]() {
-                for (uindex_2d_t c = 0; c < n_columns; c++) {
-                    [[intel::fpga_memory]] IOWord cache;
-                    uindex_2d_t word_i, cell_i;
+                for (uindex_t c = 0; c < n_columns; c++) {
+                    IOWord cache;
 
-                    for (uindex_2d_t r = 0; r < n_rows; r++) {
-                        uindex_2d_t i = (c + c_offset) * n_rows + (r + r_offset);
-                        word_i = i / uindex_2d_t(word_length);
-                        cell_i = i % uindex_2d_t(word_length);
+                    for (uindex_t r = 0; r < n_rows; r++) {
+                        uindex_t word_i =
+                            (c + c_offset) * words_in_column + ((r + r_offset) / word_length);
+                        uindex_t cell_i = (r + r_offset) % word_length;
+
                         cache[cell_i].value = out_pipe::read();
-                        if (cell_i == uindex_2d_t(word_length) - 1 || r == n_rows - 1) {
-                            ac[word_i.to_uint64()] = cache;
-                        }
-                    }
 
-                    if (cell_i != uindex_2d_t(word_length) - 1) {
-                        ac[word_i.to_uint64()] = cache;
+                        bool word_full = cell_i == word_length - 1;
+                        bool last_cell = r == n_rows - 1;
+                        if (word_full || last_cell) {
+                            ac[word_i] = cache;
+                        }
                     }
                 }
             });

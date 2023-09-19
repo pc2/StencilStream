@@ -51,7 +51,7 @@ CSV.write("loops.csv", loop_report)
 
 # Generate the hardware usage report 
 
-area_overview = DataFrame(unit=String[], type=String[], alut=Real[], ff=Real[], ram=Real[], dsp=Real[], mlab=Real[])
+area_overview = DataFrame(unit=String[], type=String[], alut=Real[], ff=Real[], ram=Real[], mlab=Real[], dsp=Real[])
 push!(area_overview, vcat(["Max. resources", "info"], raw_data["areaJSON"]["max_resources"]))
 push!(area_overview, vcat(["Total usage", "info"], raw_data["areaJSON"]["total"]))
 function push_area!(area_report, node; cutoff=Inf, level=0)
@@ -79,7 +79,7 @@ end
 for (i, toplevel_node) in enumerate(raw_data["areaJSON"]["children"])
     push_area!(area_overview, toplevel_node, cutoff=1, level=0)
     if toplevel_node["type"] == "function"
-        function_area = DataFrame(unit=String[], type=String[], alut=Real[], ff=Real[], ram=Real[], dsp=Real[], mlab=Real[])
+        function_area = DataFrame(unit=String[], type=String[], alut=Real[], ff=Real[], ram=Real[], mlab=Real[], dsp=Real[])
         push_area!(function_area, toplevel_node)
         CSV.write("area_$(toplevel_node["name"])_$(i).csv", function_area)
     end
