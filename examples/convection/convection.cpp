@@ -1,7 +1,7 @@
 #if EXECUTOR == 0
-    #include <StencilStream/SimpleCPUExecutor.hpp>
+    #include <StencilStream/cpu/StencilUpdate.hpp>
 #else
-    #include <StencilStream/MonotileExecutor.hpp>
+    #include <StencilStream/monotile/StencilUpdate.hpp>
 #endif
 #include <StencilStream/tdv/NoneSupplier.hpp>
 #include <chrono>
@@ -104,21 +104,20 @@ class PseudoTransientKernel {
             // compute_2!(...) and update_V!(...)
             if (c >= 1 && r >= 1) {
                 if (c < (nx + 1) - 1 && r < ny - 1) {
-                    double Rx = 1.0 / rho * (
-                        (stencil[ID(0, 0)].tau_xx - stencil[ID(-1, 0)].tau_xx) / dx +
-                        (stencil[ID(-1, 0)].sigma_xy - stencil[ID(-1, -1)].sigma_xy) / dy -
-                        (stencil[ID(0, 0)].Pt - stencil[ID(-1, 0)].Pt) / dx
-                    );
+                    double Rx = 1.0 / rho *
+                                ((stencil[ID(0, 0)].tau_xx - stencil[ID(-1, 0)].tau_xx) / dx +
+                                 (stencil[ID(-1, 0)].sigma_xy - stencil[ID(-1, -1)].sigma_xy) / dy -
+                                 (stencil[ID(0, 0)].Pt - stencil[ID(-1, 0)].Pt) / dx);
                     new_cell.dVxd_tau = dampX * ALL(dVxd_tau) + Rx * delta_tau_iter;
                     new_cell.Vx = ALL(Vx) + new_cell.dVxd_tau * delta_tau_iter;
                 }
                 if (c < nx - 1 && r < (ny + 1) - 1) {
-                    double Ry = 1.0 / rho * (
-                        (stencil[ID(0, 0)].tau_yy - stencil[ID(0, -1)].tau_yy) / dy +
-                        (stencil[ID(0, -1)].sigma_xy - stencil[ID(-1, -1)].sigma_xy) / dx -
-                        (stencil[ID(0, 0)].Pt - stencil[ID(0, -1)].Pt) / dy +
-                        roh0_g_alpha * ((stencil[ID(0, -1)].T + stencil[ID(0, 0)].T) * 0.5)
-                    );
+                    double Ry =
+                        1.0 / rho *
+                        ((stencil[ID(0, 0)].tau_yy - stencil[ID(0, -1)].tau_yy) / dy +
+                         (stencil[ID(0, -1)].sigma_xy - stencil[ID(-1, -1)].sigma_xy) / dx -
+                         (stencil[ID(0, 0)].Pt - stencil[ID(0, -1)].Pt) / dy +
+                         roh0_g_alpha * ((stencil[ID(0, -1)].T + stencil[ID(0, 0)].T) * 0.5));
                     new_cell.dVyd_tau = dampY * ALL(dVyd_tau) + Ry * delta_tau_iter;
                     new_cell.Vy = ALL(Vy) + new_cell.dVyd_tau * delta_tau_iter;
                 }
@@ -225,6 +224,24 @@ class ThermalSolverKernel {
     }
 };
 
+#if EXECUTOR == 0
+using Grid = cpu::Grid<ThermalConvectionCell>;
+using PseudoTransientUpdate = cpu::StencilUpdate<PseudoTransientKernel>;
+using ThermalSolverUpdate = cpu::StencilUpdate<ThermalSolverKernel>;
+
+#else
+constexpr uindex_t tile_width = 512;
+constexpr uindex_t tile_height = 512;
+using Grid = monotile::Grid<ThermalConvectionCell, tile_width, tile_height>;
+using PseudoTransientUpdate =
+    monotile::StencilUpdate<PseudoTransientKernel, PseudoTransientKernel::n_subgenerations * 5,
+                            tile_width, tile_height>;
+using ThermalSolverUpdate =
+    monotile::StencilUpdate<ThermalSolverKernel, ThermalSolverKernel::n_subgenerations, tile_width,
+                            tile_height>;
+
+#endif
+
 int main(int argc, char **argv) {
     if (argc != 3) {
         std::cerr << "Usage: " << argv[0] << " <path to experiment>.json <path to output directory>"
@@ -303,46 +320,34 @@ int main(int argc, char **argv) {
     double dampX = 1.0 - dmp / nx; // damping term for the x-momentum equation
     double dampY = 1.0 - dmp / ny; // damping term for the y-momentum equation
 
-    PseudoTransientKernel pseudo_transient_kernel{
-        .nx = nx,
-        .ny = ny,
-        .roh0_g_alpha = roh0_g_alpha,
-        .delta_eta_delta_T = delta_eta_delta_T,
-        .eta0 = eta0,
-        .deltaT = deltaT,
-        .dx = dx,
-        .dy = dy,
-        .delta_tau_iter = delta_tau_iter,
-        .beta = beta,
-        .rho = rho,
-        .dampX = dampX,
-        .dampY = dampY,
-        .DcT = DcT,
-    };
-    ThermalSolverKernel thermal_solver_kernel{
-        .nx = nx, .ny = ny, .dx = dx, .dy = dy, .dt = 0.0, .DcT = DcT};
+    sycl::queue queue;
 
-#if EXECUTOR == 0
-    SimpleCPUExecutor<PseudoTransientKernel, tdv::NoneSupplier> pseudo_transient_executor(
-        ThermalConvectionCell::halo_value(), pseudo_transient_kernel);
-    SimpleCPUExecutor<ThermalSolverKernel, tdv::NoneSupplier> thermal_solver_executor(
-        ThermalConvectionCell::halo_value(), thermal_solver_kernel);
-#else
-    MonotileExecutor<PseudoTransientKernel, tdv::NoneSupplier,
-                     PseudoTransientKernel::n_subgenerations * 5, 512, 512>
-        pseudo_transient_executor(ThermalConvectionCell::halo_value(), pseudo_transient_kernel);
-    MonotileExecutor<ThermalSolverKernel, tdv::NoneSupplier, ThermalSolverKernel::n_subgenerations,
-                     512, 512>
-        thermal_solver_executor(ThermalConvectionCell::halo_value(), thermal_solver_kernel);
-    #if HARDWARE == 1
-    pseudo_transient_executor.select_fpga();
-    thermal_solver_executor.select_fpga();
-    #endif
-#endif
+    PseudoTransientUpdate pseudo_transient_update({
+        .transition_function =
+            PseudoTransientKernel{
+                .nx = nx,
+                .ny = ny,
+                .roh0_g_alpha = roh0_g_alpha,
+                .delta_eta_delta_T = delta_eta_delta_T,
+                .eta0 = eta0,
+                .deltaT = deltaT,
+                .dx = dx,
+                .dy = dy,
+                .delta_tau_iter = delta_tau_iter,
+                .beta = beta,
+                .rho = rho,
+                .dampX = dampX,
+                .dampY = dampY,
+                .DcT = DcT,
+            },
+        .halo_value = ThermalConvectionCell::halo_value(),
+        .n_generations = nerr,
+        .queue = queue,
+    });
 
-    cl::sycl::buffer<ThermalConvectionCell, 2> grid = cl::sycl::range<2>(nx + 1, ny + 1);
+    Grid grid(nx + 1, ny + 1);
     {
-        auto ac = grid.template get_access<cl::sycl::access::mode::discard_write>();
+        Grid::GridAccessor<sycl::access::mode::read_write> ac(grid);
         for (uint32_t x = 0; x < nx + 1; x++) {
             for (uint32_t y = 0; y < ny + 1; y++) {
                 ThermalConvectionCell cell = ThermalConvectionCell::halo_value();
@@ -354,7 +359,7 @@ int main(int argc, char **argv) {
                     cell.T = deltaT * std::exp(-std::pow((x * dx - px) / w, 2) -
                                                std::pow((y * dy - py) / w, 2));
                 }
-                ac[x][y] = cell;
+                ac.set(x, y, cell);
             }
         }
     }
@@ -366,22 +371,19 @@ int main(int argc, char **argv) {
         double errV = 2 * epsilon;
         double errP = 2 * epsilon;
         double max_ErrV, max_ErrP, max_Vx, max_Vy, max_Pt;
-        pseudo_transient_executor.set_input(grid);
-        pseudo_transient_executor.set_i_generation(0);
+        uindex_t iter;
 
         auto transients_start = std::chrono::high_resolution_clock::now();
-        while ((errV > epsilon || errP > epsilon) &&
-               pseudo_transient_executor.get_i_generation() < iterMax) {
-            pseudo_transient_executor.run(nerr);
-            pseudo_transient_executor.copy_output(grid);
+        for (iter = 0; iter < iterMax && (errV > epsilon || errP > epsilon); iter += nerr) {
+            grid = pseudo_transient_update(grid);
 
             max_ErrV = max_ErrP = max_Vx = max_Vy = max_Pt =
                 -std::numeric_limits<double>::infinity();
             {
-                auto ac = grid.template get_access<cl::sycl::access::mode::read>();
+                Grid::GridAccessor<sycl::access::mode::read> ac(grid);
                 for (uint32_t x = 0; x < nx + 1; x++) {
                     for (uint32_t y = 0; y < ny + 1; y++) {
-                        auto cell = ac[x][y];
+                        auto cell = ac.get(x, y);
                         if (x < nx && y < ny + 1 && std::abs(cell.ErrV) > max_ErrV) {
                             max_ErrV = std::abs(cell.ErrV);
                         }
@@ -410,29 +412,31 @@ int main(int argc, char **argv) {
         double dt_adv = std::min(dx / max_Vx, dy / max_Vy) / 2.1;
         double dt = std::min(dt_diff, dt_adv);
 
-        thermal_solver_kernel.dt = dt;
-        thermal_solver_executor.set_trans_func(thermal_solver_kernel);
-        thermal_solver_executor.set_input(grid);
-        thermal_solver_executor.run(1);
-        thermal_solver_executor.copy_output(grid);
+        ThermalSolverUpdate thermal_solver_update({
+            .transition_function =
+                ThermalSolverKernel{.nx = nx, .ny = ny, .dx = dx, .dy = dy, .dt = dt, .DcT = DcT},
+            .halo_value = ThermalConvectionCell::halo_value(),
+            .n_generations = 1,
+            .queue = queue,
+        });
+        grid = thermal_solver_update(grid);
 
         auto transients_computation_time =
             std::chrono::duration_cast<std::chrono::duration<double>>(transients_end -
                                                                       transients_start);
 
-        printf("it = %d (iter = %d, time = %e), errV=%1.3e, errP=%1.3e \n", it,
-               pseudo_transient_executor.get_i_generation(), transients_computation_time.count(),
-               errV, errP);
+        printf("it = %d (iter = %d, time = %e), errV=%1.3e, errP=%1.3e \n", it, iter,
+               transients_computation_time.count(), errV, errP);
 
         if (it > 0 && it % nout == 0) {
             std::filesystem::path output_file_path =
                 output_dir_path / std::filesystem::path(std::to_string(it) + ".csv");
             std::ofstream out_file(output_file_path);
             {
-                auto ac = grid.get_access<cl::sycl::access::mode::read>();
+                Grid::GridAccessor<sycl::access::mode::read> ac(grid);
                 for (uindex_t c = 0; c < nx; c++) {
                     for (uindex_t r = 0; r < ny; r++) {
-                        out_file << ac[c][r].T;
+                        out_file << ac.get(c, r).T;
                         if (r != ny - 1) {
                             out_file << ",";
                         }
