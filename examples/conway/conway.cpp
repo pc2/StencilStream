@@ -21,6 +21,7 @@
 #include <StencilStream/cpu/StencilUpdate.hpp>
 #include <StencilStream/monotile/StencilUpdate.hpp>
 #include <StencilStream/tdv/NoneSupplier.hpp>
+#include <sycl/ext/intel/fpga_extensions.hpp>
 
 using namespace stencil;
 #ifdef CPU
@@ -102,9 +103,16 @@ int main(int argc, char **argv) {
 
     Grid<bool> grid = read(width, height);
 
+#ifdef HARDWARE
+    sycl::queue queue = sycl::ext::intel::fpga_selector_v;
+#else
+    sycl::queue queue;
+#endif
+
     StencilUpdate<ConwayKernel> update({
         .transition_function = ConwayKernel(),
         .n_generations = n_generations,
+        .queue = queue,
     });
     grid = update(grid);
 

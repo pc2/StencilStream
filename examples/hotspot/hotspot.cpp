@@ -248,10 +248,17 @@ int main(int argc, char **argv) {
     FLOAT Rz_1 = 1.f / Rz;
     FLOAT Cap_1 = step / Cap;
 
+#if HARDWARE == 1
+    sycl::queue queue = sycl::ext::intel::fpga_selector_v;
+#else
+    sycl::queue queue;
+#endif
+
     StencilUpdate update({
         .transition_function = HotspotKernel{Rx_1, Ry_1, Rz_1, Cap_1},
         .halo_value = HotspotCell(0.0, 0.0),
         .n_generations = sim_time,
+        .queue = queue,
     });
 
     auto start = std::chrono::high_resolution_clock::now();

@@ -4,6 +4,7 @@
     #include <StencilStream/monotile/StencilUpdate.hpp>
 #endif
 #include <StencilStream/tdv/NoneSupplier.hpp>
+#include <sycl/ext/intel/fpga_extensions.hpp>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -320,7 +321,11 @@ int main(int argc, char **argv) {
     double dampX = 1.0 - dmp / nx; // damping term for the x-momentum equation
     double dampY = 1.0 - dmp / ny; // damping term for the y-momentum equation
 
+#if HARDWARE == 1
+    sycl::queue queue = sycl::ext::intel::fpga_selector_v;
+#else
     sycl::queue queue;
+#endif
 
     PseudoTransientUpdate pseudo_transient_update({
         .transition_function =
