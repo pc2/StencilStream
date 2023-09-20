@@ -23,27 +23,32 @@ target_compile_definitions(hotspot_cpu PUBLIC EXECUTOR=2)
 
 # Common hardware options
 add_compile_options(-fintelfpga)
-add_link_options(-fintelfpga -Xshardware)
+add_link_options(-fintelfpga)
 
 if(VERBOSE_SYNTHESIS)
     add_link_options(-Xsv)
 endif()
 
 # Monotile versions
-foreach(EXECUTABLE hotspot_mono hotspot_mono_report)
+foreach(EXECUTABLE hotspot_mono hotspot_mono_emu hotspot_mono_report)
     add_executable(${EXECUTABLE} hotspot.cpp)
     target_compile_definitions(${EXECUTABLE} PUBLIC EXECUTOR=0)
 endforeach()
 
 # Tiling versions
-foreach(EXECUTABLE hotspot_tiling hotspot_tiling_report)
+foreach(EXECUTABLE hotspot_tiling hotspot_tiling_emu hotspot_tiling_report)
     add_executable(${EXECUTABLE} hotspot.cpp)
     target_compile_definitions(${EXECUTABLE} PUBLIC EXECUTOR=1)
 endforeach()
 
-# Adding -fsycl-link to report executables
+# Adding options for report executables
 foreach(EXECUTABLE hotspot_mono_report hotspot_tiling_report)
-    target_link_options(${EXECUTABLE} PUBLIC -fsycl-link)
+    target_link_options(${EXECUTABLE} PUBLIC -Xshardware -fsycl-link)
+endforeach()
+
+# Adding options for hardware executables
+foreach(EXECUTABLE hotspot_mono hotspot_tiling)
+    target_link_options(${EXECUTABLE} PUBLIC -Xshardware)
 endforeach()
 
 # Adding a custom target for all Hotspot reports
