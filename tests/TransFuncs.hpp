@@ -49,12 +49,12 @@ struct GenerationFunction {
 template <stencil::uindex_t radius> class FPGATransFunc {
   public:
     using Cell = Cell;
-    using TimeDependentValue = std::monostate; // stencil::uindex_t;
+    using TimeDependentValue = stencil::uindex_t;
 
     static constexpr stencil::uindex_t stencil_radius = radius;
     static constexpr stencil::uindex_t n_subgenerations = 2;
 
-    Cell operator()(stencil::Stencil<Cell, radius> const &stencil) const {
+    Cell operator()(stencil::Stencil<Cell, radius, TimeDependentValue> const &stencil) const {
         Cell new_cell = stencil[stencil::ID(0, 0)];
 
         bool is_valid = true;
@@ -82,7 +82,7 @@ template <stencil::uindex_t radius> class FPGATransFunc {
                 }
             }
         }
-        // is_valid &= stencil.time_dependent_value == stencil.generation;
+        is_valid &= stencil.time_dependent_value == stencil.generation;
 
         new_cell.status = is_valid ? CellStatus::Normal : CellStatus::Invalid;
         if (new_cell.i_subgeneration == n_subgenerations - 1) {

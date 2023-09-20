@@ -20,11 +20,13 @@
 #pragma once
 #include "../Concepts.hpp"
 #include "../Stencil.hpp"
+#include "../tdv/NoneSupplier.hpp"
 #include "Grid.hpp"
 
 namespace stencil {
 namespace cpu {
-template <concepts::TransitionFunction F> class StencilUpdate {
+template <concepts::TransitionFunction F, concepts::tdv::HostState TDVHostState = tdv::NoneSupplier>
+class StencilUpdate {
   public:
     using Cell = F::Cell;
     using GridImpl = Grid<Cell>;
@@ -33,6 +35,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
         F transition_function;
         Cell halo_value = Cell();
         uindex_t n_generations = 1;
+        TDVHostState tdv_host_state;
         sycl::queue queue = sycl::queue();
     };
 
@@ -63,6 +66,10 @@ template <concepts::TransitionFunction F> class StencilUpdate {
 
   private:
     void run_gen(GridImpl &pass_source, GridImpl &pass_target, uindex_t i_gen, uindex_t i_subgen) {
+        using TDVKernelArgument = typename TDVHostState::KernelArgument;
+        using TDVLocalState = typename TDVKernelArgument::LocalState;
+        using TDVValue = typename TDVLocalState::Value;
+
         params.queue.submit([&](sycl::handler &cgh) {
             sycl::accessor source_ac(pass_source.get_buffer(), cgh, sycl::read_only);
             sycl::accessor target_ac(pass_target.get_buffer(), cgh, sycl::write_only);
@@ -71,11 +78,15 @@ template <concepts::TransitionFunction F> class StencilUpdate {
             index_t stencil_radius = index_t(F::stencil_radius);
             Cell halo_value = params.halo_value;
             F transition_function = params.transition_function;
+            TDVKernelArgument tdv_kernel_argument =
+                params.tdv_host_state.build_kernel_argument(cgh, i_gen, 1);
+            TDVLocalState tdv_local_state = tdv_kernel_argument.build_local_state();
+            TDVValue tdv_value = tdv_local_state.get_value(0);
 
             auto kernel = [=](sycl::id<2> id) {
-                using StencilImpl = Stencil<Cell, F::stencil_radius>;
+                using StencilImpl = Stencil<Cell, F::stencil_radius, TDVValue>;
                 StencilImpl stencil(ID(id[0], id[1]), UID(grid_width, grid_height), i_gen, i_subgen,
-                                    i_subgen, std::monostate());
+                                    i_subgen, tdv_value);
 
                 for (index_t rel_c = -stencil_radius; rel_c <= stencil_radius; rel_c++) {
                     for (index_t rel_r = -stencil_radius; rel_r <= stencil_radius; rel_r++) {

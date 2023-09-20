@@ -20,13 +20,14 @@
 #include "../TransFuncs.hpp"
 #include "../constants.hpp"
 #include <StencilStream/monotile/StencilUpdate.hpp>
+#include <StencilStream/tdv/InlineSupplier.hpp>
 
 using namespace sycl;
 using namespace stencil;
 using namespace stencil::monotile;
 
-using StencilUpdateImpl =
-    StencilUpdate<FPGATransFunc<1>, n_processing_elements, tile_width, tile_height>;
+using StencilUpdateImpl = StencilUpdate<FPGATransFunc<1>, tdv::InlineSupplier<GenerationFunction>,
+                                        n_processing_elements, tile_width, tile_height>;
 using GridImpl = typename StencilUpdateImpl::GridImpl;
 
 void test_monotile_stencil_update(uindex_t grid_width, uindex_t grid_height,
@@ -46,6 +47,7 @@ void test_monotile_stencil_update(uindex_t grid_width, uindex_t grid_height,
         .transition_function = FPGATransFunc<1>(),
         .halo_value = Cell::halo(),
         .n_generations = n_generations,
+        .tdv_host_state = tdv::InlineSupplier<GenerationFunction>(GenerationFunction()),
     });
 
     GridImpl output_grid = update(input_grid);

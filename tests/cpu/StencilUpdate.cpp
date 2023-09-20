@@ -20,12 +20,13 @@
 #include "../TransFuncs.hpp"
 #include "../constants.hpp"
 #include <StencilStream/cpu/StencilUpdate.hpp>
+#include <StencilStream/tdv/InlineSupplier.hpp>
 
 using namespace sycl;
 using namespace stencil;
 using namespace stencil::cpu;
 
-using StencilUpdateImpl = StencilUpdate<FPGATransFunc<1>>;
+using StencilUpdateImpl = StencilUpdate<FPGATransFunc<1>, tdv::InlineSupplier<GenerationFunction>>;
 using GridImpl = typename StencilUpdateImpl::GridImpl;
 
 TEST_CASE("cpu::StencilUpdate", "[cpu::StencilUpdate]") {
@@ -43,11 +44,11 @@ TEST_CASE("cpu::StencilUpdate", "[cpu::StencilUpdate]") {
         }
     }
 
-    StencilUpdateImpl update({
-        .transition_function = FPGATransFunc<1>(),
-        .halo_value = Cell::halo(),
-        .n_generations = n_generations,
-    });
+    StencilUpdateImpl update(
+        {.transition_function = FPGATransFunc<1>(),
+         .halo_value = Cell::halo(),
+         .n_generations = n_generations,
+         .tdv_host_state = tdv::InlineSupplier<GenerationFunction>(GenerationFunction())});
 
     GridImpl output_grid = update(input_grid);
 

@@ -25,8 +25,9 @@
 namespace stencil {
 namespace tiling {
 
-template <concepts::TransitionFunction F, uindex_t n_processing_elements = 1,
-          uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t word_size = 64>
+template <concepts::TransitionFunction F, concepts::tdv::HostState TDVHostState = tdv::NoneSupplier,
+          uindex_t n_processing_elements = 1, uindex_t tile_width = 1024,
+          uindex_t tile_height = 1024, uindex_t word_size = 64>
 class StencilUpdate {
   public:
     using Cell = F::Cell;
@@ -37,6 +38,7 @@ class StencilUpdate {
         F transition_function;
         Cell halo_value = Cell();
         uindex_t n_generations = 1;
+        TDVHostState tdv_host_state;
         sycl::queue queue = sycl::queue();
     };
 
@@ -45,8 +47,9 @@ class StencilUpdate {
     GridImpl operator()(GridImpl &source_grid) {
         using in_pipe = sycl::pipe<class monotile_in_pipe, Cell>;
         using out_pipe = sycl::pipe<class monotile_out_pipe, Cell>;
-        using ExecutionKernelImpl = ExecutionKernel<F, tdv::NoneSupplier, n_processing_elements,
-                                                    tile_width, tile_height, in_pipe, out_pipe>;
+        using ExecutionKernelImpl =
+            ExecutionKernel<F, typename TDVHostState::KernelArgument, n_processing_elements,
+                            tile_width, tile_height, in_pipe, out_pipe>;
 
         GridImpl swap_grid_a = source_grid.make_similar();
         GridImpl swap_grid_b = source_grid.make_similar();
@@ -68,10 +71,12 @@ class StencilUpdate {
                         uindex_t c_offset = i_tile_c * tile_width;
                         uindex_t r_offset = i_tile_r * tile_height;
 
+                        auto tdv_kernel_argument =
+                            params.tdv_host_state.build_kernel_argument(cgh, i_gen, gens_per_pass);
                         ExecutionKernelImpl exec_kernel(params.transition_function, i_gen,
                                                         params.n_generations, c_offset, r_offset,
                                                         grid_width, grid_height, params.halo_value,
-                                                        tdv::NoneSupplier());
+                                                        tdv_kernel_argument);
                         cgh.single_task<ExecutionKernelImpl>(exec_kernel);
                     });
 
