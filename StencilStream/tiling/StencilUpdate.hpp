@@ -37,14 +37,14 @@ class StencilUpdate {
         F transition_function;
         Cell halo_value = Cell();
         uindex_t n_generations = 1;
-        cl::sycl::queue queue = cl::sycl::queue();
+        sycl::queue queue = sycl::queue();
     };
 
     StencilUpdate(Params params) : params(params) {}
 
     GridImpl operator()(GridImpl &source_grid) {
-        using in_pipe = cl::sycl::pipe<class monotile_in_pipe, Cell>;
-        using out_pipe = cl::sycl::pipe<class monotile_out_pipe, Cell>;
+        using in_pipe = sycl::pipe<class monotile_in_pipe, Cell>;
+        using out_pipe = sycl::pipe<class monotile_out_pipe, Cell>;
         using ExecutionKernelImpl = ExecutionKernel<F, tdv::NoneSupplier, n_processing_elements,
                                                     tile_width, tile_height, in_pipe, out_pipe>;
 
@@ -64,7 +64,7 @@ class StencilUpdate {
                 for (uindex_t i_tile_r = 0; i_tile_r < tile_range.r; i_tile_r++) {
                     pass_source.template submit_read<in_pipe>(params.queue, i_tile_c, i_tile_r);
 
-                    params.queue.submit([&](cl::sycl::handler &cgh) {
+                    params.queue.submit([&](sycl::handler &cgh) {
                         uindex_t c_offset = i_tile_c * tile_width;
                         uindex_t r_offset = i_tile_r * tile_height;
 

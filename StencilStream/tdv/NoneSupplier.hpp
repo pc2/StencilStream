@@ -33,7 +33,7 @@ class NoneSupplier {
 
     void prepare_range(uindex_t i_generation, uindex_t n_generations) {}
 
-    NoneSupplier build_kernel_argument(cl::sycl::handler &cgh, uindex_t i_generation,
+    NoneSupplier build_kernel_argument(sycl::handler &cgh, uindex_t i_generation,
                                        uindex_t n_generation) const {
         return NoneSupplier();
     }

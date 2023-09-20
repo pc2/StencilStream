@@ -61,7 +61,7 @@ struct ConwayKernel {
 Grid<bool> read(uindex_t width, uindex_t height) {
     Grid<bool> input_grid(width, height);
     {
-        auto grid_ac = input_grid.get_access<cl::sycl::access::mode::discard_write>();
+        Grid<bool>::GridAccessor<sycl::access::mode::read_write> grid_ac(input_grid);
 
         for (uindex_t r = 0; r < height; r++) {
             for (uindex_t c = 0; c < width; c++) {
@@ -76,7 +76,7 @@ Grid<bool> read(uindex_t width, uindex_t height) {
 }
 
 void write(Grid<bool> output_grid) {
-    auto grid_ac = output_grid.get_access<cl::sycl::access::mode::read>();
+    Grid<bool>::GridAccessor<sycl::access::mode::read> grid_ac(output_grid);
 
     for (uindex_t r = 0; r < output_grid.get_grid_height(); r++) {
         for (uindex_t c = 0; c < output_grid.get_grid_width(); c++) {

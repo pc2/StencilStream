@@ -31,7 +31,7 @@
 #include <StencilStream/tdv/NoneSupplier.hpp>
 
 using namespace std;
-using namespace cl::sycl;
+using namespace sycl;
 using namespace stencil;
 
 typedef float FLOAT;
@@ -132,7 +132,7 @@ void write_output(Grid vect, string file) {
 
     uindex_t n_columns = vect.get_grid_width();
     uindex_t n_rows = vect.get_grid_height();
-    auto vect_ac = vect.get_access<access::mode::read>();
+    Grid::GridAccessor<access::mode::read> vect_ac(vect);
 
     int i = 0;
     for (index_t r = 0; r < n_rows; r++) {
@@ -154,7 +154,7 @@ Grid read_input(string temp_file, string power_file, uindex_t n_columns, uindex_
 
     Grid vect(n_columns, n_rows);
     {
-        auto vect_ac = vect.get_access<access::mode::write>();
+        Grid::GridAccessor<access::mode::read_write> vect_ac(vect);
 
         for (index_t r = 0; r < n_rows; r++) {
             for (index_t c = 0; c < n_columns; c++) {
@@ -190,11 +190,11 @@ void usage(int argc, char **argv) {
     exit(1);
 }
 
-auto exception_handler = [](cl::sycl::exception_list exceptions) {
+auto exception_handler = [](sycl::exception_list exceptions) {
     for (std::exception_ptr const &e : exceptions) {
         try {
             std::rethrow_exception(e);
-        } catch (cl::sycl::exception const &e) {
+        } catch (sycl::exception const &e) {
             std::cout << "Caught asynchronous SYCL exception:\n" << e.what() << "\n";
             std::terminate();
         }

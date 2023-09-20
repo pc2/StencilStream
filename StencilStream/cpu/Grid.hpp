@@ -25,47 +25,41 @@ namespace stencil {
 namespace cpu {
 template <typename Cell> class Grid {
   public:
-    Grid(uindex_t c, uindex_t r) : buffer(cl::sycl::range<2>(c, r)) {}
+    Grid(uindex_t c, uindex_t r) : buffer(sycl::range<2>(c, r)) {}
 
-    Grid(cl::sycl::buffer<Cell, 2> other_buffer) : buffer(other_buffer.get_range()) {
+    Grid(sycl::buffer<Cell, 2> other_buffer) : buffer(other_buffer.get_range()) {
         copy_from_buffer(other_buffer);
     }
 
-    void copy_from_buffer(cl::sycl::buffer<Cell, 2> other_buffer) {
+    void copy_from_buffer(sycl::buffer<Cell, 2> other_buffer) {
         if (buffer.get_range() != other_buffer.get_range()) {
             throw std::range_error("The target buffer has not the same size as the grid");
         }
-        auto buffer_ac = buffer.template get_access<cl::sycl::access::mode::discard_write>();
-        auto other_ac = other_buffer.template get_access<cl::sycl::access::mode::read>();
+        sycl::host_accessor buffer_ac(buffer, sycl::write_only);
+        sycl::host_accessor other_ac(other_buffer, sycl::read_only);
         std::memcpy(buffer_ac.get_pointer(), other_ac.get_pointer(), buffer_ac.byte_size());
     }
 
-    void copy_to_buffer(cl::sycl::buffer<Cell, 2> other_buffer) {
+    void copy_to_buffer(sycl::buffer<Cell, 2> other_buffer) {
         if (buffer.get_range() != other_buffer.get_range()) {
             throw std::range_error("The target buffer has not the same size as the grid");
         }
-        auto other_ac = other_buffer.template get_access<cl::sycl::access::mode::discard_write>();
-        auto buffer_ac = buffer.template get_access<cl::sycl::access::mode::read>();
+        sycl::host_accessor buffer_ac(buffer, sycl::read_only);
+        sycl::host_accessor other_ac(other_buffer, sycl::write_only);
         std::memcpy(other_ac.get_pointer(), buffer_ac.get_pointer(), buffer_ac.byte_size());
     }
 
-    template <cl::sycl::access::mode access_mode> class GridAccessor {
+    template <sycl::access::mode access_mode = sycl::access::mode::read_write> class GridAccessor {
       public:
-        using Accessor =
-            cl::sycl::accessor<Cell, 2, access_mode, cl::sycl::access::target::host_buffer>;
-        GridAccessor(Accessor ac) : ac(ac) {}
+        GridAccessor(Grid &grid) : ac(grid.buffer) {}
 
         Cell get(uindex_t c, uindex_t r) const { return ac[c][r]; }
 
         void set(uindex_t c, uindex_t r, Cell cell) { ac[c][r] = cell; }
 
       private:
-        Accessor ac;
+        sycl::host_accessor<Cell, 2, access_mode> ac;
     };
-
-    template <cl::sycl::access::mode access_mode> GridAccessor<access_mode> get_access() {
-        return GridAccessor<access_mode>(buffer.template get_access<access_mode>());
-    }
 
     uindex_t get_grid_width() const { return buffer.get_range()[0]; }
 
@@ -73,10 +67,10 @@ template <typename Cell> class Grid {
 
     Grid make_similar() const { return Grid(get_grid_width(), get_grid_height()); }
 
-    cl::sycl::buffer<Cell, 2> get_buffer() { return buffer; }
+    sycl::buffer<Cell, 2> &get_buffer() { return buffer; }
 
   private:
-    cl::sycl::buffer<Cell, 2> buffer;
+    sycl::buffer<Cell, 2> buffer;
 };
 } // namespace cpu
 } // namespace stencil

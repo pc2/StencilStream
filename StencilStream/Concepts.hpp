@@ -45,23 +45,25 @@ concept TransitionFunction =
         { trans_func(stencil) } -> std::same_as<typename T::Cell>;
     };
 
+template <typename Accessor, typename Cell>
+concept GridAccessor = requires(Accessor ac, uindex_t c, uindex_t r, Cell cell) {
+    { ac.get(c, r) } -> std::same_as<Cell>;
+    { ac.set(c, r, cell) } -> std::same_as<void>;
+};
+
 template <typename G, typename Cell>
-concept Grid =
-    requires(G grid, cl::sycl::buffer<Cell, 2> buffer, uindex_t c, uindex_t r, Cell cell) {
-        { G(c, r) } -> std::same_as<G>;
-        { G(buffer) } -> std::same_as<G>;
-        { grid.copy_from_buffer(buffer) } -> std::same_as<void>;
-        { grid.copy_to_buffer(buffer) } -> std::same_as<void>;
-        {
-            grid.template get_access<cl::sycl::access::mode::read>().get(c, r)
-        } -> std::same_as<Cell>;
-        {
-            grid.template get_access<cl::sycl::access::mode::write>().set(c, r, cell)
-        } -> std::same_as<void>;
-        { grid.get_grid_width() } -> std::convertible_to<uindex_t>;
-        { grid.get_grid_height() } -> std::convertible_to<uindex_t>;
-        { grid.make_similar() } -> std::same_as<G>;
-    };
+concept Grid = requires(G &grid, sycl::buffer<Cell, 2> buffer, uindex_t c, uindex_t r, Cell cell) {
+    { G(c, r) } -> std::same_as<G>;
+    { G(buffer) } -> std::same_as<G>;
+    { grid.copy_from_buffer(buffer) } -> std::same_as<void>;
+    { grid.copy_to_buffer(buffer) } -> std::same_as<void>;
+    { grid.get_grid_width() } -> std::convertible_to<uindex_t>;
+    { grid.get_grid_height() } -> std::convertible_to<uindex_t>;
+    { grid.make_similar() } -> std::same_as<G>;
+    {
+        typename G::template GridAccessor<sycl::access::mode::read_write>(grid)
+    } -> GridAccessor<Cell>;
+};
 
 namespace tdv {
 
@@ -86,7 +88,7 @@ concept KernelArgument =
 template <typename T>
 concept HostState =
     KernelArgument<typename T::KernelArgument> &&
-    requires(T &supplier, cl::sycl::handler &cgh, uindex_t i_generation, uindex_t n_generations) {
+    requires(T &supplier, sycl::handler &cgh, uindex_t i_generation, uindex_t n_generations) {
         {
             // building the global state
             supplier.build_kernel_argument(cgh, i_generation, n_generations)

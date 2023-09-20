@@ -69,19 +69,26 @@ class Grid {
         allocate_tiles();
     }
 
-    Grid(cl::sycl::buffer<Cell, 2> input_buffer)
+    Grid(sycl::buffer<Cell, 2> input_buffer)
         : tiles(), grid_width(input_buffer.get_range()[0]),
           grid_height(input_buffer.get_range()[1]) {
         copy_from_buffer(input_buffer);
     }
 
-    template <cl::sycl::access::mode access_mode> class GridAccessor {
+    template <sycl::access::mode access_mode> class GridAccessor {
       public:
         using TileAccessor = typename Tile::template TileAccessor<access_mode>;
 
-        GridAccessor(std::vector<std::vector<TileAccessor>> tile_acs, uindex_t grid_width,
-                     uindex_t grid_height)
-            : tile_acs(tile_acs), grid_width(grid_width), grid_height(grid_height) {}
+        GridAccessor(Grid &grid)
+            : tile_acs(), grid_width(grid.get_grid_width()), grid_height(grid.get_grid_height()) {
+            for (uindex_t tile_c = 0; tile_c < grid.get_tile_range().c; tile_c++) {
+                tile_acs.push_back(std::vector<TileAccessor>());
+                for (uindex_t tile_r = 0; tile_r < grid.get_tile_range().r; tile_r++) {
+                    TileAccessor next_ac(grid.get_tile(tile_c, tile_r));
+                    tile_acs.back().push_back(next_ac);
+                }
+            }
+        }
 
         Cell get(uindex_t c, uindex_t r) const {
             return tile_acs[c / tile_width][r / tile_height].get(c % tile_width, r % tile_height);
@@ -96,25 +103,9 @@ class Grid {
         uindex_t grid_width, grid_height;
     };
 
-    template <cl::sycl::access::mode access_mode> GridAccessor<access_mode> get_access() {
-        using GridAC = GridAccessor<access_mode>;
-        using TileAC = GridAC::TileAccessor;
-
-        std::vector<std::vector<TileAC>> tile_acs;
-        for (uindex_t tile_c = 0; tile_c < get_tile_range().c; tile_c++) {
-            tile_acs.push_back(std::vector<TileAC>());
-            for (uindex_t tile_r = 0; tile_r < get_tile_range().r; tile_r++) {
-                auto next_ac = get_tile(tile_c, tile_r).template get_access<access_mode>();
-                tile_acs.back().push_back(next_ac);
-            }
-        }
-
-        return GridAC(tile_acs, grid_width, grid_height);
-    }
-
-    void copy_from_buffer(cl::sycl::buffer<Cell, 2> input_buffer) {
+    void copy_from_buffer(sycl::buffer<Cell, 2> input_buffer) {
         if (input_buffer.get_range() !=
-            cl::sycl::range<2>(this->get_grid_width(), this->get_grid_height())) {
+            sycl::range<2>(this->get_grid_width(), this->get_grid_height())) {
             throw std::range_error("The target buffer has not the same size as the grid");
         }
 
@@ -122,8 +113,7 @@ class Grid {
 
         for (uindex_t tile_column = 1; tile_column < tiles.size() - 1; tile_column++) {
             for (uindex_t tile_row = 1; tile_row < tiles[tile_column].size() - 1; tile_row++) {
-                cl::sycl::id<2> offset((tile_column - 1) * tile_width,
-                                       (tile_row - 1) * tile_height);
+                sycl::id<2> offset((tile_column - 1) * tile_width, (tile_row - 1) * tile_height);
                 tiles[tile_column][tile_row].copy_from(input_buffer, offset);
             }
         }
@@ -138,16 +128,15 @@ class Grid {
      * \param out_buffer The buffer to copy the cells to.
      * \throws std::range_error The buffer's size is not the same as the grid's size.
      */
-    void copy_to_buffer(cl::sycl::buffer<Cell, 2> output_buffer) {
+    void copy_to_buffer(sycl::buffer<Cell, 2> output_buffer) {
         if (output_buffer.get_range() !=
-            cl::sycl::range<2>(this->get_grid_width(), this->get_grid_height())) {
+            sycl::range<2>(this->get_grid_width(), this->get_grid_height())) {
             throw std::range_error("The target buffer has not the same size as the grid");
         }
 
         for (uindex_t tile_column = 1; tile_column < tiles.size() - 1; tile_column++) {
             for (uindex_t tile_row = 1; tile_row < tiles[tile_column].size() - 1; tile_row++) {
-                cl::sycl::id<2> offset((tile_column - 1) * tile_width,
-                                       (tile_row - 1) * tile_height);
+                sycl::id<2> offset((tile_column - 1) * tile_width, (tile_row - 1) * tile_height);
                 tiles[tile_column][tile_row].copy_to(output_buffer, offset);
             }
         }
@@ -190,12 +179,12 @@ class Grid {
     Tile &get_tile(index_t tile_c, index_t tile_r) { return tiles.at(tile_c + 1).at(tile_r + 1); }
 
     template <typename in_pipe>
-    void submit_read(cl::sycl::queue queue, index_t tile_c, index_t tile_r) {
-        using feed_in_pipe_0 = cl::sycl::pipe<class feed_in_pipe_0_id, Cell>;
-        using feed_in_pipe_1 = cl::sycl::pipe<class feed_in_pipe_1_id, Cell>;
-        using feed_in_pipe_2 = cl::sycl::pipe<class feed_in_pipe_2_id, Cell>;
-        using feed_in_pipe_3 = cl::sycl::pipe<class feed_in_pipe_3_id, Cell>;
-        using feed_in_pipe_4 = cl::sycl::pipe<class feed_in_pipe_4_id, Cell>;
+    void submit_read(sycl::queue queue, index_t tile_c, index_t tile_r) {
+        using feed_in_pipe_0 = sycl::pipe<class feed_in_pipe_0_id, Cell>;
+        using feed_in_pipe_1 = sycl::pipe<class feed_in_pipe_1_id, Cell>;
+        using feed_in_pipe_2 = sycl::pipe<class feed_in_pipe_2_id, Cell>;
+        using feed_in_pipe_3 = sycl::pipe<class feed_in_pipe_3_id, Cell>;
+        using feed_in_pipe_4 = sycl::pipe<class feed_in_pipe_4_id, Cell>;
 
         if (tile_c >= get_tile_range().c || tile_r >= get_tile_range().r) {
             throw std::range_error("Tile ID out of range!");
@@ -287,7 +276,7 @@ class Grid {
             .template submit_read_part<feed_in_pipe_4>(queue, Tile::Part::NORTH_WEST_CORNER,
                                                        part_widths[4], halo_radius, 0, 0);
 
-        queue.submit([&](cl::sycl::handler &cgh) {
+        queue.submit([&](sycl::handler &cgh) {
             uindex_t n_inner_columns = part_widths[1] + part_widths[2] + part_widths[3];
 
             cgh.single_task([=]() {
@@ -322,10 +311,10 @@ class Grid {
     }
 
     template <typename out_pipe>
-    void submit_write(cl::sycl::queue queue, index_t tile_c, index_t tile_r) {
-        using feed_out_pipe_0 = cl::sycl::pipe<class feed_out_pipe_0_id, Cell>;
-        using feed_out_pipe_1 = cl::sycl::pipe<class feed_out_pipe_1_id, Cell>;
-        using feed_out_pipe_2 = cl::sycl::pipe<class feed_out_pipe_2_id, Cell>;
+    void submit_write(sycl::queue queue, index_t tile_c, index_t tile_r) {
+        using feed_out_pipe_0 = sycl::pipe<class feed_out_pipe_0_id, Cell>;
+        using feed_out_pipe_1 = sycl::pipe<class feed_out_pipe_1_id, Cell>;
+        using feed_out_pipe_2 = sycl::pipe<class feed_out_pipe_2_id, Cell>;
 
         if (tile_c >= get_tile_range().c || tile_r >= get_tile_range().r) {
             throw std::range_error("Tile ID out of range!");
@@ -333,7 +322,7 @@ class Grid {
 
         auto part_widths = get_part_widths(tile_c);
 
-        queue.submit([&](cl::sycl::handler &cgh) {
+        queue.submit([&](sycl::handler &cgh) {
             uindex_t n_inner_columns = part_widths[1] + part_widths[2] + part_widths[3];
 
             cgh.single_task([=]() {

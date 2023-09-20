@@ -24,7 +24,7 @@
 #include <catch2/catch_all.hpp>
 
 using namespace stencil;
-using namespace cl::sycl;
+using namespace sycl;
 using namespace stencil::tiling;
 using namespace std;
 
@@ -32,22 +32,22 @@ using TileImpl = Tile<ID, tile_width, tile_height, halo_radius, 64>;
 constexpr uindex_t word_length = 8;
 static_assert(word_length == TileImpl::word_length);
 
-TEST_CASE("Tile::operator[]", "[Tile]") {
+TEST_CASE("Tile::get_part_buffer", "[Tile]") {
     TileImpl tile;
 
     for (TileImpl::Part part_type : TileImpl::all_parts) {
-        auto part = tile[part_type];
+        auto part = tile.get_part_buffer(part_type);
 
         uindex_t required_words = TileImpl::get_part_words(part_type);
         REQUIRE(required_words == part.get_range()[0]);
     }
 }
 
-TEST_CASE("Tile::get_access", "[Tile]") {
+TEST_CASE("Tile::TileAccessor", "[Tile]") {
     TileImpl tile;
 
     {
-        auto tile_ac = tile.get_access<access::mode::discard_write>();
+        TileImpl::TileAccessor<access::mode::read_write> tile_ac(tile);
         for (uindex_t c = 0; c < tile_width; c++) {
             for (uindex_t r = 0; r < tile_height; r++) {
                 tile_ac.set(c, r, ID(c, r));
@@ -58,7 +58,8 @@ TEST_CASE("Tile::get_access", "[Tile]") {
     for (TileImpl::Part part : TileImpl::all_parts) {
         auto true_range = TileImpl::get_part_range(part);
         auto content_offset = TileImpl::get_part_offset(part);
-        auto part_ac = tile[part].get_access<access::mode::read>();
+        auto part_buffer = tile.get_part_buffer(part);
+        host_accessor part_ac(part_buffer, read_only);
 
         for (uindex_t c = 0; c < true_range.c; c++) {
             for (uindex_t r = 0; r < true_range.r; r++) {
@@ -77,7 +78,7 @@ TEST_CASE("Tile::get_access", "[Tile]") {
     }
 
     {
-        auto tile_ac = tile.get_access<access::mode::read>();
+        TileImpl::TileAccessor<access::mode::read> tile_ac(tile);
         for (uindex_t c = 0; c < tile_width; c++) {
             for (uindex_t r = 0; r < tile_height; r++) {
                 REQUIRE(tile_ac.get(c, r) == ID(c, r));
@@ -90,7 +91,7 @@ void copy_from_test_impl(uindex_t tile_width, uindex_t tile_height) {
     buffer<ID, 2> in_buffer(range<2>(tile_width, tile_height));
 
     {
-        auto in_buffer_ac = in_buffer.get_access<access::mode::discard_write>();
+        host_accessor in_buffer_ac(in_buffer, write_only);
         for (uindex_t c = 0; c < tile_width; c++) {
             for (uindex_t r = 0; r < tile_height; r++) {
                 in_buffer_ac[c][r] = ID(c, r);
@@ -102,7 +103,7 @@ void copy_from_test_impl(uindex_t tile_width, uindex_t tile_height) {
     tile.copy_from(in_buffer, id<2>(0, 0));
 
     {
-        auto tile_ac = tile.get_access<access::mode::read>();
+        TileImpl::TileAccessor<access::mode::read> tile_ac(tile);
         for (uindex_t c = 0; c < tile_width; c++) {
             for (uindex_t r = 0; r < tile_height; r++) {
                 REQUIRE(tile_ac.get(c, r) == ID(c, r));
@@ -122,7 +123,7 @@ void copy_to_test_impl(uindex_t tile_width, uindex_t tile_height) {
     TileImpl tile;
 
     {
-        auto tile_ac = tile.get_access<access::mode::discard_write>();
+        TileImpl::TileAccessor<access::mode::read_write> tile_ac(tile);
         for (uindex_t c = 0; c < tile_width; c++) {
             for (uindex_t r = 0; r < tile_height; r++) {
                 tile_ac.set(c, r, ID(c, r));
@@ -133,7 +134,7 @@ void copy_to_test_impl(uindex_t tile_width, uindex_t tile_height) {
     buffer<ID, 2> out_buffer(range<2>(tile_width, tile_height));
     tile.copy_to(out_buffer, id<2>(0, 0));
 
-    auto out_buffer_ac = out_buffer.get_access<access::mode::read>();
+    host_accessor out_buffer_ac(out_buffer, read_only);
     for (uindex_t c = 0; c < tile_width; c++) {
         for (uindex_t r = 0; r < tile_height; r++) {
             REQUIRE(out_buffer_ac[c][r].c == c);
@@ -153,7 +154,7 @@ void submit_read_part_test_impl(TileImpl::Part part, uindex_t n_columns, uindex_
                                 uindex_t c_offset, uindex_t r_offset) {
     TileImpl tile;
     {
-        auto tile_ac = tile.get_access<access::mode::discard_write>();
+        TileImpl::TileAccessor<access::mode::read_write> tile_ac(tile);
         for (uindex_t c = 0; c < tile_width; c++) {
             for (uindex_t r = 0; r < tile_height; r++) {
                 tile_ac.set(c, r, ID(c, r));
@@ -161,13 +162,13 @@ void submit_read_part_test_impl(TileImpl::Part part, uindex_t n_columns, uindex_
         }
     }
 
-    using in_pipe = cl::sycl::pipe<class submit_read_part_test_pipe_id, ID>;
+    using in_pipe = sycl::pipe<class submit_read_part_test_pipe_id, ID>;
     queue queue;
     tile.submit_read_part<in_pipe>(queue, part, n_columns, n_rows, c_offset, r_offset);
 
     buffer<ID, 2> out_buffer = range<2>(n_columns, n_rows);
     queue.submit([&](handler &cgh) {
-        auto ac = out_buffer.get_access<access::mode::discard_write>(cgh);
+        accessor ac(out_buffer, cgh, write_only);
 
         cgh.single_task([=]() {
             for (uindex_t c = 0; c < n_columns; c++) {
@@ -178,7 +179,7 @@ void submit_read_part_test_impl(TileImpl::Part part, uindex_t n_columns, uindex_
         });
     });
 
-    auto out_buffer_ac = out_buffer.get_access<access::mode::read>();
+    host_accessor out_buffer_ac(out_buffer, read_only);
     id<2> part_offset = TileImpl::get_part_offset(part);
     for (uindex_t c = 0; c < n_columns; c++) {
         for (uindex_t r = 0; r < n_rows; r++) {
@@ -203,7 +204,7 @@ TEST_CASE("Tile::submit_read_part", "[Tile]") {
 
 void submit_write_part_test_impl(TileImpl::Part part, uindex_t n_columns, uindex_t n_rows,
                                  uindex_t c_offset, uindex_t r_offset) {
-    using out_pipe = cl::sycl::pipe<class submit_read_part_test_pipe_id, ID>;
+    using out_pipe = sycl::pipe<class submit_read_part_test_pipe_id, ID>;
     queue queue;
     id<2> part_offset = TileImpl::get_part_offset(part);
 
@@ -221,7 +222,7 @@ void submit_write_part_test_impl(TileImpl::Part part, uindex_t n_columns, uindex
     TileImpl tile;
     tile.submit_write_part<out_pipe>(queue, part, n_columns, n_rows, c_offset, r_offset);
 
-    auto tile_ac = tile.get_access<access::mode::read>();
+    TileImpl::TileAccessor<access::mode::read> tile_ac(tile);
     for (uindex_t c = 0; c < n_columns; c++) {
         for (uindex_t r = 0; r < n_rows; r++) {
             uindex_t global_c = part_offset[0] + c_offset + c;

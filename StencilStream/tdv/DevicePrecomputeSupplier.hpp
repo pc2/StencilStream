@@ -56,7 +56,7 @@ class DevicePrecomputeSupplier {
 
     void prepare_range(uindex_t i_generation, uindex_t n_generations) {}
 
-    KernelArgument build_kernel_argument(cl::sycl::handler &cgh, uindex_t i_generation,
+    KernelArgument build_kernel_argument(sycl::handler &cgh, uindex_t i_generation,
                                          uindex_t n_generations) {
 
         return KernelArgument{.generation_offset = i_generation, .function = function};

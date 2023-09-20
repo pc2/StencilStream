@@ -37,8 +37,8 @@ class RuntimeSample {
      * This will fail with an exception if the event's queue has not been configured to collect
      * runtime information.
      */
-    static double start_of_event(cl::sycl::event event) {
-        return double(event.get_profiling_info<cl::sycl::info::event_profiling::command_start>()) /
+    static double start_of_event(sycl::event event) {
+        return double(event.get_profiling_info<sycl::info::event_profiling::command_start>()) /
                timesteps_per_second;
     }
 
@@ -48,8 +48,8 @@ class RuntimeSample {
      * This will fail with an exception if the event's queue has not been configured to collect
      * runtime information.
      */
-    static double end_of_event(cl::sycl::event event) {
-        return double(event.get_profiling_info<cl::sycl::info::event_profiling::command_end>()) /
+    static double end_of_event(sycl::event event) {
+        return double(event.get_profiling_info<sycl::info::event_profiling::command_end>()) /
                timesteps_per_second;
     }
 
@@ -59,7 +59,7 @@ class RuntimeSample {
      * This will fail with an exception if the event's queue has not been configured to collect
      * runtime information.
      */
-    static double runtime_of_event(cl::sycl::event event) {
+    static double runtime_of_event(sycl::event event) {
         return end_of_event(event) - start_of_event(event);
     }
 
@@ -74,7 +74,7 @@ class RuntimeSample {
     /**
      * \brief Add the event of a single pass over the grid to the database.
      */
-    void add_pass(cl::sycl::event event) { add_pass(runtime_of_event(event)); }
+    void add_pass(sycl::event event) { add_pass(runtime_of_event(event)); }
 
     /**
      * \brief Get the makespan of all grid passes.

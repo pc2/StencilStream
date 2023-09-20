@@ -23,16 +23,15 @@
 
 namespace stencil {
 
-inline constexpr bool is_mode_readable(cl::sycl::access::mode access_mode) {
-    return access_mode == cl::sycl::access::mode::read ||
-           access_mode == cl::sycl::access::mode::read_write;
+inline constexpr bool is_mode_readable(sycl::access::mode access_mode) {
+    return access_mode == sycl::access::mode::read || access_mode == sycl::access::mode::read_write;
 }
 
-inline constexpr bool is_mode_writable(cl::sycl::access::mode access_mode) {
-    return access_mode == cl::sycl::access::mode::write ||
-           access_mode == cl::sycl::access::mode::read_write ||
-           access_mode == cl::sycl::access::mode::discard_write ||
-           access_mode == cl::sycl::access::mode::discard_read_write;
+inline constexpr bool is_mode_writable(sycl::access::mode access_mode) {
+    return access_mode == sycl::access::mode::write ||
+           access_mode == sycl::access::mode::read_write ||
+           access_mode == sycl::access::mode::discard_write ||
+           access_mode == sycl::access::mode::discard_read_write;
 }
 
 inline constexpr uindex_t n_cells_to_n_words(uindex_t n_cells, uindex_t word_length) {

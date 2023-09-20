@@ -26,7 +26,7 @@
 
 using namespace stencil;
 using namespace stencil::tiling;
-using namespace cl::sycl;
+using namespace sycl;
 using namespace std;
 
 const uindex_t add_grid_width = grid_width + 1;
@@ -56,7 +56,7 @@ TEST_CASE("tiling::Grid::make_similar", "[tiling::Grid]") {
 TEST_CASE("tiling::Grid::submit_read", "[tiling::Grid]") {
     buffer<ID, 2> in_buffer(range<2>(3 * tile_width, 3 * tile_height));
     {
-        auto in_buffer_ac = in_buffer.get_access<access::mode::discard_write>();
+        host_accessor in_buffer_ac(in_buffer, read_write);
         for (uindex_t c = 0; c < 3 * tile_width; c++) {
             for (uindex_t r = 0; r < 3 * tile_height; r++) {
                 in_buffer_ac[c][r] = ID(c, r);
@@ -65,14 +65,14 @@ TEST_CASE("tiling::Grid::submit_read", "[tiling::Grid]") {
     }
     TestGrid grid(in_buffer);
 
-    cl::sycl::queue queue;
+    sycl::queue queue;
 
-    using in_pipe = cl::sycl::pipe<class tiled_grid_submit_read_test_id, ID>;
+    using in_pipe = sycl::pipe<class tiled_grid_submit_read_test_id, ID>;
     grid.template submit_read<in_pipe>(queue, 1, 1);
 
-    cl::sycl::buffer<bool, 1> result_buffer = cl::sycl::range<1>(1);
-    queue.submit([&](cl::sycl::handler &cgh) {
-        auto result_ac = result_buffer.get_access<cl::sycl::access::mode::discard_write>(cgh);
+    sycl::buffer<bool, 1> result_buffer = sycl::range<1>(1);
+    queue.submit([&](sycl::handler &cgh) {
+        accessor result_ac(result_buffer, cgh, write_only);
         uindex_t c_start = tile_width - halo_radius;
         uindex_t c_end = 2 * tile_width + halo_radius;
         uindex_t r_start = tile_height - halo_radius;
@@ -90,15 +90,14 @@ TEST_CASE("tiling::Grid::submit_read", "[tiling::Grid]") {
         });
     });
 
-    auto result_ac = result_buffer.get_access<cl::sycl::access::mode::read>();
-    REQUIRE(result_ac[0]);
+    REQUIRE(host_accessor(result_buffer)[0]);
 }
 
 TEST_CASE("tiling::Grid::submit_write", "[tiling::Grid]") {
-    using out_pipe = cl::sycl::pipe<class tiled_grid_submit_write_test_id, ID>;
+    using out_pipe = sycl::pipe<class tiled_grid_submit_write_test_id, ID>;
 
-    cl::sycl::queue queue;
-    queue.submit([&](cl::sycl::handler &cgh) {
+    sycl::queue queue;
+    queue.submit([&](sycl::handler &cgh) {
         cgh.single_task<class tiled_grid_submit_write_test_kernel>([=]() {
             for (uindex_t c = tile_width; c < 2 * tile_width; c++) {
                 for (uindex_t r = tile_height; r < 2 * tile_height; r++) {
@@ -111,10 +110,10 @@ TEST_CASE("tiling::Grid::submit_write", "[tiling::Grid]") {
     TestGrid grid(3 * tile_width, 3 * tile_height);
     grid.template submit_write<out_pipe>(queue, 1, 1);
 
-    cl::sycl::buffer<ID, 2> out_buffer = cl::sycl::range<2>(3 * tile_width, 3 * tile_height);
+    sycl::buffer<ID, 2> out_buffer = sycl::range<2>(3 * tile_width, 3 * tile_height);
     grid.copy_to_buffer(out_buffer);
 
-    auto out_ac = out_buffer.get_access<cl::sycl::access::mode::read>();
+    host_accessor out_ac(out_buffer, read_only);
     for (uindex_t c = tile_width; c < 2 * tile_width; c++) {
         for (uindex_t r = tile_height; r < 2 * tile_height; r++) {
             REQUIRE(out_ac[c][r] == ID(c, r));

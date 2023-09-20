@@ -23,7 +23,7 @@
 
 using namespace stencil;
 using namespace stencil::monotile;
-using namespace cl::sycl;
+using namespace sycl;
 using namespace std;
 
 using TestGrid = Grid<ID, tile_width, tile_height, 64>;
@@ -50,7 +50,7 @@ TEST_CASE("monotile::Grid::make_similar", "[monotile::Grid]") {
 TEST_CASE("monotile::Grid::submit_read", "[monotile::Grid]") {
     TestGrid in_grid(tile_width, tile_height);
     {
-        auto in_grid_ac = in_grid.get_access<cl::sycl::access::mode::discard_write>();
+        TestGrid::GridAccessor<access::mode::read_write> in_grid_ac(in_grid);
         for (stencil::uindex_t c = 0; c < tile_width; c++) {
             for (stencil::uindex_t r = 0; r < tile_height; r++) {
                 in_grid_ac.set(c, r, ID(c, r));
@@ -58,14 +58,14 @@ TEST_CASE("monotile::Grid::submit_read", "[monotile::Grid]") {
         }
     }
 
-    cl::sycl::queue queue;
+    sycl::queue queue;
 
-    using in_pipe = cl::sycl::pipe<class monotile_grid_submit_read_test_id, ID>;
+    using in_pipe = sycl::pipe<class monotile_grid_submit_read_test_id, ID>;
     in_grid.template submit_read<in_pipe>(queue);
 
     buffer<ID, 2> out_buffer = range<2>(tile_width, tile_height);
     queue.submit([&](handler &cgh) {
-        auto out_ac = out_buffer.get_access<access::mode::discard_write>(cgh);
+        accessor out_ac(out_buffer, cgh, sycl::write_only);
 
         cgh.single_task<class monotile_grid_submit_read_test_kernel>([=]() {
             for (index_t c = 0; c < tile_width; c++) {
@@ -76,7 +76,7 @@ TEST_CASE("monotile::Grid::submit_read", "[monotile::Grid]") {
         });
     });
 
-    auto out_buffer_ac = out_buffer.get_access<access::mode::read>();
+    host_accessor out_buffer_ac(out_buffer, sycl::read_only);
     for (index_t c = 0; c < tile_width; c++) {
         for (index_t r = 0; r < tile_height; r++) {
             REQUIRE(out_buffer_ac[c][r] == ID(c, r));
@@ -85,10 +85,10 @@ TEST_CASE("monotile::Grid::submit_read", "[monotile::Grid]") {
 }
 
 TEST_CASE("monotile::Grid::submit_write", "[monotile::Grid]") {
-    using out_pipe = cl::sycl::pipe<class monotile_grid_submit_write_test_id, ID>;
+    using out_pipe = sycl::pipe<class monotile_grid_submit_write_test_id, ID>;
 
-    cl::sycl::queue queue;
-    queue.submit([&](cl::sycl::handler &cgh) {
+    sycl::queue queue;
+    queue.submit([&](sycl::handler &cgh) {
         cgh.single_task<class monotile_grid_submit_write_test_kernel>([=]() {
             for (uindex_t c = 0; c < tile_width; c++) {
                 for (uindex_t r = 0; r < tile_height; r++) {
@@ -101,7 +101,7 @@ TEST_CASE("monotile::Grid::submit_write", "[monotile::Grid]") {
     TestGrid grid(tile_width, tile_height);
     grid.template submit_write<out_pipe>(queue);
 
-    auto out_ac = grid.get_access<cl::sycl::access::mode::read>();
+    TestGrid::GridAccessor<access::mode::read_write> out_ac(grid);
     for (uindex_t c = 0; c < tile_width; c++) {
         for (uindex_t r = 0; r < tile_height; r++) {
             REQUIRE(out_ac.get(c, r) == ID(c, r));

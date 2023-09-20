@@ -28,7 +28,7 @@
 using namespace stencil;
 using namespace std;
 using namespace stencil::tiling;
-using namespace cl::sycl;
+using namespace sycl;
 
 void test_tiling_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t target_i_generation) {
     using TransFunc = FPGATransFunc<stencil_radius>;
@@ -56,7 +56,7 @@ void test_tiling_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t targ
     buffer<Cell, 2> output_buffer(range<2>(grid_width, grid_height));
 
     {
-        auto output_buffer_ac = output_buffer.get_access<access::mode::discard_write>();
+        host_accessor output_buffer_ac(output_buffer, read_write);
         for (uindex_t c = 0; c < grid_width; c++) {
             for (uindex_t r = 0; r < grid_height; r++) {
                 output_buffer_ac[c][r] = out_pipe::read();
@@ -67,7 +67,7 @@ void test_tiling_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t targ
     REQUIRE(in_pipe::empty());
     REQUIRE(out_pipe::empty());
 
-    auto output_buffer_ac = output_buffer.get_access<access::mode::read>();
+    host_accessor output_buffer_ac(output_buffer, read_only);
     for (uindex_t c = 1; c < grid_width; c++) {
         for (uindex_t r = 1; r < grid_height; r++) {
             Cell cell = output_buffer_ac[c][r];

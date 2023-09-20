@@ -44,8 +44,7 @@ class Grid {
     using uindex_word_t = ac_int<bits_word, false>;
 
     Grid(uindex_t grid_width, uindex_t grid_height)
-        : tile_buffer(
-              cl::sycl::range<1>(n_cells_to_n_words(grid_width * grid_height, word_length))),
+        : tile_buffer(sycl::range<1>(n_cells_to_n_words(grid_width * grid_height, word_length))),
           grid_width(grid_width), grid_height(grid_height) {
         if (grid_width > tile_width || grid_height > tile_height) {
             throw std::range_error("The grid is bigger than the tile. The monotile architecture "
@@ -54,14 +53,14 @@ class Grid {
         }
     }
 
-    Grid(cl::sycl::buffer<Cell, 2> buffer)
+    Grid(sycl::buffer<Cell, 2> buffer)
         : tile_buffer(1), grid_width(buffer.get_range()[0]), grid_height(buffer.get_range()[1]) {
         if (grid_width > tile_width || grid_height > tile_height) {
             throw std::range_error("The grid is bigger than the tile. The monotile architecture "
                                    "requires that grid ranges are smaller or equal to the tile "
                                    "range");
         }
-        tile_buffer = cl::sycl::range<1>(n_cells_to_n_words(grid_width * grid_height, word_length));
+        tile_buffer = sycl::range<1>(n_cells_to_n_words(grid_width * grid_height, word_length));
         copy_from_buffer(buffer);
     }
 
@@ -71,12 +70,12 @@ class Grid {
 
     uindex_t get_grid_height() const { return grid_height; }
 
-    template <cl::sycl::access::mode access_mode> class GridAccessor {
+    template <sycl::access::mode access_mode = sycl::access::mode::read_write> class GridAccessor {
       public:
-        using accessor_t =
-            cl::sycl::accessor<IOWord, 1, access_mode, cl::sycl::access::target::host_buffer>;
-        GridAccessor(accessor_t ac, uindex_t grid_width, uindex_t grid_height)
-            : ac(ac), grid_width(grid_width), grid_height(grid_height) {}
+        using accessor_t = sycl::host_accessor<IOWord, 1, access_mode>;
+        GridAccessor(Grid &grid)
+            : ac(grid.tile_buffer), grid_width(grid.get_grid_width()),
+              grid_height(grid.get_grid_height()) {}
 
         Cell get(uindex_t c, uindex_t r) const {
             uindex_t word_i = (c * grid_height + r) / word_length;
@@ -95,21 +94,16 @@ class Grid {
         uindex_t grid_width, grid_height;
     };
 
-    template <cl::sycl::access::mode access_mode> GridAccessor<access_mode> get_access() {
-        auto ac = tile_buffer.template get_access<access_mode>();
-        return GridAccessor<access_mode>(ac, grid_width, grid_height);
-    }
-
-    void copy_from_buffer(cl::sycl::buffer<Cell, 2> input_buffer) {
+    void copy_from_buffer(sycl::buffer<Cell, 2> input_buffer) {
         uindex_t width = this->get_grid_width();
         uindex_t height = this->get_grid_height();
 
-        if (input_buffer.get_range() != cl::sycl::range<2>(width, height)) {
+        if (input_buffer.get_range() != sycl::range<2>(width, height)) {
             throw std::range_error("The target buffer has not the same size as the grid");
         }
 
-        auto in_ac = input_buffer.template get_access<cl::sycl::access::mode::read>();
-        auto tile_ac = get_access<cl::sycl::access::mode::discard_write>();
+        sycl::host_accessor in_ac(input_buffer, sycl::read_only);
+        GridAccessor<sycl::access::mode::read_write> tile_ac(*this);
         for (uindex_t c = 0; c < width; c++) {
             for (uindex_t r = 0; r < height; r++) {
                 tile_ac.set(c, r, in_ac[c][r]);
@@ -117,16 +111,16 @@ class Grid {
         }
     }
 
-    void copy_to_buffer(cl::sycl::buffer<Cell, 2> output_buffer) {
+    void copy_to_buffer(sycl::buffer<Cell, 2> output_buffer) {
         uindex_t width = this->get_grid_width();
         uindex_t height = this->get_grid_height();
 
-        if (output_buffer.get_range() != cl::sycl::range<2>(width, height)) {
+        if (output_buffer.get_range() != sycl::range<2>(width, height)) {
             throw std::range_error("The target buffer has not the same size as the grid");
         }
 
-        auto in_ac = get_access<cl::sycl::access::mode::read>();
-        auto out_ac = output_buffer.template get_access<cl::sycl::access::mode::discard_write>();
+        GridAccessor<sycl::access::mode::read> in_ac(*this);
+        sycl::host_accessor out_ac(output_buffer, sycl::write_only);
         for (uindex_t c = 0; c < width; c++) {
             for (uindex_t r = 0; r < height; r++) {
                 out_ac[c][r] = in_ac.get(c, r);
@@ -134,9 +128,9 @@ class Grid {
         }
     }
 
-    template <typename in_pipe> void submit_read(cl::sycl::queue queue) {
-        queue.submit([&](cl::sycl::handler &cgh) {
-            auto ac = tile_buffer.template get_access<cl::sycl::access::mode::read>(cgh);
+    template <typename in_pipe> void submit_read(sycl::queue queue) {
+        queue.submit([&](sycl::handler &cgh) {
+            sycl::accessor ac(tile_buffer, cgh, sycl::read_only);
             uindex_t n_cells = this->get_grid_width() * this->get_grid_height();
 
             cgh.single_task([=]() {
@@ -157,9 +151,9 @@ class Grid {
         });
     }
 
-    template <typename out_pipe> void submit_write(cl::sycl::queue queue) {
-        queue.submit([&](cl::sycl::handler &cgh) {
-            auto ac = tile_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
+    template <typename out_pipe> void submit_write(sycl::queue queue) {
+        queue.submit([&](sycl::handler &cgh) {
+            sycl::accessor ac(tile_buffer, cgh, sycl::write_only);
             uindex_t n_cells = this->get_grid_width() * this->get_grid_height();
 
             cgh.single_task([=]() {
@@ -185,7 +179,7 @@ class Grid {
     }
 
   private:
-    cl::sycl::buffer<IOWord, 1> tile_buffer;
+    sycl::buffer<IOWord, 1> tile_buffer;
     uindex_t grid_width, grid_height;
 };
 } // namespace monotile

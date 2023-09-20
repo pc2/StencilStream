@@ -21,7 +21,7 @@
 #include "../constants.hpp"
 #include <StencilStream/cpu/StencilUpdate.hpp>
 
-using namespace cl::sycl;
+using namespace sycl;
 using namespace stencil;
 using namespace stencil::cpu;
 
@@ -35,7 +35,7 @@ TEST_CASE("cpu::StencilUpdate", "[cpu::StencilUpdate]") {
 
     GridImpl input_grid(grid_width, grid_height);
     {
-        auto ac = input_grid.get_access<access::mode::discard_write>();
+        GridImpl::GridAccessor<access::mode::read_write> ac(input_grid);
         for (uindex_t c = 0; c < grid_width; c++) {
             for (uindex_t r = 0; r < grid_height; r++) {
                 ac.set(c, r, Cell{index_t(c), index_t(r), 0, 0, CellStatus::Normal});
@@ -51,7 +51,7 @@ TEST_CASE("cpu::StencilUpdate", "[cpu::StencilUpdate]") {
 
     GridImpl output_grid = update(input_grid);
 
-    auto ac = output_grid.get_access<access::mode::read>();
+    GridImpl::GridAccessor<access::mode::read> ac(output_grid);
     for (uindex_t c = 0; c < grid_width; c++) {
         for (uindex_t r = 0; r < grid_height; r++) {
             REQUIRE(ac.get(c, r).c == c);

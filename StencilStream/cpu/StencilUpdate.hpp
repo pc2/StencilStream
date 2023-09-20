@@ -33,7 +33,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
         F transition_function;
         Cell halo_value = Cell();
         uindex_t n_generations = 1;
-        cl::sycl::queue queue = cl::sycl::queue();
+        sycl::queue queue = sycl::queue();
     };
 
     StencilUpdate(Params params) : params(params) {}
@@ -63,19 +63,16 @@ template <concepts::TransitionFunction F> class StencilUpdate {
 
   private:
     void run_gen(GridImpl &pass_source, GridImpl &pass_target, uindex_t i_gen, uindex_t i_subgen) {
-        params.queue.submit([&](cl::sycl::handler &cgh) {
-            auto source_ac =
-                pass_source.get_buffer().template get_access<cl::sycl::access::mode::read>(cgh);
-            auto target_ac =
-                pass_target.get_buffer().template get_access<cl::sycl::access::mode::discard_write>(
-                    cgh);
+        params.queue.submit([&](sycl::handler &cgh) {
+            sycl::accessor source_ac(pass_source.get_buffer(), cgh, sycl::read_only);
+            sycl::accessor target_ac(pass_target.get_buffer(), cgh, sycl::write_only);
             index_t grid_width = source_ac.get_range()[0];
             index_t grid_height = source_ac.get_range()[1];
             index_t stencil_radius = index_t(F::stencil_radius);
             Cell halo_value = params.halo_value;
             F transition_function = params.transition_function;
 
-            auto kernel = [=](cl::sycl::id<2> id) {
+            auto kernel = [=](sycl::id<2> id) {
                 using StencilImpl = Stencil<Cell, F::stencil_radius>;
                 StencilImpl stencil(ID(id[0], id[1]), UID(grid_width, grid_height), i_gen, i_subgen,
                                     i_subgen, std::monostate());

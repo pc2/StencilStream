@@ -90,15 +90,15 @@ class Tile {
      */
     Tile()
         : part_buffer{
-              {cl::sycl::range<1>(get_part_words(Part::NORTH_WEST_CORNER)),
-               cl::sycl::range<1>(get_part_words(Part::WEST_BORDER)),
-               cl::sycl::range<1>(get_part_words(Part::SOUTH_WEST_CORNER))},
-              {cl::sycl::range<1>(get_part_words(Part::NORTH_BORDER)),
-               cl::sycl::range<1>(get_part_words(Part::CORE)),
-               cl::sycl::range<1>(get_part_words(Part::SOUTH_BORDER))},
-              {cl::sycl::range<1>(get_part_words(Part::NORTH_EAST_CORNER)),
-               cl::sycl::range<1>(get_part_words(Part::EAST_BORDER)),
-               cl::sycl::range<1>(get_part_words(Part::SOUTH_EAST_CORNER))},
+              {sycl::range<1>(get_part_words(Part::NORTH_WEST_CORNER)),
+               sycl::range<1>(get_part_words(Part::WEST_BORDER)),
+               sycl::range<1>(get_part_words(Part::SOUTH_WEST_CORNER))},
+              {sycl::range<1>(get_part_words(Part::NORTH_BORDER)),
+               sycl::range<1>(get_part_words(Part::CORE)),
+               sycl::range<1>(get_part_words(Part::SOUTH_BORDER))},
+              {sycl::range<1>(get_part_words(Part::NORTH_EAST_CORNER)),
+               sycl::range<1>(get_part_words(Part::EAST_BORDER)),
+               sycl::range<1>(get_part_words(Part::SOUTH_EAST_CORNER))},
           } {}
 
     static uindex_t get_part_words_in_column(Part part) {
@@ -169,34 +169,40 @@ class Tile {
      * \param part The part to calculate the offset for.
      * \return The offset of the part.
      */
-    static cl::sycl::id<2> get_part_offset(Part part) {
+    static sycl::id<2> get_part_offset(Part part) {
         switch (part) {
         case Part::NORTH_WEST_CORNER:
-            return cl::sycl::id<2>(0, 0);
+            return sycl::id<2>(0, 0);
         case Part::NORTH_BORDER:
-            return cl::sycl::id<2>(halo_radius, 0);
+            return sycl::id<2>(halo_radius, 0);
         case Part::NORTH_EAST_CORNER:
-            return cl::sycl::id<2>(width - halo_radius, 0);
+            return sycl::id<2>(width - halo_radius, 0);
         case Part::EAST_BORDER:
-            return cl::sycl::id<2>(width - halo_radius, halo_radius);
+            return sycl::id<2>(width - halo_radius, halo_radius);
         case Part::SOUTH_EAST_CORNER:
-            return cl::sycl::id<2>(width - halo_radius, height - halo_radius);
+            return sycl::id<2>(width - halo_radius, height - halo_radius);
         case Part::SOUTH_BORDER:
-            return cl::sycl::id<2>(halo_radius, height - halo_radius);
+            return sycl::id<2>(halo_radius, height - halo_radius);
         case Part::SOUTH_WEST_CORNER:
-            return cl::sycl::id<2>(0, height - halo_radius);
+            return sycl::id<2>(0, height - halo_radius);
         case Part::WEST_BORDER:
-            return cl::sycl::id<2>(0, halo_radius);
+            return sycl::id<2>(0, halo_radius);
         case Part::CORE:
-            return cl::sycl::id<2>(halo_radius, halo_radius);
+            return sycl::id<2>(halo_radius, halo_radius);
         default:
             throw std::invalid_argument("Invalid grid tile part specified");
         }
     }
 
-    template <cl::sycl::access::mode access_mode> struct TileAccessor {
-        using accessor_t =
-            cl::sycl::accessor<IOWord, 1, access_mode, cl::sycl::access::target::host_buffer>;
+    template <sycl::access::mode access_mode = sycl::access::mode::read_write> class TileAccessor {
+      public:
+        TileAccessor(Tile &tile) : part_ac() {
+            for (uindex_t c = 0; c < 3; c++) {
+                for (uindex_t r = 0; r < 3; r++) {
+                    part_ac[c][r] = tile.part_buffer[c][r];
+                }
+            }
+        }
 
         Cell get(uindex_t c, uindex_t r) const {
             std::array<uindex_t, 4> i = transform_indices(c, r);
@@ -237,18 +243,12 @@ class Tile {
             return {part_c, part_r, word_i, element_i};
         }
 
-        std::array<std::array<accessor_t, 3>, 3> part_ac;
+      private:
+        sycl::host_accessor<IOWord, 1, access_mode> part_ac[3][3];
     };
 
-    template <cl::sycl::access::mode access_mode> TileAccessor<access_mode> get_access() {
-        using accessor_t = typename TileAccessor<access_mode>::accessor_t;
-        std::array<std::array<accessor_t, 3>, 3> part_ac;
-        for (uindex_t c = 0; c < 3; c++) {
-            for (uindex_t r = 0; r < 3; r++) {
-                part_ac[c][r] = part_buffer[c][r].template get_access<access_mode>();
-            }
-        }
-        return TileAccessor<access_mode>{.part_ac = part_ac};
+    template <sycl::access::mode access_mode> TileAccessor<access_mode> get_access() {
+        return TileAccessor<access_mode>(*this);
     }
 
     /**
@@ -263,7 +263,7 @@ class Tile {
      * \param tile_part The part to access.
      * \return The buffer of the part.
      */
-    cl::sycl::buffer<IOWord, 1> operator[](Part tile_part) {
+    sycl::buffer<IOWord, 1> get_part_buffer(Part tile_part) {
         UID part_id = get_part_id(tile_part);
         return part_buffer[part_id.c][part_id.r];
     }
@@ -279,10 +279,10 @@ class Tile {
      * \param buffer The buffer to copy the data from.
      * \param offset The offset of the buffer section relative to the origin of the buffer.
      */
-    void copy_from(cl::sycl::buffer<Cell, 2> buffer, cl::sycl::id<2> offset) {
-        auto accessor = buffer.template get_access<cl::sycl::access::mode::read_write>();
+    void copy_from(sycl::buffer<Cell, 2> buffer, sycl::id<2> offset) {
+        sycl::host_accessor ac(buffer, sycl::read_write);
         for (Part part : all_parts) {
-            copy_part(accessor, part, offset, true);
+            copy_part(ac, part, offset, true);
         }
     }
 
@@ -298,15 +298,15 @@ class Tile {
      * \param buffer The buffer to copy the data to.
      * \param offset The offset of the buffer section relative to the origin of the buffer.
      */
-    void copy_to(cl::sycl::buffer<Cell, 2> buffer, cl::sycl::id<2> offset) {
-        auto accessor = buffer.template get_access<cl::sycl::access::mode::read_write>();
+    void copy_to(sycl::buffer<Cell, 2> buffer, sycl::id<2> offset) {
+        sycl::host_accessor ac(buffer, sycl::read_write);
         for (Part part : all_parts) {
-            copy_part(accessor, part, offset, false);
+            copy_part(ac, part, offset, false);
         }
     }
 
     template <typename in_pipe>
-    void submit_read_part(cl::sycl::queue queue, Part part, uindex_t n_columns, uindex_t n_rows,
+    void submit_read_part(sycl::queue queue, Part part, uindex_t n_columns, uindex_t n_rows,
                           uindex_t c_offset, uindex_t r_offset) {
         if (n_columns == 0 || n_rows == 0) {
             return;
@@ -316,8 +316,9 @@ class Tile {
         assert(c_offset <= range.c && r_offset <= range.r);
         assert(c_offset + n_columns <= range.c && r_offset + n_rows <= range.r);
 
-        queue.submit([&](cl::sycl::handler &cgh) {
-            auto ac = operator[](part).template get_access<cl::sycl::access::mode::read>(cgh);
+        queue.submit([&](sycl::handler &cgh) {
+            auto part_buffer = get_part_buffer(part);
+            sycl::accessor ac(part_buffer, cgh, sycl::read_only);
             uindex_t words_in_column = get_part_words_in_column(part);
 
             cgh.single_task([=]() {
@@ -340,7 +341,7 @@ class Tile {
     }
 
     template <typename out_pipe>
-    void submit_write_part(cl::sycl::queue queue, Part part, uindex_t n_columns, uindex_t n_rows,
+    void submit_write_part(sycl::queue queue, Part part, uindex_t n_columns, uindex_t n_rows,
                            uindex_t c_offset, uindex_t r_offset) {
         if (n_columns == 0 || n_rows == 0) {
             return;
@@ -350,9 +351,9 @@ class Tile {
         assert(c_offset <= range.c && r_offset <= range.r);
         assert(c_offset + n_columns <= range.c && r_offset + n_rows <= range.r);
 
-        queue.submit([&](cl::sycl::handler &cgh) {
-            auto ac = operator[](part).template get_access<cl::sycl::access::mode::discard_write>(
-                cgh);
+        queue.submit([&](sycl::handler &cgh) {
+            auto part_buffer = get_part_buffer(part);
+            sycl::accessor ac(part_buffer, cgh, sycl::write_only);
             uindex_t words_in_column = get_part_words_in_column(part);
 
             cgh.single_task([=]() {
@@ -381,17 +382,16 @@ class Tile {
     /**
      * \brief Helper function to copy a part to or from a buffer.
      */
-    void copy_part(cl::sycl::accessor<Cell, 2, cl::sycl::access::mode::read_write,
-                                      cl::sycl::access::target::host_buffer>
-                       accessor,
-                   Part part, cl::sycl::id<2> global_offset, bool buffer_to_part) {
-        cl::sycl::id<2> offset = global_offset + get_part_offset(part);
+    void copy_part(sycl::host_accessor<Cell, 2, sycl::access::mode::read_write> accessor, Part part,
+                   sycl::id<2> global_offset, bool buffer_to_part) {
+        sycl::id<2> offset = global_offset + get_part_offset(part);
         if (offset[0] >= accessor.get_range()[0] || offset[1] >= accessor.get_range()[1]) {
             // Nothing to do here. There is no data in the buffer for this part.
             return;
         }
 
-        auto part_ac = (*this)[part].template get_access<cl::sycl::access::mode::read_write>();
+        auto part_buffer = get_part_buffer(part);
+        sycl::host_accessor part_ac(part_buffer, sycl::read_write);
         uindex_t part_width = get_part_range(part).c;
         uindex_t part_height = get_part_range(part).r;
 
@@ -415,7 +415,7 @@ class Tile {
         }
     }
 
-    cl::sycl::buffer<IOWord, 1> part_buffer[3][3];
+    sycl::buffer<IOWord, 1> part_buffer[3][3];
 };
 
 } // namespace tiling

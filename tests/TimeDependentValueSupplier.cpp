@@ -36,7 +36,7 @@ template <concepts::tdv::HostState TDVS, typename F> class TDVSTester {
 
     TDVSTester(TDVS tdvs, F verification_function)
         : tdvs(tdvs), verification_function(verification_function),
-          test_queue(cl::sycl::ext::intel::fpga_emulator_selector_v) {}
+          test_queue(sycl::ext::intel::fpga_emulator_selector_v) {}
 
     void run_test() {
         // Single pass
@@ -71,12 +71,11 @@ template <concepts::tdv::HostState TDVS, typename F> class TDVSTester {
 
   private:
     void run_pass(uindex_t i_generation, uindex_t n_generations) {
-        cl::sycl::buffer<bool, 1> result_buffer = cl::sycl::range<1>(n_generations);
+        sycl::buffer<bool, 1> result_buffer = sycl::range<1>(n_generations);
 
-        test_queue.submit([&](cl::sycl::handler &cgh) {
+        test_queue.submit([&](sycl::handler &cgh) {
             KernelArgument arg = tdvs.build_kernel_argument(cgh, i_generation, n_generations);
-            auto result_ac =
-                result_buffer.template get_access<cl::sycl::access::mode::discard_write>(cgh);
+            sycl::accessor result_ac(result_buffer, cgh, sycl::write_only);
             auto verification_function = this->verification_function;
 
             cgh.single_task([=]() {
@@ -89,7 +88,7 @@ template <concepts::tdv::HostState TDVS, typename F> class TDVSTester {
         });
 
         {
-            auto result_ac = result_buffer.get_access<cl::sycl::access::mode::read>();
+            sycl::host_accessor result_ac(result_buffer, sycl::read_only);
             for (uindex_t i = 0; i < n_generations; i++) {
                 REQUIRE(result_ac[i]);
             }
@@ -98,7 +97,7 @@ template <concepts::tdv::HostState TDVS, typename F> class TDVSTester {
 
     TDVS tdvs;
     F verification_function;
-    cl::sycl::queue test_queue;
+    sycl::queue test_queue;
 };
 
 struct IndexValueFunction {

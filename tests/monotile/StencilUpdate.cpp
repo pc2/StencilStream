@@ -21,7 +21,7 @@
 #include "../constants.hpp"
 #include <StencilStream/monotile/StencilUpdate.hpp>
 
-using namespace cl::sycl;
+using namespace sycl;
 using namespace stencil;
 using namespace stencil::monotile;
 
@@ -33,7 +33,7 @@ void test_monotile_stencil_update(uindex_t grid_width, uindex_t grid_height,
                                   uindex_t n_generations) {
     buffer<Cell, 2> input_buffer(range<2>(grid_width, grid_height));
     {
-        auto in_buffer_ac = input_buffer.get_access<access::mode::discard_write>();
+        host_accessor in_buffer_ac(input_buffer, read_write);
         for (uindex_t c = 0; c < grid_width; c++) {
             for (uindex_t r = 0; r < grid_height; r++) {
                 in_buffer_ac[c][r] = Cell{index_t(c), index_t(r), 0, 0, CellStatus::Normal};
@@ -53,7 +53,7 @@ void test_monotile_stencil_update(uindex_t grid_width, uindex_t grid_height,
     buffer<Cell, 2> output_buffer(range<2>(grid_width, grid_height));
     output_grid.copy_to_buffer(output_buffer);
 
-    auto out_buffer_ac = output_buffer.get_access<access::mode::read>();
+    host_accessor out_buffer_ac(output_buffer, read_only);
     for (uindex_t c = 0; c < grid_width; c++) {
         for (uindex_t r = 0; r < grid_height; r++) {
             REQUIRE(out_buffer_ac[c][r].c == c);

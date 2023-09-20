@@ -27,7 +27,7 @@ namespace stencil {
  * \brief A generic, two-dimensional index.
  *
  * \tparam The index type. It can be anything as long as it can be constructed from a dimension of
- * `cl::sycl::id` and tested for equality.
+ * `sycl::id` and tested for equality.
  */
 template <typename T> class GenericID {
   public:
@@ -44,12 +44,12 @@ template <typename T> class GenericID {
     /**
      * \brief Convert the SYCL ID.
      */
-    GenericID(cl::sycl::id<2> sycl_id) : c(sycl_id[0]), r(sycl_id[1]) {}
+    GenericID(sycl::id<2> sycl_id) : c(sycl_id[0]), r(sycl_id[1]) {}
 
     /**
      * \brief Convert the SYCl range.
      */
-    GenericID(cl::sycl::range<2> sycl_range) : c(sycl_range[0]), r(sycl_range[1]) {}
+    GenericID(sycl::range<2> sycl_range) : c(sycl_range[0]), r(sycl_range[1]) {}
 
     /**
      * \brief Test if the other generic ID has equivalent coordinates to this ID.
