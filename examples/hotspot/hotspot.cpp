@@ -19,6 +19,7 @@
  */
 #include <chrono>
 #include <fstream>
+#include <sycl/ext/intel/fpga_extensions.hpp>
 
 #if EXECUTOR == 0
     #include <StencilStream/monotile/StencilUpdate.hpp>
@@ -27,8 +28,6 @@
 #elif EXECUTOR == 2
     #include <StencilStream/cpu/StencilUpdate.hpp>
 #endif
-
-#include <StencilStream/tdv/NoneSupplier.hpp>
 
 using namespace std;
 using namespace sycl;
@@ -106,16 +105,16 @@ struct HotspotKernel {
 const uindex_t tile_width = 1024;
 const uindex_t tile_height = 1024;
 const uindex_t n_processing_elements = 350;
-using StencilUpdate =
-    monotile::StencilUpdate<HotspotKernel, n_processing_elements, tile_width, tile_height>;
+using StencilUpdate = monotile::StencilUpdate<HotspotKernel, tdv::NoneSupplier,
+                                              n_processing_elements, tile_width, tile_height>;
 using Grid = StencilUpdate::GridImpl;
 
 #elif EXECUTOR == 1
 const uindex_t tile_width = 1024;
 const uindex_t tile_height = 1024;
 const uindex_t n_processing_elements = 280;
-using StencilUpdate =
-    tiling::StencilUpdate<HotspotKernel, n_processing_elements, tile_width, tile_height>;
+using StencilUpdate = tiling::StencilUpdate<HotspotKernel, tdv::NoneSupplier, n_processing_elements,
+                                            tile_width, tile_height>;
 using Grid = StencilUpdate::GridImpl;
 
 #else
@@ -249,7 +248,7 @@ int main(int argc, char **argv) {
     FLOAT Cap_1 = step / Cap;
 
 #if HARDWARE == 1
-    sycl::queue queue = sycl::ext::intel::fpga_selector_v;
+    sycl::queue queue(sycl::ext::intel::fpga_selector_v);
 #else
     sycl::queue queue;
 #endif

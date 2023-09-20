@@ -235,10 +235,10 @@ constexpr uindex_t tile_width = 512;
 constexpr uindex_t tile_height = 512;
 using Grid = monotile::Grid<ThermalConvectionCell, tile_width, tile_height>;
 using PseudoTransientUpdate =
-    monotile::StencilUpdate<PseudoTransientKernel, PseudoTransientKernel::n_subgenerations * 5,
+    monotile::StencilUpdate<PseudoTransientKernel, tdv::NoneSupplier, PseudoTransientKernel::n_subgenerations * 5,
                             tile_width, tile_height>;
 using ThermalSolverUpdate =
-    monotile::StencilUpdate<ThermalSolverKernel, ThermalSolverKernel::n_subgenerations, tile_width,
+    monotile::StencilUpdate<ThermalSolverKernel, tdv::NoneSupplier, ThermalSolverKernel::n_subgenerations, tile_width,
                             tile_height>;
 
 #endif
@@ -322,7 +322,7 @@ int main(int argc, char **argv) {
     double dampY = 1.0 - dmp / ny; // damping term for the y-momentum equation
 
 #if HARDWARE == 1
-    sycl::queue queue = sycl::ext::intel::fpga_selector_v;
+    sycl::queue queue(sycl::ext::intel::fpga_selector_v);
 #else
     sycl::queue queue;
 #endif
