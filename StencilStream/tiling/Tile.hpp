@@ -306,73 +306,64 @@ class Tile {
     }
 
     template <typename in_pipe>
-    void submit_read_part(sycl::queue queue, Part part, uindex_t n_columns, uindex_t n_rows,
-                          uindex_t c_offset, uindex_t r_offset) {
-        if (n_columns == 0 || n_rows == 0) {
+    void submit_read_part(cl::sycl::queue queue, Part part, uindex_t n_columns) {
+        if (n_columns == 0) {
             return;
         }
 
-        UID range = get_part_range(part);
-        assert(c_offset <= range.c && r_offset <= range.r);
-        assert(c_offset + n_columns <= range.c && r_offset + n_rows <= range.r);
-
-        queue.submit([&](sycl::handler &cgh) {
+        queue.submit([&](cl::sycl::handler &cgh) {
             auto part_buffer = get_part_buffer(part);
             sycl::accessor ac(part_buffer, cgh, sycl::read_only);
-            uindex_t words_in_column = get_part_words_in_column(part);
+            UID range = get_part_range(part);
+            uindex_t n_cells = n_columns * range.r;
 
             cgh.single_task([=]() {
-                for (uindex_t c = 0; c < n_columns; c++) {
-                    IOWord cache;
-                    uindex_t word_offset = (c + c_offset) * words_in_column;
+                [[intel::fpga_register]] IOWord cache;
+                uindex_t word_i = 0;
+                uindex_t cell_i = word_length;
 
-                    for (uindex_t r = 0; r < n_rows; r++) {
-                        uindex_t word_i = word_offset + ((r + r_offset) / word_length);
-                        uindex_t cell_i = (r + r_offset) % word_length;
-
-                        if (r == 0 || cell_i == 0) {
-                            cache = ac[word_i];
-                        }
-                        in_pipe::write(cache[cell_i].value);
+                for (uindex_t i = 0; i < n_cells; i++) {
+                    if (cell_i == word_length) {
+                        cache = ac[word_i];
+                        word_i++;
+                        cell_i = 0;
                     }
+                    in_pipe::write(cache[cell_i].value);
+                    cell_i++;
                 }
             });
         });
     }
 
     template <typename out_pipe>
-    void submit_write_part(sycl::queue queue, Part part, uindex_t n_columns, uindex_t n_rows,
-                           uindex_t c_offset, uindex_t r_offset) {
-        if (n_columns == 0 || n_rows == 0) {
+    void submit_write_part(cl::sycl::queue queue, Part part, uindex_t n_columns) {
+        if (n_columns == 0) {
             return;
         }
 
-        UID range = get_part_range(part);
-        assert(c_offset <= range.c && r_offset <= range.r);
-        assert(c_offset + n_columns <= range.c && r_offset + n_rows <= range.r);
-
-        queue.submit([&](sycl::handler &cgh) {
+        queue.submit([&](cl::sycl::handler &cgh) {
             auto part_buffer = get_part_buffer(part);
             sycl::accessor ac(part_buffer, cgh, sycl::write_only);
-            uindex_t words_in_column = get_part_words_in_column(part);
+            UID range = get_part_range(part);
+            uindex_t n_cells = n_columns * range.r;
 
             cgh.single_task([=]() {
-                for (uindex_t c = 0; c < n_columns; c++) {
-                    IOWord cache;
+                [[intel::fpga_memory]] IOWord cache;
+                uindex_t word_i = 0;
+                uindex_t cell_i = 0;
 
-                    for (uindex_t r = 0; r < n_rows; r++) {
-                        uindex_t word_i =
-                            (c + c_offset) * words_in_column + ((r + r_offset) / word_length);
-                        uindex_t cell_i = (r + r_offset) % word_length;
-
-                        cache[cell_i].value = out_pipe::read();
-
-                        bool word_full = cell_i == word_length - 1;
-                        bool last_cell = r == n_rows - 1;
-                        if (word_full || last_cell) {
-                            ac[word_i] = cache;
-                        }
+                for (uindex_t i = 0; i < n_cells; i++) {
+                    if (cell_i == word_length) {
+                        ac[word_i] = cache;
+                        word_i++;
+                        cell_i = 0;
                     }
+                    cache[cell_i].value = out_pipe::read();
+                    cell_i++;
+                }
+
+                if (cell_i != 0) {
+                    ac[word_i] = cache;
                 }
             });
         });

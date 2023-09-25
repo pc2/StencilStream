@@ -150,8 +150,9 @@ TEST_CASE("Tile::copy_to", "[Tile]") {
     copy_to_test_impl(tile_width - 2 * halo_radius, tile_height - 2 * halo_radius);
 }
 
-void submit_read_part_test_impl(TileImpl::Part part, uindex_t n_columns, uindex_t n_rows,
-                                uindex_t c_offset, uindex_t r_offset) {
+void submit_read_part_test_impl(TileImpl::Part part, uindex_t n_columns) {
+    uindex_t n_rows = TileImpl::get_part_range(part).r;
+
     TileImpl tile;
     {
         TileImpl::TileAccessor<access::mode::read_write> tile_ac(tile);
@@ -164,7 +165,7 @@ void submit_read_part_test_impl(TileImpl::Part part, uindex_t n_columns, uindex_
 
     using in_pipe = sycl::pipe<class submit_read_part_test_pipe_id, ID>;
     queue queue;
-    tile.submit_read_part<in_pipe>(queue, part, n_columns, n_rows, c_offset, r_offset);
+    tile.submit_read_part<in_pipe>(queue, part, n_columns);
 
     buffer<ID, 2> out_buffer = range<2>(n_columns, n_rows);
     queue.submit([&](handler &cgh) {
@@ -183,8 +184,8 @@ void submit_read_part_test_impl(TileImpl::Part part, uindex_t n_columns, uindex_
     id<2> part_offset = TileImpl::get_part_offset(part);
     for (uindex_t c = 0; c < n_columns; c++) {
         for (uindex_t r = 0; r < n_rows; r++) {
-            REQUIRE(out_buffer_ac[c][r].c == c_offset + part_offset[0] + c);
-            REQUIRE(out_buffer_ac[c][r].r == r_offset + part_offset[1] + r);
+            REQUIRE(out_buffer_ac[c][r].c == part_offset[0] + c);
+            REQUIRE(out_buffer_ac[c][r].r == part_offset[1] + r);
         }
     }
 }
@@ -192,41 +193,35 @@ void submit_read_part_test_impl(TileImpl::Part part, uindex_t n_columns, uindex_
 TEST_CASE("Tile::submit_read_part", "[Tile]") {
     for (auto part : TileImpl::all_parts) {
         UID range = TileImpl::get_part_range(part);
-        submit_read_part_test_impl(part, range.c, range.r, 0, 0);
-        submit_read_part_test_impl(part, range.c - 1, range.r, 0, 0);
-        submit_read_part_test_impl(part, range.c, range.r - 1, 0, 0);
-        submit_read_part_test_impl(part, range.c - 1, range.r - 1, 0, 0);
-        submit_read_part_test_impl(part, range.c - 1, range.r, 1, 0);
-        submit_read_part_test_impl(part, range.c, range.r - 1, 0, 1);
-        submit_read_part_test_impl(part, range.c - 1, range.r - 1, 1, 1);
+        submit_read_part_test_impl(part, range.c);
+        submit_read_part_test_impl(part, range.c - 1);
     }
 }
 
-void submit_write_part_test_impl(TileImpl::Part part, uindex_t n_columns, uindex_t n_rows,
-                                 uindex_t c_offset, uindex_t r_offset) {
+void submit_write_part_test_impl(TileImpl::Part part, uindex_t n_columns) {
     using out_pipe = sycl::pipe<class submit_read_part_test_pipe_id, ID>;
     queue queue;
+    uindex_t n_rows = TileImpl::get_part_range(part).r;
     id<2> part_offset = TileImpl::get_part_offset(part);
 
     queue.submit([&](handler &cgh) {
         cgh.single_task([=]() {
             for (uindex_t c = 0; c < n_columns; c++) {
                 for (uindex_t r = 0; r < n_rows; r++) {
-                    out_pipe::write(
-                        ID(part_offset[0] + c_offset + c, part_offset[1] + r_offset + r));
+                    out_pipe::write(ID(part_offset[0] + c, part_offset[1] + r));
                 }
             }
         });
     });
 
     TileImpl tile;
-    tile.submit_write_part<out_pipe>(queue, part, n_columns, n_rows, c_offset, r_offset);
+    tile.submit_write_part<out_pipe>(queue, part, n_columns);
 
     TileImpl::TileAccessor<access::mode::read> tile_ac(tile);
     for (uindex_t c = 0; c < n_columns; c++) {
         for (uindex_t r = 0; r < n_rows; r++) {
-            uindex_t global_c = part_offset[0] + c_offset + c;
-            uindex_t global_r = part_offset[1] + r_offset + r;
+            uindex_t global_c = part_offset[0] + c;
+            uindex_t global_r = part_offset[1] + r;
             ID cell = tile_ac.get(global_c, global_r);
             REQUIRE(cell.c == global_c);
             REQUIRE(cell.r == global_r);
@@ -237,12 +232,7 @@ void submit_write_part_test_impl(TileImpl::Part part, uindex_t n_columns, uindex
 TEST_CASE("Tile::submit_write_part", "[Tile]") {
     for (auto part : TileImpl::all_parts) {
         UID range = TileImpl::get_part_range(part);
-        submit_write_part_test_impl(part, range.c, range.r, 0, 0);
-        submit_write_part_test_impl(part, range.c - 1, range.r, 0, 0);
-        submit_write_part_test_impl(part, range.c, range.r - 1, 0, 0);
-        submit_write_part_test_impl(part, range.c - 1, range.r - 1, 0, 0);
-        submit_write_part_test_impl(part, range.c - 1, range.r, 1, 0);
-        submit_write_part_test_impl(part, range.c, range.r - 1, 0, 1);
-        submit_write_part_test_impl(part, range.c - 1, range.r - 1, 1, 1);
+        submit_write_part_test_impl(part, range.c);
+        submit_write_part_test_impl(part, range.c - 1);
     }
 }
