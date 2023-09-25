@@ -24,14 +24,18 @@
 namespace stencil {
 namespace monotile {
 
-template <class Cell, uindex_t tile_width = 1024, uindex_t tile_height = 1024,
-          uindex_t word_size = 64>
-class Grid {
+struct TileParameters {
+    uindex_t width = 1024;
+    uindex_t height = 1024;
+    uindex_t word_size = 64;
+};
+
+template <class Cell, TileParameters tile_params = TileParameters{}> class Grid {
   public:
     static constexpr uindex_t word_length =
-        std::lcm(sizeof(Padded<Cell>), word_size) / sizeof(Padded<Cell>);
+        std::lcm(sizeof(Padded<Cell>), tile_params.word_size) / sizeof(Padded<Cell>);
     static constexpr uindex_t max_n_words =
-        n_cells_to_n_words(tile_width * tile_height, word_length);
+        n_cells_to_n_words(tile_params.width * tile_params.height, word_length);
 
     using IOWord = std::array<Padded<Cell>, word_length>;
 
@@ -46,7 +50,7 @@ class Grid {
     Grid(uindex_t grid_width, uindex_t grid_height)
         : tile_buffer(sycl::range<1>(n_cells_to_n_words(grid_width * grid_height, word_length))),
           grid_width(grid_width), grid_height(grid_height) {
-        if (grid_width > tile_width || grid_height > tile_height) {
+        if (grid_width > tile_params.width || grid_height > tile_params.height) {
             throw std::range_error("The grid is bigger than the tile. The monotile architecture "
                                    "requires that grid ranges are smaller or equal to the tile "
                                    "range");
@@ -55,7 +59,7 @@ class Grid {
 
     Grid(sycl::buffer<Cell, 2> buffer)
         : tile_buffer(1), grid_width(buffer.get_range()[0]), grid_height(buffer.get_range()[1]) {
-        if (grid_width > tile_width || grid_height > tile_height) {
+        if (grid_width > tile_params.width || grid_height > tile_params.height) {
             throw std::range_error("The grid is bigger than the tile. The monotile architecture "
                                    "requires that grid ranges are smaller or equal to the tile "
                                    "range");

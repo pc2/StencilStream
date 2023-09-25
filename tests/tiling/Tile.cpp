@@ -28,9 +28,14 @@ using namespace sycl;
 using namespace stencil::tiling;
 using namespace std;
 
-using TileImpl = Tile<ID, tile_width, tile_height, halo_radius, 64>;
-constexpr uindex_t word_length = 8;
-static_assert(word_length == TileImpl::word_length);
+constexpr TileParameters tile_params{
+    .width = tile_width,
+    .height = tile_height,
+    .halo_radius = halo_radius,
+    .word_size = 64,
+};
+using TileImpl = Tile<ID, tile_params>;
+static_assert(TileImpl::word_length == 8);
 
 TEST_CASE("Tile::get_part_buffer", "[Tile]") {
     TileImpl tile;
@@ -69,8 +74,8 @@ TEST_CASE("Tile::TileAccessor", "[Tile]") {
                 if (r + content_offset[1] >= tile_height) {
                     continue;
                 }
-                uindex_t word_i = (c * true_range.r + r) / word_length;
-                uindex_t cell_i = (c * true_range.r + r) % word_length;
+                uindex_t word_i = (c * true_range.r + r) / TileImpl::word_length;
+                uindex_t cell_i = (c * true_range.r + r) % TileImpl::word_length;
                 REQUIRE(part_ac[word_i][cell_i].value.c == c + content_offset[0]);
                 REQUIRE(part_ac[word_i][cell_i].value.r == r + content_offset[1]);
             }

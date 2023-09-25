@@ -29,6 +29,13 @@
 namespace stencil {
 namespace tiling {
 
+struct TileParameters {
+    uindex_t width = 1024;
+    uindex_t height = 1024;
+    uindex_t halo_radius = 1;
+    uindex_t word_size = 64;
+};
+
 /**
  * \brief A rectangular container of cells with a static size
  *
@@ -46,16 +53,15 @@ namespace tiling {
  * \tparam height The number of rows of the tile.
  * \tparam halo_radius The radius (aka width and height) of the tile halo.
  */
-template <typename Cell, uindex_t width, uindex_t height, uindex_t halo_radius, uindex_t word_size>
-class Tile {
-    static_assert(width > 2 * halo_radius);
-    static_assert(height > 2 * halo_radius);
+template <typename Cell, TileParameters params> class Tile {
+    static_assert(params.width > 2 * params.halo_radius);
+    static_assert(params.height > 2 * params.halo_radius);
 
   public:
     static constexpr uindex_t word_length =
-        std::lcm(sizeof(Padded<Cell>), word_size) / sizeof(Padded<Cell>);
-    static constexpr uindex_t core_width = width - 2 * halo_radius;
-    static constexpr uindex_t core_height = height - 2 * halo_radius;
+        std::lcm(sizeof(Padded<Cell>), params.word_size) / sizeof(Padded<Cell>);
+    static constexpr uindex_t core_width = params.width - 2 * params.halo_radius;
+    static constexpr uindex_t core_height = params.height - 2 * params.halo_radius;
     using IOWord = std::array<Padded<Cell>, word_length>;
 
     /**
@@ -148,13 +154,13 @@ class Tile {
         case Part::SOUTH_WEST_CORNER:
         case Part::SOUTH_EAST_CORNER:
         case Part::NORTH_EAST_CORNER:
-            return UID(halo_radius, halo_radius);
+            return UID(params.halo_radius, params.halo_radius);
         case Part::NORTH_BORDER:
         case Part::SOUTH_BORDER:
-            return UID(core_width, halo_radius);
+            return UID(core_width, params.halo_radius);
         case Part::WEST_BORDER:
         case Part::EAST_BORDER:
-            return UID(halo_radius, core_height);
+            return UID(params.halo_radius, core_height);
         case Part::CORE:
             return UID(core_width, core_height);
         default:
@@ -174,21 +180,22 @@ class Tile {
         case Part::NORTH_WEST_CORNER:
             return sycl::id<2>(0, 0);
         case Part::NORTH_BORDER:
-            return sycl::id<2>(halo_radius, 0);
+            return sycl::id<2>(params.halo_radius, 0);
         case Part::NORTH_EAST_CORNER:
-            return sycl::id<2>(width - halo_radius, 0);
+            return sycl::id<2>(params.width - params.halo_radius, 0);
         case Part::EAST_BORDER:
-            return sycl::id<2>(width - halo_radius, halo_radius);
+            return sycl::id<2>(params.width - params.halo_radius, params.halo_radius);
         case Part::SOUTH_EAST_CORNER:
-            return sycl::id<2>(width - halo_radius, height - halo_radius);
+            return sycl::id<2>(params.width - params.halo_radius,
+                               params.height - params.halo_radius);
         case Part::SOUTH_BORDER:
-            return sycl::id<2>(halo_radius, height - halo_radius);
+            return sycl::id<2>(params.halo_radius, params.height - params.halo_radius);
         case Part::SOUTH_WEST_CORNER:
-            return sycl::id<2>(0, height - halo_radius);
+            return sycl::id<2>(0, params.height - params.halo_radius);
         case Part::WEST_BORDER:
-            return sycl::id<2>(0, halo_radius);
+            return sycl::id<2>(0, params.halo_radius);
         case Part::CORE:
-            return sycl::id<2>(halo_radius, halo_radius);
+            return sycl::id<2>(params.halo_radius, params.halo_radius);
         default:
             throw std::invalid_argument("Invalid grid tile part specified");
         }
@@ -216,27 +223,28 @@ class Tile {
 
         static std::array<uindex_t, 4> transform_indices(uindex_t c, uindex_t r) {
             uindex_t part_c;
-            if (c < halo_radius) {
+            if (c < params.halo_radius) {
                 part_c = 0;
-            } else if (c < width - halo_radius) {
+            } else if (c < params.width - params.halo_radius) {
                 part_c = 1;
-                c -= halo_radius;
+                c -= params.halo_radius;
             } else {
                 part_c = 2;
-                c -= width - halo_radius;
+                c -= params.width - params.halo_radius;
             }
             uindex_t part_r, part_words_per_column;
-            if (r < halo_radius) {
+            if (r < params.halo_radius) {
                 part_r = 0;
-                part_words_per_column = n_cells_to_n_words(halo_radius, word_length);
-            } else if (r < height - halo_radius) {
+                part_words_per_column = n_cells_to_n_words(params.halo_radius, word_length);
+            } else if (r < params.height - params.halo_radius) {
                 part_r = 1;
-                part_words_per_column = n_cells_to_n_words(height - 2 * halo_radius, word_length);
-                r -= halo_radius;
+                part_words_per_column =
+                    n_cells_to_n_words(params.height - 2 * params.halo_radius, word_length);
+                r -= params.halo_radius;
             } else {
                 part_r = 2;
-                part_words_per_column = n_cells_to_n_words(halo_radius, word_length);
-                r -= height - halo_radius;
+                part_words_per_column = n_cells_to_n_words(params.halo_radius, word_length);
+                r -= params.height - params.halo_radius;
             }
             uindex_t word_i = (c * part_words_per_column) + (r / word_length);
             uindex_t element_i = r % word_length;

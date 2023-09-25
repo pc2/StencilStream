@@ -32,7 +32,13 @@ using namespace std;
 const uindex_t add_grid_width = grid_width + 1;
 const uindex_t add_grid_height = grid_height + 1;
 
-using TestGrid = Grid<ID, tile_width, tile_height, halo_radius>;
+constexpr TileParameters tile_params{
+    .width = tile_width,
+    .height = tile_height,
+    .halo_radius = halo_radius,
+    .word_size = 64,
+};
+using TestGrid = Grid<ID, tile_params>;
 
 // Assert that the tiled grid fulfills the grid concept.
 static_assert(concepts::Grid<TestGrid, ID>);

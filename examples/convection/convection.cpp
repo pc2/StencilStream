@@ -4,11 +4,11 @@
     #include <StencilStream/monotile/StencilUpdate.hpp>
 #endif
 #include <StencilStream/tdv/NoneSupplier.hpp>
-#include <sycl/ext/intel/fpga_extensions.hpp>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <sycl/ext/intel/fpga_extensions.hpp>
 
 using namespace stencil;
 using json = nlohmann::json;
@@ -231,16 +231,23 @@ using PseudoTransientUpdate = cpu::StencilUpdate<PseudoTransientKernel>;
 using ThermalSolverUpdate = cpu::StencilUpdate<ThermalSolverKernel>;
 
 #else
-constexpr uindex_t tile_width = 512;
-constexpr uindex_t tile_height = 512;
-using Grid = monotile::Grid<ThermalConvectionCell, tile_width, tile_height>;
-using PseudoTransientUpdate =
-    monotile::StencilUpdate<PseudoTransientKernel, tdv::NoneSupplier, PseudoTransientKernel::n_subgenerations * 5,
-                            tile_width, tile_height>;
-using ThermalSolverUpdate =
-    monotile::StencilUpdate<ThermalSolverKernel, tdv::NoneSupplier, ThermalSolverKernel::n_subgenerations, tile_width,
-                            tile_height>;
+constexpr monotile::TileParameters tile_params{
+    .width = 512,
+    .height = 512,
+};
+using Grid = monotile::Grid<ThermalConvectionCell, tile_params>;
 
+constexpr monotile::StencilUpdateParameters pseudo_transient_params{
+    .n_processing_elements = PseudoTransientKernel::n_subgenerations * 5,
+};
+using PseudoTransientUpdate = monotile::StencilUpdate<PseudoTransientKernel, tdv::NoneSupplier,
+                                                      tile_params, pseudo_transient_params>;
+
+constexpr monotile::StencilUpdateParameters thermal_solver_params{
+    .n_processing_elements = ThermalSolverKernel::n_subgenerations,
+};
+using ThermalSolverUpdate = monotile::StencilUpdate<ThermalSolverKernel, tdv::NoneSupplier,
+                                                    tile_params, thermal_solver_params>;
 #endif
 
 int main(int argc, char **argv) {
