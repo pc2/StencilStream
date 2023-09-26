@@ -102,32 +102,24 @@ struct HotspotKernel {
 };
 
 #if EXECUTOR == 0
-constexpr monotile::TileParameters tile_params{
-    .width = 1024,
-    .height = 1024,
-};
-constexpr monotile::StencilUpdateParameters su_params{
-    .n_processing_elements = 350,
-};
-using StencilUpdate = monotile::StencilUpdate<HotspotKernel, tdv::NoneSupplier, tile_params, su_params>;
-using Grid = monotile::Grid<HotspotCell, tile_params>;
+const uindex_t tile_width = 1024;
+const uindex_t tile_height = 1024;
+const uindex_t n_processing_elements = 350;
+using StencilUpdate = monotile::StencilUpdate<HotspotKernel, tdv::NoneSupplier,
+                                              n_processing_elements, tile_width, tile_height>;
+using Grid = StencilUpdate::GridImpl;
 
 #elif EXECUTOR == 1
-constexpr tiling::TileParameters tile_params{
-    .width = 1024,
-    .height = 1024,
-    .halo_radius = 280,
-};
-using Grid = tiling::Grid<HotspotCell, tile_params>;
-
-constexpr tiling::StencilUpdateParameters su_params{
-    .n_processing_elements = 280,
-};
-using StencilUpdate = tiling::StencilUpdate<HotspotKernel, tdv::NoneSupplier, tile_params, su_params>;
+const uindex_t tile_width = 1024;
+const uindex_t tile_height = 1024;
+const uindex_t n_processing_elements = 280;
+using StencilUpdate = tiling::StencilUpdate<HotspotKernel, tdv::NoneSupplier, n_processing_elements,
+                                            tile_width, tile_height>;
+using Grid = StencilUpdate::GridImpl;
 
 #else
-using Grid = cpu::Grid<HotspotCell>;
 using StencilUpdate = cpu::StencilUpdate<HotspotKernel>;
+using Grid = StencilUpdate::GridImpl;
 
 #endif
 
@@ -224,10 +216,9 @@ int main(int argc, char **argv) {
         usage(argc, argv);
 
 #if EXECUTOR == 0
-    if (n_columns > tile_params.width || n_rows > tile_params.height) {
-        std::cerr << "Error: The grid may not exceed the size of the tile (" << tile_params.width
-                  << " by " << tile_params.height << " cells) when using the monotile architecture."
-                  << std::endl;
+    if (n_columns > tile_width || n_rows > tile_height) {
+        std::cerr << "Error: The grid may not exceed the size of the tile (" << tile_width << " by "
+                  << tile_height << " cells) when using the monotile architecture." << std::endl;
         exit(1);
     }
 #endif

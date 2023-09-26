@@ -40,14 +40,19 @@ namespace tiling {
  * input and output kernel submission for a given tile.
  *
  * \tparam Cell Cell value type.
+ * \tparam tile_width The number of columns of a tile.
+ * \tparam tile_height The number of rows of a tile.
+ * \tparam halo_radius The radius (aka width and height) of the tile halo.
  */
-template <typename Cell, TileParameters params> class Grid {
+template <typename Cell, uindex_t tile_width = 1024, uindex_t tile_height = 1024,
+          uindex_t halo_radius = 1, uindex_t word_size = 64>
+class Grid {
   public:
-    static_assert(2 * params.halo_radius < params.height && 2 * params.halo_radius < params.width);
-    static constexpr uindex_t core_height = params.height - 2 * params.halo_radius;
-    static constexpr uindex_t core_width = params.width - 2 * params.halo_radius;
+    static_assert(2 * halo_radius < tile_height && 2 * halo_radius < tile_width);
+    static constexpr uindex_t core_height = tile_height - 2 * halo_radius;
+    static constexpr uindex_t core_width = tile_width - 2 * halo_radius;
 
-    using Tile = Tile<Cell, params>;
+    using Tile = Tile<Cell, tile_width, tile_height, halo_radius, word_size>;
 
     /**
      * \brief Create a grid with undefined contents.
@@ -86,13 +91,11 @@ template <typename Cell, TileParameters params> class Grid {
         }
 
         Cell get(uindex_t c, uindex_t r) const {
-            return tile_acs[c / params.width][r / params.height].get(c % params.width,
-                                                                     r % params.height);
+            return tile_acs[c / tile_width][r / tile_height].get(c % tile_width, r % tile_height);
         }
 
         void set(uindex_t c, uindex_t r, Cell cell) {
-            tile_acs[c / params.width][r / params.height].set(c % params.width, r % params.height,
-                                                              cell);
+            tile_acs[c / tile_width][r / tile_height].set(c % tile_width, r % tile_height, cell);
         }
 
       private:
@@ -110,8 +113,7 @@ template <typename Cell, TileParameters params> class Grid {
 
         for (uindex_t tile_column = 1; tile_column < tiles.size() - 1; tile_column++) {
             for (uindex_t tile_row = 1; tile_row < tiles[tile_column].size() - 1; tile_row++) {
-                sycl::id<2> offset((tile_column - 1) * params.width,
-                                   (tile_row - 1) * params.height);
+                sycl::id<2> offset((tile_column - 1) * tile_width, (tile_row - 1) * tile_height);
                 tiles[tile_column][tile_row].copy_from(input_buffer, offset);
             }
         }
@@ -134,8 +136,7 @@ template <typename Cell, TileParameters params> class Grid {
 
         for (uindex_t tile_column = 1; tile_column < tiles.size() - 1; tile_column++) {
             for (uindex_t tile_row = 1; tile_row < tiles[tile_column].size() - 1; tile_row++) {
-                sycl::id<2> offset((tile_column - 1) * params.width,
-                                   (tile_row - 1) * params.height);
+                sycl::id<2> offset((tile_column - 1) * tile_width, (tile_row - 1) * tile_height);
                 tiles[tile_column][tile_row].copy_to(output_buffer, offset);
             }
         }
@@ -274,26 +275,25 @@ template <typename Cell, TileParameters params> class Grid {
             uindex_t n_inner_columns = part_widths[1] + part_widths[2] + part_widths[3];
 
             cgh.single_task([=]() {
-                constexpr unsigned long bits_width =
-                    std::bit_width(2 * params.halo_radius + params.width);
-                constexpr unsigned long bits_height =
-                    std::bit_width(2 * params.halo_radius + params.height);
+                constexpr unsigned long bits_width = std::bit_width(2 * halo_radius + tile_width);
+                constexpr unsigned long bits_height = std::bit_width(2 * halo_radius + tile_height);
                 using uindex_width_t = ac_int<bits_width, false>;
                 using uindex_height_t = ac_int<bits_height, false>;
 
-                [[intel::loop_coalesce(
-                    2)]] for (uindex_width_t c = 0;
-                              c < uindex_width_t(2 * params.halo_radius + n_inner_columns); c++) {
-                    for (uindex_height_t r = 0;
-                         r < uindex_height_t(2 * params.halo_radius + params.height); r++) {
+                [[intel::loop_coalesce(2)]] for (uindex_width_t c = 0;
+                                                 c <
+                                                 uindex_width_t(2 * halo_radius + n_inner_columns);
+                                                 c++) {
+                    for (uindex_height_t r = 0; r < uindex_height_t(2 * halo_radius + tile_height);
+                         r++) {
                         Cell value;
-                        if (r < uindex_height_t(params.halo_radius)) {
+                        if (r < uindex_height_t(halo_radius)) {
                             value = feed_in_pipe_0::read();
-                        } else if (r < uindex_height_t(2 * params.halo_radius)) {
+                        } else if (r < uindex_height_t(2 * halo_radius)) {
                             value = feed_in_pipe_1::read();
-                        } else if (r < uindex_height_t(2 * params.halo_radius + core_height)) {
+                        } else if (r < uindex_height_t(2 * halo_radius + core_height)) {
                             value = feed_in_pipe_2::read();
-                        } else if (r < uindex_height_t(3 * params.halo_radius + core_height)) {
+                        } else if (r < uindex_height_t(3 * halo_radius + core_height)) {
                             value = feed_in_pipe_3::read();
                         } else {
                             value = feed_in_pipe_4::read();
@@ -321,18 +321,18 @@ template <typename Cell, TileParameters params> class Grid {
             uindex_t n_inner_columns = part_widths[1] + part_widths[2] + part_widths[3];
 
             cgh.single_task([=]() {
-                constexpr unsigned long bits_width = std::bit_width(params.width);
-                constexpr unsigned long bits_height = std::bit_width(params.height);
+                constexpr unsigned long bits_width = std::bit_width(tile_width);
+                constexpr unsigned long bits_height = std::bit_width(tile_height);
                 using uindex_width_t = ac_int<bits_width, false>;
                 using uindex_height_t = ac_int<bits_height, false>;
 
                 [[intel::loop_coalesce(2)]] for (uindex_width_t c = 0;
                                                  c < uindex_width_t(n_inner_columns); c++) {
-                    for (uindex_height_t r = 0; r < uindex_height_t(params.height); r++) {
+                    for (uindex_height_t r = 0; r < uindex_height_t(tile_height); r++) {
                         Cell value = out_pipe::read();
-                        if (r < uindex_height_t(params.halo_radius)) {
+                        if (r < uindex_height_t(halo_radius)) {
                             feed_out_pipe_0::write(value);
-                        } else if (r < uindex_height_t(params.height - params.halo_radius)) {
+                        } else if (r < uindex_height_t(tile_height - halo_radius)) {
                             feed_out_pipe_1::write(value);
                         } else {
                             feed_out_pipe_2::write(value);
@@ -366,28 +366,28 @@ template <typename Cell, TileParameters params> class Grid {
 
   private:
     std::array<uindex_t, 5> get_part_widths(index_t tile_c) const {
-        uindex_t column_offset = tile_c * params.width;
-        uindex_t n_inner_columns = std::min(params.width, grid_width - column_offset);
+        uindex_t column_offset = tile_c * tile_width;
+        uindex_t n_inner_columns = std::min(tile_width, grid_width - column_offset);
 
         std::array<uindex_t, 5> part_widths;
-        part_widths[0] = params.halo_radius;
+        part_widths[0] = halo_radius;
 
-        part_widths[1] = std::min(n_inner_columns, params.halo_radius);
+        part_widths[1] = std::min(n_inner_columns, halo_radius);
 
-        if (n_inner_columns > params.halo_radius) {
-            part_widths[2] = std::min(n_inner_columns - params.halo_radius, Tile::core_width);
+        if (n_inner_columns > halo_radius) {
+            part_widths[2] = std::min(n_inner_columns - halo_radius, Tile::core_width);
         } else {
             part_widths[2] = 0;
         }
 
-        if (n_inner_columns > params.halo_radius + Tile::core_width) {
-            part_widths[3] = std::min(n_inner_columns - params.halo_radius - Tile::core_width,
-                                      params.halo_radius);
+        if (n_inner_columns > halo_radius + Tile::core_width) {
+            part_widths[3] =
+                std::min(n_inner_columns - halo_radius - Tile::core_width, halo_radius);
         } else {
             part_widths[3] = 0;
         }
 
-        part_widths[4] = params.halo_radius;
+        part_widths[4] = halo_radius;
 
         assert(part_widths[1] + part_widths[2] + part_widths[3] == n_inner_columns);
 
@@ -397,12 +397,12 @@ template <typename Cell, TileParameters params> class Grid {
     void allocate_tiles() {
         tiles.clear();
 
-        uindex_t n_tile_columns = grid_width / params.width;
-        if (grid_width % params.width != 0) {
+        uindex_t n_tile_columns = grid_width / tile_width;
+        if (grid_width % tile_width != 0) {
             n_tile_columns++;
         }
-        uindex_t n_tile_rows = grid_height / params.height;
-        if (grid_height % params.height != 0) {
+        uindex_t n_tile_rows = grid_height / tile_height;
+        if (grid_height % tile_height != 0) {
             n_tile_rows++;
         }
 

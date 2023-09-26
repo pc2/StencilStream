@@ -26,7 +26,7 @@ using namespace stencil::monotile;
 using namespace sycl;
 using namespace std;
 
-using TestGrid = Grid<ID, TileParameters{.width = tile_width, .height = tile_height}>;
+using TestGrid = Grid<ID, tile_width, tile_height, 64>;
 
 // Assert that the monotile grid fulfills the grid concept.
 static_assert(concepts::Grid<TestGrid, ID>);
