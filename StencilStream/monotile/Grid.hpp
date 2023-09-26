@@ -24,42 +24,19 @@
 namespace stencil {
 namespace monotile {
 
-template <class Cell, uindex_t tile_width = 1024, uindex_t tile_height = 1024,
-          uindex_t word_size = 64>
-class Grid {
+template <class Cell, uindex_t word_size = 64> class Grid {
   public:
     static constexpr uindex_t word_length =
         std::lcm(sizeof(Padded<Cell>), word_size) / sizeof(Padded<Cell>);
-    static constexpr uindex_t max_n_words =
-        n_cells_to_n_words(tile_width * tile_height, word_length);
 
     using IOWord = std::array<Padded<Cell>, word_length>;
 
-    static constexpr unsigned long bits_cell = std::bit_width(word_length);
-    using index_cell_t = ac_int<bits_cell + 1, true>;
-    using uindex_cell_t = ac_int<bits_cell, false>;
-
-    static constexpr unsigned long bits_word = std::bit_width(max_n_words);
-    using index_word_t = ac_int<bits_word + 1, true>;
-    using uindex_word_t = ac_int<bits_word, false>;
-
     Grid(uindex_t grid_width, uindex_t grid_height)
         : tile_buffer(sycl::range<1>(n_cells_to_n_words(grid_width * grid_height, word_length))),
-          grid_width(grid_width), grid_height(grid_height) {
-        if (grid_width > tile_width || grid_height > tile_height) {
-            throw std::range_error("The grid is bigger than the tile. The monotile architecture "
-                                   "requires that grid ranges are smaller or equal to the tile "
-                                   "range");
-        }
-    }
+          grid_width(grid_width), grid_height(grid_height) {}
 
     Grid(sycl::buffer<Cell, 2> buffer)
         : tile_buffer(1), grid_width(buffer.get_range()[0]), grid_height(buffer.get_range()[1]) {
-        if (grid_width > tile_width || grid_height > tile_height) {
-            throw std::range_error("The grid is bigger than the tile. The monotile architecture "
-                                   "requires that grid ranges are smaller or equal to the tile "
-                                   "range");
-        }
         tile_buffer = sycl::range<1>(n_cells_to_n_words(grid_width * grid_height, word_length));
         copy_from_buffer(buffer);
     }
@@ -131,16 +108,16 @@ class Grid {
     template <typename in_pipe> void submit_read(sycl::queue queue) {
         queue.submit([&](sycl::handler &cgh) {
             sycl::accessor ac(tile_buffer, cgh, sycl::read_only);
-            uindex_t n_cells = this->get_grid_width() * this->get_grid_height();
+            uindex_t n_cells = grid_width * grid_height;
 
             cgh.single_task([=]() {
-                [[intel::fpga_memory]] IOWord cache;
+                IOWord cache;
 
-                uindex_word_t word_i = 0;
-                uindex_cell_t cell_i = word_length;
+                uindex_t word_i = 0;
+                uindex_t cell_i = word_length;
                 for (uindex_t i = 0; i < n_cells; i++) {
-                    if (cell_i == uindex_cell_t(word_length)) {
-                        cache = ac[word_i.to_uint64()];
+                    if (cell_i == word_length) {
+                        cache = ac[word_i];
                         word_i++;
                         cell_i = 0;
                     }
@@ -154,25 +131,21 @@ class Grid {
     template <typename out_pipe> void submit_write(sycl::queue queue) {
         queue.submit([&](sycl::handler &cgh) {
             sycl::accessor ac(tile_buffer, cgh, sycl::write_only);
-            uindex_t n_cells = this->get_grid_width() * this->get_grid_height();
+            uindex_t n_cells = grid_width * grid_height;
 
             cgh.single_task([=]() {
-                [[intel::fpga_memory]] IOWord cache;
+                IOWord cache;
 
-                uindex_word_t word_i = 0;
-                uindex_cell_t cell_i = 0;
+                uindex_t word_i = 0;
+                uindex_t cell_i = 0;
                 for (uindex_t i = 0; i < n_cells; i++) {
                     cache[cell_i].value = out_pipe::read();
                     cell_i++;
-                    if (cell_i == uindex_cell_t(word_length)) {
-                        ac[word_i.to_uint64()] = cache;
+                    if (cell_i == word_length || i == n_cells - 1) {
+                        ac[word_i] = cache;
                         cell_i = 0;
                         word_i++;
                     }
-                }
-
-                if (cell_i != 0) {
-                    ac[word_i.to_uint64()] = cache;
                 }
             });
         });

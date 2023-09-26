@@ -27,8 +27,8 @@ using namespace stencil;
 using namespace stencil::monotile;
 
 using StencilUpdateImpl = StencilUpdate<FPGATransFunc<1>, tdv::InlineSupplier<GenerationFunction>,
-                                        n_processing_elements, tile_width, tile_height>;
-using GridImpl = typename StencilUpdateImpl::GridImpl;
+                                        n_processing_elements, tile_height>;
+using GridImpl = Grid<Cell>;
 
 void test_monotile_stencil_update(uindex_t grid_width, uindex_t grid_height,
                                   uindex_t n_generations) {

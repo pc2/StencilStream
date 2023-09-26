@@ -1,4 +1,4 @@
-#!/usr/bin/env -S julia --project=..
+#!/usr/bin/env -S julia --project
 include("benchmark-common.jl")
 
 if size(ARGS, 1) != 1

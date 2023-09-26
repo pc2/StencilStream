@@ -36,7 +36,7 @@ void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t ta
     using out_pipe = HostPipe<class MonotileExecutionKernelOutPipeID, Cell>;
     using KernelArgument = tdv::InlineSupplier<GenerationFunction>::KernelArgument;
     using TestExecutionKernel = ExecutionKernel<TransFunc, KernelArgument, n_processing_elements,
-                                                tile_width, tile_height, in_pipe, out_pipe>;
+                                                tile_height, in_pipe, out_pipe>;
 
     for (uindex_t c = 0; c < grid_width; c++) {
         for (uindex_t r = 0; r < grid_height; r++) {
@@ -107,7 +107,7 @@ TEST_CASE("monotile::ExecutionKernel: Incomplete Pipeline with i_generation != 0
     using in_pipe = HostPipe<class IncompletePipelineInPipeID, uint8_t>;
     using out_pipe = HostPipe<class IncompletePipelineOutPipeID, uint8_t>;
     using TestExecutionKernel =
-        ExecutionKernel<IncompletePipelineKernel, tdv::NoneSupplier, 16, 64, 64, in_pipe, out_pipe>;
+        ExecutionKernel<IncompletePipelineKernel, tdv::NoneSupplier, 16, 64, in_pipe, out_pipe>;
 
     for (int c = 0; c < 64; c++) {
         for (int r = 0; r < 64; r++) {

@@ -231,15 +231,13 @@ using PseudoTransientUpdate = cpu::StencilUpdate<PseudoTransientKernel>;
 using ThermalSolverUpdate = cpu::StencilUpdate<ThermalSolverKernel>;
 
 #else
-constexpr uindex_t tile_width = 512;
-constexpr uindex_t tile_height = 512;
-using Grid = monotile::Grid<ThermalConvectionCell, tile_width, tile_height>;
+constexpr uindex_t max_grid_height = 512;
+using Grid = monotile::Grid<ThermalConvectionCell>;
 using PseudoTransientUpdate =
     monotile::StencilUpdate<PseudoTransientKernel, tdv::NoneSupplier, PseudoTransientKernel::n_subgenerations * 5,
-                            tile_width, tile_height>;
+                            max_grid_height>;
 using ThermalSolverUpdate =
-    monotile::StencilUpdate<ThermalSolverKernel, tdv::NoneSupplier, ThermalSolverKernel::n_subgenerations, tile_width,
-                            tile_height>;
+    monotile::StencilUpdate<ThermalSolverKernel, tdv::NoneSupplier, ThermalSolverKernel::n_subgenerations, max_grid_height>;
 
 #endif
 

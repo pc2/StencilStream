@@ -26,12 +26,12 @@ namespace stencil {
 namespace monotile {
 
 template <concepts::TransitionFunction F, concepts::tdv::HostState TDVHostState = tdv::NoneSupplier,
-          uindex_t n_processing_elements = 1, uindex_t tile_width = 1024,
-          uindex_t tile_height = 1024, uindex_t word_size = 64>
+          uindex_t n_processing_elements = 1, uindex_t max_grid_height = 1024,
+          uindex_t word_size = 64>
 class StencilUpdate {
   public:
     using Cell = F::Cell;
-    using GridImpl = Grid<Cell, tile_width, tile_height, word_size>;
+    using GridImpl = Grid<Cell, word_size>;
 
     struct Params {
         F transition_function;
@@ -44,11 +44,14 @@ class StencilUpdate {
     StencilUpdate(Params params) : params(params) {}
 
     GridImpl operator()(GridImpl &source_grid) {
+        if (source_grid.get_grid_height() > max_grid_height) {
+            throw std::range_error("The grid is too tall for the stencil update kernel.");
+        }
         using in_pipe = sycl::pipe<class monotile_in_pipe, Cell>;
         using out_pipe = sycl::pipe<class monotile_out_pipe, Cell>;
         using ExecutionKernelImpl =
             ExecutionKernel<F, typename TDVHostState::KernelArgument, n_processing_elements,
-                            tile_width, tile_height, in_pipe, out_pipe>;
+                            max_grid_height, in_pipe, out_pipe>;
 
         GridImpl swap_grid_a = source_grid.make_similar();
         GridImpl swap_grid_b = source_grid.make_similar();
