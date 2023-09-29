@@ -54,6 +54,7 @@ concept GridAccessor = requires(Accessor ac, uindex_t c, uindex_t r) {
 template <typename G, typename Cell>
 concept Grid = requires(G &grid, sycl::buffer<Cell, 2> buffer, uindex_t c, uindex_t r, Cell cell) {
     { G(c, r) } -> std::same_as<G>;
+    { G(sycl::range<2>(c, r)) } -> std::same_as<G>;
     { G(buffer) } -> std::same_as<G>;
     { grid.copy_from_buffer(buffer) } -> std::same_as<void>;
     { grid.copy_to_buffer(buffer) } -> std::same_as<void>;

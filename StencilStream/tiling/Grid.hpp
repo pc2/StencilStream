@@ -70,6 +70,8 @@ class Grid {
         allocate_tiles();
     }
 
+    Grid(sycl::range<2> range) : tiles(), grid_width(range[0]), grid_height(range[1]) {}
+
     Grid(sycl::buffer<Cell, 2> input_buffer)
         : tiles(), grid_width(input_buffer.get_range()[0]),
           grid_height(input_buffer.get_range()[1]) {

@@ -280,6 +280,7 @@ class StencilUpdate {
     struct Params {
         F transition_function;
         Cell halo_value = Cell();
+        uindex_t generation_offset = 0;
         uindex_t n_generations = 1;
         TDVHostState tdv_host_state;
         sycl::queue queue = sycl::queue();
@@ -305,7 +306,8 @@ class StencilUpdate {
         uindex_t grid_width = source_grid.get_grid_width();
         uindex_t grid_height = source_grid.get_grid_height();
 
-        for (uindex_t i_gen = 0; i_gen < params.n_generations; i_gen += gens_per_pass) {
+        for (uindex_t i_gen = params.generation_offset;
+             i_gen < params.generation_offset + params.n_generations; i_gen += gens_per_pass) {
             for (uindex_t i_tile_c = 0; i_tile_c < tile_range.c; i_tile_c++) {
                 for (uindex_t i_tile_r = 0; i_tile_r < tile_range.r; i_tile_r++) {
                     pass_source.template submit_read<in_pipe>(params.queue, i_tile_c, i_tile_r);

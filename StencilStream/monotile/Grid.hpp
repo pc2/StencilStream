@@ -37,6 +37,10 @@ template <class Cell, uindex_t word_size = 64> class Grid {
         : tile_buffer(sycl::range<1>(n_cells_to_n_words(grid_width * grid_height, word_length))),
           grid_width(grid_width), grid_height(grid_height) {}
 
+    Grid(sycl::range<2> range)
+        : tile_buffer(sycl::range<1>(n_cells_to_n_words(range[0] * range[1], word_length))),
+          grid_width(range[0]), grid_height(range[1]) {}
+
     Grid(sycl::buffer<Cell, 2> buffer)
         : tile_buffer(1), grid_width(buffer.get_range()[0]), grid_height(buffer.get_range()[1]) {
         tile_buffer = sycl::range<1>(n_cells_to_n_words(grid_width * grid_height, word_length));

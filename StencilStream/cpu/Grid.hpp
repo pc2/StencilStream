@@ -27,6 +27,8 @@ template <typename Cell> class Grid {
   public:
     Grid(uindex_t c, uindex_t r) : buffer(sycl::range<2>(c, r)) {}
 
+    Grid(sycl::range<2> range) : buffer(range) {}
+
     Grid(sycl::buffer<Cell, 2> other_buffer) : buffer(other_buffer.get_range()) {
         copy_from_buffer(other_buffer);
     }
