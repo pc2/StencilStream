@@ -20,6 +20,7 @@
 #include "Kernel.hpp"
 #include "SourceFunction.hpp"
 #include <deque>
+#include <sycl/ext/intel/fpga_extensions.hpp>
 
 #if MATERIAL == 0
     #include "material/CoefResolver.hpp"
@@ -47,16 +48,19 @@ using KernelImpl = Kernel<MaterialResolver>;
 using CellImpl = KernelImpl::Cell;
 
 #if EXECUTOR == 0
-    #include <StencilStream/MonotileExecutor.hpp>
-using Executor =
-    MonotileExecutor<KernelImpl, SourceSupplier, n_processing_elements, tile_width, tile_height>;
+    #include <StencilStream/monotile/StencilUpdate.hpp>
+using Grid = monotile::Grid<CellImpl>;
+using StencilUpdate =
+    monotile::StencilUpdate<KernelImpl, SourceSupplier, n_processing_elements, tile_height>;
 #elif EXECUTOR == 1
-    #include <StencilStream/TilingExecutor.hpp>
-using Executor =
-    TilingExecutor<KernelImpl, SourceSupplier, n_processing_elements, tile_width, tile_height>;
+    #include <StencilStream/tiling/StencilUpdate.hpp>
+using StencilUpdate = tiling::StencilUpdate<KernelImpl, SourceSupplier, n_processing_elements,
+                                            tile_width, tile_height>;
+using Grid = StencilUpdate::GridImpl;
 #elif EXECUTOR == 2
-    #include <StencilStream/SimpleCPUExecutor.hpp>
-using Executor = SimpleCPUExecutor<KernelImpl, SourceSupplier>;
+    #include <StencilStream/cpu/StencilUpdate.hpp>
+using Grid = cpu::Grid<CellImpl>;
+using StencilUpdate = cpu::StencilUpdate<KernelImpl, SourceSupplier>;
 #endif
 
 auto exception_handler = [](cl::sycl::exception_list exceptions) {
@@ -77,9 +81,9 @@ enum class CellField {
     HZ_SUM,
 };
 
-void save_frame(cl::sycl::buffer<CellImpl, 2> frame_buffer, uindex_t generation_index,
-                CellField field, Parameters const &parameters) {
-    auto frame = frame_buffer.get_access<access::mode::read>();
+void save_frame(Grid frame_buffer, uindex_t generation_index, CellField field,
+                Parameters const &parameters) {
+    Grid::GridAccessor<access::mode::read> frame(frame_buffer);
 
     ostringstream frame_path;
     frame_path << parameters.out_dir << "/";
@@ -102,8 +106,8 @@ void save_frame(cl::sycl::buffer<CellImpl, 2> frame_buffer, uindex_t generation_
     frame_path << "." << generation_index << ".csv";
     std::ofstream out(frame_path.str());
 
-    for (uindex_t r = 0; r < frame.get_range()[1]; r++) {
-        for (uindex_t c = 0; c < frame.get_range()[0]; c++) {
+    for (uindex_t r = 0; r < parameters.grid_range()[1]; r++) {
+        for (uindex_t c = 0; c < parameters.grid_range()[0]; c++) {
             switch (field) {
             case CellField::EX:
                 out << frame[c][r].cell.ex;
@@ -121,11 +125,11 @@ void save_frame(cl::sycl::buffer<CellImpl, 2> frame_buffer, uindex_t generation_
                 break;
             }
 
-            if (c != frame.get_range()[0] - 1) {
+            if (c != parameters.grid_range()[0] - 1) {
                 out << ",";
             }
         }
-        if (r != frame.get_range()[1] - 1) {
+        if (r != parameters.grid_range()[1] - 1) {
             out << std::endl;
         }
     }
@@ -145,9 +149,9 @@ int main(int argc, char **argv) {
 
     MaterialResolver mat_resolver(parameters);
 
-    cl::sycl::buffer<CellImpl, 2> grid_buffer(parameters.grid_range());
+    Grid grid(parameters.grid_range());
     {
-        auto init_ac = grid_buffer.get_access<cl::sycl::access::mode::discard_write>();
+        Grid::GridAccessor<access::mode::read_write> init_ac(grid);
         for (uindex_t c = 0; c < parameters.grid_range()[0]; c++) {
             for (uindex_t r = 0; r < parameters.grid_range()[1]; r++) {
                 float a = float(c) - float(parameters.grid_range()[0]) / 2.0;
@@ -170,39 +174,44 @@ int main(int argc, char **argv) {
         }
     }
 
-    KernelImpl kernel(parameters, mat_resolver);
-
-    SourceFunction source_function(parameters);
-    SourceSupplier source_supplier(source_function);
-
-    Executor executor(CellImpl::halo(), kernel, source_supplier);
-    executor.set_input(grid_buffer);
-#ifdef HARDWARE
-    executor.select_fpga();
+#if HARDWARE == 1
+    sycl::queue queue(sycl::ext::intel::fpga_selector_v);
+#else
+    sycl::queue queue;
 #endif
+
+    StencilUpdate simulation({
+        .transition_function = KernelImpl(parameters, mat_resolver),
+        .halo_value = CellImpl::halo(),
+        .generation_offset = 0,
+        .n_generations = parameters.n_timesteps(),
+        .tdv_host_state = SourceSupplier(SourceFunction(parameters)),
+        .queue = queue,
+    });
 
     uindex_t n_timesteps = parameters.n_timesteps();
     uindex_t last_saved_generation = 0;
 
     std::cout << "Simulating..." << std::endl;
 
+    auto start = std::chrono::high_resolution_clock::now();
     if (parameters.interval().has_value()) {
-        uindex_t interval = parameters.interval().value();
-        auto snapshot_handler = [&](cl::sycl::buffer<CellImpl, 2> cell_buffer,
-                                    uindex_t i_generation) {
-            save_frame(cell_buffer, i_generation, CellField::HZ, parameters);
-        };
-        executor.run_with_snapshots(n_timesteps, interval, snapshot_handler);
+        simulation.get_params().n_generations = parameters.interval().value();
+        for (uindex_t &i_gen = simulation.get_params().generation_offset;
+             i_gen < parameters.n_timesteps(); i_gen += parameters.interval().value()) {
+            grid = simulation(grid);
+            save_frame(grid, i_gen, CellField::HZ, parameters);
+        }
     } else {
-        executor.run(n_timesteps);
+        grid = simulation(grid);
     }
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> runtime = end - start;
 
     std::cout << "Simulation complete!" << std::endl;
-    std::cout << "Makespan: " << executor.get_runtime_sample().get_total_runtime() << " s"
-              << std::endl;
+    std::cout << "Makespan: " << runtime.count() << " s" << std::endl;
 
-    executor.copy_output(grid_buffer);
-    save_frame(grid_buffer, n_timesteps, CellField::HZ_SUM, parameters);
+    save_frame(grid, n_timesteps, CellField::HZ_SUM, parameters);
 
     return 0;
 }

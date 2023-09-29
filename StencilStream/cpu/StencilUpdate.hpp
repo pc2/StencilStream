@@ -65,6 +65,10 @@ class StencilUpdate {
         return pass_source;
     }
 
+    Params &get_params() {
+        return params;
+    }
+
   private:
     void run_gen(GridImpl &pass_source, GridImpl &pass_target, uindex_t i_gen, uindex_t i_subgen) {
         using TDVKernelArgument = typename TDVHostState::KernelArgument;

@@ -71,6 +71,7 @@ concept StencilUpdate =
     // Test construction and update call.
     requires(SU stencil_update, G &grid, typename SU::Params params) {
         { SU(params) } -> std::same_as<SU>;
+        { stencil_update.get_params() } -> std::same_as<typename SU::Params &>;
         { stencil_update(grid) } -> std::same_as<G>;
     } &&
     // Test existance of parameter fields

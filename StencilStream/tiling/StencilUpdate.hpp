@@ -288,6 +288,10 @@ class StencilUpdate {
 
     StencilUpdate(Params params) : params(params) {}
 
+    Params &get_params() {
+        return params;
+    }
+
     GridImpl operator()(GridImpl &source_grid) {
         using in_pipe = sycl::pipe<class monotile_in_pipe, Cell>;
         using out_pipe = sycl::pipe<class monotile_out_pipe, Cell>;

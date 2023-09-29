@@ -26,7 +26,7 @@
 #include <unistd.h>
 
 using namespace std;
-using namespace cl::sycl;
+using namespace sycl;
 using namespace stencil;
 
 //////////////////////////////////////////////

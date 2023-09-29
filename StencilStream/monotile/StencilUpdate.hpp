@@ -274,6 +274,10 @@ class StencilUpdate {
 
     StencilUpdate(Params params) : params(params) {}
 
+    Params &get_params() {
+        return params;
+    }
+
     GridImpl operator()(GridImpl &source_grid) {
         if (source_grid.get_grid_height() > max_grid_height) {
             throw std::range_error("The grid is too tall for the stencil update kernel.");
