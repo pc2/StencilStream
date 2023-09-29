@@ -68,7 +68,7 @@ Grid<bool> read(uindex_t width, uindex_t height) {
                 char Cell;
                 std::cin >> Cell;
                 assert(Cell == 'X' || Cell == '.');
-                grid_ac.set(c, r, Cell == 'X');
+                grid_ac[c][r] = Cell == 'X';
             }
         }
     }
@@ -80,7 +80,7 @@ void write(Grid<bool> output_grid) {
 
     for (uindex_t r = 0; r < output_grid.get_grid_height(); r++) {
         for (uindex_t c = 0; c < output_grid.get_grid_width(); c++) {
-            if (grid_ac.get(c, r)) {
+            if (grid_ac[c][r]) {
                 std::cout << "X";
             } else {
                 std::cout << ".";

@@ -49,16 +49,10 @@ template <typename Cell> class Grid {
         std::memcpy(other_ac.get_pointer(), buffer_ac.get_pointer(), buffer_ac.byte_size());
     }
 
-    template <sycl::access::mode access_mode = sycl::access::mode::read_write> class GridAccessor {
+    template <sycl::access::mode access_mode = sycl::access::mode::read_write>
+    class GridAccessor : public sycl::host_accessor<Cell, 2, access_mode> {
       public:
-        GridAccessor(Grid &grid) : ac(grid.buffer) {}
-
-        Cell get(uindex_t c, uindex_t r) const { return ac[c][r]; }
-
-        void set(uindex_t c, uindex_t r, Cell cell) { ac[c][r] = cell; }
-
-      private:
-        sycl::host_accessor<Cell, 2, access_mode> ac;
+        GridAccessor(Grid &grid) : sycl::host_accessor<Cell, 2, access_mode>(grid.buffer) {}
     };
 
     uindex_t get_grid_width() const { return buffer.get_range()[0]; }

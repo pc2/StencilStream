@@ -18,6 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
+#include "../AccessorSubscript.hpp"
 #include "../Helpers.hpp"
 #include "../Index.hpp"
 #include "../Padded.hpp"
@@ -196,6 +197,8 @@ class Tile {
 
     template <sycl::access::mode access_mode = sycl::access::mode::read_write> class TileAccessor {
       public:
+        static constexpr uindex_t dimensions = 2;
+
         TileAccessor(Tile &tile) : part_ac() {
             for (uindex_t c = 0; c < 3; c++) {
                 for (uindex_t r = 0; r < 3; r++) {
@@ -204,14 +207,21 @@ class Tile {
             }
         }
 
-        Cell get(uindex_t c, uindex_t r) const {
-            std::array<uindex_t, 4> i = transform_indices(c, r);
+        using BaseSubscript = AccessorSubscript<Cell, TileAccessor, access_mode>;
+        BaseSubscript operator[](uindex_t i) { return BaseSubscript(*this, i); }
+
+        Cell const &operator[](sycl::id<2> id)
+            requires(access_mode == sycl::access::mode::read)
+        {
+            std::array<uindex_t, 4> i = transform_indices(id[0], id[1]);
             return part_ac[i[0]][i[1]][i[2]][i[3]].value;
         }
 
-        void set(uindex_t c, uindex_t r, Cell cell) {
-            std::array<uindex_t, 4> i = transform_indices(c, r);
-            part_ac[i[0]][i[1]][i[2]][i[3]].value = cell;
+        Cell &operator[](sycl::id<2> id)
+            requires(access_mode != sycl::access::mode::read)
+        {
+            std::array<uindex_t, 4> i = transform_indices(id[0], id[1]);
+            return part_ac[i[0]][i[1]][i[2]][i[3]].value;
         }
 
         static std::array<uindex_t, 4> transform_indices(uindex_t c, uindex_t r) {

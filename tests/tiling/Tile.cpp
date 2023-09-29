@@ -50,7 +50,7 @@ TEST_CASE("Tile::TileAccessor", "[Tile]") {
         TileImpl::TileAccessor<access::mode::read_write> tile_ac(tile);
         for (uindex_t c = 0; c < tile_width; c++) {
             for (uindex_t r = 0; r < tile_height; r++) {
-                tile_ac.set(c, r, ID(c, r));
+                tile_ac[c][r] = ID(c, r);
             }
         }
     }
@@ -81,7 +81,7 @@ TEST_CASE("Tile::TileAccessor", "[Tile]") {
         TileImpl::TileAccessor<access::mode::read> tile_ac(tile);
         for (uindex_t c = 0; c < tile_width; c++) {
             for (uindex_t r = 0; r < tile_height; r++) {
-                REQUIRE(tile_ac.get(c, r) == ID(c, r));
+                REQUIRE(tile_ac[c][r] == ID(c, r));
             }
         }
     }
@@ -106,7 +106,7 @@ void copy_from_test_impl(uindex_t tile_width, uindex_t tile_height) {
         TileImpl::TileAccessor<access::mode::read> tile_ac(tile);
         for (uindex_t c = 0; c < tile_width; c++) {
             for (uindex_t r = 0; r < tile_height; r++) {
-                REQUIRE(tile_ac.get(c, r) == ID(c, r));
+                REQUIRE(tile_ac[c][r] == ID(c, r));
             }
         }
     }
@@ -126,7 +126,7 @@ void copy_to_test_impl(uindex_t tile_width, uindex_t tile_height) {
         TileImpl::TileAccessor<access::mode::read_write> tile_ac(tile);
         for (uindex_t c = 0; c < tile_width; c++) {
             for (uindex_t r = 0; r < tile_height; r++) {
-                tile_ac.set(c, r, ID(c, r));
+                tile_ac[c][r] = ID(c, r);
             }
         }
     }
@@ -158,7 +158,7 @@ void submit_read_part_test_impl(TileImpl::Part part, uindex_t n_columns) {
         TileImpl::TileAccessor<access::mode::read_write> tile_ac(tile);
         for (uindex_t c = 0; c < tile_width; c++) {
             for (uindex_t r = 0; r < tile_height; r++) {
-                tile_ac.set(c, r, ID(c, r));
+                tile_ac[c][r] = ID(c, r);
             }
         }
     }
@@ -222,7 +222,7 @@ void submit_write_part_test_impl(TileImpl::Part part, uindex_t n_columns) {
         for (uindex_t r = 0; r < n_rows; r++) {
             uindex_t global_c = part_offset[0] + c;
             uindex_t global_r = part_offset[1] + r;
-            ID cell = tile_ac.get(global_c, global_r);
+            ID cell = tile_ac[global_c][global_r];
             REQUIRE(cell.c == global_c);
             REQUIRE(cell.r == global_r);
         }

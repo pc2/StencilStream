@@ -39,7 +39,7 @@ TEST_CASE("cpu::StencilUpdate", "[cpu::StencilUpdate]") {
         GridImpl::GridAccessor<access::mode::read_write> ac(input_grid);
         for (uindex_t c = 0; c < grid_width; c++) {
             for (uindex_t r = 0; r < grid_height; r++) {
-                ac.set(c, r, Cell{index_t(c), index_t(r), 0, 0, CellStatus::Normal});
+                ac[c][r] = Cell{index_t(c), index_t(r), 0, 0, CellStatus::Normal};
             }
         }
     }
@@ -55,11 +55,11 @@ TEST_CASE("cpu::StencilUpdate", "[cpu::StencilUpdate]") {
     GridImpl::GridAccessor<access::mode::read> ac(output_grid);
     for (uindex_t c = 0; c < grid_width; c++) {
         for (uindex_t r = 0; r < grid_height; r++) {
-            REQUIRE(ac.get(c, r).c == c);
-            REQUIRE(ac.get(c, r).r == r);
-            REQUIRE(ac.get(c, r).i_generation == n_generations);
-            REQUIRE(ac.get(c, r).i_subgeneration == 0);
-            REQUIRE(ac.get(c, r).status == CellStatus::Normal);
+            REQUIRE(ac[c][r].c == c);
+            REQUIRE(ac[c][r].r == r);
+            REQUIRE(ac[c][r].i_generation == n_generations);
+            REQUIRE(ac[c][r].i_subgeneration == 0);
+            REQUIRE(ac[c][r].status == CellStatus::Normal);
         }
     }
 }

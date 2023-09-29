@@ -362,7 +362,7 @@ int main(int argc, char **argv) {
                     cell.T = deltaT * std::exp(-std::pow((x * dx - px) / w, 2) -
                                                std::pow((y * dy - py) / w, 2));
                 }
-                ac.set(x, y, cell);
+                ac[x][y] = cell;
             }
         }
     }
@@ -386,7 +386,7 @@ int main(int argc, char **argv) {
                 Grid::GridAccessor<sycl::access::mode::read> ac(grid);
                 for (uint32_t x = 0; x < nx + 1; x++) {
                     for (uint32_t y = 0; y < ny + 1; y++) {
-                        auto cell = ac.get(x, y);
+                        auto cell = ac[x][y];
                         if (x < nx && y < ny + 1 && std::abs(cell.ErrV) > max_ErrV) {
                             max_ErrV = std::abs(cell.ErrV);
                         }
@@ -439,7 +439,7 @@ int main(int argc, char **argv) {
                 Grid::GridAccessor<sycl::access::mode::read> ac(grid);
                 for (uindex_t c = 0; c < nx; c++) {
                     for (uindex_t r = 0; r < ny; r++) {
-                        out_file << ac.get(c, r).T;
+                        out_file << ac[c][r].T;
                         if (r != ny - 1) {
                             out_file << ",";
                         }

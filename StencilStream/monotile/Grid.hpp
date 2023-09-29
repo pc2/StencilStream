@@ -18,6 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
+#include "../AccessorSubscript.hpp"
 #include "../Concepts.hpp"
 #include "../Padded.hpp"
 
@@ -26,6 +27,7 @@ namespace monotile {
 
 template <class Cell, uindex_t word_size = 64> class Grid {
   public:
+    static constexpr uindex_t dimensions = 2;
     static constexpr uindex_t word_length =
         std::lcm(sizeof(Padded<Cell>), word_size) / sizeof(Padded<Cell>);
 
@@ -50,20 +52,29 @@ template <class Cell, uindex_t word_size = 64> class Grid {
     template <sycl::access::mode access_mode = sycl::access::mode::read_write> class GridAccessor {
       public:
         using accessor_t = sycl::host_accessor<IOWord, 1, access_mode>;
+        static constexpr uindex_t dimensions = Grid::dimensions;
+
         GridAccessor(Grid &grid)
             : ac(grid.tile_buffer), grid_width(grid.get_grid_width()),
               grid_height(grid.get_grid_height()) {}
 
-        Cell get(uindex_t c, uindex_t r) const {
-            uindex_t word_i = (c * grid_height + r) / word_length;
-            uindex_t cell_i = (c * grid_height + r) % word_length;
+        using BaseSubscript = AccessorSubscript<Cell, GridAccessor, access_mode>;
+        BaseSubscript operator[](uindex_t i) { return BaseSubscript(*this, i); }
+
+        Cell const &operator[](sycl::id<2> id)
+            requires(access_mode == sycl::access::mode::read)
+        {
+            uindex_t word_i = (id[0] * grid_height + id[1]) / word_length;
+            uindex_t cell_i = (id[0] * grid_height + id[1]) % word_length;
             return ac[word_i][cell_i].value;
         }
 
-        void set(uindex_t c, uindex_t r, Cell cell) {
-            uindex_t word_i = (c * grid_height + r) / word_length;
-            uindex_t cell_i = (c * grid_height + r) % word_length;
-            ac[word_i][cell_i].value = cell;
+        Cell &operator[](sycl::id<2> id)
+            requires(access_mode != sycl::access::mode::read)
+        {
+            uindex_t word_i = (id[0] * grid_height + id[1]) / word_length;
+            uindex_t cell_i = (id[0] * grid_height + id[1]) % word_length;
+            return ac[word_i][cell_i].value;
         }
 
       private:
@@ -83,7 +94,7 @@ template <class Cell, uindex_t word_size = 64> class Grid {
         GridAccessor<sycl::access::mode::read_write> tile_ac(*this);
         for (uindex_t c = 0; c < width; c++) {
             for (uindex_t r = 0; r < height; r++) {
-                tile_ac.set(c, r, in_ac[c][r]);
+                tile_ac[c][r] = in_ac[c][r];
             }
         }
     }
@@ -100,7 +111,7 @@ template <class Cell, uindex_t word_size = 64> class Grid {
         sycl::host_accessor out_ac(output_buffer, sycl::write_only);
         for (uindex_t c = 0; c < width; c++) {
             for (uindex_t r = 0; r < height; r++) {
-                out_ac[c][r] = in_ac.get(c, r);
+                out_ac[c][r] = in_ac[c][r];
             }
         }
     }

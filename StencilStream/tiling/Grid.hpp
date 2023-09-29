@@ -18,6 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
+#include "../AccessorSubscript.hpp"
 #include "../Concepts.hpp"
 #include "../GenericID.hpp"
 #include "Tile.hpp"
@@ -78,6 +79,7 @@ class Grid {
     template <sycl::access::mode access_mode> class GridAccessor {
       public:
         using TileAccessor = typename Tile::template TileAccessor<access_mode>;
+        static constexpr uindex_t dimensions = 2;
 
         GridAccessor(Grid &grid)
             : tile_acs(), grid_width(grid.get_grid_width()), grid_height(grid.get_grid_height()) {
@@ -90,12 +92,21 @@ class Grid {
             }
         }
 
-        Cell get(uindex_t c, uindex_t r) const {
-            return tile_acs[c / tile_width][r / tile_height].get(c % tile_width, r % tile_height);
+        using BaseSubscript = AccessorSubscript<Cell, GridAccessor, access_mode>;
+        BaseSubscript operator[](uindex_t i) { return BaseSubscript(*this, i); }
+
+        Cell const &operator[](sycl::id<2> id)
+            requires(access_mode == sycl::access::mode::read)
+        {
+            return tile_acs[id[0] / tile_width][id[1] / tile_height][id[0] % tile_width]
+                           [id[1] % tile_height];
         }
 
-        void set(uindex_t c, uindex_t r, Cell cell) {
-            tile_acs[c / tile_width][r / tile_height].set(c % tile_width, r % tile_height, cell);
+        Cell &operator[](sycl::id<2> id)
+            requires(access_mode != sycl::access::mode::read)
+        {
+            return tile_acs[id[0] / tile_width][id[1] / tile_height][id[0] % tile_width]
+                           [id[1] % tile_height];
         }
 
       private:

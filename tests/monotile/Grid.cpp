@@ -53,7 +53,7 @@ TEST_CASE("monotile::Grid::submit_read", "[monotile::Grid]") {
         TestGrid::GridAccessor<access::mode::read_write> in_grid_ac(in_grid);
         for (stencil::uindex_t c = 0; c < tile_width; c++) {
             for (stencil::uindex_t r = 0; r < tile_height; r++) {
-                in_grid_ac.set(c, r, ID(c, r));
+                in_grid_ac[c][r] = ID(c, r);
             }
         }
     }
@@ -104,7 +104,7 @@ TEST_CASE("monotile::Grid::submit_write", "[monotile::Grid]") {
     TestGrid::GridAccessor<access::mode::read_write> out_ac(grid);
     for (uindex_t c = 0; c < tile_width; c++) {
         for (uindex_t r = 0; r < tile_height; r++) {
-            REQUIRE(out_ac.get(c, r) == ID(c, r));
+            REQUIRE(out_ac[c][r] == ID(c, r));
         }
     }
 }

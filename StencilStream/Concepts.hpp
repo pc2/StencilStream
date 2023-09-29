@@ -46,9 +46,9 @@ concept TransitionFunction =
     };
 
 template <typename Accessor, typename Cell>
-concept GridAccessor = requires(Accessor ac, uindex_t c, uindex_t r, Cell cell) {
-    { ac.get(c, r) } -> std::same_as<Cell>;
-    { ac.set(c, r, cell) } -> std::same_as<void>;
+concept GridAccessor = requires(Accessor ac, uindex_t c, uindex_t r) {
+    { ac[sycl::id<2>(c, r)] } -> std::same_as<Cell &>;
+    { ac[c][r] } -> std::same_as<Cell &>;
 };
 
 template <typename G, typename Cell>

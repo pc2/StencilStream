@@ -135,7 +135,7 @@ void write_output(Grid vect, string file) {
     int i = 0;
     for (index_t r = 0; r < n_rows; r++) {
         for (index_t c = 0; c < n_columns; c++) {
-            out << i << "\t" << vect_ac.get(c, r)[0] << std::endl;
+            out << i << "\t" << vect_ac[c][r][0] << std::endl;
             i++;
         }
     }
@@ -159,7 +159,7 @@ Grid read_input(string temp_file, string power_file, uindex_t n_columns, uindex_
                 FLOAT tmp_temp, tmp_power;
                 temp >> tmp_temp;
                 power >> tmp_power;
-                vect_ac.set(c, r, HotspotCell(tmp_temp, tmp_power));
+                vect_ac[c][r] = HotspotCell(tmp_temp, tmp_power);
             }
         }
     }
