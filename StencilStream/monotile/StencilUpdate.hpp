@@ -291,16 +291,15 @@ class StencilUpdate {
         GridImpl &pass_source = source_grid;
         GridImpl &pass_target = swap_grid_b;
 
-        for (uindex_t i_gen = params.generation_offset;
-             i_gen < params.generation_offset + params.n_generations; i_gen += gens_per_pass) {
+        for (uindex_t i_gen = 0; i_gen < params.n_generations; i_gen += gens_per_pass) {
             pass_source.template submit_read<in_pipe>(params.queue);
             params.queue.submit([&](sycl::handler &cgh) {
-                auto tdv_global_state =
-                    params.tdv_host_state.build_kernel_argument(cgh, i_gen, gens_per_pass);
-                ExecutionKernelImpl exec_kernel(params.transition_function, i_gen,
-                                                params.n_generations, source_grid.get_grid_width(),
-                                                source_grid.get_grid_height(), params.halo_value,
-                                                tdv_global_state);
+                auto tdv_global_state = params.tdv_host_state.build_kernel_argument(
+                    cgh, params.generation_offset + i_gen, gens_per_pass);
+                ExecutionKernelImpl exec_kernel(
+                    params.transition_function, params.generation_offset + i_gen,
+                    params.generation_offset + params.n_generations, source_grid.get_grid_width(),
+                    source_grid.get_grid_height(), params.halo_value, tdv_global_state);
                 cgh.single_task<ExecutionKernelImpl>(exec_kernel);
             });
             pass_target.template submit_write<out_pipe>(params.queue);

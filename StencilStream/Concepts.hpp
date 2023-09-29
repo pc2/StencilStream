@@ -66,6 +66,23 @@ concept Grid = requires(G &grid, sycl::buffer<Cell, 2> buffer, uindex_t c, uinde
     } -> GridAccessor<Cell>;
 };
 
+template <typename SU, typename TF, typename TDVH, typename G>
+concept StencilUpdate =
+    // Test construction and update call.
+    requires(SU stencil_update, G &grid, typename SU::Params params) {
+        { SU(params) } -> std::same_as<SU>;
+        { stencil_update(grid) } -> std::same_as<G>;
+    } &&
+    // Test existance of parameter fields
+    requires(typename SU::Params params) {
+        { params.transition_function } -> std::same_as<TF &>;
+        { params.halo_value } -> std::same_as<typename TF::Cell &>;
+        { params.generation_offset } -> std::same_as<uindex_t &>;
+        { params.n_generations } -> std::same_as<uindex_t &>;
+        { params.tdv_host_state } -> std::same_as<TDVH &>;
+    } && TransitionFunction<TF> && Grid<G, typename TF::Cell> &&
+    (std::is_class<typename SU::Params>::value);
+
 namespace tdv {
 
 template <typename F>

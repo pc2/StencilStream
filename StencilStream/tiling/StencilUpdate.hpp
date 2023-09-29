@@ -306,8 +306,7 @@ class StencilUpdate {
         uindex_t grid_width = source_grid.get_grid_width();
         uindex_t grid_height = source_grid.get_grid_height();
 
-        for (uindex_t i_gen = params.generation_offset;
-             i_gen < params.generation_offset + params.n_generations; i_gen += gens_per_pass) {
+        for (uindex_t i_gen = 0; i_gen < params.n_generations; i_gen += gens_per_pass) {
             for (uindex_t i_tile_c = 0; i_tile_c < tile_range.c; i_tile_c++) {
                 for (uindex_t i_tile_r = 0; i_tile_r < tile_range.r; i_tile_r++) {
                     pass_source.template submit_read<in_pipe>(params.queue, i_tile_c, i_tile_r);
@@ -316,12 +315,12 @@ class StencilUpdate {
                         uindex_t c_offset = i_tile_c * tile_width;
                         uindex_t r_offset = i_tile_r * tile_height;
 
-                        auto tdv_kernel_argument =
-                            params.tdv_host_state.build_kernel_argument(cgh, i_gen, gens_per_pass);
-                        ExecutionKernelImpl exec_kernel(params.transition_function, i_gen,
-                                                        params.n_generations, c_offset, r_offset,
-                                                        grid_width, grid_height, params.halo_value,
-                                                        tdv_kernel_argument);
+                        auto tdv_kernel_argument = params.tdv_host_state.build_kernel_argument(
+                            cgh, params.generation_offset + i_gen, gens_per_pass);
+                        ExecutionKernelImpl exec_kernel(
+                            params.transition_function, params.generation_offset + i_gen,
+                            params.generation_offset + params.n_generations, c_offset, r_offset,
+                            grid_width, grid_height, params.halo_value, tdv_kernel_argument);
                         cgh.single_task<ExecutionKernelImpl>(exec_kernel);
                     });
 

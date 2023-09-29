@@ -18,6 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "../HostPipe.hpp"
+#include "../StencilUpdateTest.hpp"
 #include "../TransFuncs.hpp"
 #include "../constants.hpp"
 #include <StencilStream/monotile/StencilUpdate.hpp>
@@ -133,49 +134,18 @@ using StencilUpdateImpl = StencilUpdate<FPGATransFunc<1>, tdv::InlineSupplier<Ge
                                         n_processing_elements, tile_height>;
 using GridImpl = Grid<Cell>;
 
-void test_monotile_stencil_update(uindex_t grid_width, uindex_t grid_height,
-                                  uindex_t n_generations) {
-    buffer<Cell, 2> input_buffer(range<2>(grid_width, grid_height));
-    {
-        host_accessor in_buffer_ac(input_buffer, read_write);
-        for (uindex_t c = 0; c < grid_width; c++) {
-            for (uindex_t r = 0; r < grid_height; r++) {
-                in_buffer_ac[c][r] = Cell{index_t(c), index_t(r), 0, 0, CellStatus::Normal};
-            }
-        }
-    }
-    GridImpl input_grid = input_buffer;
-
-    StencilUpdateImpl update({
-        .transition_function = FPGATransFunc<1>(),
-        .halo_value = Cell::halo(),
-        .n_generations = n_generations,
-        .tdv_host_state = tdv::InlineSupplier<GenerationFunction>(GenerationFunction()),
-    });
-
-    GridImpl output_grid = update(input_grid);
-
-    buffer<Cell, 2> output_buffer(range<2>(grid_width, grid_height));
-    output_grid.copy_to_buffer(output_buffer);
-
-    host_accessor out_buffer_ac(output_buffer, read_only);
-    for (uindex_t c = 0; c < grid_width; c++) {
-        for (uindex_t r = 0; r < grid_height; r++) {
-            REQUIRE(out_buffer_ac[c][r].c == c);
-            REQUIRE(out_buffer_ac[c][r].r == r);
-            REQUIRE(out_buffer_ac[c][r].i_generation == n_generations);
-            REQUIRE(out_buffer_ac[c][r].i_subgeneration == 0);
-            REQUIRE(out_buffer_ac[c][r].status == CellStatus::Normal);
-        }
-    }
-}
+static_assert(concepts::StencilUpdate<StencilUpdateImpl, FPGATransFunc<1>,
+                                      tdv::InlineSupplier<GenerationFunction>, GridImpl>);
 
 TEST_CASE("monotile::StencilUpdate", "[monotile::StencilUpdate]") {
     for (uindex_t grid_width = tile_width / 2; grid_width < tile_width; grid_width += 1) {
         for (uindex_t grid_height = tile_height / 2; grid_height < tile_height; grid_height += 1) {
-            for (index_t gen_offset = -1; gen_offset <= 1; gen_offset++) {
-                test_monotile_stencil_update(grid_width, grid_height, gens_per_pass + gen_offset);
-            }
+            test_stencil_update<GridImpl, StencilUpdateImpl>(grid_width, grid_height, 0,
+                                                             gens_per_pass);
+            test_stencil_update<GridImpl, StencilUpdateImpl>(grid_width, grid_height, 1,
+                                                             gens_per_pass);
+            test_stencil_update<GridImpl, StencilUpdateImpl>(grid_width, grid_height, 0,
+                                                             gens_per_pass + 1);
         }
     }
 }

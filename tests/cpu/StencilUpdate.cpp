@@ -17,49 +17,22 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "../TransFuncs.hpp"
+#include "../StencilUpdateTest.hpp"
 #include "../constants.hpp"
 #include <StencilStream/cpu/StencilUpdate.hpp>
-#include <StencilStream/tdv/InlineSupplier.hpp>
 
 using namespace sycl;
 using namespace stencil;
 using namespace stencil::cpu;
 
 using StencilUpdateImpl = StencilUpdate<FPGATransFunc<1>, tdv::InlineSupplier<GenerationFunction>>;
-using GridImpl = typename StencilUpdateImpl::GridImpl;
+using GridImpl = Grid<Cell>;
+
+static_assert(concepts::StencilUpdate<StencilUpdateImpl, FPGATransFunc<1>,
+                                      tdv::InlineSupplier<GenerationFunction>, GridImpl>);
 
 TEST_CASE("cpu::StencilUpdate", "[cpu::StencilUpdate]") {
-    uindex_t grid_width = 64;
-    uindex_t grid_height = 64;
-    uindex_t n_generations = 64;
-
-    GridImpl input_grid(grid_width, grid_height);
-    {
-        GridImpl::GridAccessor<access::mode::read_write> ac(input_grid);
-        for (uindex_t c = 0; c < grid_width; c++) {
-            for (uindex_t r = 0; r < grid_height; r++) {
-                ac[c][r] = Cell{index_t(c), index_t(r), 0, 0, CellStatus::Normal};
-            }
-        }
-    }
-
-    StencilUpdateImpl update(
-        {.transition_function = FPGATransFunc<1>(),
-         .halo_value = Cell::halo(),
-         .n_generations = n_generations,
-         .tdv_host_state = tdv::InlineSupplier<GenerationFunction>(GenerationFunction())});
-
-    GridImpl output_grid = update(input_grid);
-
-    GridImpl::GridAccessor<access::mode::read> ac(output_grid);
-    for (uindex_t c = 0; c < grid_width; c++) {
-        for (uindex_t r = 0; r < grid_height; r++) {
-            REQUIRE(ac[c][r].c == c);
-            REQUIRE(ac[c][r].r == r);
-            REQUIRE(ac[c][r].i_generation == n_generations);
-            REQUIRE(ac[c][r].i_subgeneration == 0);
-            REQUIRE(ac[c][r].status == CellStatus::Normal);
-        }
-    }
+    test_stencil_update<GridImpl, StencilUpdateImpl>(64, 64, 0, 1);
+    test_stencil_update<GridImpl, StencilUpdateImpl>(64, 64, 0, 1);
+    test_stencil_update<GridImpl, StencilUpdateImpl>(64, 64, 32, 64);
 }
