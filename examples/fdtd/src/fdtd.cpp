@@ -205,6 +205,8 @@ int main(int argc, char **argv) {
     } else {
         grid = simulation(grid);
     }
+    
+    queue.wait();
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> runtime = end - start;
 

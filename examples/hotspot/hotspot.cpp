@@ -261,6 +261,7 @@ int main(int argc, char **argv) {
 
     auto start = std::chrono::high_resolution_clock::now();
     grid = update(grid);
+    queue.wait();
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> runtime = end - start;
 

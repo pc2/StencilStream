@@ -30,7 +30,7 @@ end
 n_gens = 100 * n_cus
 
 
-open(`$exec 1024 1024 $n_gens ./data/temp_1024 ./data/power_1024 /dev/null`, "r") do process_in
+open(`$exec $TILE_SIZE $TILE_SIZE $n_gens ./data/temp_$TILE_SIZE ./data/power_$TILE_SIZE /dev/null`, "r") do process_in
     runtime = nothing
     while runtime === nothing
         line = readline(process_in)

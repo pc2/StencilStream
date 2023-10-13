@@ -410,6 +410,7 @@ int main(int argc, char **argv) {
             // printf("iter = %d, errV=%1.3e, errP=%1.3e\n",
             // pseudo_transient_executor.get_i_generation(), errV, errP);
         }
+        queue.wait();
         auto transients_end = std::chrono::high_resolution_clock::now();
 
         double dt_adv = std::min(dx / max_Vx, dy / max_Vy) / 2.1;
@@ -450,6 +451,8 @@ int main(int argc, char **argv) {
             out_file.close();
         }
     }
+    
+    queue.wait();
     auto computation_end = std::chrono::system_clock::now();
     auto computation_time = std::chrono::duration_cast<std::chrono::duration<double>>(
         computation_end - computation_start);

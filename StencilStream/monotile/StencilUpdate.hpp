@@ -292,11 +292,11 @@ class StencilUpdate {
         GridImpl swap_grid_b = source_grid.make_similar();
 
         uindex_t gens_per_pass = ExecutionKernelImpl::gens_per_pass;
-        GridImpl &pass_source = source_grid;
-        GridImpl &pass_target = swap_grid_b;
+        GridImpl *pass_source = &source_grid;
+        GridImpl *pass_target = &swap_grid_b;
 
         for (uindex_t i_gen = 0; i_gen < params.n_generations; i_gen += gens_per_pass) {
-            pass_source.template submit_read<in_pipe>(params.queue);
+            pass_source->template submit_read<in_pipe>(params.queue);
             params.queue.submit([&](sycl::handler &cgh) {
                 auto tdv_global_state = params.tdv_host_state.build_kernel_argument(
                     cgh, params.generation_offset + i_gen, gens_per_pass);
@@ -306,19 +306,17 @@ class StencilUpdate {
                     source_grid.get_grid_height(), params.halo_value, tdv_global_state);
                 cgh.single_task<ExecutionKernelImpl>(exec_kernel);
             });
-            pass_target.template submit_write<out_pipe>(params.queue);
+            pass_target->template submit_write<out_pipe>(params.queue);
 
             if (i_gen == 0) {
-                pass_source = swap_grid_b;
-                pass_target = swap_grid_a;
+                pass_source = &swap_grid_b;
+                pass_target = &swap_grid_a;
             } else {
                 std::swap(pass_source, pass_target);
             }
         }
 
-        params.queue.wait();
-
-        return pass_source;
+        return *pass_source;
     }
 
   private:
