@@ -407,8 +407,6 @@ int main(int argc, char **argv) {
             }
             errV = max_ErrV / (1e-12 + max_Vy);
             errP = max_ErrP / (1e-12 + max_Pt);
-            // printf("iter = %d, errV=%1.3e, errP=%1.3e\n",
-            // pseudo_transient_executor.get_i_generation(), errV, errP);
         }
         queue.wait();
         auto transients_end = std::chrono::high_resolution_clock::now();
