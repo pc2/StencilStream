@@ -28,5 +28,6 @@
 
 build
 doxygen
+Manifest.toml
 
 !**/CMakeLists.txt
