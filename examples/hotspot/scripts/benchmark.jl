@@ -29,8 +29,12 @@ else
 end
 n_gens = 100 * n_cus
 
+command = `$exec $TILE_SIZE $TILE_SIZE $n_gens ./data/temp_$TILE_SIZE ./data/power_$TILE_SIZE /dev/null`
 
-open(`$exec $TILE_SIZE $TILE_SIZE $n_gens ./data/temp_$TILE_SIZE ./data/power_$TILE_SIZE /dev/null`, "r") do process_in
+# Run the simulation once to eliminate the FPGA programming from the measured runtime
+run(command)
+
+open(command, "r") do process_in
     runtime = nothing
     while runtime === nothing
         line = readline(process_in)

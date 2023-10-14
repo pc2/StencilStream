@@ -33,7 +33,11 @@ else
     exit(1)
 end
 
-open(`$exe -c ./experiments/default.json`, "r") do process_in
+command = `$exe -c ./experiments/default.json`
+# Run the simulation once to eliminate the FPGA programming from the measured runtime
+run(command)
+
+open(command, "r") do process_in
     runtime = nothing
     grid_wh = nothing
     n_timesteps = nothing

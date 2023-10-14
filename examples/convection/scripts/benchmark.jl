@@ -107,6 +107,9 @@ function default_benchmark()
     out_path = Base.Filesystem.mkpath("./out/")
     command = `$exe $experiment_path $out_path`
 
+    # Run the simulation once to eliminate the FPGA programming from the measured runtime
+    run(command)
+
     open(command, "r") do process_in
         _, pseudo_transient_runtimes = analyze_log(process_in)
         CSV.write("pseudo_transient_runtimes.csv", pseudo_transient_runtimes)
