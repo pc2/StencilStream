@@ -28,14 +28,20 @@ add_link_options(-fintelfpga)
 
 add_executable(convection convection.cpp)
 target_compile_definitions(convection PUBLIC EXECUTOR=1 HARDWARE=1)
-target_link_options(convection PUBLIC -Xshardware -Xsv -Xsprofile -Xsseed=63764)
+target_link_options(convection PUBLIC -Xshardware -Xsprofile -Xsseed=63764)
+if(VERBOSE_SYNTHESIS)
+    target_link_options(convection PUBLIC -Xsv)
+endif()
 
 add_executable(convection_emu convection.cpp)
 target_compile_definitions(convection_emu PUBLIC EXECUTOR=1 HARDWARE=0)
 
 add_executable(convection_report convection.cpp)
 target_compile_definitions(convection_report PUBLIC EXECUTOR=1 HARDWARE=1)
-target_link_options(convection_report PUBLIC -fsycl-link -Xshardware -Xsv)
+target_link_options(convection_report PUBLIC -fsycl-link -Xshardware)
+if(VERBOSE_SYNTHESIS)
+    target_link_options(convection_report PUBLIC -Xsv)
+endif()
 
 foreach(TARGET convection convection_cpu convection_emu convection_report)
     target_link_libraries(${TARGET} PRIVATE nlohmann_json::nlohmann_json)
