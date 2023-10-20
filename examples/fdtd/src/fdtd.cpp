@@ -140,11 +140,9 @@ int main(int argc, char **argv) {
     parameters.print_configuration();
 
 #if EXECUTOR == 0
-    if (parameters.grid_range()[0] > max_grid_width ||
-        parameters.grid_range()[1] > max_grid_height) {
-        std::cerr << "Error: The grid may not exceed the size of the tile (" << max_grid_width
-                  << " by " << max_grid_height << " cells) when using the monotile architecture."
-                  << std::endl;
+    if (parameters.grid_range()[0] > tile_width || parameters.grid_range()[1] > tile_height) {
+        std::cerr << "Error: The grid may not exceed the size of the tile (" << tile_width << " by "
+                  << tile_height << " cells) when using the monotile architecture." << std::endl;
         exit(1);
     }
 #endif
