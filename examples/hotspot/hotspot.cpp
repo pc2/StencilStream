@@ -102,10 +102,12 @@ struct HotspotKernel {
 };
 
 #if EXECUTOR == 0
+const uindex_t max_grid_width = 1024;
 const uindex_t max_grid_height = 1024;
 const uindex_t n_processing_elements = 350;
-using StencilUpdate = monotile::StencilUpdate<HotspotKernel, tdv::NoneSupplier,
-                                              n_processing_elements, max_grid_height>;
+using StencilUpdate =
+    monotile::StencilUpdate<HotspotKernel, tdv::NoneSupplier, n_processing_elements, max_grid_width,
+                            max_grid_height>;
 using Grid = monotile::Grid<HotspotCell>;
 
 #elif EXECUTOR == 1
@@ -215,9 +217,9 @@ int main(int argc, char **argv) {
         usage(argc, argv);
 
 #if EXECUTOR == 0
-    if (n_rows > max_grid_height) {
-        std::cerr << "Error: The grid may not exceed a height of " << max_grid_height
-                  << " cells when using the monotile architecture." << std::endl;
+    if (n_columns > max_grid_width || n_rows > max_grid_height) {
+        std::cerr << "Error: The grid may not exceed a size of " << max_grid_width << " by "
+                  << max_grid_height << " cells when using the monotile architecture." << std::endl;
         exit(1);
     }
 #endif

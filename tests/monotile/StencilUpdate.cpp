@@ -36,8 +36,8 @@ void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t ta
     using out_pipe = HostPipe<class MonotileExecutionKernelOutPipeID, Cell>;
     using KernelArgument = tdv::InlineSupplier<GenerationFunction>::KernelArgument;
     using TestExecutionKernel =
-        StencilUpdateKernel<TransFunc, KernelArgument, n_processing_elements, tile_height, in_pipe,
-                            out_pipe>;
+        StencilUpdateKernel<TransFunc, KernelArgument, n_processing_elements, tile_width,
+                            tile_height, in_pipe, out_pipe>;
 
     for (uindex_t c = 0; c < grid_width; c++) {
         for (uindex_t r = 0; r < grid_height; r++) {
@@ -107,8 +107,8 @@ TEST_CASE("monotile::StencilUpdateKernel: Incomplete Pipeline with i_generation 
 
     using in_pipe = HostPipe<class IncompletePipelineInPipeID, uint8_t>;
     using out_pipe = HostPipe<class IncompletePipelineOutPipeID, uint8_t>;
-    using TestExecutionKernel =
-        StencilUpdateKernel<IncompletePipelineKernel, tdv::NoneSupplier, 16, 64, in_pipe, out_pipe>;
+    using TestExecutionKernel = StencilUpdateKernel<IncompletePipelineKernel, tdv::NoneSupplier, 16,
+                                                    64, 64, in_pipe, out_pipe>;
 
     for (int c = 0; c < 64; c++) {
         for (int r = 0; r < 64; r++) {
@@ -131,7 +131,7 @@ TEST_CASE("monotile::StencilUpdateKernel: Incomplete Pipeline with i_generation 
 }
 
 using StencilUpdateImpl = StencilUpdate<FPGATransFunc<1>, tdv::InlineSupplier<GenerationFunction>,
-                                        n_processing_elements, tile_height>;
+                                        n_processing_elements, tile_width, tile_height>;
 using GridImpl = Grid<Cell>;
 
 static_assert(concepts::StencilUpdate<StencilUpdateImpl, FPGATransFunc<1>,

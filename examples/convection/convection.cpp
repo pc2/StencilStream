@@ -4,11 +4,11 @@
     #include <StencilStream/monotile/StencilUpdate.hpp>
 #endif
 #include <StencilStream/tdv/NoneSupplier.hpp>
-#include <sycl/ext/intel/fpga_extensions.hpp>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <sycl/ext/intel/fpga_extensions.hpp>
 
 using namespace stencil;
 using json = nlohmann::json;
@@ -231,13 +231,15 @@ using PseudoTransientUpdate = cpu::StencilUpdate<PseudoTransientKernel>;
 using ThermalSolverUpdate = cpu::StencilUpdate<ThermalSolverKernel>;
 
 #else
+constexpr uindex_t max_grid_width = 3 * 512;
 constexpr uindex_t max_grid_height = 512;
 using Grid = monotile::Grid<ThermalConvectionCell>;
-using PseudoTransientUpdate =
-    monotile::StencilUpdate<PseudoTransientKernel, tdv::NoneSupplier, PseudoTransientKernel::n_subgenerations * 5,
-                            max_grid_height>;
+using PseudoTransientUpdate = monotile::StencilUpdate<PseudoTransientKernel, tdv::NoneSupplier,
+                                                      PseudoTransientKernel::n_subgenerations * 5,
+                                                      max_grid_width, max_grid_height>;
 using ThermalSolverUpdate =
-    monotile::StencilUpdate<ThermalSolverKernel, tdv::NoneSupplier, ThermalSolverKernel::n_subgenerations, max_grid_height>;
+    monotile::StencilUpdate<ThermalSolverKernel, tdv::NoneSupplier,
+                            ThermalSolverKernel::n_subgenerations, max_grid_width, max_grid_height>;
 
 #endif
 
@@ -449,7 +451,7 @@ int main(int argc, char **argv) {
             out_file.close();
         }
     }
-    
+
     queue.wait();
     auto computation_end = std::chrono::system_clock::now();
     auto computation_time = std::chrono::duration_cast<std::chrono::duration<double>>(

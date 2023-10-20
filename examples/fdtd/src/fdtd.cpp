@@ -50,8 +50,8 @@ using CellImpl = KernelImpl::Cell;
 #if EXECUTOR == 0
     #include <StencilStream/monotile/StencilUpdate.hpp>
 using Grid = monotile::Grid<CellImpl>;
-using StencilUpdate =
-    monotile::StencilUpdate<KernelImpl, SourceSupplier, n_processing_elements, tile_height>;
+using StencilUpdate = monotile::StencilUpdate<KernelImpl, SourceSupplier, n_processing_elements,
+                                              tile_width, tile_height>;
 #elif EXECUTOR == 1
     #include <StencilStream/tiling/StencilUpdate.hpp>
 using StencilUpdate = tiling::StencilUpdate<KernelImpl, SourceSupplier, n_processing_elements,
@@ -140,9 +140,11 @@ int main(int argc, char **argv) {
     parameters.print_configuration();
 
 #if EXECUTOR == 0
-    if (parameters.grid_range()[0] > tile_width || parameters.grid_range()[1] > tile_height) {
-        std::cerr << "Error: The grid may not exceed the size of the tile (" << tile_width << " by "
-                  << tile_height << " cells) when using the monotile architecture." << std::endl;
+    if (parameters.grid_range()[0] > max_grid_width ||
+        parameters.grid_range()[1] > max_grid_height) {
+        std::cerr << "Error: The grid may not exceed the size of the tile (" << max_grid_width
+                  << " by " << max_grid_height << " cells) when using the monotile architecture."
+                  << std::endl;
         exit(1);
     }
 #endif
@@ -205,7 +207,7 @@ int main(int argc, char **argv) {
     } else {
         grid = simulation(grid);
     }
-    
+
     queue.wait();
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> runtime = end - start;
