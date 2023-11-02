@@ -175,9 +175,9 @@ int main(int argc, char **argv) {
     }
 
 #if HARDWARE == 1
-    sycl::queue queue(sycl::ext::intel::fpga_selector_v);
+    sycl::device device(sycl::ext::intel::fpga_selector_v);
 #else
-    sycl::queue queue;
+    sycl::device device;
 #endif
 
     StencilUpdate simulation({
@@ -186,7 +186,8 @@ int main(int argc, char **argv) {
         .generation_offset = 0,
         .n_generations = parameters.n_timesteps(),
         .tdv_host_state = SourceSupplier(SourceFunction(parameters)),
-        .queue = queue,
+        .device = device,
+        .blocking = true,
     });
 
     uindex_t n_timesteps = parameters.n_timesteps();
@@ -195,6 +196,7 @@ int main(int argc, char **argv) {
     std::cout << "Simulating..." << std::endl;
 
     auto start = std::chrono::high_resolution_clock::now();
+
     if (parameters.interval().has_value()) {
         simulation.get_params().n_generations = parameters.interval().value();
         for (uindex_t &i_gen = simulation.get_params().generation_offset;
@@ -206,7 +208,6 @@ int main(int argc, char **argv) {
         grid = simulation(grid);
     }
 
-    queue.wait();
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> runtime = end - start;
 

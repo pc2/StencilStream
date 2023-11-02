@@ -103,15 +103,15 @@ int main(int argc, char **argv) {
     Grid<bool> grid = read(width, height);
 
 #ifdef HARDWARE
-    sycl::queue queue(sycl::ext::intel::fpga_selector_v);
+    sycl::device device(sycl::ext::intel::fpga_selector_v);
 #else
-    sycl::queue queue;
+    sycl::device device;
 #endif
 
     StencilUpdate<ConwayKernel> update({
         .transition_function = ConwayKernel(),
         .n_generations = n_generations,
-        .queue = queue,
+        .device = device,
     });
     grid = update(grid);
 

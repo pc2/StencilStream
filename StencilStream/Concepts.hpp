@@ -81,6 +81,8 @@ concept StencilUpdate =
         { params.generation_offset } -> std::same_as<uindex_t &>;
         { params.n_generations } -> std::same_as<uindex_t &>;
         { params.tdv_host_state } -> std::same_as<TDVH &>;
+        { params.device } -> std::same_as<sycl::device &>;
+        { params.blocking } -> std::same_as<bool &>;
     } && TransitionFunction<TF> && Grid<G, typename TF::Cell> &&
     (std::is_class<typename SU::Params>::value);
 

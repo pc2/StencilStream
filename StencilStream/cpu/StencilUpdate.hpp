@@ -37,7 +37,8 @@ class StencilUpdate {
         uindex_t generation_offset = 0;
         uindex_t n_generations = 1;
         TDVHostState tdv_host_state;
-        sycl::queue queue = sycl::queue();
+        sycl::device device = sycl::device();
+        bool blocking = false;
     };
 
     StencilUpdate(Params params) : params(params) {}
@@ -48,9 +49,12 @@ class StencilUpdate {
         GridImpl *pass_source = &source_grid;
         GridImpl *pass_target = &swap_grid_b;
 
+        sycl::queue queue(params.device);
+
         for (uindex_t i_gen = 0; i_gen < params.n_generations; i_gen++) {
             for (uindex_t i_subgen = 0; i_subgen < F::n_subgenerations; i_subgen++) {
-                run_gen(pass_source, pass_target, params.generation_offset + i_gen, i_subgen);
+                run_gen(queue, pass_source, pass_target, params.generation_offset + i_gen,
+                        i_subgen);
                 if (i_gen == 0 && i_subgen == 0) {
                     pass_source = &swap_grid_b;
                     pass_target = &swap_grid_a;
@@ -60,20 +64,23 @@ class StencilUpdate {
             }
         }
 
+        if (params.blocking) {
+            queue.wait();
+        }
+
         return *pass_source;
     }
 
-    Params &get_params() {
-        return params;
-    }
+    Params &get_params() { return params; }
 
   private:
-    void run_gen(GridImpl *pass_source, GridImpl *pass_target, uindex_t i_gen, uindex_t i_subgen) {
+    void run_gen(sycl::queue queue, GridImpl *pass_source, GridImpl *pass_target, uindex_t i_gen,
+                 uindex_t i_subgen) {
         using TDVKernelArgument = typename TDVHostState::KernelArgument;
         using TDVLocalState = typename TDVKernelArgument::LocalState;
         using TDVValue = typename TDVLocalState::Value;
 
-        params.queue.submit([&](sycl::handler &cgh) {
+        queue.submit([&](sycl::handler &cgh) {
             sycl::accessor source_ac(pass_source->get_buffer(), cgh, sycl::read_only);
             sycl::accessor target_ac(pass_target->get_buffer(), cgh, sycl::write_only);
             index_t grid_width = source_ac.get_range()[0];

@@ -249,21 +249,21 @@ int main(int argc, char **argv) {
     FLOAT Cap_1 = step / Cap;
 
 #if HARDWARE == 1
-    sycl::queue queue(sycl::ext::intel::fpga_selector_v);
+    sycl::device device(sycl::ext::intel::fpga_selector_v);
 #else
-    sycl::queue queue;
+    sycl::device device;
 #endif
 
     StencilUpdate update({
         .transition_function = HotspotKernel{Rx_1, Ry_1, Rz_1, Cap_1},
         .halo_value = HotspotCell(0.0, 0.0),
         .n_generations = sim_time,
-        .queue = queue,
+        .device = device,
+        .blocking = true,
     });
 
     auto start = std::chrono::high_resolution_clock::now();
     grid = update(grid);
-    queue.wait();
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> runtime = end - start;
 

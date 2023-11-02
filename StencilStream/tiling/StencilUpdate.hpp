@@ -283,14 +283,13 @@ class StencilUpdate {
         uindex_t generation_offset = 0;
         uindex_t n_generations = 1;
         TDVHostState tdv_host_state;
-        sycl::queue queue = sycl::queue();
+        sycl::device device = sycl::device();
+        bool blocking = false;
     };
 
     StencilUpdate(Params params) : params(params) {}
 
-    Params &get_params() {
-        return params;
-    }
+    Params &get_params() { return params; }
 
     GridImpl operator()(GridImpl &source_grid) {
         using in_pipe = sycl::pipe<class monotile_in_pipe, Cell>;
@@ -298,6 +297,18 @@ class StencilUpdate {
         using ExecutionKernelImpl =
             StencilUpdateKernel<F, typename TDVHostState::KernelArgument, n_processing_elements,
                                 tile_width, tile_height, in_pipe, out_pipe>;
+
+        std::array<sycl::queue, 6> input_kernel_queues;
+        for (uindex_t i = 0; i < 6; i++) {
+            input_kernel_queues[i] =
+                sycl::queue(params.device, {sycl::property::queue::in_order{}});
+        }
+        std::array<sycl::queue, 4> output_kernel_queues;
+        for (uindex_t i = 0; i < 4; i++) {
+            output_kernel_queues[i] =
+                sycl::queue(params.device, {sycl::property::queue::in_order{}});
+        }
+        sycl::queue working_queue(params.device, {sycl::property::queue::in_order{}});
 
         GridImpl swap_grid_a = source_grid.make_similar();
         GridImpl swap_grid_b = source_grid.make_similar();
@@ -313,9 +324,10 @@ class StencilUpdate {
         for (uindex_t i_gen = 0; i_gen < params.n_generations; i_gen += gens_per_pass) {
             for (uindex_t i_tile_c = 0; i_tile_c < tile_range.c; i_tile_c++) {
                 for (uindex_t i_tile_r = 0; i_tile_r < tile_range.r; i_tile_r++) {
-                    pass_source->template submit_read<in_pipe>(params.queue, i_tile_c, i_tile_r);
+                    pass_source->template submit_read<in_pipe>(input_kernel_queues, i_tile_c,
+                                                               i_tile_r);
 
-                    params.queue.submit([&](sycl::handler &cgh) {
+                    working_queue.submit([&](sycl::handler &cgh) {
                         uindex_t c_offset = i_tile_c * tile_width;
                         uindex_t r_offset = i_tile_r * tile_height;
 
@@ -328,15 +340,22 @@ class StencilUpdate {
                         cgh.single_task<ExecutionKernelImpl>(exec_kernel);
                     });
 
-                    pass_target->template submit_write<out_pipe>(params.queue, i_tile_c, i_tile_r);
+                    pass_target->template submit_write<out_pipe>(output_kernel_queues, i_tile_c,
+                                                                 i_tile_r);
                 }
             }
-            
+
             if (i_gen == 0) {
                 pass_source = &swap_grid_b;
                 pass_target = &swap_grid_a;
             } else {
                 std::swap(pass_source, pass_target);
+            }
+        }
+
+        if (params.blocking) {
+            for (sycl::queue queue : output_kernel_queues) {
+                queue.wait();
             }
         }
 
