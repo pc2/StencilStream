@@ -104,7 +104,7 @@ struct HotspotKernel {
 #if EXECUTOR == 0
 const uindex_t max_grid_width = 1024;
 const uindex_t max_grid_height = 1024;
-const uindex_t n_processing_elements = 340;
+const uindex_t n_processing_elements = 300;
 using StencilUpdate =
     monotile::StencilUpdate<HotspotKernel, tdv::NoneSupplier, n_processing_elements, max_grid_width,
                             max_grid_height>;
