@@ -53,7 +53,7 @@ endforeach()
 # Adding options for hardware executables
 foreach(EXECUTABLE hotspot_mono hotspot_tiling)
     target_compile_definitions(${EXECUTABLE} PUBLIC HARDWARE=1)
-    target_link_options(${EXECUTABLE} PUBLIC -Xshardware -Xsprofile)
+    target_link_options(${EXECUTABLE} PUBLIC -Xshardware)
     if(VERBOSE_SYNTHESIS)
         target_link_options(${EXECUTABLE} PUBLIC -Xsv)
     endif()

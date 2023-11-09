@@ -28,7 +28,7 @@ add_link_options(-fintelfpga)
 
 add_executable(convection convection.cpp)
 target_compile_definitions(convection PUBLIC EXECUTOR=1 HARDWARE=1)
-target_link_options(convection PUBLIC -Xshardware -Xsprofile -Xsseed=63764)
+target_link_options(convection PUBLIC -Xshardware -Xsseed=63764)
 if(VERBOSE_SYNTHESIS)
     target_link_options(convection PUBLIC -Xsv)
 endif()
