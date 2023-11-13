@@ -235,7 +235,7 @@ constexpr uindex_t max_grid_width = 3 * 512;
 constexpr uindex_t max_grid_height = 512;
 using Grid = monotile::Grid<ThermalConvectionCell>;
 using PseudoTransientUpdate = monotile::StencilUpdate<PseudoTransientKernel, tdv::NoneSupplier,
-                                                      PseudoTransientKernel::n_subgenerations * 5,
+                                                      PseudoTransientKernel::n_subgenerations * 10,
                                                       max_grid_width, max_grid_height>;
 using ThermalSolverUpdate =
     monotile::StencilUpdate<ThermalSolverKernel, tdv::NoneSupplier,

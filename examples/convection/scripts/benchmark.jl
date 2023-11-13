@@ -2,7 +2,7 @@
 include("../../../scripts/benchmark-common.jl")
 
 const N_SUBGENERATIONS = 3
-const N_REPLICATIONS = 5
+const N_REPLICATIONS = 10
 const N_CUS = N_SUBGENERATIONS * N_REPLICATIONS
 const OPERATIONS_PER_CELL = (5+5+3+6+6+6) + (10+3+2+14+3+2) + 2
 const CELL_SIZE = 128 # bytes, with padding
