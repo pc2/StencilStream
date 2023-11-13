@@ -103,7 +103,7 @@ struct HotspotKernel {
 
 #if EXECUTOR == 0
 const uindex_t max_grid_height = 1024;
-const uindex_t n_processing_elements = 350;
+const uindex_t n_processing_elements = 280;
 using StencilUpdate = monotile::StencilUpdate<HotspotKernel, tdv::NoneSupplier,
                                               n_processing_elements, max_grid_height>;
 using Grid = monotile::Grid<HotspotCell>;
@@ -111,7 +111,7 @@ using Grid = monotile::Grid<HotspotCell>;
 #elif EXECUTOR == 1
 const uindex_t tile_width = 1024;
 const uindex_t tile_height = 1024;
-const uindex_t n_processing_elements = 280;
+const uindex_t n_processing_elements = 224;
 using StencilUpdate = tiling::StencilUpdate<HotspotKernel, tdv::NoneSupplier, n_processing_elements,
                                             tile_width, tile_height>;
 using Grid = StencilUpdate::GridImpl;
