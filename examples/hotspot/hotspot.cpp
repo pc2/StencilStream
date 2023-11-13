@@ -259,16 +259,21 @@ int main(int argc, char **argv) {
         .halo_value = HotspotCell(0.0, 0.0),
         .n_generations = sim_time,
         .device = device,
-        .blocking = true,
+        .blocking = true, // enable blocking for meaningful walltime measurements
+#if EXECUTOR != 2
+        .profiling = true, // enable additional profiling for FPGA targets
+#endif
     });
 
-    auto start = std::chrono::high_resolution_clock::now();
     grid = update(grid);
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> runtime = end - start;
 
-    printf("Ending simulation\n");
-    std::cout << "Total time: " << runtime.count() << " s" << std::endl;
+    std::cout << "Ending simulation" << std::endl;
+    std::cout << "Walltime: " << update.get_walltime() << " s" << std::endl;
+#if EXECUTOR != 2
+    // Print pure kernel runtime for FPGA targets
+    std::cout << "Kernel Runtime: " << update.get_kernel_runtime() << " s" << std::endl;
+#endif
+
     write_output(grid, string(ofile));
 
     return 0;

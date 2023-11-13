@@ -50,7 +50,7 @@ open(command, "r") do process_in
             grid_wh = parse(Int, m[1])
         elseif (m = match(r"n. timesteps  = ([0-9]+)", line)) !== nothing
             n_timesteps = parse(Int, m[1])
-        elseif (m = match(r"Makespan: ([0-9]+\.[0-9]+) s", line)) !== nothing
+        elseif (m = match(r"Kernel Runtime: ([0-9]+\.[0-9]+) s", line)) !== nothing
             runtime = parse(Float64, m[1])
         end
     end

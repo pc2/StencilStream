@@ -25,6 +25,7 @@
 #include "../Padded.hpp"
 #include "../tdv/NoneSupplier.hpp"
 #include "Grid.hpp"
+#include <chrono>
 
 namespace stencil {
 namespace monotile {
@@ -299,9 +300,11 @@ class StencilUpdate {
         TDVHostState tdv_host_state;
         sycl::device device = sycl::device();
         bool blocking = false;
+        bool profiling = false;
     };
 
-    StencilUpdate(Params params) : params(params) {}
+    StencilUpdate(Params params)
+        : params(params), n_processed_cells(0), work_events(), walltime(0.0) {}
 
     Params &get_params() { return params; }
 
@@ -320,10 +323,12 @@ class StencilUpdate {
 
         sycl::queue input_kernel_queue =
             sycl::queue(params.device, {sycl::property::queue::in_order{}});
-        sycl::queue update_kernel_queue =
-            sycl::queue(params.device, {sycl::property::queue::in_order{}});
         sycl::queue output_kernel_queue =
             sycl::queue(params.device, {sycl::property::queue::in_order{}});
+
+        sycl::queue update_kernel_queue =
+            sycl::queue(params.device, {cl::sycl::property::queue::enable_profiling{},
+                                        sycl::property::queue::in_order{}});
 
         GridImpl swap_grid_a = source_grid.make_similar();
         GridImpl swap_grid_b = source_grid.make_similar();
@@ -332,9 +337,12 @@ class StencilUpdate {
         GridImpl *pass_source = &source_grid;
         GridImpl *pass_target = &swap_grid_b;
 
+        auto walltime_start = std::chrono::high_resolution_clock::now();
+
         for (uindex_t i_gen = 0; i_gen < params.n_generations; i_gen += gens_per_pass) {
             pass_source->template submit_read<in_pipe>(input_kernel_queue);
-            update_kernel_queue.submit([&](sycl::handler &cgh) {
+
+            sycl::event work_event = update_kernel_queue.submit([&](sycl::handler &cgh) {
                 auto tdv_global_state = params.tdv_host_state.build_kernel_argument(
                     cgh, params.generation_offset + i_gen, gens_per_pass);
                 ExecutionKernelImpl exec_kernel(
@@ -343,6 +351,10 @@ class StencilUpdate {
                     source_grid.get_grid_height(), params.halo_value, tdv_global_state);
                 cgh.single_task<ExecutionKernelImpl>(exec_kernel);
             });
+            if (params.profiling) {
+                work_events.push_back(work_event);
+            }
+
             pass_target->template submit_write<out_pipe>(output_kernel_queue);
 
             if (i_gen == 0) {
@@ -357,11 +369,42 @@ class StencilUpdate {
             output_kernel_queue.wait();
         }
 
+        auto walltime_end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> walltime = walltime_end - walltime_start;
+        this->walltime += walltime.count();
+
+        n_processed_cells +=
+            params.n_generations * source_grid.get_grid_width() * source_grid.get_grid_height();
+
         return *pass_source;
     }
 
+    uindex_t get_n_processed_cells() const { return n_processed_cells; }
+
+    double get_kernel_runtime() const {
+        double kernel_runtime = 0.0;
+        for (sycl::event work_event : work_events) {
+            const double timesteps_per_second = 1000000000.0;
+            double start =
+                double(work_event
+                           .get_profiling_info<cl::sycl::info::event_profiling::command_start>()) /
+                timesteps_per_second;
+            double end =
+                double(
+                    work_event.get_profiling_info<cl::sycl::info::event_profiling::command_end>()) /
+                timesteps_per_second;
+            kernel_runtime += end - start;
+        }
+        return kernel_runtime;
+    }
+
+    double get_walltime() const { return walltime; }
+
   private:
     Params params;
+    uindex_t n_processed_cells;
+    double walltime;
+    std::vector<sycl::event> work_events;
 };
 
 } // namespace monotile

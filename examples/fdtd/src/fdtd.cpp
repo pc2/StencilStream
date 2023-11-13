@@ -187,15 +187,16 @@ int main(int argc, char **argv) {
         .n_generations = parameters.n_timesteps(),
         .tdv_host_state = SourceSupplier(SourceFunction(parameters)),
         .device = device,
-        .blocking = true,
+        .blocking = true, // enable blocking for meaningful walltime measurements
+#if EXECUTOR != 2
+        .profiling = true, // enable additional profiling for FPGA targets
+#endif
     });
 
     uindex_t n_timesteps = parameters.n_timesteps();
     uindex_t last_saved_generation = 0;
 
     std::cout << "Simulating..." << std::endl;
-
-    auto start = std::chrono::high_resolution_clock::now();
 
     if (parameters.interval().has_value()) {
         simulation.get_params().n_generations = parameters.interval().value();
@@ -208,11 +209,12 @@ int main(int argc, char **argv) {
         grid = simulation(grid);
     }
 
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> runtime = end - start;
-
     std::cout << "Simulation complete!" << std::endl;
-    std::cout << "Makespan: " << runtime.count() << " s" << std::endl;
+    std::cout << "Walltime: " << simulation.get_walltime() << " s" << std::endl;
+#if EXECUTOR != 2
+    // Print pure kernel runtime for FPGA targets
+    std::cout << "Kernel Runtime: " << simulation.get_kernel_runtime() << " s" << std::endl;
+#endif
 
     save_frame(grid, n_timesteps, CellField::HZ_SUM, parameters);
 

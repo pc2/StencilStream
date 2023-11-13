@@ -27,7 +27,7 @@ else
     println(stderr, "Unknown variant '$variant'")
     exit(1)
 end
-n_gens = 100 * n_cus
+n_gens = n_cus
 
 command = `$exec $TILE_SIZE $TILE_SIZE $n_gens ./data/temp_$TILE_SIZE ./data/power_$TILE_SIZE /dev/null`
 
@@ -40,7 +40,7 @@ open(command, "r") do process_in
         line = readline(process_in)
         println(line)
 
-        line_match = match(r"Total time: ([0-9]+\.[0-9]+) s", line)
+        line_match = match(r"Kernel Runtime: ([0-9]+\.[0-9]+) s", line)
         if line_match !== nothing
             runtime = parse(Float64, line_match[1])
         end
