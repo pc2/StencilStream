@@ -3,8 +3,8 @@ include("../../../scripts/benchmark-common.jl")
 
 const OPERATIONS_PER_CELL = 15
 const CELL_SIZE = 8 # bytes
-const N_MONOTILE_CUS = 350
-const N_TILING_CUS = 280
+const N_MONOTILE_CUS = 280
+const N_TILING_CUS = 224
 const TILE_SIZE = 1024
 
 if size(ARGS) != (2,)
