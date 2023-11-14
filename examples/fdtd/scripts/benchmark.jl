@@ -3,7 +3,7 @@ include("../../../scripts/benchmark-common.jl")
 
 const N_SUBGENERATIONS = 2
 const N_TILING_CUS = 190
-const N_MONOTILE_CUS = 224
+const N_MONOTILE_CUS = 200
 const OPERATIONS_PER_CELL = 0.5 * (8) + 0.5 * (6+4+2+2+2) # Including all paths, excluding source wave computation
 const CELL_SIZE = 4 * (4 + 4) # bytes, including material coefficients
 const TILE_HEIGHT = 512

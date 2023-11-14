@@ -42,7 +42,7 @@ constexpr float pi = 3.1415926535897932384626433;
 
 #if EXECUTOR == 0
 // monotile
-constexpr uindex_t n_processing_elements = 224;
+constexpr uindex_t n_processing_elements = 200;
 
 #elif EXECUTOR == 1
 // tiling
