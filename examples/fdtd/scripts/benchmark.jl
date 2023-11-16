@@ -33,8 +33,7 @@ else
     exit(1)
 end
 
-# The experiment is a version of the default experiment with higher resolution and artificially long runtime.
-command = `$exe -c ./experiments/benchmark.json`
+command = `$exe -c ./experiments/default.json`
 # Run the simulation once to eliminate the FPGA programming from the measured runtime
 run(command)
 

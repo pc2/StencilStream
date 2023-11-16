@@ -4,7 +4,7 @@
     "time": {
         "t_cutoff": 7.0,
         "t_detect": 14.0,
-        "t_max": 30.0
+        "t_max": 15.0
     },
     "source": {
         "frequency": 120e12,
