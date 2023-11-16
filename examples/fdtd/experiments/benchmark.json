@@ -1,6 +1,6 @@
 {
     "tau": 100e-15,
-    "dx": 4e-9,
+    "dx": 3.14e-9,
     "time": {
         "t_cutoff": 7.0,
         "t_detect": 14.0,
