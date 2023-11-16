@@ -27,7 +27,7 @@ else
     println(stderr, "Unknown variant '$variant'")
     exit(1)
 end
-n_gens = n_cus
+n_gens = n_cus * 1000
 
 command = `$exec $TILE_SIZE $TILE_SIZE $n_gens ./data/temp_$TILE_SIZE ./data/power_$TILE_SIZE /dev/null`
 
