@@ -18,7 +18,6 @@ workflow:
     rules:
         - if: $CI_COMMIT_TAG
           when: never           # Don't run the pipeline for tags
-        - if: $CI_COMMIT_BRANCH == "grid_class"
 
 documentation:
     stage: preevaluation
