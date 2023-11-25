@@ -3,7 +3,7 @@ include("../../../scripts/benchmark-common.jl")
 
 const N_SUBGENERATIONS = 2
 const N_TILING_CUS = 190
-const N_MONOTILE_CUS = 224
+const N_MONOTILE_CUS = 200
 const OPERATIONS_PER_CELL = 0.5 * (8) + 0.5 * (6+4+2+2+2) # Including all paths, excluding source wave computation
 const CELL_SIZE = 4 * (4 + 4) # bytes, including material coefficients
 const TILE_HEIGHT = 512
@@ -33,7 +33,11 @@ else
     exit(1)
 end
 
-open(`$exe -c ./experiments/default.json`, "r") do process_in
+command = `$exe -c ./experiments/default.json`
+# Run the simulation once to eliminate the FPGA programming from the measured runtime
+run(command)
+
+open(command, "r") do process_in
     runtime = nothing
     grid_wh = nothing
     n_timesteps = nothing
@@ -46,7 +50,7 @@ open(`$exe -c ./experiments/default.json`, "r") do process_in
             grid_wh = parse(Int, m[1])
         elseif (m = match(r"n. timesteps  = ([0-9]+)", line)) !== nothing
             n_timesteps = parse(Int, m[1])
-        elseif (m = match(r"Makespan: ([0-9]+\.[0-9]+) s", line)) !== nothing
+        elseif (m = match(r"Kernel Runtime: ([0-9]+\.[0-9]+) s", line)) !== nothing
             runtime = parse(Float64, m[1])
         end
     end

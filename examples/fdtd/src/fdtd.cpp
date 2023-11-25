@@ -50,8 +50,8 @@ using CellImpl = KernelImpl::Cell;
 #if EXECUTOR == 0
     #include <StencilStream/monotile/StencilUpdate.hpp>
 using Grid = monotile::Grid<CellImpl>;
-using StencilUpdate =
-    monotile::StencilUpdate<KernelImpl, SourceSupplier, n_processing_elements, tile_height>;
+using StencilUpdate = monotile::StencilUpdate<KernelImpl, SourceSupplier, n_processing_elements,
+                                              tile_width, tile_height>;
 #elif EXECUTOR == 1
     #include <StencilStream/tiling/StencilUpdate.hpp>
 using StencilUpdate = tiling::StencilUpdate<KernelImpl, SourceSupplier, n_processing_elements,
@@ -175,9 +175,9 @@ int main(int argc, char **argv) {
     }
 
 #if HARDWARE == 1
-    sycl::queue queue(sycl::ext::intel::fpga_selector_v);
+    sycl::device device(sycl::ext::intel::fpga_selector_v);
 #else
-    sycl::queue queue;
+    sycl::device device;
 #endif
 
     StencilUpdate simulation({
@@ -186,7 +186,11 @@ int main(int argc, char **argv) {
         .generation_offset = 0,
         .n_generations = parameters.n_timesteps(),
         .tdv_host_state = SourceSupplier(SourceFunction(parameters)),
-        .queue = queue,
+        .device = device,
+        .blocking = true, // enable blocking for meaningful walltime measurements
+#if EXECUTOR != 2
+        .profiling = true, // enable additional profiling for FPGA targets
+#endif
     });
 
     uindex_t n_timesteps = parameters.n_timesteps();
@@ -194,7 +198,6 @@ int main(int argc, char **argv) {
 
     std::cout << "Simulating..." << std::endl;
 
-    auto start = std::chrono::high_resolution_clock::now();
     if (parameters.interval().has_value()) {
         simulation.get_params().n_generations = parameters.interval().value();
         for (uindex_t &i_gen = simulation.get_params().generation_offset;
@@ -205,13 +208,13 @@ int main(int argc, char **argv) {
     } else {
         grid = simulation(grid);
     }
-    
-    queue.wait();
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> runtime = end - start;
 
     std::cout << "Simulation complete!" << std::endl;
-    std::cout << "Makespan: " << runtime.count() << " s" << std::endl;
+    std::cout << "Walltime: " << simulation.get_walltime() << " s" << std::endl;
+#if EXECUTOR != 2
+    // Print pure kernel runtime for FPGA targets
+    std::cout << "Kernel Runtime: " << simulation.get_kernel_runtime() << " s" << std::endl;
+#endif
 
     save_frame(grid, n_timesteps, CellField::HZ_SUM, parameters);
 

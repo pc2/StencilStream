@@ -65,13 +65,17 @@ TEST_CASE("tiling::Grid::submit_read", "[tiling::Grid]") {
     }
     TestGrid grid(in_buffer);
 
-    sycl::queue queue;
+    std::array<sycl::queue, 6> input_kernel_queues;
+    for (uindex_t i = 0; i < 6; i++) {
+        input_kernel_queues[i] = sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
+    }
+    sycl::queue working_queue = sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
 
     using in_pipe = sycl::pipe<class tiled_grid_submit_read_test_id, ID>;
-    grid.template submit_read<in_pipe>(queue, 1, 1);
+    grid.template submit_read<in_pipe>(input_kernel_queues, 1, 1);
 
     sycl::buffer<bool, 1> result_buffer = sycl::range<1>(1);
-    queue.submit([&](sycl::handler &cgh) {
+    working_queue.submit([&](sycl::handler &cgh) {
         accessor result_ac(result_buffer, cgh, write_only);
         uindex_t c_start = tile_width - halo_radius;
         uindex_t c_end = 2 * tile_width + halo_radius;
@@ -96,8 +100,13 @@ TEST_CASE("tiling::Grid::submit_read", "[tiling::Grid]") {
 TEST_CASE("tiling::Grid::submit_write", "[tiling::Grid]") {
     using out_pipe = sycl::pipe<class tiled_grid_submit_write_test_id, ID>;
 
-    sycl::queue queue;
-    queue.submit([&](sycl::handler &cgh) {
+    std::array<sycl::queue, 4> output_kernel_queues;
+    for (uindex_t i = 0; i < 4; i++) {
+        output_kernel_queues[i] = sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
+    }
+    sycl::queue working_queue = sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
+
+    working_queue.submit([&](sycl::handler &cgh) {
         cgh.single_task<class tiled_grid_submit_write_test_kernel>([=]() {
             for (uindex_t c = tile_width; c < 2 * tile_width; c++) {
                 for (uindex_t r = tile_height; r < 2 * tile_height; r++) {
@@ -108,7 +117,7 @@ TEST_CASE("tiling::Grid::submit_write", "[tiling::Grid]") {
     });
 
     TestGrid grid(3 * tile_width, 3 * tile_height);
-    grid.template submit_write<out_pipe>(queue, 1, 1);
+    grid.template submit_write<out_pipe>(output_kernel_queues, 1, 1);
 
     sycl::buffer<ID, 2> out_buffer = sycl::range<2>(3 * tile_width, 3 * tile_height);
     grid.copy_to_buffer(out_buffer);

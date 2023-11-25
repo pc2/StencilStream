@@ -2,7 +2,7 @@
 include("../../../scripts/benchmark-common.jl")
 
 const N_SUBGENERATIONS = 3
-const N_REPLICATIONS = 5
+const N_REPLICATIONS = 8
 const N_CUS = N_SUBGENERATIONS * N_REPLICATIONS
 const OPERATIONS_PER_CELL = (5+5+3+6+6+6) + (10+3+2+14+3+2) + 2
 const CELL_SIZE = 128 # bytes, with padding
@@ -106,6 +106,9 @@ function default_benchmark()
 
     out_path = Base.Filesystem.mkpath("./out/")
     command = `$exe $experiment_path $out_path`
+
+    # Run the simulation once to eliminate the FPGA programming from the measured runtime
+    run(command)
 
     open(command, "r") do process_in
         _, pseudo_transient_runtimes = analyze_log(process_in)

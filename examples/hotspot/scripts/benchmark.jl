@@ -3,8 +3,8 @@ include("../../../scripts/benchmark-common.jl")
 
 const OPERATIONS_PER_CELL = 15
 const CELL_SIZE = 8 # bytes
-const N_MONOTILE_CUS = 350
-const N_TILING_CUS = 280
+const N_MONOTILE_CUS = 280
+const N_TILING_CUS = 224
 const TILE_SIZE = 1024
 
 if size(ARGS) != (2,)
@@ -27,16 +27,20 @@ else
     println(stderr, "Unknown variant '$variant'")
     exit(1)
 end
-n_gens = 100 * n_cus
+n_gens = n_cus * 1000
 
+command = `$exec $TILE_SIZE $TILE_SIZE $n_gens ./data/temp_$TILE_SIZE ./data/power_$TILE_SIZE /dev/null`
 
-open(`$exec $TILE_SIZE $TILE_SIZE $n_gens ./data/temp_$TILE_SIZE ./data/power_$TILE_SIZE /dev/null`, "r") do process_in
+# Run the simulation once to eliminate the FPGA programming from the measured runtime
+run(command)
+
+open(command, "r") do process_in
     runtime = nothing
     while runtime === nothing
         line = readline(process_in)
         println(line)
 
-        line_match = match(r"Total time: ([0-9]+\.[0-9]+) s", line)
+        line_match = match(r"Kernel Runtime: ([0-9]+\.[0-9]+) s", line)
         if line_match !== nothing
             runtime = parse(Float64, line_match[1])
         end

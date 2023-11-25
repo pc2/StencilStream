@@ -102,16 +102,18 @@ struct HotspotKernel {
 };
 
 #if EXECUTOR == 0
+const uindex_t max_grid_width = 1024;
 const uindex_t max_grid_height = 1024;
-const uindex_t n_processing_elements = 350;
-using StencilUpdate = monotile::StencilUpdate<HotspotKernel, tdv::NoneSupplier,
-                                              n_processing_elements, max_grid_height>;
+const uindex_t n_processing_elements = 280;
+using StencilUpdate =
+    monotile::StencilUpdate<HotspotKernel, tdv::NoneSupplier, n_processing_elements, max_grid_width,
+                            max_grid_height>;
 using Grid = monotile::Grid<HotspotCell>;
 
 #elif EXECUTOR == 1
 const uindex_t tile_width = 1024;
 const uindex_t tile_height = 1024;
-const uindex_t n_processing_elements = 280;
+const uindex_t n_processing_elements = 224;
 using StencilUpdate = tiling::StencilUpdate<HotspotKernel, tdv::NoneSupplier, n_processing_elements,
                                             tile_width, tile_height>;
 using Grid = StencilUpdate::GridImpl;
@@ -215,9 +217,9 @@ int main(int argc, char **argv) {
         usage(argc, argv);
 
 #if EXECUTOR == 0
-    if (n_rows > max_grid_height) {
-        std::cerr << "Error: The grid may not exceed a height of " << max_grid_height
-                  << " cells when using the monotile architecture." << std::endl;
+    if (n_columns > max_grid_width || n_rows > max_grid_height) {
+        std::cerr << "Error: The grid may not exceed a size of " << max_grid_width << " by "
+                  << max_grid_height << " cells when using the monotile architecture." << std::endl;
         exit(1);
     }
 #endif
@@ -247,26 +249,31 @@ int main(int argc, char **argv) {
     FLOAT Cap_1 = step / Cap;
 
 #if HARDWARE == 1
-    sycl::queue queue(sycl::ext::intel::fpga_selector_v);
+    sycl::device device(sycl::ext::intel::fpga_selector_v);
 #else
-    sycl::queue queue;
+    sycl::device device;
 #endif
 
     StencilUpdate update({
         .transition_function = HotspotKernel{Rx_1, Ry_1, Rz_1, Cap_1},
         .halo_value = HotspotCell(0.0, 0.0),
         .n_generations = sim_time,
-        .queue = queue,
+        .device = device,
+        .blocking = true, // enable blocking for meaningful walltime measurements
+#if EXECUTOR != 2
+        .profiling = true, // enable additional profiling for FPGA targets
+#endif
     });
 
-    auto start = std::chrono::high_resolution_clock::now();
     grid = update(grid);
-    queue.wait();
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> runtime = end - start;
 
-    printf("Ending simulation\n");
-    std::cout << "Total time: " << runtime.count() << " s" << std::endl;
+    std::cout << "Ending simulation" << std::endl;
+    std::cout << "Walltime: " << update.get_walltime() << " s" << std::endl;
+#if EXECUTOR != 2
+    // Print pure kernel runtime for FPGA targets
+    std::cout << "Kernel Runtime: " << update.get_kernel_runtime() << " s" << std::endl;
+#endif
+
     write_output(grid, string(ofile));
 
     return 0;

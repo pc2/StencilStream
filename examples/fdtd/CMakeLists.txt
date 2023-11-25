@@ -57,7 +57,7 @@ foreach(MATERIAL coef lut render)
 
                 if(NOT (${EXECUTOR} MATCHES "emu"))
                     target_compile_definitions(${EXECUTABLE} PUBLIC HARDWARE)
-                    target_link_options(${EXECUTABLE} PUBLIC -reuse-exe=${EXECUTABLE} -Xshardware)
+                    target_link_options(${EXECUTABLE} PUBLIC -Xshardware)
 
                     if(VERBOSE_SYNTHESIS)
                         target_link_options(${EXECUTABLE} PUBLIC -Xsv)

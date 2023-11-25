@@ -4,11 +4,11 @@
     #include <StencilStream/monotile/StencilUpdate.hpp>
 #endif
 #include <StencilStream/tdv/NoneSupplier.hpp>
-#include <sycl/ext/intel/fpga_extensions.hpp>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <sycl/ext/intel/fpga_extensions.hpp>
 
 using namespace stencil;
 using json = nlohmann::json;
@@ -231,13 +231,15 @@ using PseudoTransientUpdate = cpu::StencilUpdate<PseudoTransientKernel>;
 using ThermalSolverUpdate = cpu::StencilUpdate<ThermalSolverKernel>;
 
 #else
+constexpr uindex_t max_grid_width = 3 * 512;
 constexpr uindex_t max_grid_height = 512;
 using Grid = monotile::Grid<ThermalConvectionCell>;
-using PseudoTransientUpdate =
-    monotile::StencilUpdate<PseudoTransientKernel, tdv::NoneSupplier, PseudoTransientKernel::n_subgenerations * 5,
-                            max_grid_height>;
+using PseudoTransientUpdate = monotile::StencilUpdate<PseudoTransientKernel, tdv::NoneSupplier,
+                                                      PseudoTransientKernel::n_subgenerations * 8,
+                                                      max_grid_width, max_grid_height>;
 using ThermalSolverUpdate =
-    monotile::StencilUpdate<ThermalSolverKernel, tdv::NoneSupplier, ThermalSolverKernel::n_subgenerations, max_grid_height>;
+    monotile::StencilUpdate<ThermalSolverKernel, tdv::NoneSupplier,
+                            ThermalSolverKernel::n_subgenerations, max_grid_width, max_grid_height>;
 
 #endif
 
@@ -320,9 +322,9 @@ int main(int argc, char **argv) {
     double dampY = 1.0 - dmp / ny; // damping term for the y-momentum equation
 
 #if HARDWARE == 1
-    sycl::queue queue(sycl::ext::intel::fpga_selector_v);
+    sycl::device device(sycl::ext::intel::fpga_selector_v);
 #else
-    sycl::queue queue;
+    sycl::device device;
 #endif
 
     PseudoTransientUpdate pseudo_transient_update({
@@ -345,7 +347,7 @@ int main(int argc, char **argv) {
             },
         .halo_value = ThermalConvectionCell::halo_value(),
         .n_generations = nerr,
-        .queue = queue,
+        .device = device,
     });
 
     Grid grid(nx + 1, ny + 1);
@@ -408,8 +410,14 @@ int main(int argc, char **argv) {
             errV = max_ErrV / (1e-12 + max_Vy);
             errP = max_ErrP / (1e-12 + max_Pt);
         }
-        queue.wait();
         auto transients_end = std::chrono::high_resolution_clock::now();
+
+        auto transients_computation_time =
+            std::chrono::duration_cast<std::chrono::duration<double>>(transients_end -
+                                                                      transients_start);
+
+        printf("it = %d (iter = %d, time = %e), errV=%1.3e, errP=%1.3e \n", it, iter,
+               transients_computation_time.count(), errV, errP);
 
         double dt_adv = std::min(dx / max_Vx, dy / max_Vy) / 2.1;
         double dt = std::min(dt_diff, dt_adv);
@@ -419,16 +427,9 @@ int main(int argc, char **argv) {
                 ThermalSolverKernel{.nx = nx, .ny = ny, .dx = dx, .dy = dy, .dt = dt, .DcT = DcT},
             .halo_value = ThermalConvectionCell::halo_value(),
             .n_generations = 1,
-            .queue = queue,
+            .device = device,
         });
         grid = thermal_solver_update(grid);
-
-        auto transients_computation_time =
-            std::chrono::duration_cast<std::chrono::duration<double>>(transients_end -
-                                                                      transients_start);
-
-        printf("it = %d (iter = %d, time = %e), errV=%1.3e, errP=%1.3e \n", it, iter,
-               transients_computation_time.count(), errV, errP);
 
         if (it > 0 && it % nout == 0) {
             std::filesystem::path output_file_path =
@@ -449,8 +450,7 @@ int main(int argc, char **argv) {
             out_file.close();
         }
     }
-    
-    queue.wait();
+
     auto computation_end = std::chrono::system_clock::now();
     auto computation_time = std::chrono::duration_cast<std::chrono::duration<double>>(
         computation_end - computation_start);

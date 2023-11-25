@@ -6,4 +6,4 @@ fdtd_*
 *.gz
 profile.*
 1
-*.json
+metrics.*.json
