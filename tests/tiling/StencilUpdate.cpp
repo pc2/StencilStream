@@ -1,28 +1,29 @@
 /*
- * Copyright © 2020-2023 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
- * University
+ * Copyright © 2020-2023 Jan-Oliver Opdenhövel, Paderborn Center for Parallel
+ * Computing, Paderborn University
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the “Software”), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the “Software”), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 #include "../HostPipe.hpp"
 #include "../StencilUpdateTest.hpp"
 #include "../TransFuncs.hpp"
 #include "../constants.hpp"
-#include <StencilStream/tdv/InlineSupplier.hpp>
-#include <StencilStream/tdv/NoneSupplier.hpp>
 #include <StencilStream/tiling/StencilUpdate.hpp>
 #include <catch2/catch_all.hpp>
 
@@ -34,10 +35,8 @@ void test_tiling_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t targ
     using TransFunc = FPGATransFunc<stencil_radius>;
     using in_pipe = HostPipe<class TilingExecutionKernelInPipeID, Cell>;
     using out_pipe = HostPipe<class TilingExecutionKernelOutPipeID, Cell>;
-    using KernelArgument = tdv::InlineSupplier<GenerationFunction>::KernelArgument;
-    using TestExecutionKernel =
-        StencilUpdateKernel<TransFunc, KernelArgument, n_processing_elements, tile_width,
-                            tile_height, in_pipe, out_pipe>;
+    using TestExecutionKernel = StencilUpdateKernel<TransFunc, n_processing_elements, tile_width,
+                                                    tile_height, in_pipe, out_pipe>;
 
     for (index_t c = -halo_radius; c < index_t(halo_radius + grid_width); c++) {
         for (index_t r = -halo_radius; r < index_t(halo_radius + grid_height); r++) {
@@ -51,8 +50,7 @@ void test_tiling_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t targ
     }
 
     TestExecutionKernel(TransFunc(), 0, target_i_generation, 0, 0, grid_width, grid_height,
-                        Cell::halo(),
-                        KernelArgument{.function = GenerationFunction{}, .i_generation = 0})();
+                        Cell::halo())();
 
     buffer<Cell, 2> output_buffer(range<2>(grid_width, grid_height));
 
@@ -105,6 +103,10 @@ struct HaloHandlingKernel {
     static constexpr uindex_t stencil_radius = 1;
     static constexpr stencil::uindex_t n_subgenerations = 1;
 
+    std::monostate get_time_dependent_value(uindex_t i_generation) const {
+        return std::monostate();
+    }
+
     bool operator()(Stencil<bool, 1> const &stencil) const {
         ID idx = stencil.id;
         bool is_valid = true;
@@ -128,9 +130,8 @@ TEST_CASE("Halo values inside the pipeline are handled correctly",
           "[tiling::StencilUpdateKernel]") {
     using in_pipe = HostPipe<class HaloValueTestInPipeID, bool>;
     using out_pipe = HostPipe<class HaloValueTestOutPipeID, bool>;
-    using TestExecutionKernel =
-        StencilUpdateKernel<HaloHandlingKernel, tdv::NoneSupplier, n_processing_elements,
-                            tile_width, tile_height, in_pipe, out_pipe>;
+    using TestExecutionKernel = StencilUpdateKernel<HaloHandlingKernel, n_processing_elements,
+                                                    tile_width, tile_height, in_pipe, out_pipe>;
 
     uindex_t halo_radius = n_processing_elements;
 
@@ -140,8 +141,8 @@ TEST_CASE("Halo values inside the pipeline are handled correctly",
         }
     }
 
-    TestExecutionKernel(HaloHandlingKernel(), 0, gens_per_pass, 0, 0, tile_width, tile_height, true,
-                        tdv::NoneSupplier())();
+    TestExecutionKernel(HaloHandlingKernel(), 0, gens_per_pass, 0, 0, tile_width, tile_height,
+                        true)();
 
     for (uindex_t c = 0; c < tile_width; c++) {
         for (uindex_t r = 0; r < tile_height; r++) {
@@ -160,14 +161,18 @@ struct IncompletePipelineKernel {
     static constexpr uindex_t stencil_radius = 1;
     static constexpr stencil::uindex_t n_subgenerations = 1;
 
+    std::monostate get_time_dependent_value(uindex_t i_generation) const {
+        return std::monostate();
+    }
+
     uint8_t operator()(Stencil<uint8_t, 1> const &stencil) const { return stencil[ID(0, 0)] + 1; }
 };
 
 TEST_CASE("Incomplete Pipeline with i_generation != 0", "[tiling::StencilUpdateKernel]") {
     using in_pipe = HostPipe<class IncompletePipelineInPipeID, uint8_t>;
     using out_pipe = HostPipe<class IncompletePipelineOutPipeID, uint8_t>;
-    using TestExecutionKernel = StencilUpdateKernel<IncompletePipelineKernel, tdv::NoneSupplier, 16,
-                                                    64, 64, in_pipe, out_pipe>;
+    using TestExecutionKernel =
+        StencilUpdateKernel<IncompletePipelineKernel, 16, 64, 64, in_pipe, out_pipe>;
 
     for (int c = -16; c < 16 + 64; c++) {
         for (int r = -16; r < 16 + 64; r++) {
@@ -175,8 +180,7 @@ TEST_CASE("Incomplete Pipeline with i_generation != 0", "[tiling::StencilUpdateK
         }
     }
 
-    TestExecutionKernel kernel(IncompletePipelineKernel(), 16, 20, 0, 0, 64, 64, 0,
-                               tdv::NoneSupplier());
+    TestExecutionKernel kernel(IncompletePipelineKernel(), 16, 20, 0, 0, 64, 64, 0);
     kernel.operator()();
 
     REQUIRE(in_pipe::empty());
@@ -190,12 +194,11 @@ TEST_CASE("Incomplete Pipeline with i_generation != 0", "[tiling::StencilUpdateK
     REQUIRE(out_pipe::empty());
 }
 
-using StencilUpdateImpl = StencilUpdate<FPGATransFunc<1>, tdv::InlineSupplier<GenerationFunction>,
-                                        n_processing_elements, tile_width, tile_height>;
+using StencilUpdateImpl =
+    StencilUpdate<FPGATransFunc<1>, n_processing_elements, tile_width, tile_height>;
 using GridImpl = typename StencilUpdateImpl::GridImpl;
 
-static_assert(concepts::StencilUpdate<StencilUpdateImpl, FPGATransFunc<1>,
-                                      tdv::InlineSupplier<GenerationFunction>, GridImpl>);
+static_assert(concepts::StencilUpdate<StencilUpdateImpl, FPGATransFunc<1>, GridImpl>);
 
 TEST_CASE("tiling::StencilUpdate", "[tiling::StencilUpdate]") {
     for (uindex_t i_grid_width = 0; i_grid_width < 3; i_grid_width++) {

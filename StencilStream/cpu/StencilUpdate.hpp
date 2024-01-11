@@ -1,33 +1,34 @@
 /*
- * Copyright © 2020-2023 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
- * University
+ * Copyright © 2020-2023 Jan-Oliver Opdenhövel, Paderborn Center for Parallel
+ * Computing, Paderborn University
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the “Software”), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the “Software”), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 #pragma once
 #include "../Concepts.hpp"
 #include "../Stencil.hpp"
-#include "../tdv/NoneSupplier.hpp"
 #include "Grid.hpp"
 #include <chrono>
 
 namespace stencil {
 namespace cpu {
-template <concepts::TransitionFunction F, concepts::tdv::HostState TDVHostState = tdv::NoneSupplier>
-class StencilUpdate {
+template <concepts::TransitionFunction F> class StencilUpdate {
   public:
     using Cell = F::Cell;
     using GridImpl = Grid<Cell>;
@@ -37,7 +38,6 @@ class StencilUpdate {
         Cell halo_value = Cell();
         uindex_t generation_offset = 0;
         uindex_t n_generations = 1;
-        TDVHostState tdv_host_state;
         sycl::device device = sycl::device();
         bool blocking = false;
     };
@@ -88,9 +88,8 @@ class StencilUpdate {
   private:
     void run_gen(sycl::queue queue, GridImpl *pass_source, GridImpl *pass_target, uindex_t i_gen,
                  uindex_t i_subgen) {
-        using TDVKernelArgument = typename TDVHostState::KernelArgument;
-        using TDVLocalState = typename TDVKernelArgument::LocalState;
-        using TDVValue = typename TDVLocalState::Value;
+        using TDV = typename F::TimeDependentValue;
+        using StencilImpl = Stencil<Cell, F::stencil_radius, TDV>;
 
         queue.submit([&](sycl::handler &cgh) {
             sycl::accessor source_ac(pass_source->get_buffer(), cgh, sycl::read_only);
@@ -100,15 +99,11 @@ class StencilUpdate {
             index_t stencil_radius = index_t(F::stencil_radius);
             Cell halo_value = params.halo_value;
             F transition_function = params.transition_function;
-            TDVKernelArgument tdv_kernel_argument =
-                params.tdv_host_state.build_kernel_argument(cgh, i_gen, 1);
-            TDVLocalState tdv_local_state = tdv_kernel_argument.build_local_state();
-            TDVValue tdv_value = tdv_local_state.get_value(0);
+            TDV tdv = transition_function.get_time_dependent_value(i_gen);
 
             auto kernel = [=](sycl::id<2> id) {
-                using StencilImpl = Stencil<Cell, F::stencil_radius, TDVValue>;
                 StencilImpl stencil(ID(id[0], id[1]), UID(grid_width, grid_height), i_gen, i_subgen,
-                                    i_subgen, tdv_value);
+                                    i_subgen, tdv);
 
                 for (index_t rel_c = -stencil_radius; rel_c <= stencil_radius; rel_c++) {
                     for (index_t rel_r = -stencil_radius; rel_r <= stencil_radius; rel_r++) {

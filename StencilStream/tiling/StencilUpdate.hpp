@@ -23,7 +23,6 @@
 #include "../Helpers.hpp"
 #include "../Index.hpp"
 #include "../Padded.hpp"
-#include "../tdv/NoneSupplier.hpp"
 #include "Grid.hpp"
 
 #include <chrono>
@@ -46,18 +45,14 @@ namespace tiling {
  * \tparam in_pipe The pipe to read from.
  * \tparam out_pipe The pipe to write to.
  */
-template <concepts::TransitionFunction TransFunc, concepts::tdv::KernelArgument TDVKernelArgument,
-          uindex_t n_processing_elements, uindex_t output_tile_width, uindex_t output_tile_height,
-          typename in_pipe, typename out_pipe>
+template <concepts::TransitionFunction TransFunc, uindex_t n_processing_elements,
+          uindex_t output_tile_width, uindex_t output_tile_height, typename in_pipe,
+          typename out_pipe>
     requires(n_processing_elements % TransFunc::n_subgenerations == 0)
 class StencilUpdateKernel {
   public:
     using Cell = typename TransFunc::Cell;
-
-    using TDVLocalState = typename TDVKernelArgument::LocalState;
     using TDV = typename TransFunc::TimeDependentValue;
-    static_assert(std::is_same<TDV, typename TDVLocalState::Value>());
-
     using StencilImpl = Stencil<Cell, TransFunc::stencil_radius, TDV>;
 
     /**
@@ -123,11 +118,11 @@ class StencilUpdateKernel {
      */
     StencilUpdateKernel(TransFunc trans_func, uindex_t i_generation, uindex_t target_i_generation,
                         uindex_t grid_c_offset, uindex_t grid_r_offset, uindex_t grid_width,
-                        uindex_t grid_height, Cell halo_value, TDVKernelArgument global_state)
+                        uindex_t grid_height, Cell halo_value)
         : trans_func(trans_func), i_generation(i_generation),
           target_i_generation(target_i_generation), grid_c_offset(grid_c_offset),
           grid_r_offset(grid_r_offset), grid_width(grid_width), grid_height(grid_height),
-          halo_value(halo_value), global_state(global_state) {
+          halo_value(halo_value) {
         assert(grid_c_offset % output_tile_width == 0);
         assert(grid_r_offset % output_tile_height == 0);
     }
@@ -138,8 +133,6 @@ class StencilUpdateKernel {
     void operator()() const {
         uindex_1d_t input_tile_c = 0;
         uindex_1d_t input_tile_r = 0;
-
-        TDVLocalState local_state = global_state.build_local_state();
 
         /*
          * The intel::numbanks attribute requires a power of two as it's argument and if the
@@ -224,12 +217,11 @@ class StencilUpdateKernel {
                     (i_processing_element % TransFunc::n_subgenerations).to_uint();
                 index_t output_grid_c = input_grid_c - index_t(TransFunc::stencil_radius);
                 index_t output_grid_r = input_grid_r - index_t(TransFunc::stencil_radius);
-                StencilImpl stencil(
-                    ID(output_grid_c, output_grid_r), UID(grid_width, grid_height), pe_generation,
-                    pe_subgeneration, i_processing_element.to_uint64(),
-                    local_state.get_value(
-                        (i_processing_element / TransFunc::n_subgenerations).to_uint()),
-                    stencil_buffer[i_processing_element]);
+                TDV tdv = trans_func.get_time_dependent_value(pe_generation);
+                StencilImpl stencil(ID(output_grid_c, output_grid_r), UID(grid_width, grid_height),
+                                    pe_generation, pe_subgeneration,
+                                    i_processing_element.to_uint64(), tdv,
+                                    stencil_buffer[i_processing_element]);
 
                 if (pe_generation < target_i_generation) {
                     carry = trans_func(stencil);
@@ -266,12 +258,10 @@ class StencilUpdateKernel {
     uindex_t grid_width;
     uindex_t grid_height;
     Cell halo_value;
-    TDVKernelArgument global_state;
 };
 
-template <concepts::TransitionFunction F, concepts::tdv::HostState TDVHostState = tdv::NoneSupplier,
-          uindex_t n_processing_elements = 1, uindex_t tile_width = 1024,
-          uindex_t tile_height = 1024, uindex_t word_size = 64>
+template <concepts::TransitionFunction F, uindex_t n_processing_elements = 1,
+          uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t word_size = 64>
 class StencilUpdate {
   public:
     using Cell = F::Cell;
@@ -283,7 +273,6 @@ class StencilUpdate {
         Cell halo_value = Cell();
         uindex_t generation_offset = 0;
         uindex_t n_generations = 1;
-        TDVHostState tdv_host_state;
         sycl::device device = sycl::device();
         bool blocking = false;
         bool profiling = false;
@@ -297,9 +286,8 @@ class StencilUpdate {
     GridImpl operator()(GridImpl &source_grid) {
         using in_pipe = sycl::pipe<class monotile_in_pipe, Cell>;
         using out_pipe = sycl::pipe<class monotile_out_pipe, Cell>;
-        using ExecutionKernelImpl =
-            StencilUpdateKernel<F, typename TDVHostState::KernelArgument, n_processing_elements,
-                                tile_width, tile_height, in_pipe, out_pipe>;
+        using ExecutionKernelImpl = StencilUpdateKernel<F, n_processing_elements, tile_width,
+                                                        tile_height, in_pipe, out_pipe>;
 
         std::array<sycl::queue, 6> input_kernel_queues;
         for (uindex_t i = 0; i < 6; i++) {
@@ -338,12 +326,10 @@ class StencilUpdate {
                         uindex_t c_offset = i_tile_c * tile_width;
                         uindex_t r_offset = i_tile_r * tile_height;
 
-                        auto tdv_kernel_argument = params.tdv_host_state.build_kernel_argument(
-                            cgh, params.generation_offset + i_gen, gens_per_pass);
                         ExecutionKernelImpl exec_kernel(
                             params.transition_function, params.generation_offset + i_gen,
                             params.generation_offset + params.n_generations, c_offset, r_offset,
-                            grid_width, grid_height, params.halo_value, tdv_kernel_argument);
+                            grid_width, grid_height, params.halo_value);
                         cgh.single_task<ExecutionKernelImpl>(exec_kernel);
                     });
                     if (params.profiling) {
