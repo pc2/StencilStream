@@ -30,6 +30,7 @@ set(UNIT_TEST_SOURCES
     tiling/Grid.cpp
     tiling/StencilUpdate.cpp
     tiling/Tile.cpp
+    constraint_test.cpp
 )
 
 add_executable(unit_test ${UNIT_TEST_SOURCES})
