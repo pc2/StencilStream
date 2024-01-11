@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2023 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
+ * Copyright © 2020-2024 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
  * University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -181,15 +181,12 @@ int main(int argc, char **argv) {
 #endif
 
     StencilUpdate simulation({
-        .transition_function = KernelImpl(parameters, mat_resolver),
-        .halo_value = CellImpl::halo(),
-        .generation_offset = 0,
-        .n_generations = parameters.n_timesteps(),
-        .tdv_host_state = SourceSupplier(SourceFunction(parameters)),
-        .device = device,
+        .transition_function = KernelImpl(parameters, mat_resolver), .halo_value = CellImpl::halo(),
+        .generation_offset = 0, .n_generations = parameters.n_timesteps(),
+        .tdv_host_state = SourceSupplier(SourceFunction(parameters)), .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
 #if EXECUTOR != 2
-        .profiling = true, // enable additional profiling for FPGA targets
+            .profiling = true, // enable additional profiling for FPGA targets
 #endif
     });
 

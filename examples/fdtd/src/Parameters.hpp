@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2023 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
+ * Copyright © 2020-2024 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
  * University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -19,8 +19,8 @@
  */
 #pragma once
 #include "defines.hpp"
-#include <nlohmann/json.hpp>
 #include "material/Material.hpp"
+#include <nlohmann/json.hpp>
 
 using namespace nlohmann;
 
