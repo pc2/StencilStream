@@ -2,34 +2,31 @@
 #include <type_traits>
 
 class MyTransFunc {
-public:
+  public:
     using Cell = int;
 
-    int operator()(int input) const {
-        return input + 1;
-    }
+    int operator()(int input) const { return input + 1; }
 
-    int get_time_dependent_value() {
-        return 17;
-    }
+    int get_time_dependent_value() { return 17; }
 };
 
 // https://stackoverflow.com/questions/76511298/c-concept-requiring-certain-behavior-from-a-template
 template <typename T>
-concept DefinesTDV = requires(T t) {
-    t.get_time_dependent_value();
-};
+concept DefinesTDV = requires(T t) { t.get_time_dependent_value(); };
 
-template <typename TransFunc>
-class ExtendedTransFunc : public TransFunc {
-public:
+template <typename TransFunc> class ExtendedTransFunc : public TransFunc {
+  public:
     using Cell = typename TransFunc::Cell;
 
-    int get_time_dependent_value() requires (!DefinesTDV<TransFunc>) {
+    int get_time_dependent_value()
+        requires(!DefinesTDV<TransFunc>)
+    {
         return 42;
     }
 
-    int get_time_dependent_value() requires (DefinesTDV<TransFunc>) {
+    int get_time_dependent_value()
+        requires(DefinesTDV<TransFunc>)
+    {
         return TransFunc::get_time_dependent_value();
     }
 };
