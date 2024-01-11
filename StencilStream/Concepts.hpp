@@ -47,24 +47,24 @@ concept TransitionFunction =
 
 template <typename Accessor, typename Cell>
 concept GridAccessor = requires(Accessor ac, uindex_t c, uindex_t r) {
-    { ac[sycl::id<2>(c, r)] } -> std::same_as<Cell &>;
-    { ac[c][r] } -> std::same_as<Cell &>;
-};
+                           { ac[sycl::id<2>(c, r)] } -> std::same_as<Cell &>;
+                           { ac[c][r] } -> std::same_as<Cell &>;
+                       };
 
 template <typename G, typename Cell>
 concept Grid = requires(G &grid, sycl::buffer<Cell, 2> buffer, uindex_t c, uindex_t r, Cell cell) {
-    { G(c, r) } -> std::same_as<G>;
-    { G(sycl::range<2>(c, r)) } -> std::same_as<G>;
-    { G(buffer) } -> std::same_as<G>;
-    { grid.copy_from_buffer(buffer) } -> std::same_as<void>;
-    { grid.copy_to_buffer(buffer) } -> std::same_as<void>;
-    { grid.get_grid_width() } -> std::convertible_to<uindex_t>;
-    { grid.get_grid_height() } -> std::convertible_to<uindex_t>;
-    { grid.make_similar() } -> std::same_as<G>;
-    {
-        typename G::template GridAccessor<sycl::access::mode::read_write>(grid)
-    } -> GridAccessor<Cell>;
-};
+                   { G(c, r) } -> std::same_as<G>;
+                   { G(sycl::range<2>(c, r)) } -> std::same_as<G>;
+                   { G(buffer) } -> std::same_as<G>;
+                   { grid.copy_from_buffer(buffer) } -> std::same_as<void>;
+                   { grid.copy_to_buffer(buffer) } -> std::same_as<void>;
+                   { grid.get_grid_width() } -> std::convertible_to<uindex_t>;
+                   { grid.get_grid_height() } -> std::convertible_to<uindex_t>;
+                   { grid.make_similar() } -> std::same_as<G>;
+                   {
+                       typename G::template GridAccessor<sycl::access::mode::read_write>(grid)
+                       } -> GridAccessor<Cell>;
+               };
 
 template <typename SU, typename TF, typename TDVH, typename G>
 concept StencilUpdate =
@@ -89,9 +89,9 @@ namespace tdv {
 
 template <typename F>
 concept ValueFunction = requires(F const &function, uindex_t i_generation) {
-    requires std::copyable<typename F::Value>;
-    { function(i_generation) } -> std::convertible_to<typename F::Value>;
-};
+                            requires std::copyable<typename F::Value>;
+                            { function(i_generation) } -> std::convertible_to<typename F::Value>;
+                        };
 
 template <typename T>
 concept LocalState = std::copyable<typename T::Value> && std::copyable<T> &&
@@ -100,10 +100,12 @@ concept LocalState = std::copyable<typename T::Value> && std::copyable<T> &&
                      };
 
 template <typename T>
-concept KernelArgument =
-    LocalState<typename T::LocalState> && std::copyable<T> && requires(T const &global_state) {
-        { global_state.build_local_state() } -> std::convertible_to<typename T::LocalState>;
-    };
+concept KernelArgument = LocalState<typename T::LocalState> && std::copyable<T> &&
+                         requires(T const &global_state) {
+                             {
+                                 global_state.build_local_state()
+                                 } -> std::convertible_to<typename T::LocalState>;
+                         };
 
 template <typename T>
 concept HostState =
@@ -112,11 +114,11 @@ concept HostState =
         {
             // building the global state
             supplier.build_kernel_argument(cgh, i_generation, n_generations)
-        } -> std::convertible_to<typename T::KernelArgument>;
+            } -> std::convertible_to<typename T::KernelArgument>;
     } && requires(T &supplier, uindex_t i_generation, uindex_t n_generations) {
-        // preparing the global state
-        { supplier.prepare_range(i_generation, n_generations) };
-    };
+             // preparing the global state
+             { supplier.prepare_range(i_generation, n_generations) };
+         };
 
 } // namespace tdv
 } // namespace concepts

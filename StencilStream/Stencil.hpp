@@ -39,7 +39,8 @@ namespace stencil {
  * [0 : 2*radius + 1). Therefore, (0,0) points to the north-western corner of the stencil.
  */
 template <typename Cell, uindex_t stencil_radius, typename TimeDependentValue = std::monostate>
-requires std::semiregular<Cell> &&(stencil_radius >= 1) class Stencil {
+    requires std::semiregular<Cell> && (stencil_radius >= 1)
+class Stencil {
   public:
     /**
      * \brief The diameter (aka width and height) of the stencil buffer.

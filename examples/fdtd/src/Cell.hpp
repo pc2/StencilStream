@@ -22,9 +22,5 @@
 struct Cell {
     float ex, ey, hz, hz_sum;
 
-    static Cell halo() {
-        return Cell {
-            0.0, 0.0, 0.0, 0.0
-        };
-    }
+    static Cell halo() { return Cell{0.0, 0.0, 0.0, 0.0}; }
 };

@@ -19,8 +19,8 @@
  */
 #pragma once
 #include "defines.hpp"
-#include <nlohmann/json.hpp>
 #include "material/Material.hpp"
+#include <nlohmann/json.hpp>
 
 using namespace nlohmann;
 
