@@ -24,6 +24,7 @@
 #include "../StencilUpdateTest.hpp"
 #include "../TransFuncs.hpp"
 #include "../constants.hpp"
+#include <StencilStream/DefaultTransitionFunction.hpp>
 #include <StencilStream/tiling/StencilUpdate.hpp>
 #include <catch2/catch_all.hpp>
 
@@ -96,17 +97,7 @@ TEST_CASE("tiling::StencilUpdateKernel (noop)", "[tiling::StencilUpdateKernel]")
     test_tiling_kernel(tile_width, tile_height, 0);
 }
 
-struct HaloHandlingKernel {
-    using Cell = bool;
-    using TimeDependentValue = std::monostate;
-
-    static constexpr uindex_t stencil_radius = 1;
-    static constexpr stencil::uindex_t n_subgenerations = 1;
-
-    std::monostate get_time_dependent_value(uindex_t i_generation) const {
-        return std::monostate();
-    }
-
+struct HaloHandlingKernel : public DefaultTransitionFunction<bool> {
     bool operator()(Stencil<bool, 1> const &stencil) const {
         ID idx = stencil.id;
         bool is_valid = true;
@@ -154,17 +145,7 @@ TEST_CASE("Halo values inside the pipeline are handled correctly",
     REQUIRE(out_pipe::empty());
 }
 
-struct IncompletePipelineKernel {
-    using Cell = uint8_t;
-    using TimeDependentValue = std::monostate;
-
-    static constexpr uindex_t stencil_radius = 1;
-    static constexpr stencil::uindex_t n_subgenerations = 1;
-
-    std::monostate get_time_dependent_value(uindex_t i_generation) const {
-        return std::monostate();
-    }
-
+struct IncompletePipelineKernel : public DefaultTransitionFunction<uint8_t> {
     uint8_t operator()(Stencil<uint8_t, 1> const &stencil) const { return stencil[ID(0, 0)] + 1; }
 };
 

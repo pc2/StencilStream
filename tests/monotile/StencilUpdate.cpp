@@ -24,6 +24,7 @@
 #include "../StencilUpdateTest.hpp"
 #include "../TransFuncs.hpp"
 #include "../constants.hpp"
+#include <StencilStream/DefaultTransitionFunction.hpp>
 #include <StencilStream/monotile/StencilUpdate.hpp>
 #include <catch2/catch_all.hpp>
 
@@ -91,18 +92,8 @@ TEST_CASE("monotile::StencilUpdateKernel (noop)", "[monotile::StencilUpdateKerne
     test_monotile_kernel(tile_width, tile_height, 0);
 }
 
-struct IncompletePipelineKernel {
-    using Cell = uint8_t;
-    using TimeDependentValue = std::monostate;
-
-    std::monostate get_time_dependent_value(uindex_t i_generation) const {
-        return std::monostate();
-    }
-
-    static constexpr uindex_t stencil_radius = 1;
-    static constexpr uindex_t n_subgenerations = 1;
-
-    Cell operator()(Stencil<uint8_t, 1> const &stencil) const { return stencil[ID(0, 0)] + 1; }
+struct IncompletePipelineKernel : public DefaultTransitionFunction<uint8_t> {
+    uint8_t operator()(Stencil<uint8_t, 1> const &stencil) const { return stencil[ID(0, 0)] + 1; }
 };
 
 TEST_CASE("monotile::StencilUpdateKernel: Incomplete Pipeline with i_generation != 0",

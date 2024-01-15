@@ -22,7 +22,7 @@
 #else
     #include <StencilStream/monotile/StencilUpdate.hpp>
 #endif
-#include <StencilStream/tdv/NoneSupplier.hpp>
+#include <StencilStream/DefaultTransitionFunction.hpp>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -67,13 +67,9 @@ struct ThermalConvectionCell {
      0.25)
 #define AV_YI(FIELD) ((stencil[ID(1, 0)].FIELD + stencil[ID(1, 1)].FIELD) * 0.5)
 
-class PseudoTransientKernel {
+class PseudoTransientKernel : public DefaultTransitionFunction<ThermalConvectionCell> {
   public:
-    using Cell = ThermalConvectionCell;
-
-    static constexpr uindex_t stencil_radius = 1;
     static constexpr uindex_t n_subgenerations = 3;
-    using TimeDependentValue = std::monostate;
 
     uindex_t nx, ny;
     double roh0_g_alpha;
@@ -179,13 +175,9 @@ class PseudoTransientKernel {
     }
 };
 
-class ThermalSolverKernel {
+class ThermalSolverKernel : public DefaultTransitionFunction<ThermalConvectionCell> {
   public:
-    using Cell = ThermalConvectionCell;
-
-    static constexpr uindex_t stencil_radius = 1;
     static constexpr uindex_t n_subgenerations = 2;
-    using TimeDependentValue = std::monostate;
 
     uindex_t nx, ny;
     double dx, dy, dt;
@@ -253,12 +245,12 @@ using ThermalSolverUpdate = cpu::StencilUpdate<ThermalSolverKernel>;
 constexpr uindex_t max_grid_width = 3 * 512;
 constexpr uindex_t max_grid_height = 512;
 using Grid = monotile::Grid<ThermalConvectionCell>;
-using PseudoTransientUpdate = monotile::StencilUpdate<PseudoTransientKernel, tdv::NoneSupplier,
-                                                      PseudoTransientKernel::n_subgenerations * 8,
-                                                      max_grid_width, max_grid_height>;
+using PseudoTransientUpdate =
+    monotile::StencilUpdate<PseudoTransientKernel, PseudoTransientKernel::n_subgenerations * 8,
+                            max_grid_width, max_grid_height>;
 using ThermalSolverUpdate =
-    monotile::StencilUpdate<ThermalSolverKernel, tdv::NoneSupplier,
-                            ThermalSolverKernel::n_subgenerations, max_grid_width, max_grid_height>;
+    monotile::StencilUpdate<ThermalSolverKernel, ThermalSolverKernel::n_subgenerations,
+                            max_grid_width, max_grid_height>;
 
 #endif
 
