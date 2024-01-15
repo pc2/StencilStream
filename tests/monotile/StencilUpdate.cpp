@@ -32,12 +32,13 @@ using namespace sycl;
 using namespace stencil;
 using namespace stencil::monotile;
 
+template <TDVStrategy tdv_strategy>
 void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t target_i_generation) {
     using TransFunc = HostTransFunc<stencil_radius>;
     using in_pipe = HostPipe<class MonotileExecutionKernelInPipeID, Cell>;
     using out_pipe = HostPipe<class MonotileExecutionKernelOutPipeID, Cell>;
     using TestExecutionKernel = StencilUpdateKernel<TransFunc, n_processing_elements, tile_width,
-                                                    tile_height, in_pipe, out_pipe>;
+                                                    tile_height, tdv_strategy, in_pipe, out_pipe>;
 
     for (uindex_t c = 0; c < grid_width; c++) {
         for (uindex_t r = 0; r < grid_height; r++) {
@@ -76,20 +77,26 @@ void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t ta
 }
 
 TEST_CASE("monotile::StencilUpdateKernel", "[monotile::StencilUpdateKernel]") {
-    test_monotile_kernel(tile_width, tile_height, gens_per_pass);
+    test_monotile_kernel<TDVStrategy::Inline>(tile_width, tile_height, gens_per_pass);
+    test_monotile_kernel<TDVStrategy::PrecomputeOnDevice>(tile_width, tile_height, gens_per_pass);
 }
 
 TEST_CASE("monotile::StencilUpdateKernel (partial tile)", "[monotile::StencilUpdateKernel]") {
-    test_monotile_kernel(tile_width / 2, tile_height / 2, gens_per_pass);
+    test_monotile_kernel<TDVStrategy::Inline>(tile_width / 2, tile_height / 2, gens_per_pass);
+    test_monotile_kernel<TDVStrategy::PrecomputeOnDevice>(tile_width / 2, tile_height / 2,
+                                                          gens_per_pass);
 }
 
 TEST_CASE("monotile::StencilUpdateKernel (partial pipeline)", "[monotile::StencilUpdateKernel]") {
     static_assert(gens_per_pass != 1);
-    test_monotile_kernel(tile_width, tile_height, gens_per_pass - 1);
+    test_monotile_kernel<TDVStrategy::Inline>(tile_width, tile_height, gens_per_pass - 1);
+    test_monotile_kernel<TDVStrategy::PrecomputeOnDevice>(tile_width, tile_height,
+                                                          gens_per_pass - 1);
 }
 
 TEST_CASE("monotile::StencilUpdateKernel (noop)", "[monotile::StencilUpdateKernel]") {
-    test_monotile_kernel(tile_width, tile_height, 0);
+    test_monotile_kernel<TDVStrategy::Inline>(tile_width, tile_height, 0);
+    test_monotile_kernel<TDVStrategy::PrecomputeOnDevice>(tile_width, tile_height, 0);
 }
 
 struct IncompletePipelineKernel : public DefaultTransitionFunction<uint8_t> {
@@ -101,8 +108,8 @@ TEST_CASE("monotile::StencilUpdateKernel: Incomplete Pipeline with i_generation 
 
     using in_pipe = HostPipe<class IncompletePipelineInPipeID, uint8_t>;
     using out_pipe = HostPipe<class IncompletePipelineOutPipeID, uint8_t>;
-    using TestExecutionKernel =
-        StencilUpdateKernel<IncompletePipelineKernel, 16, 64, 64, in_pipe, out_pipe>;
+    using TestExecutionKernel = StencilUpdateKernel<IncompletePipelineKernel, 16, 64, 64,
+                                                    TDVStrategy::Inline, in_pipe, out_pipe>;
 
     for (int c = 0; c < 64; c++) {
         for (int r = 0; r < 64; r++) {
@@ -124,13 +131,12 @@ TEST_CASE("monotile::StencilUpdateKernel: Incomplete Pipeline with i_generation 
     REQUIRE(out_pipe::empty());
 }
 
-using StencilUpdateImpl =
-    StencilUpdate<FPGATransFunc<1>, n_processing_elements, tile_width, tile_height>;
-using GridImpl = Grid<Cell>;
+template <TDVStrategy tdv_strategy> void test_monotile_update() {
+    using StencilUpdateImpl = StencilUpdate<FPGATransFunc<1>, n_processing_elements, tile_width,
+                                            tile_height, tdv_strategy>;
+    using GridImpl = Grid<Cell>;
+    static_assert(concepts::StencilUpdate<StencilUpdateImpl, FPGATransFunc<1>, GridImpl>);
 
-static_assert(concepts::StencilUpdate<StencilUpdateImpl, FPGATransFunc<1>, GridImpl>);
-
-TEST_CASE("monotile::StencilUpdate", "[monotile::StencilUpdate]") {
     for (uindex_t grid_width = tile_width / 2; grid_width < tile_width; grid_width += 1) {
         for (uindex_t grid_height = tile_height / 2; grid_height < tile_height; grid_height += 1) {
             test_stencil_update<GridImpl, StencilUpdateImpl>(grid_width, grid_height, 0,
@@ -141,4 +147,9 @@ TEST_CASE("monotile::StencilUpdate", "[monotile::StencilUpdate]") {
                                                              gens_per_pass + 1);
         }
     }
+}
+
+TEST_CASE("monotile::StencilUpdate", "[monotile::StencilUpdate]") {
+    test_monotile_update<TDVStrategy::Inline>();
+    test_monotile_update<TDVStrategy::PrecomputeOnDevice>();
 }

@@ -29,6 +29,11 @@
 namespace stencil {
 namespace monotile {
 
+enum class TDVStrategy {
+    Inline,
+    PrecomputeOnDevice,
+};
+
 /**
  * \brief A kernel that executes a stencil transition function using the monotile approach.
  *
@@ -48,7 +53,8 @@ namespace monotile {
  * \tparam out_pipe The pipe to write to.
  */
 template <concepts::TransitionFunction TransFunc, uindex_t n_processing_elements,
-          uindex_t max_grid_width, uindex_t max_grid_height, typename in_pipe, typename out_pipe>
+          uindex_t max_grid_width, uindex_t max_grid_height, TDVStrategy tdv_strategy,
+          typename in_pipe, typename out_pipe>
     requires(n_processing_elements % TransFunc::n_subgenerations == 0)
 class StencilUpdateKernel {
   public:
@@ -119,6 +125,14 @@ class StencilUpdateKernel {
      * \brief Execute the kernel.
      */
     void operator()() const {
+        TDV tdvs[n_processing_elements];
+        for (uindex_t i_pe = 0; i_pe < n_processing_elements; i_pe++) {
+            uindex_t pe_generation = i_generation + i_pe / TransFunc::n_subgenerations;
+            if (tdv_strategy == TDVStrategy::PrecomputeOnDevice) {
+                tdvs[i_pe] = trans_func.get_time_dependent_value(pe_generation);
+            }
+        }
+
         [[intel::fpga_register]] index_1d_t c[n_processing_elements];
         [[intel::fpga_register]] index_1d_t r[n_processing_elements];
 
@@ -200,7 +214,18 @@ class StencilUpdateKernel {
                     (i_processing_element % TransFunc::n_subgenerations).to_uint();
 
                 if (pe_generation < target_i_generation) {
-                    TDV tdv = trans_func.get_time_dependent_value(pe_generation);
+                    TDV tdv;
+                    switch (tdv_strategy) {
+                    case TDVStrategy::Inline:
+                        tdv = trans_func.get_time_dependent_value(pe_generation);
+                        break;
+                    case TDVStrategy::PrecomputeOnDevice:
+                        tdv = tdvs[i_processing_element];
+                        break;
+                    default:
+                        break;
+                    }
+
                     StencilImpl stencil(ID(c[i_processing_element], r[i_processing_element]),
                                         UID(grid_width, grid_height), pe_generation,
                                         pe_subgeneration, i_processing_element, tdv);
@@ -275,10 +300,12 @@ class StencilUpdateKernel {
 };
 
 template <concepts::TransitionFunction F, uindex_t n_processing_elements = 1,
-          uindex_t max_grid_width = 1024, uindex_t max_grid_height = 1024, uindex_t word_size = 64>
+          uindex_t max_grid_width = 1024, uindex_t max_grid_height = 1024,
+          TDVStrategy tdv_strategy = TDVStrategy::Inline, uindex_t word_size = 64>
 class StencilUpdate {
   public:
     using Cell = F::Cell;
+    using TDV = typename F::TimeDependentValue;
     using GridImpl = Grid<Cell, word_size>;
 
     struct Params {
@@ -305,8 +332,9 @@ class StencilUpdate {
         }
         using in_pipe = sycl::pipe<class monotile_in_pipe, Cell>;
         using out_pipe = sycl::pipe<class monotile_out_pipe, Cell>;
-        using ExecutionKernelImpl = StencilUpdateKernel<F, n_processing_elements, max_grid_width,
-                                                        max_grid_height, in_pipe, out_pipe>;
+        using ExecutionKernelImpl =
+            StencilUpdateKernel<F, n_processing_elements, max_grid_width, max_grid_height,
+                                tdv_strategy, in_pipe, out_pipe>;
 
         sycl::queue input_kernel_queue =
             sycl::queue(params.device, {sycl::property::queue::in_order{}});

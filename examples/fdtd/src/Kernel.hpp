@@ -33,8 +33,10 @@ template <typename MaterialResolver> class Kernel {
     static constexpr uindex_t n_subgenerations = 2;
 
     Kernel(Parameters const &parameters, MaterialResolver mat_resolver)
-        : cutoff_generation(), detect_generation(), source_radius_squared(), source_c(), source_r(),
-          source_distance_bound(), double_center_cr(), mat_resolver(mat_resolver) {
+        : dt(parameters.dt()), t_0(parameters.t_0()), tau(parameters.tau),
+          omega(parameters.omega()), cutoff_generation(), detect_generation(),
+          source_radius_squared(), source_c(), source_r(), source_distance_bound(),
+          double_center_cr(), mat_resolver(mat_resolver) {
         cutoff_generation = std::floor(parameters.t_cutoff() / parameters.dt());
         detect_generation = std::floor(parameters.t_detect() / parameters.dt());
 
@@ -48,6 +50,13 @@ template <typename MaterialResolver> class Kernel {
         source_distance_bound -= source_c * source_c + source_r * source_r;
 
         double_center_cr = parameters.grid_range()[0];
+    }
+
+    float get_time_dependent_value(uindex_t i_generation) const {
+        float current_time = i_generation * dt;
+        float wave_progress = (current_time - t_0) / tau;
+        return cl::sycl::cos(omega * current_time) *
+               cl::sycl::exp(-1 * wave_progress * wave_progress);
     }
 
     Cell operator()(Stencil<Cell, 1, float> const &stencil) const {
@@ -96,6 +105,8 @@ template <typename MaterialResolver> class Kernel {
     }
 
   private:
+    float dt, t_0, tau, omega;
+
     uindex_t cutoff_generation;
     uindex_t detect_generation;
 
