@@ -35,20 +35,22 @@ using MaterialResolver = RenderResolver;
 using KernelImpl = Kernel<MaterialResolver>;
 using CellImpl = KernelImpl::Cell;
 
+#include <StencilStream/tdv/SinglePassStrategies.hpp>
+
+#if TDVS_TYPE == 0
+using TDVStrategy = tdv::single_pass::InlineStrategy;
+#elif TDVS_TYPE == 1
+using TDVStrategy = tdv::single_pass::PrecomputeOnDeviceStrategy;
+#elif TDVS_TYPE == 2
+using TDVStrategy = tdv::single_pass::PrecomputeOnHostStrategy;
+#endif
+
 #if EXECUTOR == 0
     #include <StencilStream/monotile/StencilUpdate.hpp>
 
-    #if TDVS_TYPE == 0
-constexpr monotile::TDVStrategy tdv_strategy = monotile::TDVStrategy::Inline;
-    #elif TDVS_TYPE == 1
-constexpr monotile::TDVStrategy tdv_strategy = monotile::TDVStrategy::PrecomputeOnDevice;
-    #elif TDVS_TYPE == 2
-    // constexpr monotile::TDVStrategy tdv_strategy = monotile::TDVStrategy::PrecomputeOnHost;
-    #endif
-
 using Grid = monotile::Grid<CellImpl>;
 using StencilUpdate = monotile::StencilUpdate<KernelImpl, n_processing_elements, tile_width,
-                                              tile_height, tdv_strategy>;
+                                              tile_height, TDVStrategy>;
 #elif EXECUTOR == 1
     #include <StencilStream/tiling/StencilUpdate.hpp>
 using StencilUpdate =
