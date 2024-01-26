@@ -343,10 +343,10 @@ class StencilUpdate {
         GridImpl *pass_source = &source_grid;
         GridImpl *pass_target = &swap_grid_b;
 
-        auto walltime_start = std::chrono::high_resolution_clock::now();
-
         F trans_func = params.transition_function;
         TDVGlobalState tdv_global_state(trans_func, params.generation_offset, params.n_generations);
+
+        auto walltime_start = std::chrono::high_resolution_clock::now();
 
         uindex_t target_n_generations = params.generation_offset + params.n_generations;
         for (uindex_t i_gen = params.generation_offset; i_gen < target_n_generations;

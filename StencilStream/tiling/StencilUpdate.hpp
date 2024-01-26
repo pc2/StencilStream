@@ -23,6 +23,7 @@
 #include "../Helpers.hpp"
 #include "../Index.hpp"
 #include "../Padded.hpp"
+#include "../tdv/SinglePassStrategies.hpp"
 #include "Grid.hpp"
 
 #include <chrono>
@@ -45,15 +46,17 @@ namespace tiling {
  * \tparam in_pipe The pipe to read from.
  * \tparam out_pipe The pipe to write to.
  */
-template <concepts::TransitionFunction TransFunc, uindex_t n_processing_elements,
-          uindex_t output_tile_width, uindex_t output_tile_height, typename in_pipe,
-          typename out_pipe>
+template <concepts::TransitionFunction TransFunc,
+          tdv::single_pass::KernelArgument<TransFunc> TDVKernelArgument,
+          uindex_t n_processing_elements, uindex_t output_tile_width, uindex_t output_tile_height,
+          typename in_pipe, typename out_pipe>
     requires(n_processing_elements % TransFunc::n_subgenerations == 0)
 class StencilUpdateKernel {
   public:
     using Cell = typename TransFunc::Cell;
     using TDV = typename TransFunc::TimeDependentValue;
     using StencilImpl = Stencil<Cell, TransFunc::stencil_radius, TDV>;
+    using TDVLocalState = typename TDVKernelArgument::LocalState;
 
     /**
      * \brief The width and height of the stencil buffer.
@@ -118,11 +121,12 @@ class StencilUpdateKernel {
      */
     StencilUpdateKernel(TransFunc trans_func, uindex_t i_generation, uindex_t target_i_generation,
                         uindex_t grid_c_offset, uindex_t grid_r_offset, uindex_t grid_width,
-                        uindex_t grid_height, Cell halo_value)
+                        uindex_t grid_height, Cell halo_value,
+                        TDVKernelArgument tdv_kernel_argument)
         : trans_func(trans_func), i_generation(i_generation),
           target_i_generation(target_i_generation), grid_c_offset(grid_c_offset),
           grid_r_offset(grid_r_offset), grid_width(grid_width), grid_height(grid_height),
-          halo_value(halo_value) {
+          halo_value(halo_value), tdv_kernel_argument(tdv_kernel_argument) {
         assert(grid_c_offset % output_tile_width == 0);
         assert(grid_r_offset % output_tile_height == 0);
     }
@@ -131,6 +135,8 @@ class StencilUpdateKernel {
      * \brief Execute the configured operations.
      */
     void operator()() const {
+        TDVLocalState tdv_local_state(tdv_kernel_argument);
+
         uindex_1d_t input_tile_c = 0;
         uindex_1d_t input_tile_r = 0;
 
@@ -217,7 +223,8 @@ class StencilUpdateKernel {
                     (i_processing_element % TransFunc::n_subgenerations).to_uint();
                 index_t output_grid_c = input_grid_c - index_t(TransFunc::stencil_radius);
                 index_t output_grid_r = input_grid_r - index_t(TransFunc::stencil_radius);
-                TDV tdv = trans_func.get_time_dependent_value(pe_generation);
+                TDV tdv = tdv_local_state.get_time_dependent_value(i_processing_element /
+                                                                   TransFunc::n_subgenerations);
                 StencilImpl stencil(ID(output_grid_c, output_grid_r), UID(grid_width, grid_height),
                                     pe_generation, pe_subgeneration,
                                     i_processing_element.to_uint64(), tdv,
@@ -258,15 +265,21 @@ class StencilUpdateKernel {
     uindex_t grid_width;
     uindex_t grid_height;
     Cell halo_value;
+    TDVKernelArgument tdv_kernel_argument;
 };
 
 template <concepts::TransitionFunction F, uindex_t n_processing_elements = 1,
-          uindex_t tile_width = 1024, uindex_t tile_height = 1024, uindex_t word_size = 64>
+          uindex_t tile_width = 1024, uindex_t tile_height = 1024,
+          tdv::single_pass::Strategy<F, n_processing_elements> TDVStrategy =
+              tdv::single_pass::InlineStrategy,
+          uindex_t word_size = 64>
 class StencilUpdate {
   public:
     using Cell = F::Cell;
     static constexpr uindex_t halo_radius = F::stencil_radius * n_processing_elements;
     using GridImpl = Grid<Cell, tile_width, tile_height, halo_radius, word_size>;
+    using TDVGlobalState = typename TDVStrategy::template GlobalState<F, n_processing_elements>;
+    using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
 
     struct Params {
         F transition_function;
@@ -286,8 +299,12 @@ class StencilUpdate {
     GridImpl operator()(GridImpl &source_grid) {
         using in_pipe = sycl::pipe<class monotile_in_pipe, Cell>;
         using out_pipe = sycl::pipe<class monotile_out_pipe, Cell>;
-        using ExecutionKernelImpl = StencilUpdateKernel<F, n_processing_elements, tile_width,
-                                                        tile_height, in_pipe, out_pipe>;
+        using ExecutionKernelImpl = StencilUpdateKernel<F, TDVKernelArgument, n_processing_elements,
+                                                        tile_width, tile_height, in_pipe, out_pipe>;
+
+        if (params.n_generations == 0) {
+            return GridImpl(source_grid);
+        }
 
         std::array<sycl::queue, 6> input_kernel_queues;
         for (uindex_t i = 0; i < 6; i++) {
@@ -314,22 +331,31 @@ class StencilUpdate {
         uindex_t grid_width = source_grid.get_grid_width();
         uindex_t grid_height = source_grid.get_grid_height();
 
+        F trans_func = params.transition_function;
+        TDVGlobalState tdv_global_state(trans_func, params.generation_offset, params.n_generations);
+
         auto walltime_start = std::chrono::high_resolution_clock::now();
 
-        for (uindex_t i_gen = 0; i_gen < params.n_generations; i_gen += gens_per_pass) {
+        uindex_t target_n_generations = params.generation_offset + params.n_generations;
+        for (uindex_t i_gen = params.generation_offset; i_gen < target_n_generations;
+             i_gen += gens_per_pass) {
+            uindex_t gens_in_this_pass = std::min(gens_per_pass, target_n_generations - i_gen);
+
             for (uindex_t i_tile_c = 0; i_tile_c < tile_range.c; i_tile_c++) {
                 for (uindex_t i_tile_r = 0; i_tile_r < tile_range.r; i_tile_r++) {
                     pass_source->template submit_read<in_pipe>(input_kernel_queues, i_tile_c,
                                                                i_tile_r);
 
                     auto work_event = working_queue.submit([&](sycl::handler &cgh) {
+                        TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i_gen,
+                                                              gens_in_this_pass);
                         uindex_t c_offset = i_tile_c * tile_width;
                         uindex_t r_offset = i_tile_r * tile_height;
 
-                        ExecutionKernelImpl exec_kernel(
-                            params.transition_function, params.generation_offset + i_gen,
-                            params.generation_offset + params.n_generations, c_offset, r_offset,
-                            grid_width, grid_height, params.halo_value);
+                        ExecutionKernelImpl exec_kernel(trans_func, i_gen, target_n_generations,
+                                                        c_offset, r_offset, grid_width, grid_height,
+                                                        params.halo_value, tdv_kernel_argument);
+
                         cgh.single_task<ExecutionKernelImpl>(exec_kernel);
                     });
                     if (params.profiling) {
@@ -341,7 +367,7 @@ class StencilUpdate {
                 }
             }
 
-            if (i_gen == 0) {
+            if (i_gen == params.generation_offset) {
                 pass_source = &swap_grid_b;
                 pass_target = &swap_grid_a;
             } else {
