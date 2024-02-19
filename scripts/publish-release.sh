@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-module reset
-module load lang Julia
+ml tools release-cli
 
 # Cloning the wiki and adding the new performance metrics.
 git clone git@git.uni-paderborn.de:pc2/sycl-stencil.wiki.git wiki
@@ -17,11 +16,6 @@ git commit -m "Adding performance data of $TAG_NAME"
 git push
 cd ..
 
-# Downloading the release cli tool
-curl -L https://gitlab.com/gitlab-org/release-cli/-/releases/v0.15.0/downloads/bin/release-cli-linux-amd64 > release-cli
-echo "d59169bab5dfe4693af4f181b08bf11ef1c96a4da30eff0f04abb236c54e62e9  release-cli" | sha256sum -c || exit 1
-chmod +x release-cli
-
 # Preparing the assets links
 ASSETS_LINK_FILE=$(mktemp)
 
@@ -33,7 +27,7 @@ do
 done
 
 # Creating the release
-./release-cli create \
+release-cli create \
     --name "${RELEASE_NAME}" --tag-name "${TAG_NAME}" --ref "${CI_COMMIT_SHA}" \
     --assets-link="[$(cat $ASSETS_LINK_FILE | tr "\n" ", " | sed 's/,$/\n/')]"
 
