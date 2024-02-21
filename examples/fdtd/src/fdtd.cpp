@@ -18,7 +18,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Kernel.hpp"
-#include "SourceFunction.hpp"
 #include <deque>
 #include <sycl/ext/intel/fpga_extensions.hpp>
 
@@ -33,34 +32,34 @@ using MaterialResolver = LUTResolver;
 using MaterialResolver = RenderResolver;
 #endif
 
-#if TDVS_TYPE == 0
-    #include <StencilStream/tdv/InlineSupplier.hpp>
-using SourceSupplier = tdv::InlineSupplier<SourceFunction>;
-#elif TDVS_TYPE == 1
-    #include <StencilStream/tdv/DevicePrecomputeSupplier.hpp>
-using SourceSupplier = tdv::DevicePrecomputeSupplier<SourceFunction, gens_per_pass>;
-#elif TDVS_TYPE == 2
-    #include <StencilStream/tdv/HostPrecomputeSupplier.hpp>
-using SourceSupplier = tdv::HostPrecomputeSupplier<SourceFunction, gens_per_pass>;
-#endif
-
 using KernelImpl = Kernel<MaterialResolver>;
 using CellImpl = KernelImpl::Cell;
 
+#include <StencilStream/tdv/SinglePassStrategies.hpp>
+
+#if TDVS_TYPE == 0
+using TDVStrategy = tdv::single_pass::InlineStrategy;
+#elif TDVS_TYPE == 1
+using TDVStrategy = tdv::single_pass::PrecomputeOnDeviceStrategy;
+#elif TDVS_TYPE == 2
+using TDVStrategy = tdv::single_pass::PrecomputeOnHostStrategy;
+#endif
+
 #if EXECUTOR == 0
     #include <StencilStream/monotile/StencilUpdate.hpp>
+
 using Grid = monotile::Grid<CellImpl>;
-using StencilUpdate = monotile::StencilUpdate<KernelImpl, SourceSupplier, n_processing_elements,
-                                              tile_width, tile_height>;
+using StencilUpdate = monotile::StencilUpdate<KernelImpl, n_processing_elements, tile_width,
+                                              tile_height, TDVStrategy>;
 #elif EXECUTOR == 1
     #include <StencilStream/tiling/StencilUpdate.hpp>
-using StencilUpdate = tiling::StencilUpdate<KernelImpl, SourceSupplier, n_processing_elements,
-                                            tile_width, tile_height>;
+using StencilUpdate =
+    tiling::StencilUpdate<KernelImpl, n_processing_elements, tile_width, tile_height, TDVStrategy>;
 using Grid = StencilUpdate::GridImpl;
 #elif EXECUTOR == 2
     #include <StencilStream/cpu/StencilUpdate.hpp>
 using Grid = cpu::Grid<CellImpl>;
-using StencilUpdate = cpu::StencilUpdate<KernelImpl, SourceSupplier>;
+using StencilUpdate = cpu::StencilUpdate<KernelImpl>;
 #endif
 
 auto exception_handler = [](cl::sycl::exception_list exceptions) {
@@ -182,8 +181,7 @@ int main(int argc, char **argv) {
 
     StencilUpdate simulation({
         .transition_function = KernelImpl(parameters, mat_resolver), .halo_value = CellImpl::halo(),
-        .generation_offset = 0, .n_generations = parameters.n_timesteps(),
-        .tdv_host_state = SourceSupplier(SourceFunction(parameters)), .device = device,
+        .generation_offset = 0, .n_generations = parameters.n_timesteps(), .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
 #if EXECUTOR != 2
             .profiling = true, // enable additional profiling for FPGA targets

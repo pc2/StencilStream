@@ -2,27 +2,29 @@
  * Copyright © 2020-2024 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
  * University
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the “Software”), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the “Software”), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 #include "../HostPipe.hpp"
 #include "../StencilUpdateTest.hpp"
 #include "../TransFuncs.hpp"
 #include "../constants.hpp"
-#include <StencilStream/tdv/InlineSupplier.hpp>
-#include <StencilStream/tdv/NoneSupplier.hpp>
+#include <StencilStream/DefaultTransitionFunction.hpp>
 #include <StencilStream/tiling/StencilUpdate.hpp>
 #include <catch2/catch_all.hpp>
 
@@ -30,43 +32,58 @@ using namespace sycl;
 using namespace stencil;
 using namespace stencil::tiling;
 
-void test_tiling_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t target_i_generation) {
+template <
+    tdv::single_pass::Strategy<FPGATransFunc<stencil_radius>, n_processing_elements> TDVStrategy>
+void test_tiling_kernel_with_strategy(uindex_t grid_width, uindex_t grid_height,
+                                      uindex_t generation_offset, uindex_t target_i_generation) {
     using TransFunc = FPGATransFunc<stencil_radius>;
-    using in_pipe = HostPipe<class TilingExecutionKernelInPipeID, Cell>;
-    using out_pipe = HostPipe<class TilingExecutionKernelOutPipeID, Cell>;
-    using KernelArgument = tdv::InlineSupplier<GenerationFunction>::KernelArgument;
+    using in_pipe = sycl::pipe<class TilingExecutionKernelInPipeID, Cell>;
+    using out_pipe = sycl::pipe<class TilingExecutionKernelOutPipeID, Cell>;
+    using TDVGlobalState = TDVStrategy::template GlobalState<TransFunc, n_processing_elements>;
+    using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
     using TestExecutionKernel =
-        StencilUpdateKernel<TransFunc, KernelArgument, n_processing_elements, tile_width,
+        StencilUpdateKernel<TransFunc, TDVKernelArgument, n_processing_elements, tile_width,
                             tile_height, in_pipe, out_pipe>;
 
-    for (index_t c = -halo_radius; c < index_t(halo_radius + grid_width); c++) {
-        for (index_t r = -halo_radius; r < index_t(halo_radius + grid_height); r++) {
-            if (c >= index_t(0) && c < index_t(grid_width) && r >= index_t(0) &&
-                r < index_t(grid_height)) {
-                in_pipe::write(Cell{c, r, 0, 0, CellStatus::Normal});
-            } else {
-                in_pipe::write(Cell::halo());
-            }
-        }
-    }
+    sycl::queue working_queue;
 
-    TestExecutionKernel(TransFunc(), 0, target_i_generation, 0, 0, grid_width, grid_height,
-                        Cell::halo(),
-                        KernelArgument{.function = GenerationFunction{}, .i_generation = 0})();
+    working_queue.submit([&](sycl::handler &cgh) {
+        cgh.single_task([=]() {
+            for (index_t c = -halo_radius; c < index_t(halo_radius + grid_width); c++) {
+                for (index_t r = -halo_radius; r < index_t(halo_radius + grid_height); r++) {
+                    if (c >= index_t(0) && c < index_t(grid_width) && r >= index_t(0) &&
+                        r < index_t(grid_height)) {
+                        in_pipe::write(
+                            Cell{c, r, index_t(generation_offset), 0, CellStatus::Normal});
+                    } else {
+                        in_pipe::write(Cell::halo());
+                    }
+                }
+            }
+        });
+    });
+
+    TDVGlobalState global_state(TransFunc(), generation_offset, target_i_generation);
+    working_queue.submit([&](sycl::handler &cgh) {
+        TDVKernelArgument kernel_argument(global_state, cgh, generation_offset,
+                                          target_i_generation);
+        TestExecutionKernel kernel(TransFunc(), generation_offset, target_i_generation, 0, 0,
+                                   grid_width, grid_height, Cell::halo(), kernel_argument);
+        cgh.single_task(kernel);
+    });
 
     buffer<Cell, 2> output_buffer(range<2>(grid_width, grid_height));
 
-    {
-        host_accessor output_buffer_ac(output_buffer, read_write);
-        for (uindex_t c = 0; c < grid_width; c++) {
-            for (uindex_t r = 0; r < grid_height; r++) {
-                output_buffer_ac[c][r] = out_pipe::read();
+    working_queue.submit([&](sycl::handler &cgh) {
+        accessor output_buffer_ac(output_buffer, cgh, read_write);
+        cgh.single_task([=]() {
+            for (uindex_t c = 0; c < grid_width; c++) {
+                for (uindex_t r = 0; r < grid_height; r++) {
+                    output_buffer_ac[c][r] = out_pipe::read();
+                }
             }
-        }
-    }
-
-    REQUIRE(in_pipe::empty());
-    REQUIRE(out_pipe::empty());
+        });
+    });
 
     host_accessor output_buffer_ac(output_buffer, read_only);
     for (uindex_t c = 1; c < grid_width; c++) {
@@ -81,30 +98,40 @@ void test_tiling_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t targ
     }
 }
 
+void test_tiling_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t generation_offset,
+                        uindex_t target_i_generation) {
+    test_tiling_kernel_with_strategy<tdv::single_pass::InlineStrategy>(
+        tile_width, tile_height, generation_offset, target_i_generation);
+    test_tiling_kernel_with_strategy<tdv::single_pass::PrecomputeOnDeviceStrategy>(
+        tile_width, tile_height, generation_offset, target_i_generation);
+    test_tiling_kernel_with_strategy<tdv::single_pass::PrecomputeOnHostStrategy>(
+        tile_width, tile_height, generation_offset, target_i_generation);
+}
+
 TEST_CASE("tiling::StencilUpdateKernel", "[tiling::StencilUpdateKernel]") {
-    test_tiling_kernel(tile_width, tile_height, gens_per_pass);
+    test_tiling_kernel(tile_width, tile_height, 0, gens_per_pass);
 }
 
 TEST_CASE("tiling::StencilUpdateKernel (partial tile)", "[tiling::StencilUpdateKernel]") {
-    test_tiling_kernel(tile_width / 2, tile_height, gens_per_pass);
+    test_tiling_kernel(tile_width / 2, tile_height, 0, gens_per_pass);
 }
 
 TEST_CASE("tiling::StencilUpdateKernel (partial pipeline)", "[tiling::StencilUpdateKernel]") {
     static_assert(gens_per_pass != 1);
-    test_tiling_kernel(tile_width, tile_height, gens_per_pass - 1);
+    test_tiling_kernel(tile_width, tile_height, 0, gens_per_pass - 1);
 }
 
-TEST_CASE("tiling::StencilUpdateKernel (noop)", "[tiling::StencilUpdateKernel]") {
-    test_tiling_kernel(tile_width, tile_height, 0);
+TEST_CASE("tiling::StencilUpdateKernel (generation offset)", "[tiling::StencilUpdateKernel]") {
+    test_tiling_kernel(tile_width, tile_height, gens_per_pass, 2 * gens_per_pass);
 }
 
-struct HaloHandlingKernel {
-    using Cell = bool;
-    using TimeDependentValue = std::monostate;
+TEST_CASE("tiling::StencilUpdateKernel (generation offset, partial pipeline)",
+          "[tiling::StencilUpdateKernel]") {
+    static_assert(gens_per_pass != 1);
+    test_tiling_kernel(tile_width, tile_height, gens_per_pass, 2 * gens_per_pass - 1);
+}
 
-    static constexpr uindex_t stencil_radius = 1;
-    static constexpr stencil::uindex_t n_subgenerations = 1;
-
+struct HaloHandlingKernel : public DefaultTransitionFunction<bool> {
     bool operator()(Stencil<bool, 1> const &stencil) const {
         ID idx = stencil.id;
         bool is_valid = true;
@@ -126,76 +153,63 @@ struct HaloHandlingKernel {
 
 TEST_CASE("Halo values inside the pipeline are handled correctly",
           "[tiling::StencilUpdateKernel]") {
-    using in_pipe = HostPipe<class HaloValueTestInPipeID, bool>;
-    using out_pipe = HostPipe<class HaloValueTestOutPipeID, bool>;
+    using in_pipe = sycl::pipe<class HaloValueTestInPipeID, bool>;
+    using out_pipe = sycl::pipe<class HaloValueTestOutPipeID, bool>;
+    using TDVGlobalState =
+        tdv::single_pass::InlineStrategy::template GlobalState<HaloHandlingKernel,
+                                                               n_processing_elements>;
+    using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
     using TestExecutionKernel =
-        StencilUpdateKernel<HaloHandlingKernel, tdv::NoneSupplier, n_processing_elements,
+        StencilUpdateKernel<HaloHandlingKernel, TDVKernelArgument, n_processing_elements,
                             tile_width, tile_height, in_pipe, out_pipe>;
+
+    sycl::queue working_queue;
 
     uindex_t halo_radius = n_processing_elements;
 
-    for (index_t c = -halo_radius; c < index_t(halo_radius + tile_width); c++) {
-        for (index_t r = -halo_radius; r < index_t(halo_radius + tile_height); r++) {
-            in_pipe::write(false);
-        }
-    }
+    working_queue.submit([&](sycl::handler &cgh) {
+        cgh.single_task([=]() {
+            for (index_t c = -halo_radius; c < index_t(halo_radius + tile_width); c++) {
+                for (index_t r = -halo_radius; r < index_t(halo_radius + tile_height); r++) {
+                    in_pipe::write(false);
+                }
+            }
+        });
+    });
 
-    TestExecutionKernel(HaloHandlingKernel(), 0, gens_per_pass, 0, 0, tile_width, tile_height, true,
-                        tdv::NoneSupplier())();
+    TDVGlobalState global_state(HaloHandlingKernel(), 0, gens_per_pass);
+    working_queue.submit([&](sycl::handler &cgh) {
+        TDVKernelArgument kernel_argument(global_state, cgh, 0, gens_per_pass);
+        TestExecutionKernel kernel(HaloHandlingKernel(), 0, gens_per_pass, 0, 0, tile_width,
+                                   tile_height, true, kernel_argument);
+        cgh.single_task(kernel);
+    });
 
+    sycl::buffer<bool, 2> is_correct(sycl::range<2>(tile_width, tile_height));
+    working_queue.submit([&](sycl::handler &cgh) {
+        sycl::accessor is_correct_ac(is_correct, cgh);
+        cgh.single_task([=]() {
+            for (uindex_t c = 0; c < tile_width; c++) {
+                for (uindex_t r = 0; r < tile_height; r++) {
+                    is_correct_ac[c][r] = out_pipe::read();
+                }
+            }
+        });
+    });
+
+    sycl::host_accessor is_correct_ac(is_correct);
     for (uindex_t c = 0; c < tile_width; c++) {
         for (uindex_t r = 0; r < tile_height; r++) {
-            REQUIRE(out_pipe::read());
+            REQUIRE(is_correct_ac[c][r]);
         }
     }
-
-    REQUIRE(in_pipe::empty());
-    REQUIRE(out_pipe::empty());
 }
 
-struct IncompletePipelineKernel {
-    using Cell = uint8_t;
-    using TimeDependentValue = std::monostate;
-
-    static constexpr uindex_t stencil_radius = 1;
-    static constexpr stencil::uindex_t n_subgenerations = 1;
-
-    uint8_t operator()(Stencil<uint8_t, 1> const &stencil) const { return stencil[ID(0, 0)] + 1; }
-};
-
-TEST_CASE("Incomplete Pipeline with i_generation != 0", "[tiling::StencilUpdateKernel]") {
-    using in_pipe = HostPipe<class IncompletePipelineInPipeID, uint8_t>;
-    using out_pipe = HostPipe<class IncompletePipelineOutPipeID, uint8_t>;
-    using TestExecutionKernel = StencilUpdateKernel<IncompletePipelineKernel, tdv::NoneSupplier, 16,
-                                                    64, 64, in_pipe, out_pipe>;
-
-    for (int c = -16; c < 16 + 64; c++) {
-        for (int r = -16; r < 16 + 64; r++) {
-            in_pipe::write(0);
-        }
-    }
-
-    TestExecutionKernel kernel(IncompletePipelineKernel(), 16, 20, 0, 0, 64, 64, 0,
-                               tdv::NoneSupplier());
-    kernel.operator()();
-
-    REQUIRE(in_pipe::empty());
-
-    for (int c = 0; c < 64; c++) {
-        for (int r = 0; r < 64; r++) {
-            REQUIRE(out_pipe::read() == 4);
-        }
-    }
-
-    REQUIRE(out_pipe::empty());
-}
-
-using StencilUpdateImpl = StencilUpdate<FPGATransFunc<1>, tdv::InlineSupplier<GenerationFunction>,
-                                        n_processing_elements, tile_width, tile_height>;
+using StencilUpdateImpl =
+    StencilUpdate<FPGATransFunc<1>, n_processing_elements, tile_width, tile_height>;
 using GridImpl = typename StencilUpdateImpl::GridImpl;
 
-static_assert(concepts::StencilUpdate<StencilUpdateImpl, FPGATransFunc<1>,
-                                      tdv::InlineSupplier<GenerationFunction>, GridImpl>);
+static_assert(concepts::StencilUpdate<StencilUpdateImpl, FPGATransFunc<1>, GridImpl>);
 
 TEST_CASE("tiling::StencilUpdate", "[tiling::StencilUpdate]") {
     for (uindex_t i_grid_width = 0; i_grid_width < 3; i_grid_width++) {

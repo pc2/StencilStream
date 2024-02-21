@@ -2,32 +2,32 @@
  * Copyright © 2020-2024 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
  * University
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
- * associated documentation files (the “Software”), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute,
- * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the “Software”), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
- * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 #pragma once
 #include "TransFuncs.hpp"
 #include <StencilStream/Concepts.hpp>
-#include <StencilStream/tdv/InlineSupplier.hpp>
 
 using namespace sycl;
 using namespace stencil;
 
-template <
-    concepts::Grid<Cell> Grid,
-    concepts::StencilUpdate<FPGATransFunc<1>, tdv::InlineSupplier<GenerationFunction>, Grid> SU>
+template <concepts::Grid<Cell> Grid, concepts::StencilUpdate<FPGATransFunc<1>, Grid> SU>
 void test_stencil_update(stencil::uindex_t grid_width, uindex_t grid_height,
                          uindex_t generation_offset, uindex_t n_generations) {
 
@@ -47,8 +47,7 @@ void test_stencil_update(stencil::uindex_t grid_width, uindex_t grid_height,
     SU update({.transition_function = FPGATransFunc<1>(),
                .halo_value = Cell::halo(),
                .generation_offset = generation_offset,
-               .n_generations = n_generations,
-               .tdv_host_state = tdv::InlineSupplier<GenerationFunction>(GenerationFunction())});
+               .n_generations = n_generations});
 
     Grid output_grid = update(input_grid);
 

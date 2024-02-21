@@ -20,21 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "../StencilUpdateTest.hpp"
-#include "../constants.hpp"
-#include <StencilStream/cpu/StencilUpdate.hpp>
+#pragma once
+#include "Concepts.hpp"
+#include <variant>
 
-using namespace sycl;
-using namespace stencil;
-using namespace stencil::cpu;
+namespace stencil {
 
-using StencilUpdateImpl = StencilUpdate<FPGATransFunc<1>>;
-using GridImpl = Grid<Cell>;
+template <typename TCell> class DefaultTransitionFunction {
+  public:
+    using Cell = TCell;
+    using TimeDependentValue = std::monostate;
 
-static_assert(concepts::StencilUpdate<StencilUpdateImpl, FPGATransFunc<1>, GridImpl>);
+    static constexpr uindex_t stencil_radius = 1;
+    static constexpr uindex_t n_subgenerations = 1;
 
-TEST_CASE("cpu::StencilUpdate", "[cpu::StencilUpdate]") {
-    test_stencil_update<GridImpl, StencilUpdateImpl>(64, 64, 0, 1);
-    test_stencil_update<GridImpl, StencilUpdateImpl>(64, 64, 0, 1);
-    test_stencil_update<GridImpl, StencilUpdateImpl>(64, 64, 32, 64);
-}
+    std::monostate get_time_dependent_value(uindex_t i_generation) const {
+        return std::monostate();
+    }
+
+    Cell operator()(Stencil<Cell, stencil_radius, TimeDependentValue> const &stencil) const {
+        return stencil[ID(0, 0)];
+    }
+};
+
+} // namespace stencil

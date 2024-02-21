@@ -22,7 +22,6 @@ add_compile_definitions(STENCIL_INDEX_WIDTH=32)
 set(UNIT_TEST_SOURCES
     HostPipe.cpp
     Stencil.cpp
-    TimeDependentValueSupplier.cpp
     cpu/Grid.cpp
     cpu/StencilUpdate.cpp
     monotile/Grid.cpp
@@ -30,6 +29,7 @@ set(UNIT_TEST_SOURCES
     tiling/Grid.cpp
     tiling/StencilUpdate.cpp
     tiling/Tile.cpp
+    constraint_test.cpp
 )
 
 add_executable(unit_test ${UNIT_TEST_SOURCES})

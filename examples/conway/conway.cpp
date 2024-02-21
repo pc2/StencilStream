@@ -18,6 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <StencilStream/DefaultTransitionFunction.hpp>
 #include <StencilStream/cpu/StencilUpdate.hpp>
 #include <StencilStream/monotile/StencilUpdate.hpp>
 #include <sycl/ext/intel/fpga_extensions.hpp>
@@ -29,14 +30,8 @@ using namespace stencil::cpu;
 using namespace stencil::monotile;
 #endif
 
-struct ConwayKernel {
-    using Cell = bool;
-    using TimeDependentValue = std::monostate;
-
-    static constexpr uindex_t stencil_radius = 1;
-    static constexpr uindex_t n_subgenerations = 1;
-
-    bool operator()(Stencil<Cell, stencil_radius> const &stencil) const {
+struct ConwayKernel : public DefaultTransitionFunction<bool> {
+    bool operator()(Stencil<bool, stencil_radius> const &stencil) const {
         ID idx = stencil.id;
 
         uint8_t alive_neighbours = 0;
@@ -65,10 +60,10 @@ Grid<bool> read(uindex_t width, uindex_t height) {
 
         for (uindex_t r = 0; r < height; r++) {
             for (uindex_t c = 0; c < width; c++) {
-                char Cell;
-                std::cin >> Cell;
-                assert(Cell == 'X' || Cell == '.');
-                grid_ac[c][r] = Cell == 'X';
+                char cell;
+                std::cin >> cell;
+                assert(cell == 'X' || cell == '.');
+                grid_ac[c][r] = cell == 'X';
             }
         }
     }

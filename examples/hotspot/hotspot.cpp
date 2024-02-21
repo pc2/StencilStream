@@ -17,6 +17,7 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <StencilStream/DefaultTransitionFunction.hpp>
 #include <chrono>
 #include <fstream>
 #include <sycl/ext/intel/fpga_extensions.hpp>
@@ -55,13 +56,7 @@ const FLOAT amb_temp = 80.0;
 /* stencil parameters */
 using HotspotCell = vec<FLOAT, 2>;
 
-struct HotspotKernel {
-    using Cell = HotspotCell;
-    using TimeDependentValue = std::monostate;
-
-    static constexpr uindex_t stencil_radius = 1;
-    static constexpr uindex_t n_subgenerations = 1;
-
+struct HotspotKernel : public DefaultTransitionFunction<HotspotCell> {
     float Rx_1, Ry_1, Rz_1, Cap_1;
 
     Cell operator()(Stencil<HotspotCell, 1> const &temp) const {
@@ -106,16 +101,15 @@ const uindex_t max_grid_width = 1024;
 const uindex_t max_grid_height = 1024;
 const uindex_t n_processing_elements = 280;
 using StencilUpdate =
-    monotile::StencilUpdate<HotspotKernel, tdv::NoneSupplier, n_processing_elements, max_grid_width,
-                            max_grid_height>;
+    monotile::StencilUpdate<HotspotKernel, n_processing_elements, max_grid_width, max_grid_height>;
 using Grid = monotile::Grid<HotspotCell>;
 
 #elif EXECUTOR == 1
 const uindex_t tile_width = 1024;
 const uindex_t tile_height = 1024;
 const uindex_t n_processing_elements = 224;
-using StencilUpdate = tiling::StencilUpdate<HotspotKernel, tdv::NoneSupplier, n_processing_elements,
-                                            tile_width, tile_height>;
+using StencilUpdate =
+    tiling::StencilUpdate<HotspotKernel, n_processing_elements, tile_width, tile_height>;
 using Grid = StencilUpdate::GridImpl;
 
 #else
@@ -255,7 +249,8 @@ int main(int argc, char **argv) {
 #endif
 
     StencilUpdate update({
-        .transition_function = HotspotKernel{Rx_1, Ry_1, Rz_1, Cap_1},
+        .transition_function =
+            HotspotKernel{.Rx_1 = Rx_1, .Ry_1 = Ry_1, .Rz_1 = Rz_1, .Cap_1 = Cap_1},
         .halo_value = HotspotCell(0.0, 0.0), .n_generations = sim_time, .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
 #if EXECUTOR != 2

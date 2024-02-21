@@ -16,9 +16,29 @@ default:
 
 workflow:
     rules:
+        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
         - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
         - if: $CI_MERGE_REQUEST_TITLE =~ /^Draft:/
           when: never
+
+.synthesis:
+    stage: synthesis
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
+    script:
+        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "${STST_EXAMPLE}" "${STST_EXECUTABLE}"
+    artifacts:
+        when: always
+        paths:
+            - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}"
+            - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.prj/reports"
+            - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.tar.gz"
+
+# =============
+# Preevaluation
+# =============
 
 documentation:
     stage: preevaluation
@@ -51,19 +71,10 @@ unit test:
 # ==========
 
 convection synthesis:
-    stage: synthesis
-    tags:
-        - noctua2
+    extends: .synthesis
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
-    script:
-        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "convection" "convection"
-    artifacts:
-        when: always
-        paths:
-            - build/examples/convection/convection
-            - build/examples/convection/convection.prj/reports
-            - build/examples/convection/convection.tar.gz
+        STST_EXAMPLE: "convection"
+        STST_EXECUTABLE: "convection"
 
 convection benchmark:
     stage: benchmark
@@ -89,142 +100,102 @@ convection benchmark:
 # ==================
 
 hotspot (monotile) synthesis:
-    stage: synthesis
-    tags:
-        - noctua2
+    extends: .synthesis
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
-    script:
-        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "hotspot" "hotspot_mono"
-    artifacts:
-        when: always
-        paths:
-            - build/examples/hotspot/hotspot_mono
-            - build/examples/hotspot/hotspot_mono.prj/reports
-            - build/examples/hotspot/hotspot_mono.tar.gz
+        STST_EXAMPLE: "hotspot"
+        STST_EXECUTABLE: "hotspot_mono"
 
-hotspot (monotile) benchmark:
+.hotspot benchmark:
     stage: benchmark
-    needs: 
-        - hotspot (monotile) synthesis
     tags:
         - noctua2
     variables:
         SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
     script:
         - cd examples/hotspot
-        - ./scripts/benchmark.jl ../../build/examples/hotspot/hotspot_mono monotile
+        - ./scripts/benchmark.jl ../../build/examples/hotspot/${STST_EXECUTABLE} ${STST_VARIANT}
     artifacts:
         paths:
-            - examples/hotspot/metrics.monotile.json
+            - examples/hotspot/metrics.*.json
+
+hotspot (monotile) benchmark:
+    extends: .hotspot benchmark
+    needs: 
+        - hotspot (monotile) synthesis
+    variables:
+        STST_EXECUTABLE: hotspot_mono
+        STST_VARIANT: monotile
 
 # ================
 # Hotspot (Tiling)
 # ================
 
 hotspot (tiling) synthesis:
-    stage: synthesis
-    tags:
-        - noctua2
+    extends: .synthesis
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
-    script:
-        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "hotspot" "hotspot_tiling"
-    artifacts:
-        when: always
-        paths:
-            - build/examples/hotspot/hotspot_tiling
-            - build/examples/hotspot/hotspot_tiling.prj/reports
-            - build/examples/hotspot/hotspot_tiling.tar.gz
+        STST_EXAMPLE: "hotspot"
+        STST_EXECUTABLE: "hotspot_tiling"
 
 hotspot (tiling) benchmark:
-    stage: benchmark
+    extends: .hotspot benchmark
     needs: 
         - hotspot (tiling) synthesis
-    tags:
-        - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
-    script:
-        - cd examples/hotspot
-        - ./scripts/benchmark.jl ../../build/examples/hotspot/hotspot_tiling tiling
-    artifacts:
-        paths:
-            - examples/hotspot/metrics.tiling.json
+        STST_EXECUTABLE: hotspot_tiling
+        STST_VARIANT: tiling
+    stage: benchmark
 
 # ===============
 # FDTD (Monotile)
 # ===============
 
 fdtd (monotile) synthesis:
-    stage: synthesis
-    tags:
-        - noctua2
+    extends: .synthesis
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
-    script:
-        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "fdtd" "fdtd_coef_device_mono"
-    artifacts:
-        when: always
-        paths:
-            - build/examples/fdtd/fdtd_coef_device_mono
-            - build/examples/fdtd/fdtd_coef_device_mono.prj/reports
-            - build/examples/fdtd/fdtd_coef_device_mono.tar.gz
+        STST_EXAMPLE: "fdtd"
+        STST_EXECUTABLE: "fdtd_coef_device_mono"
 
-fdtd (monotile) benchmark:
+.fdtd benchmark:
     stage: benchmark
-    needs: 
-        - fdtd (monotile) synthesis
     tags:
         - noctua2
     variables:
         SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
     script:
         - cd examples/fdtd
-        - ./scripts/benchmark.jl ../../build/examples/fdtd/fdtd_coef_device_mono monotile
+        - ./scripts/benchmark.jl ../../build/examples/fdtd/${STST_EXECUTABLE} ${STST_VARIANT}
         - ./scripts/plot_frames.jl frames .
     artifacts:
         paths:
             - examples/fdtd/*.csv
             - examples/fdtd/*.png
-            - examples/fdtd/metrics.monotile.json
+            - examples/fdtd/metrics.*.json
+
+fdtd (monotile) benchmark:
+    extends: .fdtd benchmark
+    needs: 
+        - fdtd (monotile) synthesis
+    variables:
+        STST_EXECUTABLE: fdtd_coef_device_mono
+        STST_VARIANT: monotile
 
 # =============
 # FDTD (Tiling)
 # =============
 
 fdtd (tiling) synthesis:
-    stage: synthesis
-    tags:
-        - noctua2
+    extends: .synthesis
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
-    script:
-        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "fdtd" "fdtd_coef_device_tiling"
-    artifacts:
-        when: always
-        paths:
-            - build/examples/fdtd/fdtd_coef_device_tiling
-            - build/examples/fdtd/fdtd_coef_device_tiling.prj/reports
-            - build/examples/fdtd/fdtd_coef_device_tiling.tar.gz
+        STST_EXAMPLE: "fdtd"
+        STST_EXECUTABLE: "fdtd_coef_device_tiling"
 
 fdtd (tiling) benchmark:
-    stage: benchmark
+    extends: .fdtd benchmark
     needs: 
         - fdtd (tiling) synthesis
-    tags:
-        - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
-    script:
-        - cd examples/fdtd
-        - ./scripts/benchmark.jl ../../build/examples/fdtd/fdtd_coef_device_tiling tiling
-        - ./scripts/plot_frames.jl frames .
-    artifacts:
-        paths:
-            - examples/fdtd/*.csv
-            - examples/fdtd/*.png
-            - examples/fdtd/metrics.tiling.json
+        STST_EXECUTABLE: fdtd_coef_device_tiling
+        STST_VARIANT: tiling
 
 # =======
 # Release
@@ -233,6 +204,8 @@ fdtd (tiling) benchmark:
 release:
     stage: release
     when: always
+    rules:
+        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH # Only deploy the binaries on the main branch
     tags:
         - noctua2
     variables:
