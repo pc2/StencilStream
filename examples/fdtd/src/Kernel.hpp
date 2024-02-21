@@ -21,7 +21,6 @@
 #include "Parameters.hpp"
 #include "defines.hpp"
 #include "material/Material.hpp"
-#include <StencilStream/DefaultTransitionFunction.hpp>
 #include <StencilStream/Stencil.hpp>
 
 template <typename MaterialResolver> class Kernel {

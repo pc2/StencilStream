@@ -18,7 +18,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <StencilStream/DefaultTransitionFunction.hpp>
 #include <StencilStream/cpu/StencilUpdate.hpp>
 #include <StencilStream/monotile/StencilUpdate.hpp>
 #include <sycl/ext/intel/fpga_extensions.hpp>
@@ -30,7 +29,17 @@ using namespace stencil::cpu;
 using namespace stencil::monotile;
 #endif
 
-struct ConwayKernel : public DefaultTransitionFunction<bool> {
+struct ConwayKernel {
+    using Cell = bool;
+    using TimeDependentValue = std::monostate;
+
+    static constexpr uindex_t stencil_radius = 1;
+    static constexpr uindex_t n_subgenerations = 1;
+
+    std::monostate get_time_dependent_value(uindex_t i_generation) const {
+        return std::monostate();
+    }
+
     bool operator()(Stencil<bool, stencil_radius> const &stencil) const {
         ID idx = stencil.id;
 
