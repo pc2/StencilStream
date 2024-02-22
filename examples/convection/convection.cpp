@@ -22,6 +22,7 @@
 #else
     #include <StencilStream/monotile/StencilUpdate.hpp>
 #endif
+#include <StencilStream/DefaultTransitionFunction.hpp>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -66,12 +67,8 @@ struct ThermalConvectionCell {
      0.25)
 #define AV_YI(FIELD) ((stencil[ID(1, 0)].FIELD + stencil[ID(1, 1)].FIELD) * 0.5)
 
-class PseudoTransientKernel {
+class PseudoTransientKernel : public DefaultTransitionFunction<ThermalConvectionCell> {
   public:
-    using Cell = ThermalConvectionCell;
-    using TimeDependentValue = std::monostate;
-
-    static constexpr uindex_t stencil_radius = 1;
     static constexpr uindex_t n_subgenerations = 3;
 
     uindex_t nx, ny;
@@ -85,10 +82,6 @@ class PseudoTransientKernel {
     double rho;
     double dampX, dampY;
     double DcT;
-
-    std::monostate get_time_dependent_value(uindex_t i_generation) const {
-        return std::monostate();
-    }
 
     Cell operator()(Stencil<Cell, 1> const &stencil) const {
         Cell new_cell = stencil[ID(0, 0)];
@@ -182,21 +175,13 @@ class PseudoTransientKernel {
     }
 };
 
-class ThermalSolverKernel {
+class ThermalSolverKernel : public DefaultTransitionFunction<ThermalConvectionCell> {
   public:
-    using Cell = ThermalConvectionCell;
-    using TimeDependentValue = std::monostate;
-
-    static constexpr uindex_t stencil_radius = 1;
     static constexpr uindex_t n_subgenerations = 2;
 
     uindex_t nx, ny;
     double dx, dy, dt;
     double DcT;
-
-    std::monostate get_time_dependent_value(uindex_t i_generation) const {
-        return std::monostate();
-    }
 
     Cell operator()(Stencil<Cell, 1> const &stencil) const {
         Cell new_cell = stencil[ID(0, 0)];

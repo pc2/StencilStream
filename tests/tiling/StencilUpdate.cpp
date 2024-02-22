@@ -24,6 +24,7 @@
 #include "../StencilUpdateTest.hpp"
 #include "../TransFuncs.hpp"
 #include "../constants.hpp"
+#include <StencilStream/DefaultTransitionFunction.hpp>
 #include <StencilStream/tiling/StencilUpdate.hpp>
 #include <catch2/catch_all.hpp>
 
@@ -130,17 +131,7 @@ TEST_CASE("tiling::StencilUpdateKernel (generation offset, partial pipeline)",
     test_tiling_kernel(tile_width, tile_height, gens_per_pass, 2 * gens_per_pass - 1);
 }
 
-struct HaloHandlingKernel {
-    using Cell = bool;
-    using TimeDependentValue = std::monostate;
-
-    static constexpr uindex_t stencil_radius = 1;
-    static constexpr uindex_t n_subgenerations = 1;
-
-    std::monostate get_time_dependent_value(uindex_t i_generation) const {
-        return std::monostate();
-    }
-
+struct HaloHandlingKernel : public DefaultTransitionFunction<bool> {
     bool operator()(Stencil<bool, 1> const &stencil) const {
         ID idx = stencil.id;
         bool is_valid = true;

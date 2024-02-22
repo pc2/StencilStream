@@ -24,6 +24,7 @@
 #include "../StencilUpdateTest.hpp"
 #include "../TransFuncs.hpp"
 #include "../constants.hpp"
+#include <StencilStream/DefaultTransitionFunction.hpp>
 #include <StencilStream/monotile/StencilUpdate.hpp>
 #include <catch2/catch_all.hpp>
 
