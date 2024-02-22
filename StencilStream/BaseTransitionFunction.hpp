@@ -26,9 +26,8 @@
 
 namespace stencil {
 
-template <typename TCell> class DefaultTransitionFunction {
+class BaseTransitionFunction {
   public:
-    using Cell = TCell;
     using TimeDependentValue = std::monostate;
 
     static constexpr uindex_t stencil_radius = 1;
@@ -36,10 +35,6 @@ template <typename TCell> class DefaultTransitionFunction {
 
     std::monostate get_time_dependent_value(uindex_t i_generation) const {
         return std::monostate();
-    }
-
-    Cell operator()(Stencil<Cell, stencil_radius, TimeDependentValue> const &stencil) const {
-        return stencil[ID(0, 0)];
     }
 };
 

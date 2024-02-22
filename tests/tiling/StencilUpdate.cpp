@@ -24,7 +24,7 @@
 #include "../StencilUpdateTest.hpp"
 #include "../TransFuncs.hpp"
 #include "../constants.hpp"
-#include <StencilStream/DefaultTransitionFunction.hpp>
+#include <StencilStream/BaseTransitionFunction.hpp>
 #include <StencilStream/tiling/StencilUpdate.hpp>
 #include <catch2/catch_all.hpp>
 
@@ -131,7 +131,9 @@ TEST_CASE("tiling::StencilUpdateKernel (generation offset, partial pipeline)",
     test_tiling_kernel(tile_width, tile_height, gens_per_pass, 2 * gens_per_pass - 1);
 }
 
-struct HaloHandlingKernel : public DefaultTransitionFunction<bool> {
+struct HaloHandlingKernel : public BaseTransitionFunction {
+    using Cell = bool;
+    
     bool operator()(Stencil<bool, 1> const &stencil) const {
         ID idx = stencil.id;
         bool is_valid = true;

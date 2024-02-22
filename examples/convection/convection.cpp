@@ -22,7 +22,7 @@
 #else
     #include <StencilStream/monotile/StencilUpdate.hpp>
 #endif
-#include <StencilStream/DefaultTransitionFunction.hpp>
+#include <StencilStream/BaseTransitionFunction.hpp>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -67,8 +67,10 @@ struct ThermalConvectionCell {
      0.25)
 #define AV_YI(FIELD) ((stencil[ID(1, 0)].FIELD + stencil[ID(1, 1)].FIELD) * 0.5)
 
-class PseudoTransientKernel : public DefaultTransitionFunction<ThermalConvectionCell> {
+class PseudoTransientKernel : public BaseTransitionFunction {
   public:
+    using Cell = ThermalConvectionCell;
+
     static constexpr uindex_t n_subgenerations = 3;
 
     uindex_t nx, ny;
@@ -175,8 +177,10 @@ class PseudoTransientKernel : public DefaultTransitionFunction<ThermalConvection
     }
 };
 
-class ThermalSolverKernel : public DefaultTransitionFunction<ThermalConvectionCell> {
+class ThermalSolverKernel : public BaseTransitionFunction {
   public:
+    using Cell = ThermalConvectionCell;
+
     static constexpr uindex_t n_subgenerations = 2;
 
     uindex_t nx, ny;
