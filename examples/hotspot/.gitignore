@@ -4,3 +4,5 @@ profile.*
 1
 *.csv
 *.json
+hotspot_mono
+hotspot_tiling

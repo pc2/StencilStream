@@ -1,5 +1,6 @@
 ./.vscode
 .venv
+Manifest.toml
 
 **/*.log
 **/*.sof
@@ -28,5 +29,6 @@
 
 build
 doxygen
+**/.ipynb_checkpoints
 
 !**/CMakeLists.txt
