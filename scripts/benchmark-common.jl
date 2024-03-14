@@ -2,6 +2,7 @@ using DataFrames
 using CSV
 using Statistics
 using JSON
+using CairoMakie
 
 function parse_report_js(path)
     fields = Dict{String,Any}()
@@ -39,82 +40,72 @@ function load_report_details(report_path)
     return f, loop_latency
 end
 
-function model_monotile_throughput(f, loop_latency, n_grid_rows, n_grid_cols, n_cus)
+function model_monotile_runtime(f, loop_latency, n_grid_rows, n_grid_cols, n_gens, n_cus)
     cu_latency = n_grid_rows + 1
     pipeline_latency = n_cus * cu_latency
     n_iterations = pipeline_latency + (n_grid_rows * n_grid_cols)
     n_cycles = n_iterations + loop_latency
-    work = (n_grid_rows * n_grid_cols) * n_cus
-    work / n_cycles * f
+    
+    ceil(n_gens / n_cus) * n_cycles / f
 end
 
-function model_tiling_throughput(f, loop_latency, n_grid_rows, n_grid_cols, n_tile_rows, n_tile_cols, n_cus)
-
-    n_cycles = 0
+function model_tiling_runtime(f, loop_latency, n_grid_rows, n_grid_cols, n_gens, n_tile_rows, n_tile_cols, n_cus)
+    n_cycles_per_pass = 0
     for tile_col in 1:ceil(n_grid_cols / n_tile_cols)
-        for tile_row in 1:ceil(n_grid_rows / n_tile_rows)
-            tile_section_width = min(n_tile_cols, n_grid_cols - (tile_col-1) * n_tile_cols)
-            tile_section_height = min(n_tile_rows, n_grid_rows - (tile_row-1) * n_tile_rows)
-            n_cycles += loop_latency + (tile_section_width + 2n_cus) * (tile_section_height + 2n_cus)
-        end
+        n_tiles_in_column = ceil(n_grid_rows / n_tile_rows)
+        tile_section_width = min(n_tile_cols, n_grid_cols - (tile_col-1) * n_tile_cols)
+        n_cycles_per_pass += n_tiles_in_column * (loop_latency + (tile_section_width + 2n_cus) * (n_tile_rows + 2n_cus))
     end
 
-    work = (n_grid_rows * n_grid_cols) * n_cus
-    work / n_cycles * f
+    ceil(n_gens / n_cus) * n_cycles_per_pass / f
 end
 
-function build_metrics(target, measured_runtime, n_gens, variant, f, loop_latency, n_grid_rows, n_grid_cols, n_tile_rows, n_tile_cols, n_cus, ops_per_cell, cell_size)
+function render_model_error(df, file_name)
+    fig = Figure(size=(1600, 600))
+    azimuth = Observable(0.0)
+    ax = Axis3(fig[1,1], xlabel="no. of timesteps", ylabel="grid width/height", zlabel="", title="relative model error [percent]", azimuth=azimuth)
+
+    new_df = DataFrame(n_timesteps=Int64[], grid_wh=Int64[], kernel_runtime=Float64[], model_runtime=Float64[])
+
+    for n_timesteps in Set(df.n_timesteps)
+        for grid_wh in Set(df.grid_wh)
+            sub_df = df[df.n_timesteps .== n_timesteps .&& df.grid_wh .== grid_wh, [:kernel_runtime, :model_runtime]]
+            kernel_runtime = mean(sub_df.kernel_runtime)
+            model_runtime = mean(sub_df.model_runtime)
+            push!(new_df, [n_timesteps, grid_wh, kernel_runtime, model_runtime])
+        end
+    end
+    
+    surface!(ax, new_df.n_timesteps, new_df.grid_wh, new_df.kernel_runtime ./ new_df.model_runtime .* 100.0)
+    
+    record(fig, file_name, LinRange(0.0, 2.0π, 240); framerate=24) do a
+        azimuth[] = a
+    end
+end
+
+function build_metrics(measured_runtime, n_gens, variant, f, loop_latency, n_grid_rows, n_grid_cols, n_tile_rows, n_tile_cols, n_cus, ops_per_cell, cell_size)
     n_passes = ceil(n_gens / n_cus)
+    grid_size = n_grid_cols * n_grid_rows
+    workload = n_gens * grid_size
+    measured_rate = workload / measured_runtime
 
     if variant == :monotile
-        cu_latency = n_grid_rows + 1
-        pipeline_latency = n_cus * cu_latency
-        n_loop_iterations_per_pass = pipeline_latency + (n_grid_rows * n_grid_cols)
-        n_cycles_per_pass = n_loop_iterations_per_pass + loop_latency
-        n_cycles = n_cycles_per_pass * n_passes
-
-        transfered_cells = 2 * n_grid_cols * n_grid_rows * n_passes
-    elseif variant == :tiling
-        n_cycles_per_pass = 0
-        transfered_cells_per_pass = 0
-        for tile_col in 1:ceil(n_grid_cols / n_tile_cols)
-            for tile_row in 1:ceil(n_grid_rows / n_tile_rows)
-                tile_section_width = min(n_tile_cols, n_grid_cols - (tile_col-1) * n_tile_cols)
-                tile_section_height = min(n_tile_rows, n_grid_rows - (tile_row-1) * n_tile_rows)
-
-                n_cycles_per_pass += loop_latency + (tile_section_width + 2n_cus) * (tile_section_height + 2n_cus)
-
-                center_cells = tile_section_width * tile_section_height
-                halo_cells = 2(tile_section_width * n_cus) + 2(tile_section_height * n_cus) + 4n_cus^2
-                transfered_cells_per_pass += 2center_cells + halo_cells
-            end
-        end
-
-        n_cycles = n_cycles_per_pass * n_passes
-        transfered_cells = transfered_cells_per_pass * n_passes
+        model_runtime = model_monotile_runtime(f, loop_latency, n_grid_rows, n_grid_cols, n_gens, n_cus)
+        transfered_cells = 2 * grid_size * n_passes
+    else
+        model_runtime = model_tiling_runtime(f, loop_latency, n_grid_rows, n_grid_cols, n_gens, n_tile_rows, n_tile_cols, n_cus)
+        transfered_cells = ((2n_cus + n_grid_rows)*(2n_cus + n_grid_cols) + grid_size) * n_passes
     end
+    model_rate = workload / model_runtime
+    max_rate = f * n_cus
 
-    n_updates = n_grid_rows * n_grid_cols * n_gens
-    model_runtime = n_cycles / f
-
-    measured_performance = n_updates / measured_runtime
-    model_performance = n_updates / model_runtime
-
-    max_peak_performance = f * n_cus
-    occupancy = measured_performance / max_peak_performance
-    model_accurracy = measured_performance / model_performance
-
-    flops = ops_per_cell * measured_performance
-    mem_throughput = transfered_cells * cell_size / measured_runtime
-
-    return Dict(
-        "target" => target,
-        "n_cus" => n_cus,
-        "f" => f,
-        "occupancy" => occupancy,
-        "measured" => measured_performance,
-        "accuracy" => model_accurracy,
-        "FLOPS" => flops,
-        "mem_throughput" => mem_throughput,
+    Dict(
+        :measured_rate => measured_rate,
+        :model_rate => model_rate,
+        :max_rate => max_rate,
+        :flops => measured_rate * ops_per_cell,
+        :mem_throughput => transfered_cells * cell_size / measured_runtime,
+        :occupancy => measured_rate / max_rate,
+        :model_accurracy => model_runtime / measured_runtime,
     )
 end

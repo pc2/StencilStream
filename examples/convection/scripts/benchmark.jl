@@ -17,6 +17,7 @@ function analyze_log(logfile)
 
     while e2e_runtime === nothing
         line = readline(logfile)
+        println(line)
         if length(line) == 0
             continue
         end
@@ -107,16 +108,12 @@ function default_benchmark()
     out_path = Base.Filesystem.mkpath("./out/")
     command = `$exe $experiment_path $out_path`
 
-    # Run the simulation once to eliminate the FPGA programming from the measured runtime
-    run(command)
-
     open(command, "r") do process_in
         _, pseudo_transient_runtimes = analyze_log(process_in)
         CSV.write("pseudo_transient_runtimes.csv", pseudo_transient_runtimes)
 
         best_performing_invocation = argmax(pseudo_transient_runtimes.pseudo_steps ./ pseudo_transient_runtimes.runtime)
-        metrics = build_metrics(
-            "Convection",
+        raw_metrics = build_metrics(
             pseudo_transient_runtimes.runtime[best_performing_invocation],
             pseudo_transient_runtimes.pseudo_steps[best_performing_invocation] * N_SUBGENERATIONS,
             :monotile,
@@ -129,6 +126,16 @@ function default_benchmark()
             N_CUS,
             OPERATIONS_PER_CELL,
             CELL_SIZE
+        )
+        metrics = Dict(
+            "target" => "Convection",
+            "n_cus" => N_CUS,
+            "f" => f,
+            "occupancy" => raw_metrics[:occupancy],
+            "measured" => raw_metrics[:measured_rate],
+            "accuracy" => raw_metrics[:model_accurracy],
+            "FLOPS" => raw_metrics[:flops],
+            "mem_throughput" => raw_metrics[:mem_throughput]
         )
         
         open("metrics.json", "w") do metrics_file

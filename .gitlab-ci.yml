@@ -113,7 +113,7 @@ hotspot (monotile) synthesis:
         SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
     script:
         - cd examples/hotspot
-        - ./scripts/benchmark.jl ../../build/examples/hotspot/${STST_EXECUTABLE} ${STST_VARIANT}
+        - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/${STST_EXECUTABLE} ${STST_VARIANT}
     artifacts:
         paths:
             - examples/hotspot/metrics.*.json
@@ -163,7 +163,7 @@ fdtd (monotile) synthesis:
         SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
     script:
         - cd examples/fdtd
-        - ./scripts/benchmark.jl ../../build/examples/fdtd/${STST_EXECUTABLE} ${STST_VARIANT}
+        - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/${STST_EXECUTABLE} ${STST_VARIANT}
         - ./scripts/plot_frames.jl frames .
     artifacts:
         paths:
