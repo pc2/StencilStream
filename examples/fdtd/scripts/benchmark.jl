@@ -9,8 +9,7 @@ const CELL_SIZE = 4 * (4 + 4) # bytes, including material coefficients
 const TILE_SIZE = 512
 
 function max_perf_benchmark(exe, variant, n_cus, f, loop_latency)
-    mkpath("out/")
-    command = `$exe -c ./experiments/default.json -o out/`
+    command = `$exe -c ./experiments/max_res.json`
 
     # Run the simulation once to eliminate the FPGA programming from the measured runtime
     run(command)
