@@ -99,7 +99,7 @@ function default_benchmark()
     report_path = exe * ".prj/reports"
     f, loop_latency = load_report_details(report_path)
 
-    experiment_path = "experiments/default.json"
+    experiment_path = "experiments/max-res-default.json"
     experiment_data = JSON.parsefile(experiment_path)
     ly = experiment_data["ly"]
     lx = experiment_data["lx"]
