@@ -9,7 +9,12 @@ const CELL_SIZE = 4 * (4 + 4) # bytes, including material coefficients
 const TILE_SIZE = 512
 
 function max_perf_benchmark(exe, variant, n_cus, f, loop_latency)
-    command = `$exe -c ./experiments/max_res.json`
+    if variant == :monotile
+        experiment_path = "./experiments/full_tile.json"
+    elseif variant == :tiling
+        experiment_path = "./experiments/four_tiles.json"
+    end
+    command = `$exe -c $experiment_path`
 
     # Run the simulation once to eliminate the FPGA programming from the measured runtime
     run(command)

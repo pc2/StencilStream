@@ -1,0 +1,24 @@
+{
+    "tau": 100e-15,
+    "dx": 1.566e-9,
+    "time": {
+        "t_cutoff": 7.0,
+        "t_detect": 14.0,
+        "t_max": 15.0
+    },
+    "source": {
+        "frequency": 120e12,
+        "phase": 3.0,
+        "x": 0,
+        "y": 0,
+        "radius": 0
+    },
+    "cavity_rings": [
+        {
+            "width": 800e-9,
+            "mu_r": 11.56,
+            "eps_r": 1.0,
+            "sigma": 0.0
+        }
+    ]
+}
