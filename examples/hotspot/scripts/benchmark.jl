@@ -6,7 +6,9 @@ const OPERATIONS_PER_CELL = 15
 const CELL_SIZE = 8 # bytes
 const N_MONOTILE_CUS = 280
 const N_TILING_CUS = 224
-const TILE_SIZE = 1024
+const TILE_HEIGHT = 1024
+const MONO_TILE_WIDTH = 1024
+const TILING_TILE_WIDTH = 2^16
 
 function write_outputs(n, temp_file, power_file; width=0.1)
     temp = fill(30.0, n^2)
@@ -26,8 +28,20 @@ function write_outputs(n, temp_file, power_file; width=0.1)
 end
 
 function max_perf_benchmark(exec, variant, n_cus, f, loop_latency)
+    if variant == :monotile
+        grid_size = TILE_SIZE
+    elseif variant == :tiling
+        grid_size = 3TILE_SIZE
+    end
+
+    temp_path, temp_io = mktemp()
+    power_path, power_io = mktemp()
+    close(temp_io)
+    close(power_io)
+    write_outputs(grid_size, temp_path, power_path)
+
     n_gens = n_cus * 1000
-    command = `$exec $TILE_SIZE $TILE_SIZE $n_gens ./data/temp_$TILE_SIZE ./data/power_$TILE_SIZE /dev/null`
+    command = `$exec $grid_size $grid_size $n_gens $temp_path $power_path /dev/null`
 
     # Run the simulation once to eliminate the FPGA programming from the measured runtime
     run(command)
@@ -43,7 +57,8 @@ function max_perf_benchmark(exec, variant, n_cus, f, loop_latency)
             end
         end
     end
-    raw_metrics = build_metrics(runtime, n_gens, variant, f, loop_latency, TILE_SIZE, TILE_SIZE, TILE_SIZE, TILE_SIZE, n_cus, OPERATIONS_PER_CELL, CELL_SIZE)
+    tile_width = (variant == :monotile) ? MONO_TILE_WIDTH : TILING_TILE_WIDTH
+    raw_metrics = build_metrics(runtime, n_gens, variant, f, loop_latency, grid_size, grid_size, TILE_HEIGHT, tile_width, n_cus, OPERATIONS_PER_CELL, CELL_SIZE)
 
     metrics = Dict(
         "target" => (variant == :monotile) ? "Hotspot, Monotile" : "Hotspot, Tiling",
@@ -59,6 +74,9 @@ function max_perf_benchmark(exec, variant, n_cus, f, loop_latency)
     open("metrics.$variant.json", "w") do metrics_file
         JSON.print(metrics_file, metrics)
     end
+
+    rm(temp_path)
+    rm(power_path)
 end
 
 function scaling_benchmark(exec, variant)
@@ -99,7 +117,7 @@ function scaling_benchmark(exec, variant)
                 if variant == :monotile
                     model_runtime = model_monotile_runtime(f, loop_latency, grid_wh, grid_wh, n_timesteps, N_MONOTILE_CUS)
                 else
-                    model_runtime = model_tiling_runtime(f, loop_latency, grid_wh, grid_wh, n_timesteps, TILE_SIZE, TILE_SIZE, N_TILING_CUS)
+                    model_runtime = model_tiling_runtime(f, loop_latency, grid_wh, grid_wh, n_timesteps, TILE_HEIGHT, TILING_TILE_WIDTH, N_TILING_CUS)
                 end
 
                 push!(df, (grid_wh, n_timesteps, kernel_runtime, walltime, model_runtime))
