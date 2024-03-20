@@ -16,7 +16,7 @@ function max_perf_benchmark(exe, variant, n_cus, f, loop_latency)
         tile_height = TILE_HEIGHT
         tile_width = MONO_TILE_WIDTH
     elseif variant == :tiling
-        experiment_path = "./experiments/three_tiles.json"
+        experiment_path = "./experiments/max_grid.json"
         tile_height = TILE_HEIGHT
         tile_width = TILING_TILE_WIDTH
     end

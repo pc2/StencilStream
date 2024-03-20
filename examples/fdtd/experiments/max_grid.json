@@ -1,10 +1,10 @@
 {
     "tau": 100e-15,
-    "dx": 1.0435e-9,
+    "dx": 3.474e-10,
     "time": {
-        "t_cutoff": 7.0,
-        "t_detect": 14.0,
-        "t_max": 15.0
+        "t_cutoff": 7.0e-1,
+        "t_detect": 14.0e-1,
+        "t_max": 15.0e-1
     },
     "source": {
         "frequency": 120e12,
