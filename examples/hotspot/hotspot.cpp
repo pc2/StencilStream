@@ -58,7 +58,7 @@ using HotspotCell = vec<FLOAT, 2>;
 
 struct HotspotKernel : public BaseTransitionFunction {
     using Cell = HotspotCell;
-    
+
     float Rx_1, Ry_1, Rz_1, Cap_1;
 
     Cell operator()(Stencil<HotspotCell, 1> const &temp) const {
@@ -120,8 +120,14 @@ using Grid = StencilUpdate::GridImpl;
 
 #endif
 
-void write_output(Grid vect, string file) {
-    fstream out(file, out.out | out.trunc);
+void write_output(Grid vect, string file, bool binary) {
+    fstream out;
+    if (binary) {
+        out = fstream(file, out.out | out.trunc | out.binary);
+    } else {
+        out = fstream(file, out.out | out.trunc);
+    }
+
     if (!out.is_open()) {
         throw std::runtime_error("The file was not opened\n");
     }
@@ -133,7 +139,11 @@ void write_output(Grid vect, string file) {
     int i = 0;
     for (index_t r = 0; r < n_rows; r++) {
         for (index_t c = 0; c < n_columns; c++) {
-            out << i << "\t" << vect_ac[c][r][0] << std::endl;
+            if (binary) {
+                out.write((char *)&vect_ac[c][r][0], sizeof(float));
+            } else {
+                out << i << "\t" << vect_ac[c][r][0] << std::endl;
+            }
             i++;
         }
     }
@@ -141,11 +151,15 @@ void write_output(Grid vect, string file) {
     out.close();
 }
 
-Grid read_input(string temp_file, string power_file, uindex_t n_columns, uindex_t n_rows) {
-    fstream temp(temp_file, temp.in);
-    fstream power(power_file, power.in);
-    if (!temp.is_open() || !power.is_open()) {
-        throw std::runtime_error("file could not be opened for reading");
+Grid read_input(string temp_file, string power_file, uindex_t n_columns, uindex_t n_rows,
+                bool binary) {
+    fstream temp, power;
+    if (binary) {
+        temp = fstream(temp_file, temp.in | temp.binary);
+        power = fstream(power_file, power.in | power.binary);
+    } else {
+        temp = fstream(temp_file, temp.in);
+        power = fstream(power_file, power.in);
     }
 
     Grid vect(n_columns, n_rows);
@@ -155,8 +169,13 @@ Grid read_input(string temp_file, string power_file, uindex_t n_columns, uindex_
         for (index_t r = 0; r < n_rows; r++) {
             for (index_t c = 0; c < n_columns; c++) {
                 FLOAT tmp_temp, tmp_power;
-                temp >> tmp_temp;
-                power >> tmp_power;
+                if (binary) {
+                    temp.read((char *)&tmp_temp, sizeof(float));
+                    power.read((char *)&tmp_power, sizeof(float));
+                } else {
+                    temp >> tmp_temp;
+                    power >> tmp_power;
+                }
                 vect_ac[c][r] = HotspotCell(tmp_temp, tmp_power);
             }
         }
@@ -199,7 +218,6 @@ auto exception_handler = [](sycl::exception_list exceptions) {
 
 int main(int argc, char **argv) {
     uindex_t n_rows, n_columns, sim_time;
-    char *tfile, *pfile, *ofile;
     bool benchmark_mode = false;
 
     /* check validity of inputs	*/
@@ -221,10 +239,14 @@ int main(int argc, char **argv) {
 #endif
 
     /* read initial temperatures and input power	*/
-    tfile = argv[4];
-    pfile = argv[5];
-    ofile = argv[6];
-    Grid grid = read_input(string(tfile), string(pfile), n_columns, n_rows);
+    std::string tfile = std::string(argv[4]);
+    std::string pfile = std::string(argv[5]);
+    std::string ofile = std::string(argv[6]);
+
+    bool binary_io = tfile.ends_with(".bin");
+    assert(!binary_io || pfile.ends_with(".bin"));
+
+    Grid grid = read_input(tfile, pfile, n_columns, n_rows, binary_io);
 
     printf("Start computing the transient temperature\n");
 
@@ -269,7 +291,7 @@ int main(int argc, char **argv) {
     std::cout << "Kernel Runtime: " << update.get_kernel_runtime() << " s" << std::endl;
 #endif
 
-    write_output(grid, string(ofile));
+    write_output(grid, ofile, binary_io);
 
     return 0;
 }

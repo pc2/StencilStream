@@ -12,15 +12,15 @@ const TILING_TILE_WIDTH = 2^16
 
 function create_experiment(n_rows, n_columns, temp_file, power_file)
     begin
-        temp = fill(30.0f32, n_rows  * n_columns)
-        writedlm(temp_file, temp)
+        temp = fill(30.0f0, n_rows * n_columns)
+        write(temp_file, temp)
     end
 
     begin
         power = zeros(Float32, n_rows, n_columns)
         power[(n_rows ÷ 4):(3n_rows ÷ 4), (n_columns ÷ 4):(3n_columns ÷ 4)] .= 0.5
-        power = reshape(power, n_rows * n_columns)
-        writedlm(power_file, power)
+        power = reshape(power', n_rows * n_columns)
+        write(power_file, power)
     end
 end
 
@@ -30,21 +30,23 @@ function max_perf_benchmark(exec, variant, n_cus, f, loop_latency)
         grid_width = MONO_TILE_WIDTH
         n_passes = 1000
     elseif variant == :tiling
-        grid_height = 10TILE_HEIGHT
-        grid_width = 2^16
+        grid_height = 30TILE_HEIGHT
+        grid_width = TILING_TILE_WIDTH
         n_passes = 5
     end
 
-    temp_path, temp_io = mktemp("/dev/shm")
-    power_path, power_io = mktemp("/dev/shm")
+    experiment_dir = mktempdir("/dev/shm/")
+    temp_path = experiment_dir * "/temp.bin"
+    power_path = experiment_dir * "/power.bin"
+    out_path = "/dev/null"
     println("temp: $temp_path, power: $power_path")
-    close.([temp_io, power_io])
+
     println("Creating experiment...")
     create_experiment(grid_height, grid_width, temp_path, power_path)
     println("Experiment created and written!")
 
     n_gens = n_cus * n_passes
-    command = `$exec $grid_height $grid_width $n_gens $temp_path $power_path /dev/null`
+    command = `$exec $grid_height $grid_width $n_gens $temp_path $power_path $out_path`
 
     runtime = open(command, "r") do process_in
         while true
