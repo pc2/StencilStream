@@ -6,7 +6,8 @@ const N_REPLICATIONS = 8
 const N_CUS = N_SUBGENERATIONS * N_REPLICATIONS
 const OPERATIONS_PER_CELL = (5+5+3+6+6+6) + (10+3+2+14+3+2) + 2
 const CELL_SIZE = 128 # bytes, with padding
-const TILE_SIZE = 512
+const TILE_HEIGHT = 512
+const TILE_WIDTH = 2^16
 
 function analyze_log(logfile)
     iteration_re = r"it = ([0-9]+) \(iter = ([0-9]+), time = ([^)]+)\)"
@@ -121,8 +122,8 @@ function default_benchmark()
             loop_latency,
             ly * res,
             lx * res,
-            TILE_SIZE,
-            TILE_SIZE,
+            TILE_HEIGHT,
+            TILE_WIDTH,
             N_CUS,
             OPERATIONS_PER_CELL,
             CELL_SIZE

@@ -99,7 +99,7 @@ struct HotspotKernel : public BaseTransitionFunction {
 };
 
 #if EXECUTOR == 0
-const uindex_t max_grid_width = 1024;
+const uindex_t max_grid_width = 2048;
 const uindex_t max_grid_height = 1024;
 const uindex_t n_processing_elements = 280;
 using StencilUpdate =
