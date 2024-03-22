@@ -107,7 +107,7 @@ using StencilUpdate =
 using Grid = monotile::Grid<HotspotCell>;
 
 #elif EXECUTOR == 1
-const uindex_t tile_width = 1 << 16;
+const uindex_t tile_width = 1 << 15;
 const uindex_t tile_height = 1024;
 const uindex_t n_processing_elements = 224;
 using StencilUpdate =
