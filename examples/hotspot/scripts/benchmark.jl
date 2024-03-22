@@ -7,8 +7,8 @@ const CELL_SIZE = 8 # bytes
 const N_MONOTILE_CUS = 280
 const N_TILING_CUS = 224
 const TILE_HEIGHT = 1024
-const MONO_TILE_WIDTH = 2048
-const TILING_TILE_WIDTH = 2^15
+const MONO_TILE_WIDTH = 1024
+const TILING_TILE_WIDTH = 2^16
 
 function create_experiment(n_rows, n_columns, temp_file, power_file)
     begin
