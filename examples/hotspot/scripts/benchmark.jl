@@ -30,7 +30,7 @@ function max_perf_benchmark(exec, variant, n_cus, f, loop_latency)
         grid_width = MONO_TILE_WIDTH
         n_passes = 1000
     elseif variant == :tiling
-        grid_height = 30TILE_HEIGHT
+        grid_height = 20TILE_HEIGHT
         grid_width = TILING_TILE_WIDTH
         n_passes = 5
     end
