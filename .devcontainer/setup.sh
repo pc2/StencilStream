@@ -12,6 +12,7 @@ sudo apt update || exit 1
 sudo apt upgrade -y || exit 1
 sudo apt install -y intel-basekit-2023.2.0 libboost-dev cmake || exit 1
 source /opt/intel/oneapi/setvars.sh
+echo "source /opt/intel/oneapi/setvars.sh" >> ~/.bashrc
 
 # Installing Julia & instantiating the project
 curl -fsSL https://install.julialang.org > /tmp/juliaup.sh
