@@ -55,7 +55,7 @@ constexpr uindex_t n_processing_elements = 2;
 #endif
 
 static_assert(n_processing_elements % 2 == 0);
-constexpr uindex_t gens_per_pass = n_processing_elements / 2;
+constexpr uindex_t iters_per_pass = n_processing_elements / 2;
 
 /* stencil parameters */
 constexpr uindex_t tile_height = 512;

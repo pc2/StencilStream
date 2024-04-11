@@ -80,7 +80,7 @@ enum class CellField {
     HZ_SUM,
 };
 
-void save_frame(Grid frame_buffer, uindex_t generation_index, CellField field,
+void save_frame(Grid frame_buffer, uindex_t iteration_index, CellField field,
                 Parameters const &parameters) {
     Grid::GridAccessor<access::mode::read> frame(frame_buffer);
 
@@ -102,7 +102,7 @@ void save_frame(Grid frame_buffer, uindex_t generation_index, CellField field,
     default:
         break;
     }
-    frame_path << "." << generation_index << ".csv";
+    frame_path << "." << iteration_index << ".csv";
     std::ofstream out(frame_path.str());
 
     for (uindex_t r = 0; r < parameters.grid_range()[1]; r++) {
@@ -181,7 +181,7 @@ int main(int argc, char **argv) {
 
     StencilUpdate simulation({
         .transition_function = KernelImpl(parameters, mat_resolver), .halo_value = CellImpl::halo(),
-        .generation_offset = 0, .n_generations = parameters.n_timesteps(), .device = device,
+        .iteration_offset = 0, .n_iterations = parameters.n_timesteps(), .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
 #if EXECUTOR != 2
             .profiling = true, // enable additional profiling for FPGA targets
@@ -189,16 +189,16 @@ int main(int argc, char **argv) {
     });
 
     uindex_t n_timesteps = parameters.n_timesteps();
-    uindex_t last_saved_generation = 0;
+    uindex_t last_saved_iteration = 0;
 
     std::cout << "Simulating..." << std::endl;
 
     if (parameters.interval().has_value()) {
-        simulation.get_params().n_generations = parameters.interval().value();
-        for (uindex_t &i_gen = simulation.get_params().generation_offset;
-             i_gen < parameters.n_timesteps(); i_gen += parameters.interval().value()) {
+        simulation.get_params().n_iterations = parameters.interval().value();
+        for (uindex_t &i = simulation.get_params().iteration_offset;
+             i < parameters.n_timesteps(); i += parameters.interval().value()) {
             grid = simulation(grid);
-            save_frame(grid, i_gen, CellField::HZ, parameters);
+            save_frame(grid, i, CellField::HZ, parameters);
         }
     } else {
         grid = simulation(grid);

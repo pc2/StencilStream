@@ -36,8 +36,8 @@ template <concepts::TransitionFunction F> class StencilUpdate {
     struct Params {
         F transition_function;
         Cell halo_value = Cell();
-        uindex_t generation_offset = 0;
-        uindex_t n_generations = 1;
+        uindex_t iteration_offset = 0;
+        uindex_t n_iterations = 1;
         sycl::device device = sycl::device();
         bool blocking = false;
     };
@@ -53,11 +53,11 @@ template <concepts::TransitionFunction F> class StencilUpdate {
         sycl::queue queue(params.device);
         auto walltime_start = std::chrono::high_resolution_clock::now();
 
-        for (uindex_t i_gen = 0; i_gen < params.n_generations; i_gen++) {
-            for (uindex_t i_subgen = 0; i_subgen < F::n_subgenerations; i_subgen++) {
-                run_gen(queue, pass_source, pass_target, params.generation_offset + i_gen,
-                        i_subgen);
-                if (i_gen == 0 && i_subgen == 0) {
+        for (uindex_t i_iter = 0; i_iter < params.n_iterations; i_iter++) {
+            for (uindex_t i_subiter = 0; i_subiter < F::n_subiterations; i_subiter++) {
+                run_iter(queue, pass_source, pass_target, params.iteration_offset + i_iter,
+                        i_subiter);
+                if (i_iter == 0 && i_subiter == 0) {
                     pass_source = &swap_grid_b;
                     pass_target = &swap_grid_a;
                 } else {
@@ -74,7 +74,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
         std::chrono::duration<double> walltime = walltime_end - walltime_start;
         this->walltime += walltime.count();
         n_processed_cells +=
-            params.n_generations * source_grid.get_grid_width() * source_grid.get_grid_height();
+            params.n_iterations * source_grid.get_grid_width() * source_grid.get_grid_height();
 
         return *pass_source;
     }
@@ -86,8 +86,8 @@ template <concepts::TransitionFunction F> class StencilUpdate {
     double get_walltime() const { return walltime; }
 
   private:
-    void run_gen(sycl::queue queue, GridImpl *pass_source, GridImpl *pass_target, uindex_t i_gen,
-                 uindex_t i_subgen) {
+    void run_iter(sycl::queue queue, GridImpl *pass_source, GridImpl *pass_target, uindex_t i_iter,
+                 uindex_t i_subiter) {
         using TDV = typename F::TimeDependentValue;
         using StencilImpl = Stencil<Cell, F::stencil_radius, TDV>;
 
@@ -99,11 +99,11 @@ template <concepts::TransitionFunction F> class StencilUpdate {
             index_t stencil_radius = index_t(F::stencil_radius);
             Cell halo_value = params.halo_value;
             F transition_function = params.transition_function;
-            TDV tdv = transition_function.get_time_dependent_value(i_gen);
+            TDV tdv = transition_function.get_time_dependent_value(i_iter);
 
             auto kernel = [=](sycl::id<2> id) {
-                StencilImpl stencil(ID(id[0], id[1]), UID(grid_width, grid_height), i_gen, i_subgen,
-                                    i_subgen, tdv);
+                StencilImpl stencil(ID(id[0], id[1]), UID(grid_width, grid_height), i_iter, i_subiter,
+                                    i_subiter, tdv);
 
                 for (index_t rel_c = -stencil_radius; rel_c <= stencil_radius; rel_c++) {
                     for (index_t rel_r = -stencil_radius; rel_r <= stencil_radius; rel_r++) {

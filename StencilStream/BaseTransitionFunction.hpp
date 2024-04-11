@@ -31,9 +31,9 @@ class BaseTransitionFunction {
     using TimeDependentValue = std::monostate;
 
     static constexpr uindex_t stencil_radius = 1;
-    static constexpr uindex_t n_subgenerations = 1;
+    static constexpr uindex_t n_subiterations = 1;
 
-    std::monostate get_time_dependent_value(uindex_t i_generation) const {
+    std::monostate get_time_dependent_value(uindex_t i_iteration) const {
         return std::monostate();
     }
 };

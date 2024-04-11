@@ -29,7 +29,7 @@ using namespace stencil;
 
 template <concepts::Grid<Cell> Grid, concepts::StencilUpdate<FPGATransFunc<1>, Grid> SU>
 void test_stencil_update(stencil::uindex_t grid_width, uindex_t grid_height,
-                         uindex_t generation_offset, uindex_t n_generations) {
+                         uindex_t iteration_offset, uindex_t n_iterations) {
 
     using Accessor = Grid::template GridAccessor<access::mode::read_write>;
 
@@ -39,15 +39,15 @@ void test_stencil_update(stencil::uindex_t grid_width, uindex_t grid_height,
         for (uindex_t c = 0; c < grid_width; c++) {
             for (uindex_t r = 0; r < grid_height; r++) {
                 ac[c][r] =
-                    Cell{index_t(c), index_t(r), (index_t)generation_offset, 0, CellStatus::Normal};
+                    Cell{index_t(c), index_t(r), (index_t)iteration_offset, 0, CellStatus::Normal};
             }
         }
     }
 
     SU update({.transition_function = FPGATransFunc<1>(),
                .halo_value = Cell::halo(),
-               .generation_offset = generation_offset,
-               .n_generations = n_generations});
+               .iteration_offset = iteration_offset,
+               .n_iterations = n_iterations});
 
     Grid output_grid = update(input_grid);
 
@@ -56,8 +56,8 @@ void test_stencil_update(stencil::uindex_t grid_width, uindex_t grid_height,
         for (uindex_t r = 0; r < grid_height; r++) {
             REQUIRE(ac[c][r].c == c);
             REQUIRE(ac[c][r].r == r);
-            REQUIRE(ac[c][r].i_generation == generation_offset + n_generations);
-            REQUIRE(ac[c][r].i_subgeneration == 0);
+            REQUIRE(ac[c][r].i_iteration == iteration_offset + n_iterations);
+            REQUIRE(ac[c][r].i_subiteration == 0);
             REQUIRE(ac[c][r].status == CellStatus::Normal);
         }
     }

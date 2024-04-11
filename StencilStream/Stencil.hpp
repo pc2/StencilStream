@@ -31,7 +31,7 @@ namespace stencil {
  * \brief The stencil buffer.
  *
  * The stencil buffer contains the extended Moore neighborhood of a central cell and is used by the
- * transition function to calculate the next generation of the central cell.
+ * transition function to calculate the next iteration of the central cell.
  *
  * This implementation provides two ways to index the stencil: With an `ID` and a `UID`. Since `ID`
  * is signed, the column and row axes are within the range of [-radius : radius]. Therefore, (0,0)
@@ -58,14 +58,14 @@ class Stencil {
      * \brief Create a new stencil with an uninitialized buffer.
      *
      * \param id The position of the central cell in the global grid.
-     * \param generation The present generation index of the central cell.
+     * \param iteration The present iteration index of the central cell.
      * \param i_processing_element The index of the processing element that calls the transition
      * function.
      * \param grid_range The range of the stencil's grid.
      */
-    Stencil(ID id, UID grid_range, uindex_t generation, uindex_t subgeneration,
+    Stencil(ID id, UID grid_range, uindex_t iteration, uindex_t subiteration,
             uindex_t i_processing_element, TimeDependentValue tdv)
-        : id(id), generation(generation), subgeneration(subgeneration),
+        : id(id), iteration(iteration), subiteration(subiteration),
           i_processing_element(i_processing_element), grid_range(grid_range),
           time_dependent_value(tdv), internal() {}
 
@@ -73,15 +73,15 @@ class Stencil {
      * \brief Create a new stencil from the raw buffer.
      *
      * \param id The position of the central cell in the global grid.
-     * \param generation The present generation index of the central cell.
+     * \param iteration The present iteration index of the central cell.
      * \param i_processing_element The index of the processing element that calls the transition
      * function.
      * \param raw A raw array containing cells.
      * \param grid_range The range of the stencil's grid.
      */
-    Stencil(ID id, UID grid_range, uindex_t generation, uindex_t subgeneration,
+    Stencil(ID id, UID grid_range, uindex_t iteration, uindex_t subiteration,
             uindex_t i_processing_element, TimeDependentValue tdv, Cell raw[diameter][diameter])
-        : id(id), generation(generation), subgeneration(subgeneration),
+        : id(id), iteration(iteration), subiteration(subiteration),
           i_processing_element(i_processing_element), grid_range(grid_range),
           time_dependent_value(tdv), internal() {
 #pragma unroll
@@ -167,18 +167,18 @@ class Stencil {
     const ID id;
 
     /**
-     * \brief The present generation index of the central cell.
+     * \brief The present iteration index of the central cell.
      */
-    const uindex_t generation;
+    const uindex_t iteration;
 
-    const uindex_t subgeneration;
+    const uindex_t subiteration;
 
     /**
      * \brief The index of the processing element that calls the transition function.
      *
-     * The processing element index is added to the generation index of the input tile to get the
-     * generation index of this stencil. Under the assumption that the pipeline was always fully
-     * executed, it equals to `generation % n_processing_elements`. Since it is hard coded in the
+     * The processing element index is added to the iteration index of the input tile to get the
+     * iteration index of this stencil. Under the assumption that the pipeline was always fully
+     * executed, it equals to `iteration % n_processing_elements`. Since it is hard coded in the
      * final design, it can be used to alternate between two different data paths: When you write
      * something like this
      * ```

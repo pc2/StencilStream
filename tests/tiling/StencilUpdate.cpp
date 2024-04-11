@@ -35,7 +35,7 @@ using namespace stencil::tiling;
 template <
     tdv::single_pass::Strategy<FPGATransFunc<stencil_radius>, n_processing_elements> TDVStrategy>
 void test_tiling_kernel_with_strategy(uindex_t grid_width, uindex_t grid_height,
-                                      uindex_t generation_offset, uindex_t target_i_generation) {
+                                      uindex_t iteration_offset, uindex_t target_i_iteration) {
     using TransFunc = FPGATransFunc<stencil_radius>;
     using in_pipe = sycl::pipe<class TilingExecutionKernelInPipeID, Cell>;
     using out_pipe = sycl::pipe<class TilingExecutionKernelOutPipeID, Cell>;
@@ -54,7 +54,7 @@ void test_tiling_kernel_with_strategy(uindex_t grid_width, uindex_t grid_height,
                     if (c >= index_t(0) && c < index_t(grid_width) && r >= index_t(0) &&
                         r < index_t(grid_height)) {
                         in_pipe::write(
-                            Cell{c, r, index_t(generation_offset), 0, CellStatus::Normal});
+                            Cell{c, r, index_t(iteration_offset), 0, CellStatus::Normal});
                     } else {
                         in_pipe::write(Cell::halo());
                     }
@@ -63,11 +63,11 @@ void test_tiling_kernel_with_strategy(uindex_t grid_width, uindex_t grid_height,
         });
     });
 
-    TDVGlobalState global_state(TransFunc(), generation_offset, target_i_generation);
+    TDVGlobalState global_state(TransFunc(), iteration_offset, target_i_iteration);
     working_queue.submit([&](sycl::handler &cgh) {
-        TDVKernelArgument kernel_argument(global_state, cgh, generation_offset,
-                                          target_i_generation);
-        TestExecutionKernel kernel(TransFunc(), generation_offset, target_i_generation, 0, 0,
+        TDVKernelArgument kernel_argument(global_state, cgh, iteration_offset,
+                                          target_i_iteration);
+        TestExecutionKernel kernel(TransFunc(), iteration_offset, target_i_iteration, 0, 0,
                                    grid_width, grid_height, Cell::halo(), kernel_argument);
         cgh.single_task(kernel);
     });
@@ -91,44 +91,44 @@ void test_tiling_kernel_with_strategy(uindex_t grid_width, uindex_t grid_height,
             Cell cell = output_buffer_ac[c][r];
             REQUIRE(cell.c == c);
             REQUIRE(cell.r == r);
-            REQUIRE(cell.i_generation == target_i_generation);
-            REQUIRE(cell.i_subgeneration == 0);
+            REQUIRE(cell.i_iteration == target_i_iteration);
+            REQUIRE(cell.i_subiteration == 0);
             REQUIRE(cell.status == CellStatus::Normal);
         }
     }
 }
 
-void test_tiling_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t generation_offset,
-                        uindex_t target_i_generation) {
+void test_tiling_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t iteration_offset,
+                        uindex_t target_i_iteration) {
     test_tiling_kernel_with_strategy<tdv::single_pass::InlineStrategy>(
-        tile_width, tile_height, generation_offset, target_i_generation);
+        tile_width, tile_height, iteration_offset, target_i_iteration);
     test_tiling_kernel_with_strategy<tdv::single_pass::PrecomputeOnDeviceStrategy>(
-        tile_width, tile_height, generation_offset, target_i_generation);
+        tile_width, tile_height, iteration_offset, target_i_iteration);
     test_tiling_kernel_with_strategy<tdv::single_pass::PrecomputeOnHostStrategy>(
-        tile_width, tile_height, generation_offset, target_i_generation);
+        tile_width, tile_height, iteration_offset, target_i_iteration);
 }
 
 TEST_CASE("tiling::StencilUpdateKernel", "[tiling::StencilUpdateKernel]") {
-    test_tiling_kernel(tile_width, tile_height, 0, gens_per_pass);
+    test_tiling_kernel(tile_width, tile_height, 0, iters_per_pass);
 }
 
 TEST_CASE("tiling::StencilUpdateKernel (partial tile)", "[tiling::StencilUpdateKernel]") {
-    test_tiling_kernel(tile_width / 2, tile_height, 0, gens_per_pass);
+    test_tiling_kernel(tile_width / 2, tile_height, 0, iters_per_pass);
 }
 
 TEST_CASE("tiling::StencilUpdateKernel (partial pipeline)", "[tiling::StencilUpdateKernel]") {
-    static_assert(gens_per_pass != 1);
-    test_tiling_kernel(tile_width, tile_height, 0, gens_per_pass - 1);
+    static_assert(iters_per_pass != 1);
+    test_tiling_kernel(tile_width, tile_height, 0, iters_per_pass - 1);
 }
 
-TEST_CASE("tiling::StencilUpdateKernel (generation offset)", "[tiling::StencilUpdateKernel]") {
-    test_tiling_kernel(tile_width, tile_height, gens_per_pass, 2 * gens_per_pass);
+TEST_CASE("tiling::StencilUpdateKernel (iteration offset)", "[tiling::StencilUpdateKernel]") {
+    test_tiling_kernel(tile_width, tile_height, iters_per_pass, 2 * iters_per_pass);
 }
 
-TEST_CASE("tiling::StencilUpdateKernel (generation offset, partial pipeline)",
+TEST_CASE("tiling::StencilUpdateKernel (iteration offset, partial pipeline)",
           "[tiling::StencilUpdateKernel]") {
-    static_assert(gens_per_pass != 1);
-    test_tiling_kernel(tile_width, tile_height, gens_per_pass, 2 * gens_per_pass - 1);
+    static_assert(iters_per_pass != 1);
+    test_tiling_kernel(tile_width, tile_height, iters_per_pass, 2 * iters_per_pass - 1);
 }
 
 struct HaloHandlingKernel : public BaseTransitionFunction {
@@ -179,10 +179,10 @@ TEST_CASE("Halo values inside the pipeline are handled correctly",
         });
     });
 
-    TDVGlobalState global_state(HaloHandlingKernel(), 0, gens_per_pass);
+    TDVGlobalState global_state(HaloHandlingKernel(), 0, iters_per_pass);
     working_queue.submit([&](sycl::handler &cgh) {
-        TDVKernelArgument kernel_argument(global_state, cgh, 0, gens_per_pass);
-        TestExecutionKernel kernel(HaloHandlingKernel(), 0, gens_per_pass, 0, 0, tile_width,
+        TDVKernelArgument kernel_argument(global_state, cgh, 0, iters_per_pass);
+        TestExecutionKernel kernel(HaloHandlingKernel(), 0, iters_per_pass, 0, 0, tile_width,
                                    tile_height, true, kernel_argument);
         cgh.single_task(kernel);
     });
@@ -220,11 +220,11 @@ TEST_CASE("tiling::StencilUpdate", "[tiling::StencilUpdate]") {
             uindex_t grid_height = (1 + i_grid_height) * (tile_height / 2);
 
             test_stencil_update<GridImpl, StencilUpdateImpl>(grid_width, grid_height, 0,
-                                                             gens_per_pass);
+                                                             iters_per_pass);
             test_stencil_update<GridImpl, StencilUpdateImpl>(grid_width, grid_height, 1,
-                                                             gens_per_pass);
+                                                             iters_per_pass);
             test_stencil_update<GridImpl, StencilUpdateImpl>(grid_width, grid_height, 0,
-                                                             gens_per_pass + 1);
+                                                             iters_per_pass + 1);
         }
     }
 }

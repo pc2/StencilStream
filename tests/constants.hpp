@@ -27,9 +27,9 @@
 const stencil::uindex_t tile_width = 64;
 const stencil::uindex_t tile_height = 32;
 
-const stencil::uindex_t subgenerations = 2;
+const stencil::uindex_t subiterations = 2;
 const stencil::uindex_t n_processing_elements = 4;
-const stencil::uindex_t gens_per_pass = n_processing_elements / subgenerations;
+const stencil::uindex_t iters_per_pass = n_processing_elements / subiterations;
 const stencil::uindex_t stencil_radius = 2;
 const stencil::uindex_t halo_radius = n_processing_elements * stencil_radius;
 const stencil::uindex_t core_width = tile_width - 2 * halo_radius;

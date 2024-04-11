@@ -40,7 +40,7 @@ namespace stencil {
  * or column of a cell in a tile buffer. The `2d` indices are used in the context of combined tile
  * row and column indices, i.e. when iterating over a tile with a single coalesced index. Lastly,
  * the type can also be omited, which yields the widest index possible, which is used for example to
- * denote a generation index or a cell in the grid.
+ * denote a iteration index or a cell in the grid.
  *
  * The exact widths are set using the `STENCIL_INDEX_(TYPE_)WIDTH` macros. Their dimensions are
  * reasonable for FPGAs in early 2022, but can be changed as necesssary. Static asserts throughout

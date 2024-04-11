@@ -30,15 +30,15 @@ template <typename MaterialResolver> class Kernel {
     using TimeDependentValue = float;
 
     static constexpr uindex_t stencil_radius = 1;
-    static constexpr uindex_t n_subgenerations = 2;
+    static constexpr uindex_t n_subiterations = 2;
 
     Kernel(Parameters const &parameters, MaterialResolver mat_resolver)
         : dt(parameters.dt()), t_0(parameters.t_0()), tau(parameters.tau),
-          omega(parameters.omega()), cutoff_generation(), detect_generation(),
+          omega(parameters.omega()), cutoff_iteration(), detect_iteration(),
           source_radius_squared(), source_c(), source_r(), source_distance_bound(),
           double_center_cr(), mat_resolver(mat_resolver) {
-        cutoff_generation = std::floor(parameters.t_cutoff() / parameters.dt());
-        detect_generation = std::floor(parameters.t_detect() / parameters.dt());
+        cutoff_iteration = std::floor(parameters.t_cutoff() / parameters.dt());
+        detect_iteration = std::floor(parameters.t_detect() / parameters.dt());
 
         source_radius_squared = parameters.source_radius / parameters.dx;
         source_radius_squared *= source_radius_squared;
@@ -52,8 +52,8 @@ template <typename MaterialResolver> class Kernel {
         double_center_cr = parameters.grid_range()[0];
     }
 
-    float get_time_dependent_value(uindex_t i_generation) const {
-        float current_time = i_generation * dt;
+    float get_time_dependent_value(uindex_t i_iteration) const {
+        float current_time = i_iteration * dt;
         float wave_progress = (current_time - t_0) / tau;
         return cl::sycl::cos(omega * current_time) *
                cl::sycl::exp(-1 * wave_progress * wave_progress);
@@ -70,7 +70,7 @@ template <typename MaterialResolver> class Kernel {
         CoefMaterial material =
             mat_resolver.get_material_coefficients(stencil, center_distance_score);
 
-        if (stencil.subgeneration == 0) {
+        if (stencil.subiteration == 0) {
             cell.cell.ex *= material.ca;
             cell.cell.ex += material.cb * (stencil[ID(0, 0)].cell.hz - stencil[ID(0, -1)].cell.hz);
 
@@ -82,7 +82,7 @@ template <typename MaterialResolver> class Kernel {
                                            stencil[ID(0, 0)].cell.ey - stencil[ID(1, 0)].cell.ey);
 
             if (source_distance_score <= source_distance_bound &&
-                stencil.generation <= cutoff_generation) {
+                stencil.iteration <= cutoff_iteration) {
                 float interp_factor;
                 if (source_radius_squared != 0) {
                     index_t cell_distance_squared =
@@ -97,7 +97,7 @@ template <typename MaterialResolver> class Kernel {
                 cell.cell.hz += interp_factor * source_amplitude;
             }
 
-            if (stencil.generation > detect_generation) {
+            if (stencil.iteration > detect_iteration) {
                 cell.cell.hz_sum += cell.cell.hz * cell.cell.hz;
             }
         }
@@ -107,8 +107,8 @@ template <typename MaterialResolver> class Kernel {
   private:
     float dt, t_0, tau, omega;
 
-    uindex_t cutoff_generation;
-    uindex_t detect_generation;
+    uindex_t cutoff_iteration;
+    uindex_t detect_iteration;
 
     float source_radius_squared;
     index_t source_c, source_r, source_distance_bound;

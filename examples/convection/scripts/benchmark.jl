@@ -1,9 +1,9 @@
 #!/usr/bin/env -S julia --project=../..
 include("../../../scripts/benchmark-common.jl")
 
-const N_SUBGENERATIONS = 3
+const N_SUBITERATIONS = 3
 const N_REPLICATIONS = 8
-const N_CUS = N_SUBGENERATIONS * N_REPLICATIONS
+const N_CUS = N_SUBITERATIONS * N_REPLICATIONS
 const OPERATIONS_PER_CELL = (5+5+3+6+6+6) + (10+3+2+14+3+2) + 2
 const CELL_SIZE = 128 # bytes, with padding
 const TILE_HEIGHT = 512
@@ -116,7 +116,7 @@ function default_benchmark()
         best_performing_invocation = argmax(pseudo_transient_runtimes.pseudo_steps ./ pseudo_transient_runtimes.runtime)
         raw_metrics = build_metrics(
             pseudo_transient_runtimes.runtime[best_performing_invocation],
-            pseudo_transient_runtimes.pseudo_steps[best_performing_invocation] * N_SUBGENERATIONS,
+            pseudo_transient_runtimes.pseudo_steps[best_performing_invocation] * N_SUBITERATIONS,
             :monotile,
             f,
             loop_latency,

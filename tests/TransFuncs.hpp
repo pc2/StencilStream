@@ -36,17 +36,17 @@ enum class CellStatus {
 struct Cell {
     stencil::index_t c;
     stencil::index_t r;
-    stencil::index_t i_generation;
-    stencil::index_t i_subgeneration;
+    stencil::index_t i_iteration;
+    stencil::index_t i_subiteration;
     CellStatus status;
 
     static Cell halo() { return Cell{0, 0, 0, 0, CellStatus::Halo}; }
 };
 
-struct GenerationFunction {
+struct IterationFunction {
     using Value = stencil::uindex_t;
 
-    stencil::uindex_t operator()(stencil::uindex_t i_generation) const { return i_generation; }
+    stencil::uindex_t operator()(stencil::uindex_t i_iteration) const { return i_iteration; }
 };
 
 template <stencil::uindex_t radius> class FPGATransFunc {
@@ -55,10 +55,10 @@ template <stencil::uindex_t radius> class FPGATransFunc {
     using TimeDependentValue = stencil::uindex_t;
 
     static constexpr stencil::uindex_t stencil_radius = radius;
-    static constexpr stencil::uindex_t n_subgenerations = 2;
+    static constexpr stencil::uindex_t n_subiterations = 2;
 
-    stencil::uindex_t get_time_dependent_value(stencil::uindex_t i_generation) const {
-        return i_generation;
+    stencil::uindex_t get_time_dependent_value(stencil::uindex_t i_iteration) const {
+        return i_iteration;
     }
 
     Cell operator()(stencil::Stencil<Cell, radius, TimeDependentValue> const &stencil) const {
@@ -77,26 +77,26 @@ template <stencil::uindex_t radius> class FPGATransFunc {
                     cell_r < stencil.grid_range.r) {
                     is_valid &= old_cell.c == cell_c;
                     is_valid &= old_cell.r == cell_r;
-                    is_valid &= old_cell.i_generation == stencil.generation;
-                    is_valid &= old_cell.i_subgeneration == stencil.subgeneration;
+                    is_valid &= old_cell.i_iteration == stencil.iteration;
+                    is_valid &= old_cell.i_subiteration == stencil.subiteration;
                     is_valid &= old_cell.status == CellStatus::Normal;
                 } else {
                     is_valid &= old_cell.c == Cell::halo().c;
                     is_valid &= old_cell.r == Cell::halo().r;
-                    is_valid &= old_cell.i_generation == Cell::halo().i_generation;
-                    is_valid &= old_cell.i_subgeneration == Cell::halo().i_subgeneration;
+                    is_valid &= old_cell.i_iteration == Cell::halo().i_iteration;
+                    is_valid &= old_cell.i_subiteration == Cell::halo().i_subiteration;
                     is_valid &= old_cell.status == Cell::halo().status;
                 }
             }
         }
-        is_valid &= stencil.time_dependent_value == stencil.generation;
+        is_valid &= stencil.time_dependent_value == stencil.iteration;
 
         new_cell.status = is_valid ? CellStatus::Normal : CellStatus::Invalid;
-        if (new_cell.i_subgeneration == n_subgenerations - 1) {
-            new_cell.i_generation += 1;
-            new_cell.i_subgeneration = 0;
+        if (new_cell.i_subiteration == n_subiterations - 1) {
+            new_cell.i_iteration += 1;
+            new_cell.i_subiteration = 0;
         } else {
-            new_cell.i_subgeneration++;
+            new_cell.i_subiteration++;
         }
 
         return new_cell;
@@ -109,10 +109,10 @@ template <stencil::uindex_t radius> class HostTransFunc {
     using TimeDependentValue = stencil::uindex_t;
 
     static constexpr stencil::uindex_t stencil_radius = radius;
-    static constexpr stencil::uindex_t n_subgenerations = 2;
+    static constexpr stencil::uindex_t n_subiterations = 2;
 
-    stencil::uindex_t get_time_dependent_value(stencil::uindex_t i_generation) const {
-        return i_generation;
+    stencil::uindex_t get_time_dependent_value(stencil::uindex_t i_iteration) const {
+        return i_iteration;
     }
 
     Cell operator()(stencil::Stencil<Cell, radius, stencil::uindex_t> const &stencil) const {
@@ -137,26 +137,26 @@ template <stencil::uindex_t radius> class HostTransFunc {
                     cell_r < stencil.grid_range.r) {
                     REQUIRE(old_cell.c == cell_c);
                     REQUIRE(old_cell.r == cell_r);
-                    REQUIRE(old_cell.i_generation == stencil.generation);
-                    REQUIRE(old_cell.i_subgeneration == stencil.subgeneration);
+                    REQUIRE(old_cell.i_iteration == stencil.iteration);
+                    REQUIRE(old_cell.i_subiteration == stencil.subiteration);
                     REQUIRE(old_cell.status == CellStatus::Normal);
                 } else {
                     REQUIRE(old_cell.c == Cell::halo().c);
                     REQUIRE(old_cell.r == Cell::halo().r);
-                    REQUIRE(old_cell.i_generation == Cell::halo().i_generation);
-                    REQUIRE(old_cell.i_subgeneration == Cell::halo().i_subgeneration);
+                    REQUIRE(old_cell.i_iteration == Cell::halo().i_iteration);
+                    REQUIRE(old_cell.i_subiteration == Cell::halo().i_subiteration);
                     REQUIRE(old_cell.status == Cell::halo().status);
                 }
             }
         }
 
-        REQUIRE(stencil.time_dependent_value == stencil.generation);
+        REQUIRE(stencil.time_dependent_value == stencil.iteration);
 
-        if (new_cell.i_subgeneration == n_subgenerations - 1) {
-            new_cell.i_generation += 1;
-            new_cell.i_subgeneration = 0;
+        if (new_cell.i_subiteration == n_subiterations - 1) {
+            new_cell.i_iteration += 1;
+            new_cell.i_subiteration = 0;
         } else {
-            new_cell.i_subgeneration++;
+            new_cell.i_subiteration++;
         }
 
         return new_cell;

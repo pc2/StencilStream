@@ -37,8 +37,8 @@ concept TransitionFunction =
     std::copyable<typename T::TimeDependentValue> &&
     // The stencil radius must be a constant greater than 1.
     std::same_as<decltype(T::stencil_radius), const uindex_t> && (T::stencil_radius >= 1) &&
-    // The number of subgenerations must be a constant greater than 1.
-    std::same_as<decltype(T::n_subgenerations), const uindex_t> && (T::n_subgenerations >= 1) &&
+    // The number of sub-iterations must be a constant greater than 1.
+    std::same_as<decltype(T::n_subiterations), const uindex_t> && (T::n_subiterations >= 1) &&
     // The transition function must be invocable. Its argument must be a stencil
     // and its return value must be a cell.
     requires(T const &trans_func,
@@ -47,9 +47,9 @@ concept TransitionFunction =
         // update method
         { trans_func(stencil) } -> std::same_as<typename T::Cell>;
     } &&
-    requires(T const &trans_func, uindex_t i_generation) {
+    requires(T const &trans_func, uindex_t i_iteration) {
         {
-            trans_func.get_time_dependent_value(i_generation)
+            trans_func.get_time_dependent_value(i_iteration)
             } -> std::same_as<typename T::TimeDependentValue>;
     };
 
@@ -86,8 +86,8 @@ concept StencilUpdate =
     requires(typename SU::Params params) {
         { params.transition_function } -> std::same_as<TF &>;
         { params.halo_value } -> std::same_as<typename TF::Cell &>;
-        { params.generation_offset } -> std::same_as<uindex_t &>;
-        { params.n_generations } -> std::same_as<uindex_t &>;
+        { params.iteration_offset } -> std::same_as<uindex_t &>;
+        { params.n_iterations } -> std::same_as<uindex_t &>;
         { params.device } -> std::same_as<sycl::device &>;
     } && TransitionFunction<TF> && Grid<G, typename TF::Cell> &&
     (std::is_class<typename SU::Params>::value);

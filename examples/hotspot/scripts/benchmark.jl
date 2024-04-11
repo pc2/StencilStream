@@ -45,8 +45,8 @@ function max_perf_benchmark(exec, variant, n_cus, f, loop_latency)
     create_experiment(grid_height, grid_width, temp_path, power_path)
     println("Experiment created and written!")
 
-    n_gens = n_cus * n_passes
-    command = `$exec $grid_height $grid_width $n_gens $temp_path $power_path $out_path`
+    n_iters = n_cus * n_passes
+    command = `$exec $grid_height $grid_width $n_iters $temp_path $power_path $out_path`
 
     runtime = open(command, "r") do process_in
         while true
@@ -60,7 +60,7 @@ function max_perf_benchmark(exec, variant, n_cus, f, loop_latency)
         end
     end
     tile_width = (variant == :monotile) ? MONO_TILE_WIDTH : TILING_TILE_WIDTH
-    raw_metrics = build_metrics(runtime, n_gens, variant, f, loop_latency, grid_height, grid_width, TILE_HEIGHT, tile_width, n_cus, OPERATIONS_PER_CELL, CELL_SIZE)
+    raw_metrics = build_metrics(runtime, n_iters, variant, f, loop_latency, grid_height, grid_width, TILE_HEIGHT, tile_width, n_cus, OPERATIONS_PER_CELL, CELL_SIZE)
 
     metrics = Dict(
         "target" => (variant == :monotile) ? "Hotspot, Monotile" : "Hotspot, Tiling",

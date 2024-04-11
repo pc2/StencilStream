@@ -40,16 +40,16 @@ function load_report_details(report_path)
     return f, loop_latency
 end
 
-function model_monotile_runtime(f, loop_latency, n_grid_rows, n_grid_cols, n_gens, n_cus)
+function model_monotile_runtime(f, loop_latency, n_grid_rows, n_grid_cols, n_iters, n_cus)
     cu_latency = n_grid_rows + 1
     pipeline_latency = n_cus * cu_latency
     n_iterations = pipeline_latency + (n_grid_rows * n_grid_cols)
     n_cycles = n_iterations + loop_latency
     
-    ceil(n_gens / n_cus) * n_cycles / f
+    ceil(n_iters / n_cus) * n_cycles / f
 end
 
-function model_tiling_runtime(f, loop_latency, n_grid_rows, n_grid_cols, n_gens, n_tile_rows, n_tile_cols, n_cus)
+function model_tiling_runtime(f, loop_latency, n_grid_rows, n_grid_cols, n_iters, n_tile_rows, n_tile_cols, n_cus)
     n_cycles_per_pass = 0
     for tile_col in 1:ceil(n_grid_cols / n_tile_cols)
         n_tiles_in_column = ceil(n_grid_rows / n_tile_rows)
@@ -57,7 +57,7 @@ function model_tiling_runtime(f, loop_latency, n_grid_rows, n_grid_cols, n_gens,
         n_cycles_per_pass += n_tiles_in_column * (loop_latency + (tile_section_width + 2n_cus) * (n_tile_rows + 2n_cus))
     end
 
-    ceil(n_gens / n_cus) * n_cycles_per_pass / f
+    ceil(n_iters / n_cus) * n_cycles_per_pass / f
 end
 
 function render_model_error(df, file_name)
@@ -83,17 +83,17 @@ function render_model_error(df, file_name)
     end
 end
 
-function build_metrics(measured_runtime, n_gens, variant, f, loop_latency, n_grid_rows, n_grid_cols, n_tile_rows, n_tile_cols, n_cus, ops_per_cell, cell_size)
-    n_passes = ceil(n_gens / n_cus)
+function build_metrics(measured_runtime, n_iters, variant, f, loop_latency, n_grid_rows, n_grid_cols, n_tile_rows, n_tile_cols, n_cus, ops_per_cell, cell_size)
+    n_passes = ceil(n_iters / n_cus)
     grid_size = n_grid_cols * n_grid_rows
-    workload = n_gens * grid_size
+    workload = n_iters * grid_size
     measured_rate = workload / measured_runtime
 
     if variant == :monotile
-        model_runtime = model_monotile_runtime(f, loop_latency, n_grid_rows, n_grid_cols, n_gens, n_cus)
+        model_runtime = model_monotile_runtime(f, loop_latency, n_grid_rows, n_grid_cols, n_iters, n_cus)
         transfered_cells = 2 * grid_size * n_passes
     else
-        model_runtime = model_tiling_runtime(f, loop_latency, n_grid_rows, n_grid_cols, n_gens, n_tile_rows, n_tile_cols, n_cus)
+        model_runtime = model_tiling_runtime(f, loop_latency, n_grid_rows, n_grid_cols, n_iters, n_tile_rows, n_tile_cols, n_cus)
         transfered_cells = ((2n_cus + n_grid_rows)*(2n_cus + n_grid_cols) + grid_size) * n_passes
     end
     model_rate = workload / model_runtime

@@ -71,7 +71,7 @@ class PseudoTransientKernel : public BaseTransitionFunction {
   public:
     using Cell = ThermalConvectionCell;
 
-    static constexpr uindex_t n_subgenerations = 3;
+    static constexpr uindex_t n_subiterations = 3;
 
     uindex_t nx, ny;
     double roh0_g_alpha;
@@ -90,7 +90,7 @@ class PseudoTransientKernel : public BaseTransitionFunction {
         uindex_t c = stencil.id.c;
         uindex_t r = stencil.id.r;
 
-        if (stencil.subgeneration == 0) {
+        if (stencil.subiteration == 0) {
             // assign!(ErrV, Vy)
             if (c < nx && r < ny + 1) {
                 new_cell.ErrV = ALL(Vy);
@@ -109,7 +109,7 @@ class PseudoTransientKernel : public BaseTransitionFunction {
                 new_cell.Pt = ALL(Pt) - delta_tau_iter / beta * delta_V;
                 new_cell.tau_xx = 2.0 * eta * (D_XA(Vx) / dx - (1.0 / 3.0) * delta_V);
                 // The original implementation uses @av(eta) here, which would actually mean that
-                // this computation should be moved one subgeneration back. However, using @all(eta)
+                // this computation should be moved one subiteration back. However, using @all(eta)
                 // did not make a noticeable difference, which is why I'm using new_cell.eta here.
                 new_cell.tau_yy = 2.0 * eta * (D_YA(Vy) / dy - (1.0 / 3.0) * delta_V);
 
@@ -118,7 +118,7 @@ class PseudoTransientKernel : public BaseTransitionFunction {
                 }
             }
 
-        } else if (stencil.subgeneration == 1) {
+        } else if (stencil.subiteration == 1) {
             // compute_2!(...) and update_V!(...)
             if (c >= 1 && r >= 1) {
                 if (c < (nx + 1) - 1 && r < ny - 1) {
@@ -141,7 +141,7 @@ class PseudoTransientKernel : public BaseTransitionFunction {
                 }
             }
 
-        } else if (stencil.subgeneration == 2) {
+        } else if (stencil.subiteration == 2) {
             // bc_y!(Vx)
             if (c < nx + 1 && r < ny) {
                 if (r == 0) {
@@ -181,7 +181,7 @@ class ThermalSolverKernel : public BaseTransitionFunction {
   public:
     using Cell = ThermalConvectionCell;
 
-    static constexpr uindex_t n_subgenerations = 2;
+    static constexpr uindex_t n_subiterations = 2;
 
     uindex_t nx, ny;
     double dx, dy, dt;
@@ -192,9 +192,9 @@ class ThermalSolverKernel : public BaseTransitionFunction {
         uindex_t c = stencil.id.c;
         uindex_t r = stencil.id.r;
 
-        if (stencil.subgeneration == 0) {
+        if (stencil.subiteration == 0) {
             if (c > 0 && r > 0 && c < nx - 1 && r < ny - 1) {
-                // We only need qTx and qTy in this generation, so I'm moving them here.
+                // We only need qTx and qTy in this iteration, so I'm moving them here.
                 double qTx_top_left = -DcT * (stencil[ID(0, 0)].T - stencil[ID(-1, 0)].T) / dx;
                 double qTx_top = -DcT * (stencil[ID(1, 0)].T - stencil[ID(0, 0)].T) / dx;
 
@@ -226,7 +226,7 @@ class ThermalSolverKernel : public BaseTransitionFunction {
                 new_cell.T = ALL(T) + dT_dt * dt;
             }
 
-        } else if (stencil.subgeneration == 1) {
+        } else if (stencil.subiteration == 1) {
             // no_fluxY_T!(...)
             if (c == nx - 1 && r < ny) {
                 new_cell.T = stencil[ID(-1, 0)].T;
@@ -250,10 +250,10 @@ constexpr uindex_t max_grid_width = 1 << 16;
 constexpr uindex_t max_grid_height = 512;
 using Grid = monotile::Grid<ThermalConvectionCell>;
 using PseudoTransientUpdate =
-    monotile::StencilUpdate<PseudoTransientKernel, PseudoTransientKernel::n_subgenerations * 8,
+    monotile::StencilUpdate<PseudoTransientKernel, PseudoTransientKernel::n_subiterations * 8,
                             max_grid_width, max_grid_height>;
 using ThermalSolverUpdate =
-    monotile::StencilUpdate<ThermalSolverKernel, ThermalSolverKernel::n_subgenerations,
+    monotile::StencilUpdate<ThermalSolverKernel, ThermalSolverKernel::n_subiterations,
                             max_grid_width, max_grid_height>;
 
 #endif
@@ -361,7 +361,7 @@ int main(int argc, char **argv) {
                 .DcT = DcT,
             },
         .halo_value = ThermalConvectionCell::halo_value(),
-        .n_generations = nerr,
+        .n_iterations = nerr,
         .device = device,
     });
 
@@ -441,7 +441,7 @@ int main(int argc, char **argv) {
             .transition_function =
                 ThermalSolverKernel{.nx = nx, .ny = ny, .dx = dx, .dy = dy, .dt = dt, .DcT = DcT},
             .halo_value = ThermalConvectionCell::halo_value(),
-            .n_generations = 1,
+            .n_iterations = 1,
             .device = device,
         });
         grid = thermal_solver_update(grid);

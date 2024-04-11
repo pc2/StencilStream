@@ -53,7 +53,7 @@ template <concepts::TransitionFunction TransFunc,
           tdv::single_pass::KernelArgument<TransFunc> TDVKernelArgument,
           uindex_t n_processing_elements, uindex_t max_grid_width, uindex_t max_grid_height,
           typename in_pipe, typename out_pipe>
-    requires(n_processing_elements % TransFunc::n_subgenerations == 0)
+    requires(n_processing_elements % TransFunc::n_subiterations == 0)
 class StencilUpdateKernel {
   public:
     using Cell = typename TransFunc::Cell;
@@ -67,7 +67,7 @@ class StencilUpdateKernel {
      */
     static constexpr uindex_t stencil_diameter = StencilImpl::diameter;
 
-    static constexpr uindex_t gens_per_pass = n_processing_elements / TransFunc::n_subgenerations;
+    static constexpr uindex_t iters_per_pass = n_processing_elements / TransFunc::n_subiterations;
 
     static constexpr uindex_t calc_pipeline_latency(uindex_t grid_height) {
         return n_processing_elements * TransFunc::stencil_radius * (grid_height + 1);
@@ -105,18 +105,18 @@ class StencilUpdateKernel {
      * \brief Create and configure the execution kernel.
      *
      * \param trans_func The instance of the transition function to use.
-     * \param i_generation The generation index of the input cells.
-     * \param n_generations The number of generations to compute. If this number is bigger than
-     * `n_processing_elements`, only `n_processing_elements` generations will be computed.
+     * \param i_iteration The iteration index of the input cells.
+     * \param n_iterations The number of iterations to compute. If this number is bigger than
+     * `n_processing_elements`, only `n_processing_elements` iterations will be computed.
      * \param grid_width The number of cell columns in the grid.
      * \param grid_height The number of cell rows in the grid.
      * \param halo_value The value of cells outside the grid.
      */
-    StencilUpdateKernel(TransFunc trans_func, uindex_t i_generation, uindex_t target_i_generation,
+    StencilUpdateKernel(TransFunc trans_func, uindex_t i_iteration, uindex_t target_i_iteration,
                         uindex_t grid_width, uindex_t grid_height, Cell halo_value,
                         TDVKernelArgument tdv_kernel_argument)
-        : trans_func(trans_func), i_generation(i_generation),
-          target_i_generation(target_i_generation), grid_width(grid_width),
+        : trans_func(trans_func), i_iteration(i_iteration),
+          target_i_iteration(target_i_iteration), grid_width(grid_width),
           grid_height(grid_height), halo_value(halo_value),
           tdv_kernel_argument(tdv_kernel_argument) {
         assert(grid_height <= max_grid_height);
@@ -202,17 +202,17 @@ class StencilUpdateKernel {
                     }
                 }
 
-                uindex_t pe_generation =
-                    (i_generation + i_processing_element / TransFunc::n_subgenerations).to_uint();
-                uindex_t pe_subgeneration =
-                    (i_processing_element % TransFunc::n_subgenerations).to_uint();
+                uindex_t pe_iteration =
+                    (i_iteration + i_processing_element / TransFunc::n_subiterations).to_uint();
+                uindex_t pe_subiteration =
+                    (i_processing_element % TransFunc::n_subiterations).to_uint();
 
-                if (pe_generation < target_i_generation) {
+                if (pe_iteration < target_i_iteration) {
                     TDV tdv = tdv_local_state.get_time_dependent_value(
-                        (i_processing_element / TransFunc::n_subgenerations).to_uint());
+                        (i_processing_element / TransFunc::n_subiterations).to_uint());
                     StencilImpl stencil(ID(c[i_processing_element], r[i_processing_element]),
-                                        UID(grid_width, grid_height), pe_generation,
-                                        pe_subgeneration, i_processing_element, tdv);
+                                        UID(grid_width, grid_height), pe_iteration,
+                                        pe_subiteration, i_processing_element, tdv);
 
                     bool h_halo_mask[stencil_diameter];
                     bool v_halo_mask[stencil_diameter];
@@ -276,8 +276,8 @@ class StencilUpdateKernel {
 
   private:
     TransFunc trans_func;
-    uindex_t i_generation;
-    uindex_t target_i_generation;
+    uindex_t i_iteration;
+    uindex_t target_i_iteration;
     uindex_t grid_width;
     uindex_t grid_height;
     Cell halo_value;
@@ -298,8 +298,8 @@ class StencilUpdate {
     struct Params {
         F transition_function;
         Cell halo_value = Cell();
-        uindex_t generation_offset = 0;
-        uindex_t n_generations = 1;
+        uindex_t iteration_offset = 0;
+        uindex_t n_iterations = 1;
         sycl::device device = sycl::device();
         bool blocking = false;
         bool profiling = false;
@@ -320,9 +320,9 @@ class StencilUpdate {
         using in_pipe = sycl::pipe<class monotile_in_pipe, Cell>;
         using out_pipe = sycl::pipe<class monotile_out_pipe, Cell>;
 
-        constexpr uindex_t gens_per_pass = n_processing_elements / F::n_subgenerations;
+        constexpr uindex_t iters_per_pass = n_processing_elements / F::n_subiterations;
 
-        using TDVGlobalState = TDVStrategy::template GlobalState<F, gens_per_pass>;
+        using TDVGlobalState = TDVStrategy::template GlobalState<F, iters_per_pass>;
         using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
         using ExecutionKernelImpl =
             StencilUpdateKernel<F, TDVKernelArgument, n_processing_elements, max_grid_width,
@@ -344,21 +344,21 @@ class StencilUpdate {
         GridImpl *pass_target = &swap_grid_b;
 
         F trans_func = params.transition_function;
-        TDVGlobalState tdv_global_state(trans_func, params.generation_offset, params.n_generations);
+        TDVGlobalState tdv_global_state(trans_func, params.iteration_offset, params.n_iterations);
 
         auto walltime_start = std::chrono::high_resolution_clock::now();
 
-        uindex_t target_n_generations = params.generation_offset + params.n_generations;
-        for (uindex_t i_gen = params.generation_offset; i_gen < target_n_generations;
-             i_gen += gens_per_pass) {
+        uindex_t target_n_iterations = params.iteration_offset + params.n_iterations;
+        for (uindex_t i = params.iteration_offset; i < target_n_iterations;
+             i += iters_per_pass) {
             pass_source->template submit_read<in_pipe>(input_kernel_queue);
-            uindex_t gens_in_this_pass = std::min(gens_per_pass, target_n_generations - i_gen);
+            uindex_t iters_in_this_pass = std::min(iters_per_pass, target_n_iterations - i);
 
             sycl::event work_event = update_kernel_queue.submit([&](sycl::handler &cgh) {
-                TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i_gen,
-                                                      gens_in_this_pass);
+                TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i,
+                                                      iters_in_this_pass);
                 ExecutionKernelImpl exec_kernel(
-                    trans_func, i_gen, target_n_generations, source_grid.get_grid_width(),
+                    trans_func, i, target_n_iterations, source_grid.get_grid_width(),
                     source_grid.get_grid_height(), params.halo_value, tdv_kernel_argument);
                 cgh.single_task<ExecutionKernelImpl>(exec_kernel);
             });
@@ -368,7 +368,7 @@ class StencilUpdate {
 
             pass_target->template submit_write<out_pipe>(output_kernel_queue);
 
-            if (i_gen == params.generation_offset) {
+            if (i == params.iteration_offset) {
                 pass_source = &swap_grid_b;
                 pass_target = &swap_grid_a;
             } else {
@@ -385,7 +385,7 @@ class StencilUpdate {
         this->walltime += walltime.count();
 
         n_processed_cells +=
-            params.n_generations * source_grid.get_grid_width() * source_grid.get_grid_height();
+            params.n_iterations * source_grid.get_grid_width() * source_grid.get_grid_height();
 
         return *pass_source;
     }

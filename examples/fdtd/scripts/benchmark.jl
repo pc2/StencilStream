@@ -1,7 +1,7 @@
 #!/usr/bin/env -S julia --project=../..
 include("../../../scripts/benchmark-common.jl")
 
-const N_SUBGENERATIONS = 2
+const N_SUBITERATIONS = 2
 const N_TILING_CUS = 190
 const N_MONOTILE_CUS = 200
 const OPERATIONS_PER_CELL = 0.5 * (8) + 0.5 * (6 + 4 + 2 + 2 + 2) # Including all paths, excluding source wave computation
@@ -45,7 +45,7 @@ function max_perf_benchmark(exe, variant, n_cus, f, loop_latency)
 
         kernel_runtime, walltime, grid_wh, n_timesteps
     end
-    raw_metrics = build_metrics(kernel_runtime, n_timesteps * N_SUBGENERATIONS, variant, f, loop_latency, grid_wh, grid_wh, tile_height, tile_width, n_cus, OPERATIONS_PER_CELL, CELL_SIZE)
+    raw_metrics = build_metrics(kernel_runtime, n_timesteps * N_SUBITERATIONS, variant, f, loop_latency, grid_wh, grid_wh, tile_height, tile_width, n_cus, OPERATIONS_PER_CELL, CELL_SIZE)
 
     metrics = Dict(
         "target" => (variant == :monotile) ? "FDTD, Monotile" : "FDTD, Tiling",
@@ -108,10 +108,10 @@ function scaling_benchmark(exe, variant)
                 end
 
                 if variant == :monotile
-                    model_runtime = model_monotile_runtime(f, loop_latency, grid_wh, grid_wh, N_SUBGENERATIONS * n_timesteps, N_MONOTILE_CUS)
+                    model_runtime = model_monotile_runtime(f, loop_latency, grid_wh, grid_wh, N_SUBITERATIONS * n_timesteps, N_MONOTILE_CUS)
                 else
                     tile_width = (variant == :monotile) ? MONO_TILE_WIDTH : TILING_TILE_WIDTH
-                    model_runtime = model_tiling_runtime(f, loop_latency, grid_wh, grid_wh, N_SUBGENERATIONS * n_timesteps, tile_width, TILE_WIDTH, N_TILING_CUS)
+                    model_runtime = model_tiling_runtime(f, loop_latency, grid_wh, grid_wh, N_SUBITERATIONS * n_timesteps, tile_width, TILE_WIDTH, N_TILING_CUS)
                 end
 
                 push!(df, (t_max, grid_wh, n_timesteps, kernel_runtime, walltime, model_runtime))

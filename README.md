@@ -41,7 +41,7 @@ const Cell halo_value = false;
 const stencil::uindex_t stencil_radius = 1;
 ```
 
-Next are some important definitions: The cell type, the value of cells in the grid halo, and the radius of the stencil buffer. In our example, a cell is either alive or dead. We express that with a boolean value which is true if the cell is alive and false if it is dead. The cells are arranged in a grid, but in order to update the cells on the borders of the grid, we need cells *outside* of the grid. StencilStream assures that these cells always have a constant halo value. If this halo value and the transition function is well-chosen, we don't have to do any edge handling. Here, we assume that cells outside of the grid to be always dead, so we pick the halo value `false`. The radius of the stencil defines how many neighbors of a cell we need to calculate the next generation. In our case, we only need the direct neighbors, so we set the radius to 1. This means that the stencil buffer will be 3 by 3 cells big.
+Next are some important definitions: The cell type, the value of cells in the grid halo, and the radius of the stencil buffer. In our example, a cell is either alive or dead. We express that with a boolean value which is true if the cell is alive and false if it is dead. The cells are arranged in a grid, but in order to update the cells on the borders of the grid, we need cells *outside* of the grid. StencilStream assures that these cells always have a constant halo value. If this halo value and the transition function is well-chosen, we don't have to do any edge handling. Here, we assume that cells outside of the grid to be always dead, so we pick the halo value `false`. The radius of the stencil defines how many neighbors of a cell we need to calculate the next iteration. In our case, we only need the direct neighbors, so we set the radius to 1. This means that the stencil buffer will be 3 by 3 cells big.
 
 This is everything we need to define the transition function, so let's do it now:
 
@@ -124,13 +124,13 @@ The only thing left is to run the calculations. We do this like this:
 ``` C++
 int main(int argc, char **argv) {
     if (argc != 4) {
-        std::cerr << "Usage: " << argv[0] << " <width> <height> <n_generations>" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <width> <height> <n_iterations>" << std::endl;
         return 1;
     }
 
     stencil::uindex_t width = std::stoi(argv[1]);
     stencil::uindex_t height = std::stoi(argv[2]);
-    stencil::uindex_t n_generations = std::stoi(argv[3]);
+    stencil::uindex_t n_iterations = std::stoi(argv[3]);
 
     cl::sycl::buffer<Cell, 2> grid_buffer = read(width, height);
 
@@ -152,7 +152,7 @@ After checking and parsing the arguments, we read the input data. Then, we pick 
 Next, we use the `HARDWARE` flag to either pick the emulator or the FPGA. With OpenCL, this is a daunting task to get right, but here there are only some lines of simple code that also handle all of the errors that might come up.
 
 ``` C++
-    executor.run(n_generations);
+    executor.run(n_iterations);
 
     executor.copy_output(grid_buffer);
     write(grid_buffer);
@@ -161,7 +161,7 @@ Next, we use the `HARDWARE` flag to either pick the emulator or the FPGA. With O
 }
 ```
 
-When all of this is done, we just tell the executor to calculate the requested number of generations. After that, we copy the results back to the grid buffer and write them to stdout.
+When all of this is done, we just tell the executor to calculate the requested number of iterations. After that, we copy the results back to the grid buffer and write them to stdout.
 
 That's it. This is all of the code you have to write. Everything else, like getting cells to and from the global buffer, caching intermediate values, or resolving loop dependencies is done by StencilStream. You only need to provide the transition function and some info about it, everything else is handled for you.
 

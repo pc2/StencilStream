@@ -297,7 +297,7 @@ struct Parameters {
 
         std::cout << "# Execution parameters" << std::endl;
         std::cout << "dx            = " << dx << " m/cell" << std::endl;
-        std::cout << "dt            = " << dt() << " s/generation" << std::endl;
+        std::cout << "dt            = " << dt() << " s/iteration" << std::endl;
         std::cout << "grid w/h      = " << grid_range()[0] << " cells" << std::endl;
         std::cout << "n. timesteps  = " << n_timesteps() << std::endl;
         std::cout << std::endl;

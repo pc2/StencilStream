@@ -89,13 +89,13 @@ void write(Grid<bool> output_grid) {
 
 int main(int argc, char **argv) {
     if (argc != 4) {
-        std::cerr << "Usage: " << argv[0] << " <width> <height> <n_generations>" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <width> <height> <n_iterations>" << std::endl;
         return 1;
     }
 
     uindex_t width = std::stoi(argv[1]);
     uindex_t height = std::stoi(argv[2]);
-    uindex_t n_generations = std::stoi(argv[3]);
+    uindex_t n_iterations = std::stoi(argv[3]);
 
     Grid<bool> grid = read(width, height);
 
@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
 
     StencilUpdate<ConwayKernel> update({
         .transition_function = ConwayKernel(),
-        .n_generations = n_generations,
+        .n_iterations = n_iterations,
         .device = device,
     });
     grid = update(grid);

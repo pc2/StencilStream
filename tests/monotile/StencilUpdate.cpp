@@ -31,8 +31,8 @@ using namespace sycl;
 using namespace stencil;
 using namespace stencil::monotile;
 
-void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t generation_offset,
-                          uindex_t target_i_generation) {
+void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t iteration_offset,
+                          uindex_t target_i_iteration) {
     using TransFunc = FPGATransFunc<stencil_radius>;
     using in_pipe = sycl::pipe<class MonotileExecutionKernelInPipeID, Cell>;
     using out_pipe = sycl::pipe<class MonotileExecutionKernelOutPipeID, Cell>;
@@ -49,18 +49,18 @@ void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t ge
         cgh.single_task([=]() {
             for (uindex_t c = 0; c < grid_width; c++) {
                 for (uindex_t r = 0; r < grid_height; r++) {
-                    in_pipe::write(Cell{index_t(c), index_t(r), index_t(generation_offset), 0,
+                    in_pipe::write(Cell{index_t(c), index_t(r), index_t(iteration_offset), 0,
                                         CellStatus::Normal});
                 }
             }
         });
     });
 
-    GlobalState global_state(TransFunc(), generation_offset, target_i_generation);
+    GlobalState global_state(TransFunc(), iteration_offset, target_i_iteration);
     working_queue.submit([&](sycl::handler &cgh) {
-        KernelArgument kernel_argument(global_state, cgh, generation_offset, target_i_generation);
+        KernelArgument kernel_argument(global_state, cgh, iteration_offset, target_i_iteration);
 
-        cgh.single_task(TestExecutionKernel(TransFunc(), generation_offset, target_i_generation,
+        cgh.single_task(TestExecutionKernel(TransFunc(), iteration_offset, target_i_iteration,
                                             grid_width, grid_height, Cell::halo(),
                                             kernel_argument));
     });
@@ -84,24 +84,24 @@ void test_monotile_kernel(uindex_t grid_width, uindex_t grid_height, uindex_t ge
             Cell cell = output_buffer_ac[c][r];
             REQUIRE(cell.c == c);
             REQUIRE(cell.r == r);
-            REQUIRE(cell.i_generation == target_i_generation);
-            REQUIRE(cell.i_subgeneration == 0);
+            REQUIRE(cell.i_iteration == target_i_iteration);
+            REQUIRE(cell.i_subiteration == 0);
             REQUIRE(cell.status == CellStatus::Normal);
         }
     }
 }
 
 TEST_CASE("monotile::StencilUpdateKernel", "[monotile::StencilUpdateKernel]") {
-    test_monotile_kernel(tile_width, tile_height, 0, gens_per_pass);
+    test_monotile_kernel(tile_width, tile_height, 0, iters_per_pass);
 }
 
 TEST_CASE("monotile::StencilUpdateKernel (partial tile)", "[monotile::StencilUpdateKernel]") {
-    test_monotile_kernel(tile_width / 2, tile_height / 2, 0, gens_per_pass);
+    test_monotile_kernel(tile_width / 2, tile_height / 2, 0, iters_per_pass);
 }
 
 TEST_CASE("monotile::StencilUpdateKernel (partial pipeline)", "[monotile::StencilUpdateKernel]") {
-    static_assert(gens_per_pass != 1);
-    test_monotile_kernel(tile_width, tile_height, 0, gens_per_pass - 1);
+    static_assert(iters_per_pass != 1);
+    test_monotile_kernel(tile_width, tile_height, 0, iters_per_pass - 1);
 }
 
 TEST_CASE("monotile::StencilUpdateKernel (noop)", "[monotile::StencilUpdateKernel]") {
@@ -110,7 +110,7 @@ TEST_CASE("monotile::StencilUpdateKernel (noop)", "[monotile::StencilUpdateKerne
 
 TEST_CASE("monotile::StencilUpdateKernel (incomplete pipeline, offset != 0)",
           "[monotile::StencilUpdateKernel]") {
-    test_monotile_kernel(tile_width, tile_height, gens_per_pass / 2, gens_per_pass);
+    test_monotile_kernel(tile_width, tile_height, iters_per_pass / 2, iters_per_pass);
 }
 
 template <typename TDVStrategy> void test_monotile_update() {
@@ -122,11 +122,11 @@ template <typename TDVStrategy> void test_monotile_update() {
     for (uindex_t grid_width = tile_width / 2; grid_width < tile_width; grid_width += 1) {
         for (uindex_t grid_height = tile_height / 2; grid_height < tile_height; grid_height += 1) {
             test_stencil_update<GridImpl, StencilUpdateImpl>(grid_width, grid_height, 0,
-                                                             gens_per_pass);
+                                                             iters_per_pass);
             test_stencil_update<GridImpl, StencilUpdateImpl>(grid_width, grid_height, 1,
-                                                             gens_per_pass);
+                                                             iters_per_pass);
             test_stencil_update<GridImpl, StencilUpdateImpl>(grid_width, grid_height, 0,
-                                                             gens_per_pass + 1);
+                                                             iters_per_pass + 1);
         }
     }
 }

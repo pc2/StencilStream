@@ -275,7 +275,7 @@ int main(int argc, char **argv) {
     StencilUpdate update({
         .transition_function =
             HotspotKernel{.Rx_1 = Rx_1, .Ry_1 = Ry_1, .Rz_1 = Rz_1, .Cap_1 = Cap_1},
-        .halo_value = HotspotCell(0.0, 0.0), .n_generations = sim_time, .device = device,
+        .halo_value = HotspotCell(0.0, 0.0), .n_iterations = sim_time, .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
 #if EXECUTOR != 2
             .profiling = true, // enable additional profiling for FPGA targets
