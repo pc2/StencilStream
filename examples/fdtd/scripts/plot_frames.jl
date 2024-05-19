@@ -9,12 +9,8 @@ if size(ARGS,1) < 2
     exit(1)
 end
 
-target = ARGS[1]
-if target == "frames"
-    target = :frames
-elseif target == "animation"
-    target = :animation
-else
+target = Symbol(ARGS[1])
+if target ∉ [:frames, :animation]
     println(stderr, "Unknown target $target!")
     exit(1)
 end
@@ -25,18 +21,14 @@ if !isdir(output_directory_path)
     exit(1)
 end
 
-if target == :animation
-    hz_file_paths = glob("hz.*.csv", output_directory_path)
-    hz_indices = parse.(Int, getindex.(match.(r"hz\.([0-9]+)\.csv", hz_file_paths), 1))
-    sort!(hz_indices)
-    hz_file_paths = (output_directory_path * "/hz.") .* string.(hz_indices) .* ".csv"
-else
-    hz_file_paths = glob("*.csv", output_directory_path)
-end
+hz_file_paths = glob("hz.*.csv", output_directory_path)
+hz_indices = parse.(Int, getindex.(match.(r"hz\.([0-9]+)\.csv", hz_file_paths), 1))
+sort!(hz_indices)
+hz_file_paths = (output_directory_path * "/hz.") .* string.(hz_indices) .* ".csv"
 
 hzs = Vector{Matrix}(undef, size(hz_file_paths))
 
-Threads.@threads for i in axes(hzs)[1]
+for i in axes(hzs)[1]
     hzs[i] = abs.(readdlm(hz_file_paths[i], ',', Float64, '\n'))
 end
 
@@ -46,7 +38,7 @@ ax = Axis(fig[1,1], title="Simulated magnetic field", aspect=DataAspect())
 heatmap!(fig[1,1], @lift(hzs[$index]), interpolate=true)
 
 if target == :animation
-    record(fig, "animation.mp4", axes(hzs)[1]; framerate=25) do i
+    record(fig, "animation.mp4", axes(hzs)[1]; framerate=10) do i
         index[] = i
     end
 else
