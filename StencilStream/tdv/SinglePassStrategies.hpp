@@ -132,6 +132,8 @@ struct PrecomputeOnHostStrategy {
             }
         }
 
+        GlobalState(GlobalState const&other) : function(other.function), iteration_offset(other.iteration_offset), value_buffer(other.value_buffer) {}
+
         struct KernelArgument {
             KernelArgument(GlobalState &global_state, sycl::handler &cgh, uindex_t i_iteration,
                            uindex_t n_iterations)

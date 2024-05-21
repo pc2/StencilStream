@@ -102,6 +102,14 @@ class Tile {
                sycl::range<1>(get_part_words(Part::SOUTH_EAST_CORNER))},
           } {}
 
+    Tile(Tile const &other_tile)
+        : part_buffer{{other_tile.part_buffer[0][0], other_tile.part_buffer[0][1],
+                       other_tile.part_buffer[0][2]},
+                      {other_tile.part_buffer[1][0], other_tile.part_buffer[1][1],
+                       other_tile.part_buffer[1][2]},
+                      {other_tile.part_buffer[2][0], other_tile.part_buffer[2][1],
+                       other_tile.part_buffer[2][2]}} {}
+
     static uindex_t get_part_words_in_column(Part part) {
         UID range = get_part_range(part);
         return n_cells_to_n_words(range.r, word_length);
