@@ -32,9 +32,9 @@ function max_perf_benchmark(exe, variant, n_cus, f, loop_latency)
         while any(v -> v === nothing, [kernel_runtime, walltime, grid_wh, n_timesteps])
             line = readline(process_in)
             println(line)
-            if (m = match(r"grid w/h      = ([0-9]+) cells", line)) !== nothing
+            if (m = match(r"grid w/h\s*= ([0-9]+) cells", line)) !== nothing
                 grid_wh = parse(Int, m[1])
-            elseif (m = match(r"n. timesteps  = ([0-9]+)", line)) !== nothing
+            elseif (m = match(r"n. timesteps\s*= ([0-9]+)", line)) !== nothing
                 n_timesteps = parse(Int, m[1])
             elseif (m = match(r"Kernel Runtime: ([0-9]+\.[0-9]+) s", line)) !== nothing
                 kernel_runtime = parse(Float64, m[1])
