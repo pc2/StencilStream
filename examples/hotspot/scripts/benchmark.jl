@@ -18,18 +18,20 @@ function create_experiment(n_rows, n_columns, temp_file, power_file)
 
     begin
         power = zeros(Float32, n_rows, n_columns)
-        power[(n_rows ÷ 4):(3n_rows ÷ 4), (n_columns ÷ 4):(3n_columns ÷ 4)] .= 0.5
+        power[(n_rows÷4):(3n_rows÷4), (n_columns÷4):(3n_columns÷4)] .= 0.5
         power = reshape(power', n_rows * n_columns)
         write(power_file, power)
     end
 end
 
-function max_perf_benchmark(exec, variant, n_cus, f, loop_latency)
+function max_perf_benchmark(exec, variant, f, loop_latency)
     if variant == :monotile
+        n_cus = N_MONOTILE_CUS
         grid_height = TILE_HEIGHT
         grid_width = MONO_TILE_WIDTH
         n_passes = 1000
     elseif variant == :tiling
+        n_cus = N_TILING_CUS
         grid_height = 20TILE_HEIGHT
         grid_width = TILING_TILE_WIDTH
         n_passes = 5
@@ -52,7 +54,7 @@ function max_perf_benchmark(exec, variant, n_cus, f, loop_latency)
         while true
             line = readline(process_in)
             println(line)
-    
+
             line_match = match(r"Kernel Runtime: ([0-9]+\.[0-9]+) s", line)
             if line_match !== nothing
                 return parse(Float64, line_match[1])
@@ -60,25 +62,40 @@ function max_perf_benchmark(exec, variant, n_cus, f, loop_latency)
         end
     end
     tile_width = (variant == :monotile) ? MONO_TILE_WIDTH : TILING_TILE_WIDTH
-    raw_metrics = build_metrics(runtime, n_iters, variant, f, loop_latency, grid_height, grid_width, TILE_HEIGHT, tile_width, n_cus, OPERATIONS_PER_CELL, CELL_SIZE)
+
+    info = BenchmarkInformation(
+        n_iters,
+        grid_height,
+        grid_width,
+        1,
+        CELL_SIZE,
+        OPERATIONS_PER_CELL,
+        variant,
+        n_cus,
+        TILE_HEIGHT,
+        tile_width,
+        f,
+        loop_latency,
+        runtime
+    )
 
     metrics = Dict(
         "target" => (variant == :monotile) ? "Hotspot, Monotile" : "Hotspot, Tiling",
         "n_cus" => n_cus,
         "f" => f,
-        "occupancy" => raw_metrics[:occupancy],
-        "measured" => raw_metrics[:measured_rate],
-        "accuracy" => raw_metrics[:model_accurracy],
-        "FLOPS" => raw_metrics[:flops],
-        "mem_throughput" => raw_metrics[:mem_throughput]
+        "occupancy" => occupancy(info),
+        "measured" => measured_throughput(info),
+        "accuracy" => model_accurracy(info),
+        "FLOPS" => measured_flops(info),
+        "mem_throughput" => measured_mem_throughput(info)
     )
-    
+
     open("metrics.$variant.json", "w") do metrics_file
         JSON.print(metrics_file, metrics)
     end
 end
 
-function scaling_benchmark(exec, variant)
+function scaling_benchmark(exec, variant, f, loop_latency)
     out_path = "$(variant)_perf.csv"
 
     temp_path, temp_io = mktemp()
@@ -91,37 +108,45 @@ function scaling_benchmark(exec, variant)
 
     df = DataFrame(grid_wh=Int64[], n_timesteps=Int64[], kernel_runtime=Float64[], walltime=Float64[], model_runtime=Float64[])
 
-    for iteration in 1:1
-        for grid_wh in 128:128:1024
-            write_outputs(grid_wh, temp_path, power_path)
+    for grid_wh in 128:128:1024
+        create_experiment(grid_wh, grid_wh, temp_path, power_path)
 
-            for n_timesteps in 50_000:50_000:1_000_000
-                command = `$exec $grid_wh $grid_wh $n_timesteps $temp_path $power_path /dev/null`
-                kernel_runtime, walltime = open(command, "r") do process_in
-                    kernel_runtime = nothing
-                    walltime = nothing
-                    while any(v -> v === nothing, [kernel_runtime, walltime])
-                        line = readline(process_in)
-                        println(line)
+        for n_timesteps in 50_000:50_000:1_000_000
+            command = `$exec $grid_wh $grid_wh $n_timesteps $temp_path $power_path /dev/null`
+            kernel_runtime, walltime = open(command, "r") do process_in
+                kernel_runtime = nothing
+                walltime = nothing
+                while any(v -> v === nothing, [kernel_runtime, walltime])
+                    line = readline(process_in)
+                    println(line)
 
-                        if (m = match(r"Kernel Runtime: ([0-9]+\.[0-9]+) s", line)) !== nothing
-                            kernel_runtime = parse(Float64, m[1])
-                        elseif (m = match(r"Walltime: ([0-9]+\.[0-9]+) s", line)) !== nothing
-                            walltime = parse(Float64, m[1])
-                        end
+                    if (m = match(r"Kernel Runtime: ([0-9]+\.[0-9]+) s", line)) !== nothing
+                        kernel_runtime = parse(Float64, m[1])
+                    elseif (m = match(r"Walltime: ([0-9]+\.[0-9]+) s", line)) !== nothing
+                        walltime = parse(Float64, m[1])
                     end
-                    kernel_runtime, walltime
                 end
-
-                if variant == :monotile
-                    model_runtime = model_monotile_runtime(f, loop_latency, grid_wh, grid_wh, n_timesteps, N_MONOTILE_CUS)
-                else
-                    model_runtime = model_tiling_runtime(f, loop_latency, grid_wh, grid_wh, n_timesteps, TILE_HEIGHT, TILING_TILE_WIDTH, N_TILING_CUS)
-                end
-
-                push!(df, (grid_wh, n_timesteps, kernel_runtime, walltime, model_runtime))
-                CSV.write(out_path, df)
+                kernel_runtime, walltime
             end
+
+            info = BenchmarkInformation(
+                n_timesteps,
+                grid_wh,
+                grid_wh,
+                1,
+                CELL_SIZE,
+                OPERATIONS_PER_CELL,
+                variant,
+                (variant == :monotile) ? N_MONOTILE_CUS : N_TILING_CUS,
+                TILE_HEIGHT,
+                (variant == :monotile) ? MONO_TILE_WIDTH : TILING_TILE_WIDTH,
+                f,
+                loop_latency,
+                kernel_runtime
+            )
+
+            push!(df, (grid_wh, n_timesteps, kernel_runtime, walltime, model_runtime(info)))
+            CSV.write(out_path, df)
         end
     end
 
@@ -142,22 +167,12 @@ exec = ARGS[2]
 report_path = exec * ".prj/reports"
 f, loop_latency = load_report_details(report_path)
 
-variant = ARGS[3]
-if variant == "monotile"
-    n_cus = N_MONOTILE_CUS
-    variant = :monotile
-elseif variant == "tiling"
-    n_cus = N_TILING_CUS
-    variant = :tiling
-else
-    println(stderr, "Unknown variant '$variant'")
-    exit(1)
-end
+variant = Symbol(ARGS[3])
 
 if ARGS[1] == "max_perf"
-    max_perf_benchmark(exec, variant, n_cus, f, loop_latency)
+    max_perf_benchmark(exec, variant, f, loop_latency)
 elseif ARGS[1] == "scaling"
-    scaling_benchmark(exec, variant)
+    scaling_benchmark(exec, variant, f, loop_latency)
 else
     println(stderr, "Unknown benchmark '$(ARGS[1])'")
     exit(1)

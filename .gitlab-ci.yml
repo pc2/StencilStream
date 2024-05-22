@@ -13,6 +13,9 @@ variables:
 default:
     before_script:
         - source scripts/env.sh
+    id_tokens:
+        CI_JOB_JWT:
+            aud: https://git.uni-paderborn.de
 
 workflow:
     rules:
