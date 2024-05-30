@@ -47,17 +47,14 @@ namespace tiling {
  * \tparam height The number of rows of the tile.
  * \tparam halo_radius The radius (aka width and height) of the tile halo.
  */
-template <typename Cell, uindex_t width, uindex_t height, uindex_t halo_radius, uindex_t word_size>
+template <typename Cell, uindex_t width, uindex_t height, uindex_t halo_radius>
 class Tile {
     static_assert(width > 2 * halo_radius);
     static_assert(height > 2 * halo_radius);
 
   public:
-    static constexpr uindex_t word_length =
-        std::lcm(sizeof(Padded<Cell>), word_size) / sizeof(Padded<Cell>);
     static constexpr uindex_t core_width = width - 2 * halo_radius;
     static constexpr uindex_t core_height = height - 2 * halo_radius;
-    using IOWord = std::array<Padded<Cell>, word_length>;
 
     /**
      * \brief Enumeration to address individual parts of the tile.
@@ -91,15 +88,15 @@ class Tile {
      */
     Tile()
         : part_buffer{
-              {sycl::range<1>(get_part_words(Part::NORTH_WEST_CORNER)),
-               sycl::range<1>(get_part_words(Part::WEST_BORDER)),
-               sycl::range<1>(get_part_words(Part::SOUTH_WEST_CORNER))},
-              {sycl::range<1>(get_part_words(Part::NORTH_BORDER)),
-               sycl::range<1>(get_part_words(Part::CORE)),
-               sycl::range<1>(get_part_words(Part::SOUTH_BORDER))},
-              {sycl::range<1>(get_part_words(Part::NORTH_EAST_CORNER)),
-               sycl::range<1>(get_part_words(Part::EAST_BORDER)),
-               sycl::range<1>(get_part_words(Part::SOUTH_EAST_CORNER))},
+              {sycl::range<2>(get_part_range(Part::NORTH_WEST_CORNER)),
+               sycl::range<2>(get_part_range(Part::WEST_BORDER)),
+               sycl::range<2>(get_part_range(Part::SOUTH_WEST_CORNER))},
+              {sycl::range<2>(get_part_range(Part::NORTH_BORDER)),
+               sycl::range<2>(get_part_range(Part::CORE)),
+               sycl::range<2>(get_part_range(Part::SOUTH_BORDER))},
+              {sycl::range<2>(get_part_range(Part::NORTH_EAST_CORNER)),
+               sycl::range<2>(get_part_range(Part::EAST_BORDER)),
+               sycl::range<2>(get_part_range(Part::SOUTH_EAST_CORNER))},
           } {}
 
     Tile(Tile const &other_tile)
@@ -109,16 +106,6 @@ class Tile {
                        other_tile.part_buffer[1][2]},
                       {other_tile.part_buffer[2][0], other_tile.part_buffer[2][1],
                        other_tile.part_buffer[2][2]}} {}
-
-    static uindex_t get_part_words_in_column(Part part) {
-        UID range = get_part_range(part);
-        return n_cells_to_n_words(range.r, word_length);
-    }
-
-    static uindex_t get_part_words(Part part) {
-        UID range = get_part_range(part);
-        return range.c * get_part_words_in_column(part);
-    }
 
     static UID get_part_id(Part tile_part) {
         switch (tile_part) {
@@ -151,21 +138,21 @@ class Tile {
      * \param part The part to calculate the range for.
      * \return The range of the part, used for example to allocate it.
      */
-    static UID get_part_range(Part part) {
+    static sycl::range<2> get_part_range(Part part) {
         switch (part) {
         case Part::NORTH_WEST_CORNER:
         case Part::SOUTH_WEST_CORNER:
         case Part::SOUTH_EAST_CORNER:
         case Part::NORTH_EAST_CORNER:
-            return UID(halo_radius, halo_radius);
+            return sycl::range<2>(halo_radius, halo_radius);
         case Part::NORTH_BORDER:
         case Part::SOUTH_BORDER:
-            return UID(core_width, halo_radius);
+            return sycl::range<2>(core_width, halo_radius);
         case Part::WEST_BORDER:
         case Part::EAST_BORDER:
-            return UID(halo_radius, core_height);
+            return sycl::range<2>(halo_radius, core_height);
         case Part::CORE:
-            return UID(core_width, core_height);
+            return sycl::range<2>(core_width, core_height);
         default:
             throw std::invalid_argument("Invalid grid tile part specified");
         }
@@ -222,14 +209,14 @@ class Tile {
             requires(access_mode == sycl::access::mode::read)
         {
             std::array<uindex_t, 4> i = transform_indices(id[0], id[1]);
-            return part_ac[i[0]][i[1]][i[2]][i[3]].value;
+            return part_ac[i[0]][i[1]][i[2]][i[3]];
         }
 
         Cell &operator[](sycl::id<2> id)
             requires(access_mode != sycl::access::mode::read)
         {
             std::array<uindex_t, 4> i = transform_indices(id[0], id[1]);
-            return part_ac[i[0]][i[1]][i[2]][i[3]].value;
+            return part_ac[i[0]][i[1]][i[2]][i[3]];
         }
 
         static std::array<uindex_t, 4> transform_indices(uindex_t c, uindex_t r) {
@@ -243,26 +230,21 @@ class Tile {
                 part_c = 2;
                 c -= width - halo_radius;
             }
-            uindex_t part_r, part_words_per_column;
+            uindex_t part_r;
             if (r < halo_radius) {
                 part_r = 0;
-                part_words_per_column = n_cells_to_n_words(halo_radius, word_length);
             } else if (r < height - halo_radius) {
                 part_r = 1;
-                part_words_per_column = n_cells_to_n_words(height - 2 * halo_radius, word_length);
                 r -= halo_radius;
             } else {
                 part_r = 2;
-                part_words_per_column = n_cells_to_n_words(halo_radius, word_length);
                 r -= height - halo_radius;
             }
-            uindex_t word_i = (c * part_words_per_column) + (r / word_length);
-            uindex_t element_i = r % word_length;
-            return {part_c, part_r, word_i, element_i};
+            return {part_c, part_r, c, r};
         }
 
       private:
-        sycl::host_accessor<IOWord, 1, access_mode> part_ac[3][3];
+        sycl::host_accessor<Cell, 2, access_mode> part_ac[3][3];
     };
 
     template <sycl::access::mode access_mode> TileAccessor<access_mode> get_access() {
@@ -281,7 +263,7 @@ class Tile {
      * \param tile_part The part to access.
      * \return The buffer of the part.
      */
-    sycl::buffer<IOWord, 1> get_part_buffer(Part tile_part) {
+    sycl::buffer<Cell, 2> get_part_buffer(Part tile_part) {
         UID part_id = get_part_id(tile_part);
         return part_buffer[part_id.c][part_id.r];
     }
@@ -332,22 +314,13 @@ class Tile {
         queue.submit([&](cl::sycl::handler &cgh) {
             auto part_buffer = get_part_buffer(part);
             sycl::accessor ac(part_buffer, cgh, sycl::read_only);
-            UID range = get_part_range(part);
-            uindex_t n_cells = n_columns * range.r;
+            sycl::range<2> range = get_part_range(part);
 
             cgh.single_task([=]() {
-                [[intel::fpga_register]] IOWord cache;
-                uindex_t word_i = 0;
-                uindex_t cell_i = word_length;
-
-                for (uindex_t i = 0; i < n_cells; i++) {
-                    if (cell_i == word_length) {
-                        cache = ac[word_i];
-                        word_i++;
-                        cell_i = 0;
+                for (uindex_t c = 0; c < n_columns; c++) {
+                    for (uindex_t r = 0; r < range[1]; r++) {
+                        in_pipe::write(ac[c][r]);
                     }
-                    in_pipe::write(cache[cell_i].value);
-                    cell_i++;
                 }
             });
         });
@@ -362,26 +335,13 @@ class Tile {
         queue.submit([&](cl::sycl::handler &cgh) {
             auto part_buffer = get_part_buffer(part);
             sycl::accessor ac(part_buffer, cgh, sycl::write_only);
-            UID range = get_part_range(part);
-            uindex_t n_cells = n_columns * range.r;
+            sycl::range<2> range = get_part_range(part);
 
             cgh.single_task([=]() {
-                [[intel::fpga_memory]] IOWord cache;
-                uindex_t word_i = 0;
-                uindex_t cell_i = 0;
-
-                for (uindex_t i = 0; i < n_cells; i++) {
-                    if (cell_i == word_length) {
-                        ac[word_i] = cache;
-                        word_i++;
-                        cell_i = 0;
+                for (uindex_t c = 0; c < n_columns; c++) {
+                    for (uindex_t r = 0; r < range[1]; r++) {
+                        ac[c][r] = out_pipe::read();
                     }
-                    cache[cell_i].value = out_pipe::read();
-                    cell_i++;
-                }
-
-                if (cell_i != 0) {
-                    ac[word_i] = cache;
                 }
             });
         });
@@ -401,13 +361,11 @@ class Tile {
 
         auto part_buffer = get_part_buffer(part);
         sycl::host_accessor part_ac(part_buffer, sycl::read_write);
-        uindex_t part_width = get_part_range(part).c;
-        uindex_t part_height = get_part_range(part).r;
+        uindex_t part_width = get_part_range(part)[0];
+        uindex_t part_height = get_part_range(part)[1];
 
         for (uindex_t c = 0; c < part_width; c++) {
             for (uindex_t r = 0; r < part_height; r++) {
-                uindex_t word_i = (c * part_height + r) / word_length;
-                uindex_t cell_i = (c * part_height + r) % word_length;
                 uindex_t global_c = offset[0] + c;
                 uindex_t global_r = offset[1] + r;
 
@@ -416,15 +374,15 @@ class Tile {
                 }
 
                 if (buffer_to_part) {
-                    part_ac[word_i][cell_i].value = accessor[global_c][global_r];
+                    part_ac[c][r] = accessor[global_c][global_r];
                 } else {
-                    accessor[global_c][global_r] = part_ac[word_i][cell_i].value;
+                    accessor[global_c][global_r] = part_ac[c][r];
                 }
             }
         }
     }
 
-    sycl::buffer<IOWord, 1> part_buffer[3][3];
+    sycl::buffer<Cell, 2> part_buffer[3][3];
 };
 
 } // namespace tiling

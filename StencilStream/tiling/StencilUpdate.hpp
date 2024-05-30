@@ -271,13 +271,12 @@ class StencilUpdateKernel {
 template <concepts::TransitionFunction F, uindex_t n_processing_elements = 1,
           uindex_t tile_width = 1024, uindex_t tile_height = 1024,
           tdv::single_pass::Strategy<F, n_processing_elements> TDVStrategy =
-              tdv::single_pass::InlineStrategy,
-          uindex_t word_size = 64>
+              tdv::single_pass::InlineStrategy>
 class StencilUpdate {
   public:
     using Cell = F::Cell;
     static constexpr uindex_t halo_radius = F::stencil_radius * n_processing_elements;
-    using GridImpl = Grid<Cell, tile_width, tile_height, halo_radius, word_size>;
+    using GridImpl = Grid<Cell, tile_width, tile_height, halo_radius>;
     using TDVGlobalState = typename TDVStrategy::template GlobalState<F, n_processing_elements>;
     using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
 

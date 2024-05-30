@@ -46,14 +46,14 @@ namespace tiling {
  * \tparam halo_radius The radius (aka width and height) of the tile halo.
  */
 template <typename Cell, uindex_t tile_width = 1024, uindex_t tile_height = 1024,
-          uindex_t halo_radius = 1, uindex_t word_size = 64>
+          uindex_t halo_radius = 1>
 class Grid {
   public:
     static_assert(2 * halo_radius < tile_height && 2 * halo_radius < tile_width);
     static constexpr uindex_t core_height = tile_height - 2 * halo_radius;
     static constexpr uindex_t core_width = tile_width - 2 * halo_radius;
 
-    using Tile = Tile<Cell, tile_width, tile_height, halo_radius, word_size>;
+    using Tile = Tile<Cell, tile_width, tile_height, halo_radius>;
 
     /**
      * \brief Create a grid with undefined contents.

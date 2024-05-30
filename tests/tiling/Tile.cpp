@@ -28,9 +28,7 @@ using namespace sycl;
 using namespace stencil::tiling;
 using namespace std;
 
-using TileImpl = Tile<ID, tile_width, tile_height, halo_radius, 64>;
-constexpr uindex_t word_length = 8;
-static_assert(word_length == TileImpl::word_length);
+using TileImpl = Tile<ID, tile_width, tile_height, halo_radius>;
 
 TEST_CASE("Tile::get_part_buffer", "[Tile]") {
     TileImpl tile;
@@ -38,8 +36,8 @@ TEST_CASE("Tile::get_part_buffer", "[Tile]") {
     for (TileImpl::Part part_type : TileImpl::all_parts) {
         auto part = tile.get_part_buffer(part_type);
 
-        uindex_t required_words = TileImpl::get_part_words(part_type);
-        REQUIRE(required_words == part.get_range()[0]);
+        sycl::range<2> required_range = TileImpl::get_part_range(part_type);
+        REQUIRE(required_range == part.get_range());
     }
 }
 
@@ -61,18 +59,16 @@ TEST_CASE("Tile::TileAccessor", "[Tile]") {
         auto part_buffer = tile.get_part_buffer(part);
         host_accessor part_ac(part_buffer, read_only);
 
-        for (uindex_t c = 0; c < true_range.c; c++) {
-            for (uindex_t r = 0; r < true_range.r; r++) {
+        for (uindex_t c = 0; c < true_range[0]; c++) {
+            for (uindex_t r = 0; r < true_range[1]; r++) {
                 if (c + content_offset[0] >= tile_width) {
                     continue;
                 }
                 if (r + content_offset[1] >= tile_height) {
                     continue;
                 }
-                uindex_t word_i = (c * true_range.r + r) / word_length;
-                uindex_t cell_i = (c * true_range.r + r) % word_length;
-                REQUIRE(part_ac[word_i][cell_i].value.c == c + content_offset[0]);
-                REQUIRE(part_ac[word_i][cell_i].value.r == r + content_offset[1]);
+                REQUIRE(part_ac[c][r].c == c + content_offset[0]);
+                REQUIRE(part_ac[c][r].r == r + content_offset[1]);
             }
         }
     }
@@ -151,7 +147,7 @@ TEST_CASE("Tile::copy_to", "[Tile]") {
 }
 
 void submit_read_part_test_impl(TileImpl::Part part, uindex_t n_columns) {
-    uindex_t n_rows = TileImpl::get_part_range(part).r;
+    uindex_t n_rows = TileImpl::get_part_range(part)[1];
 
     TileImpl tile;
     {
@@ -201,7 +197,7 @@ TEST_CASE("Tile::submit_read_part", "[Tile]") {
 void submit_write_part_test_impl(TileImpl::Part part, uindex_t n_columns) {
     using out_pipe = sycl::pipe<class submit_read_part_test_pipe_id, ID>;
     queue queue;
-    uindex_t n_rows = TileImpl::get_part_range(part).r;
+    uindex_t n_rows = TileImpl::get_part_range(part)[1];
     id<2> part_offset = TileImpl::get_part_offset(part);
 
     queue.submit([&](handler &cgh) {
