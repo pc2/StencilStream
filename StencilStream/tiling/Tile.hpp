@@ -88,15 +88,15 @@ class Tile {
      */
     Tile()
         : part_buffer{
-              {sycl::range<2>(get_part_range(Part::NORTH_WEST_CORNER)),
-               sycl::range<2>(get_part_range(Part::WEST_BORDER)),
-               sycl::range<2>(get_part_range(Part::SOUTH_WEST_CORNER))},
-              {sycl::range<2>(get_part_range(Part::NORTH_BORDER)),
-               sycl::range<2>(get_part_range(Part::CORE)),
-               sycl::range<2>(get_part_range(Part::SOUTH_BORDER))},
-              {sycl::range<2>(get_part_range(Part::NORTH_EAST_CORNER)),
-               sycl::range<2>(get_part_range(Part::EAST_BORDER)),
-               sycl::range<2>(get_part_range(Part::SOUTH_EAST_CORNER))},
+              {sycl::range<1>(get_part_length(Part::NORTH_WEST_CORNER)),
+               sycl::range<1>(get_part_length(Part::WEST_BORDER)),
+               sycl::range<1>(get_part_length(Part::SOUTH_WEST_CORNER))},
+              {sycl::range<1>(get_part_length(Part::NORTH_BORDER)),
+               sycl::range<1>(get_part_length(Part::CORE)),
+               sycl::range<1>(get_part_length(Part::SOUTH_BORDER))},
+              {sycl::range<1>(get_part_length(Part::NORTH_EAST_CORNER)),
+               sycl::range<1>(get_part_length(Part::EAST_BORDER)),
+               sycl::range<1>(get_part_length(Part::SOUTH_EAST_CORNER))},
           } {}
 
     Tile(Tile const &other_tile)
@@ -158,6 +158,11 @@ class Tile {
         }
     }
 
+    static uindex_t get_part_length(Part part) {
+        sycl::range<2> range = get_part_range(part);
+        return range[0] * range[1];
+    }
+
     /**
      * \brief Calculate the index offset of a given part relative to the north-western corner of the
      * tile.
@@ -208,18 +213,18 @@ class Tile {
         Cell const &operator[](sycl::id<2> id)
             requires(access_mode == sycl::access::mode::read)
         {
-            std::array<uindex_t, 4> i = transform_indices(id[0], id[1]);
-            return part_ac[i[0]][i[1]][i[2]][i[3]];
+            std::array<uindex_t, 3> i = transform_indices(id[0], id[1]);
+            return part_ac[i[0]][i[1]][i[2]];
         }
 
         Cell &operator[](sycl::id<2> id)
             requires(access_mode != sycl::access::mode::read)
         {
-            std::array<uindex_t, 4> i = transform_indices(id[0], id[1]);
-            return part_ac[i[0]][i[1]][i[2]][i[3]];
+            std::array<uindex_t, 3> i = transform_indices(id[0], id[1]);
+            return part_ac[i[0]][i[1]][i[2]];
         }
 
-        static std::array<uindex_t, 4> transform_indices(uindex_t c, uindex_t r) {
+        static std::array<uindex_t, 3> transform_indices(uindex_t c, uindex_t r) {
             uindex_t part_c;
             if (c < halo_radius) {
                 part_c = 0;
@@ -230,21 +235,24 @@ class Tile {
                 part_c = 2;
                 c -= width - halo_radius;
             }
-            uindex_t part_r;
+            uindex_t part_r, part_height;
             if (r < halo_radius) {
                 part_r = 0;
+                part_height = halo_radius;
             } else if (r < height - halo_radius) {
                 part_r = 1;
+                part_height = core_height;
                 r -= halo_radius;
             } else {
                 part_r = 2;
+                part_height = halo_radius;
                 r -= height - halo_radius;
             }
-            return {part_c, part_r, c, r};
+            return {part_c, part_r, c * part_height + r};
         }
 
       private:
-        sycl::host_accessor<Cell, 2, access_mode> part_ac[3][3];
+        sycl::host_accessor<Cell, 1, access_mode> part_ac[3][3];
     };
 
     template <sycl::access::mode access_mode> TileAccessor<access_mode> get_access() {
@@ -263,7 +271,7 @@ class Tile {
      * \param tile_part The part to access.
      * \return The buffer of the part.
      */
-    sycl::buffer<Cell, 2> get_part_buffer(Part tile_part) {
+    sycl::buffer<Cell, 1> get_part_buffer(Part tile_part) {
         UID part_id = get_part_id(tile_part);
         return part_buffer[part_id.c][part_id.r];
     }
@@ -317,10 +325,8 @@ class Tile {
             sycl::range<2> range = get_part_range(part);
 
             cgh.single_task([=]() {
-                for (uindex_t c = 0; c < n_columns; c++) {
-                    for (uindex_t r = 0; r < range[1]; r++) {
-                        in_pipe::write(ac[c][r]);
-                    }
+                for (uindex_t i = 0; i < n_columns * range[1]; i++) {
+                    in_pipe::write(ac[i]);
                 }
             });
         });
@@ -338,10 +344,8 @@ class Tile {
             sycl::range<2> range = get_part_range(part);
 
             cgh.single_task([=]() {
-                for (uindex_t c = 0; c < n_columns; c++) {
-                    for (uindex_t r = 0; r < range[1]; r++) {
-                        ac[c][r] = out_pipe::read();
-                    }
+                for (uindex_t i = 0; i < n_columns * range[1]; i++) {
+                    ac[i] = out_pipe::read();
                 }
             });
         });
@@ -374,15 +378,15 @@ class Tile {
                 }
 
                 if (buffer_to_part) {
-                    part_ac[c][r] = accessor[global_c][global_r];
+                    part_ac[c * part_height + r] = accessor[global_c][global_r];
                 } else {
-                    accessor[global_c][global_r] = part_ac[c][r];
+                    accessor[global_c][global_r] = part_ac[c * part_height + r];
                 }
             }
         }
     }
 
-    sycl::buffer<Cell, 2> part_buffer[3][3];
+    sycl::buffer<Cell, 1> part_buffer[3][3];
 };
 
 } // namespace tiling

@@ -36,8 +36,8 @@ TEST_CASE("Tile::get_part_buffer", "[Tile]") {
     for (TileImpl::Part part_type : TileImpl::all_parts) {
         auto part = tile.get_part_buffer(part_type);
 
-        sycl::range<2> required_range = TileImpl::get_part_range(part_type);
-        REQUIRE(required_range == part.get_range());
+        uindex_t required_length = TileImpl::get_part_length(part_type);
+        REQUIRE(required_length == part.get_range()[0]);
     }
 }
 
@@ -67,8 +67,8 @@ TEST_CASE("Tile::TileAccessor", "[Tile]") {
                 if (r + content_offset[1] >= tile_height) {
                     continue;
                 }
-                REQUIRE(part_ac[c][r].c == c + content_offset[0]);
-                REQUIRE(part_ac[c][r].r == r + content_offset[1]);
+                REQUIRE(part_ac[c * true_range[1] + r].c == c + content_offset[0]);
+                REQUIRE(part_ac[c * true_range[1] + r].r == r + content_offset[1]);
             }
         }
     }
