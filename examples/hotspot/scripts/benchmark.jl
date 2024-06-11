@@ -1,6 +1,7 @@
 #!/usr/bin/env -S julia --project=../..
 include("../../../scripts/benchmark-common.jl")
 using DelimitedFiles
+using Statistics
 
 const OPERATIONS_PER_CELL = 15
 const CELL_SIZE = 8 # bytes
@@ -27,14 +28,16 @@ end
 function max_perf_benchmark(exec, variant, f, loop_latency)
     if variant == :monotile
         n_cus = N_MONOTILE_CUS
-        grid_height = TILE_HEIGHT
-        grid_width = MONO_TILE_WIDTH
-        n_passes = 1000
+        grid_height = 720
+        grid_width = 1024
+        n_iters = n_cus
+        n_samples = 100
     elseif variant == :tiling
         n_cus = N_TILING_CUS
-        grid_height = 20TILE_HEIGHT
-        grid_width = TILING_TILE_WIDTH
-        n_passes = 5
+        grid_height = 16*1024
+        grid_width = 16*1024
+        n_iters = ceil(1000/n_cus) * n_cus
+        n_samples = 3
     end
 
     experiment_dir = mktempdir("/dev/shm/")
@@ -47,20 +50,24 @@ function max_perf_benchmark(exec, variant, f, loop_latency)
     create_experiment(grid_height, grid_width, temp_path, power_path)
     println("Experiment created and written!")
 
-    n_iters = n_cus * n_passes
     command = `$exec $grid_height $grid_width $n_iters $temp_path $power_path $out_path`
 
-    runtime = open(command, "r") do process_in
-        while true
-            line = readline(process_in)
-            println(line)
+    runtimes = Vector()
+    for i_sample in 1:n_samples
+        runtime = open(command, "r") do process_in
+            while true
+                line = readline(process_in)
+                println(line)
 
-            line_match = match(r"Kernel Runtime: ([0-9]+\.[0-9]+) s", line)
-            if line_match !== nothing
-                return parse(Float64, line_match[1])
+                line_match = match(r"Kernel Runtime: ([0-9]+\.[0-9]+) s", line)
+                if line_match !== nothing
+                    return parse(Float64, line_match[1])
+                end
             end
         end
+        push!(runtimes, runtime)
     end
+    runtime = mean(runtimes)
     tile_width = (variant == :monotile) ? MONO_TILE_WIDTH : TILING_TILE_WIDTH
 
     info = BenchmarkInformation(
