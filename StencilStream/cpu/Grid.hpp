@@ -33,7 +33,7 @@ template <typename Cell> class Grid {
         copy_from_buffer(other_buffer);
     }
 
-    Grid(Grid const&other_grid) : buffer(other_grid.buffer) {}
+    Grid(Grid const &other_grid) : buffer(other_grid.buffer) {}
 
     void copy_from_buffer(sycl::buffer<Cell, 2> other_buffer) {
         if (buffer.get_range() != other_buffer.get_range()) {

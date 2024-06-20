@@ -47,7 +47,9 @@ template <class Cell, uindex_t word_size = 64> class Grid {
         copy_from_buffer(buffer);
     }
 
-    Grid(Grid const&other_grid) : tile_buffer(other_grid.tile_buffer), grid_width(other_grid.grid_width), grid_height(other_grid.grid_height) {}
+    Grid(Grid const &other_grid)
+        : tile_buffer(other_grid.tile_buffer), grid_width(other_grid.grid_width),
+          grid_height(other_grid.grid_height) {}
 
     Grid make_similar() const { return Grid(grid_width, grid_height); }
 

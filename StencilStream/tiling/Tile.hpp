@@ -47,14 +47,18 @@ namespace tiling {
  * \tparam height The number of rows of the tile.
  * \tparam halo_radius The radius (aka width and height) of the tile halo.
  */
-template <typename Cell, uindex_t width, uindex_t height, uindex_t halo_radius>
-class Tile {
+template <typename Cell, uindex_t width, uindex_t height, uindex_t halo_radius> class Tile {
     static_assert(width > 2 * halo_radius);
     static_assert(height > 2 * halo_radius);
 
   public:
     static constexpr uindex_t core_width = width - 2 * halo_radius;
     static constexpr uindex_t core_height = height - 2 * halo_radius;
+    static constexpr uindex_t max_part_length =
+        std::max({halo_radius * halo_radius, halo_radius *core_width, core_height *halo_radius,
+                  core_height *core_width});
+    static constexpr uindex_t part_length_bits = std::bit_width(max_part_length);
+    using uindex_part_t = ac_int<part_length_bits, false>;
 
     /**
      * \brief Enumeration to address individual parts of the tile.
@@ -315,18 +319,22 @@ class Tile {
 
     template <typename in_pipe>
     void submit_read_part(cl::sycl::queue queue, Part part, uindex_t n_columns) {
+        sycl::range<2> range = get_part_range(part);
+
         if (n_columns == 0) {
             return;
+        } else if (n_columns > range[0]) {
+            throw std::out_of_range("Trying to read more columns than there are in the part");
         }
+        uindex_part_t n_cells = n_columns * range[1];
 
         queue.submit([&](cl::sycl::handler &cgh) {
             auto part_buffer = get_part_buffer(part);
             sycl::accessor ac(part_buffer, cgh, sycl::read_only);
-            sycl::range<2> range = get_part_range(part);
 
             cgh.single_task([=]() {
-                for (uindex_t i = 0; i < n_columns * range[1]; i++) {
-                    in_pipe::write(ac[i]);
+                for (uindex_part_t i = 0; i < n_cells; i++) {
+                    in_pipe::write(ac[i.to_ulong()]);
                 }
             });
         });
@@ -334,18 +342,22 @@ class Tile {
 
     template <typename out_pipe>
     void submit_write_part(cl::sycl::queue queue, Part part, uindex_t n_columns) {
+        sycl::range<2> range = get_part_range(part);
+
         if (n_columns == 0) {
             return;
+        } else if (n_columns > range[0]) {
+            throw std::out_of_range("Trying to write more columns than there are in the part");
         }
+        uindex_part_t n_cells = n_columns * range[1];
 
         queue.submit([&](cl::sycl::handler &cgh) {
             auto part_buffer = get_part_buffer(part);
             sycl::accessor ac(part_buffer, cgh, sycl::write_only);
-            sycl::range<2> range = get_part_range(part);
 
             cgh.single_task([=]() {
-                for (uindex_t i = 0; i < n_columns * range[1]; i++) {
-                    ac[i] = out_pipe::read();
+                for (uindex_part_t i = 0; i < n_cells; i++) {
+                    ac[i.to_ulong()] = out_pipe::read();
                 }
             });
         });

@@ -76,7 +76,9 @@ class Grid {
         copy_from_buffer(input_buffer);
     }
 
-    Grid(Grid const&other_grid) : tiles(other_grid.tiles), grid_width(other_grid.grid_width), grid_height(other_grid.grid_height) {}
+    Grid(Grid const &other_grid)
+        : tiles(other_grid.tiles), grid_width(other_grid.grid_width),
+          grid_height(other_grid.grid_height) {}
 
     template <sycl::access::mode access_mode> class GridAccessor {
       public:

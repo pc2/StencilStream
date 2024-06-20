@@ -123,10 +123,10 @@ class StencilUpdateKernel {
                         uindex_t grid_c_offset, uindex_t grid_r_offset, uindex_t grid_width,
                         uindex_t grid_height, Cell halo_value,
                         TDVKernelArgument tdv_kernel_argument)
-        : trans_func(trans_func), i_iteration(i_iteration),
-          target_i_iteration(target_i_iteration), grid_c_offset(grid_c_offset),
-          grid_r_offset(grid_r_offset), grid_width(grid_width), grid_height(grid_height),
-          halo_value(halo_value), tdv_kernel_argument(tdv_kernel_argument) {
+        : trans_func(trans_func), i_iteration(i_iteration), target_i_iteration(target_i_iteration),
+          grid_c_offset(grid_c_offset), grid_r_offset(grid_r_offset), grid_width(grid_width),
+          grid_height(grid_height), halo_value(halo_value),
+          tdv_kernel_argument(tdv_kernel_argument) {
         assert(grid_c_offset % output_tile_width == 0);
         assert(grid_r_offset % output_tile_height == 0);
     }
@@ -226,9 +226,8 @@ class StencilUpdateKernel {
                 TDV tdv = tdv_local_state.get_time_dependent_value(i_processing_element /
                                                                    TransFunc::n_subiterations);
                 StencilImpl stencil(ID(output_grid_c, output_grid_r), UID(grid_width, grid_height),
-                                    pe_iteration, pe_subiteration,
-                                    i_processing_element.to_uint64(), tdv,
-                                    stencil_buffer[i_processing_element]);
+                                    pe_iteration, pe_subiteration, i_processing_element.to_uint64(),
+                                    tdv, stencil_buffer[i_processing_element]);
 
                 if (pe_iteration < target_i_iteration) {
                     carry = trans_func(stencil);
@@ -336,8 +335,7 @@ class StencilUpdate {
         auto walltime_start = std::chrono::high_resolution_clock::now();
 
         uindex_t target_n_iterations = params.iteration_offset + params.n_iterations;
-        for (uindex_t i = params.iteration_offset; i < target_n_iterations;
-             i += iters_per_pass) {
+        for (uindex_t i = params.iteration_offset; i < target_n_iterations; i += iters_per_pass) {
             uindex_t iters_in_this_pass = std::min(iters_per_pass, target_n_iterations - i);
 
             for (uindex_t i_tile_c = 0; i_tile_c < tile_range.c; i_tile_c++) {
