@@ -153,10 +153,13 @@ class StencilUpdateKernel {
         [[intel::fpga_register]] Cell stencil_buffer[n_processing_elements][stencil_diameter]
                                                     [stencil_diameter];
 
-        uindex_1d_t tile_section_width = std::min(output_tile_width, grid_width - grid_c_offset);
-        uindex_1d_t tile_section_height = output_tile_height;
-        uindex_2d_t n_iterations =
-            (tile_section_width + 2 * halo_radius) * (tile_section_height + 2 * halo_radius);
+        uindex_1d_t output_tile_section_width =
+            std::min(output_tile_width, grid_width - grid_c_offset);
+        uindex_1d_t output_tile_section_height =
+            std::min(output_tile_height, grid_height - grid_r_offset);
+        uindex_1d_t input_tile_section_width = output_tile_section_width + 2 * halo_radius;
+        uindex_1d_t input_tile_section_height = output_tile_section_height + 2 * halo_radius;
+        uindex_2d_t n_iterations = input_tile_section_width * input_tile_section_height;
 
         for (uindex_2d_t i = 0; i < n_iterations; i++) {
             [[intel::fpga_register]] Cell carry = in_pipe::read();
@@ -246,7 +249,7 @@ class StencilUpdateKernel {
                 out_pipe::write(carry);
             }
 
-            if (input_tile_r == uindex_1d_t(input_tile_height - 1)) {
+            if (input_tile_r == input_tile_section_height - 1) {
                 input_tile_r = 0;
                 input_tile_c++;
             } else {
@@ -295,8 +298,8 @@ class StencilUpdate {
     Params &get_params() { return params; }
 
     GridImpl operator()(GridImpl &source_grid) {
-        using in_pipe = sycl::pipe<class monotile_in_pipe, Cell>;
-        using out_pipe = sycl::pipe<class monotile_out_pipe, Cell>;
+        using in_pipe = sycl::pipe<class tiling_in_pipe, Cell>;
+        using out_pipe = sycl::pipe<class tiling_out_pipe, Cell>;
         using ExecutionKernelImpl = StencilUpdateKernel<F, TDVKernelArgument, n_processing_elements,
                                                         tile_width, tile_height, in_pipe, out_pipe>;
 
@@ -304,16 +307,10 @@ class StencilUpdate {
             return GridImpl(source_grid);
         }
 
-        std::array<sycl::queue, 6> input_kernel_queues;
-        for (uindex_t i = 0; i < 6; i++) {
-            input_kernel_queues[i] =
-                sycl::queue(params.device, {sycl::property::queue::in_order{}});
-        }
-        std::array<sycl::queue, 4> output_kernel_queues;
-        for (uindex_t i = 0; i < 4; i++) {
-            output_kernel_queues[i] =
-                sycl::queue(params.device, {sycl::property::queue::in_order{}});
-        }
+        sycl::queue input_kernel_queue =
+            sycl::queue(params.device, {sycl::property::queue::in_order{}});
+        sycl::queue output_kernel_queue =
+            sycl::queue(params.device, {sycl::property::queue::in_order{}});
         sycl::queue working_queue =
             sycl::queue(params.device, {cl::sycl::property::queue::enable_profiling{},
                                         sycl::property::queue::in_order{}});
@@ -340,7 +337,7 @@ class StencilUpdate {
 
             for (uindex_t i_tile_c = 0; i_tile_c < tile_range.c; i_tile_c++) {
                 for (uindex_t i_tile_r = 0; i_tile_r < tile_range.r; i_tile_r++) {
-                    pass_source->template submit_read<in_pipe>(input_kernel_queues, i_tile_c,
+                    pass_source->template submit_read<in_pipe>(input_kernel_queue, i_tile_c,
                                                                i_tile_r);
 
                     auto work_event = working_queue.submit([&](sycl::handler &cgh) {
@@ -359,7 +356,7 @@ class StencilUpdate {
                         work_events.push_back(work_event);
                     }
 
-                    pass_target->template submit_write<out_pipe>(output_kernel_queues, i_tile_c,
+                    pass_target->template submit_write<out_pipe>(output_kernel_queue, i_tile_c,
                                                                  i_tile_r);
                 }
             }
@@ -373,9 +370,7 @@ class StencilUpdate {
         }
 
         if (params.blocking) {
-            for (sycl::queue queue : output_kernel_queues) {
-                queue.wait();
-            }
+            output_kernel_queue.wait();
         }
 
         auto walltime_end = std::chrono::high_resolution_clock::now();

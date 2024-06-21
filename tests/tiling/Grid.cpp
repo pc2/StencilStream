@@ -54,78 +54,89 @@ TEST_CASE("tiling::Grid::make_similar", "[tiling::Grid]") {
 }
 
 TEST_CASE("tiling::Grid::submit_read", "[tiling::Grid]") {
-    buffer<ID, 2> in_buffer(range<2>(3 * tile_width, 3 * tile_height));
+    TestGrid grid(3 * tile_width, 3 * tile_height);
     {
-        host_accessor in_buffer_ac(in_buffer, read_write);
+        using GridAccessor = TestGrid::template GridAccessor<access::mode::read_write>;
+        GridAccessor ac(grid);
         for (uindex_t c = 0; c < 3 * tile_width; c++) {
             for (uindex_t r = 0; r < 3 * tile_height; r++) {
-                in_buffer_ac[c][r] = ID(c, r);
+                ac[c][r] = ID(c, r);
             }
         }
     }
-    TestGrid grid(in_buffer);
 
-    std::array<sycl::queue, 6> input_kernel_queues;
-    for (uindex_t i = 0; i < 6; i++) {
-        input_kernel_queues[i] = sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
-    }
+    sycl::queue input_kernel_queue =
+        sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
     sycl::queue working_queue = sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
 
-    using in_pipe = sycl::pipe<class tiled_grid_submit_read_test_id, ID>;
-    grid.template submit_read<in_pipe>(input_kernel_queues, 1, 1);
+    for (uindex_t tile_c = 0; tile_c < 3; tile_c++) {
+        for (uindex_t tile_r = 0; tile_r < 3; tile_r++) {
+            using in_pipe = sycl::pipe<class tiled_grid_submit_read_test_id, ID>;
+            grid.template submit_read<in_pipe>(input_kernel_queue, tile_c, tile_r);
 
-    sycl::buffer<bool, 1> result_buffer = sycl::range<1>(1);
-    working_queue.submit([&](sycl::handler &cgh) {
-        accessor result_ac(result_buffer, cgh, write_only);
-        uindex_t c_start = tile_width - halo_radius;
-        uindex_t c_end = 2 * tile_width + halo_radius;
-        uindex_t r_start = tile_height - halo_radius;
-        uindex_t r_end = 2 * tile_height + halo_radius;
+            sycl::buffer<bool, 1> result_buffer = sycl::range<1>(1);
+            working_queue.submit([&](sycl::handler &cgh) {
+                accessor result_ac(result_buffer, cgh, write_only);
+                index_t c_start = tile_c * tile_width - halo_radius;
+                index_t c_end = (tile_c + 1) * tile_width + halo_radius;
+                index_t r_start = tile_r * tile_height - halo_radius;
+                index_t r_end = (tile_r + 1) * tile_height + halo_radius;
 
-        cgh.single_task<class tiled_grid_submit_read_test_kernel>([=]() {
-            bool correct_input = true;
-            for (uindex_t c = c_start; c < c_end; c++) {
-                for (uindex_t r = r_start; r < r_end; r++) {
-                    ID read_value = in_pipe::read();
-                    correct_input &= read_value == ID(c, r);
-                }
-            }
-            result_ac[0] = correct_input;
-        });
-    });
+                cgh.single_task<class tiled_grid_submit_read_test_kernel>([=]() {
+                    bool correct_input = true;
+                    for (index_t c = c_start; c < c_end; c++) {
+                        for (index_t r = r_start; r < r_end; r++) {
+                            ID read_value = in_pipe::read();
+                            if (c >= 0 && r >= 0 && c < grid_width && r < grid_height) {
+                                correct_input &= read_value == ID(c, r);
+                            }
+                        }
+                    }
+                    result_ac[0] = correct_input;
+                });
+            });
 
-    REQUIRE(host_accessor(result_buffer)[0]);
+            CHECK(host_accessor(result_buffer)[0]);
+        }
+    }
 }
 
 TEST_CASE("tiling::Grid::submit_write", "[tiling::Grid]") {
     using out_pipe = sycl::pipe<class tiled_grid_submit_write_test_id, ID>;
 
-    std::array<sycl::queue, 4> output_kernel_queues;
-    for (uindex_t i = 0; i < 4; i++) {
-        output_kernel_queues[i] = sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
-    }
+    sycl::queue output_kernel_queue =
+        sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
     sycl::queue working_queue = sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
 
-    working_queue.submit([&](sycl::handler &cgh) {
-        cgh.single_task<class tiled_grid_submit_write_test_kernel>([=]() {
-            for (uindex_t c = tile_width; c < 2 * tile_width; c++) {
-                for (uindex_t r = tile_height; r < 2 * tile_height; r++) {
-                    out_pipe::write(ID(c, r));
-                }
-            }
-        });
-    });
-
     TestGrid grid(3 * tile_width, 3 * tile_height);
-    grid.template submit_write<out_pipe>(output_kernel_queues, 1, 1);
 
-    sycl::buffer<ID, 2> out_buffer = sycl::range<2>(3 * tile_width, 3 * tile_height);
-    grid.copy_to_buffer(out_buffer);
+    for (uindex_t tile_c = 0; tile_c < 3; tile_c++) {
+        for (uindex_t tile_r = 0; tile_r < 3; tile_r++) {
+            working_queue.submit([&](sycl::handler &cgh) {
+                index_t c_start = tile_c * tile_width;
+                index_t c_end = (tile_c + 1) * tile_width;
+                index_t r_start = tile_r * tile_height;
+                index_t r_end = (tile_r + 1) * tile_height;
 
-    host_accessor out_ac(out_buffer, read_only);
-    for (uindex_t c = tile_width; c < 2 * tile_width; c++) {
-        for (uindex_t r = tile_height; r < 2 * tile_height; r++) {
-            REQUIRE(out_ac[c][r] == ID(c, r));
+                cgh.single_task<class tiled_grid_submit_write_test_kernel>([=]() {
+                    for (index_t c = c_start; c < c_end; c++) {
+                        for (index_t r = r_start; r < r_end; r++) {
+                            out_pipe::write(ID(c, r));
+                        }
+                    }
+                });
+            });
+
+            grid.template submit_write<out_pipe>(output_kernel_queue, tile_c, tile_r);
+        }
+    }
+
+    using GridAccessor = TestGrid::template GridAccessor<access::mode::read_write>;
+    GridAccessor out_ac(grid);
+    for (uindex_t c = 0; c < 3 * tile_width; c++) {
+        for (uindex_t r = 0; r < 3 * tile_height; r++) {
+            CHECK(out_ac[c][r].c == c);
+            CHECK(out_ac[c][r].r == r);
         }
     }
 }

@@ -106,7 +106,8 @@ function model_runtime(info::BenchmarkInformation)
         for tile_col in 1:ceil(info.n_grid_cols / info.n_tile_cols)
             n_tiles_in_column = ceil(info.n_grid_rows / info.n_tile_rows)
             tile_section_width = min(info.n_tile_cols, info.n_grid_cols - (tile_col - 1) * info.n_tile_cols)
-            n_loop_iterations_per_tile = (tile_section_width + 2info.n_cus) * (info.n_tile_rows + 2info.n_cus)
+            tile_section_height = min(info.n_tile_rows, info.n_grid_rows - (tile_row - 1) * info.n_tile_rows)
+            n_loop_iterations_per_tile = (tile_section_width + 2info.n_cus) * (tile_section_height + 2info.n_cus)
             n_cycles_per_pass += n_tiles_in_column * (info.loop_latency + n_loop_iterations_per_tile)
         end
     else
