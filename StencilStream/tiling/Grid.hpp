@@ -166,21 +166,34 @@ class Grid {
             throw std::out_of_range("Tile index out of range!");
         }
 
+        constexpr uindex_t column_bits = 1 + std::bit_width(tile_width + halo_radius);
+        constexpr uindex_t row_bits = 1 + std::bit_width(tile_height + halo_radius);
+        using index_c_t = ac_int<column_bits, true>;
+        using index_r_t = ac_int<row_bits, true>;
+
         queue.submit([&](sycl::handler &cgh) {
             sycl::accessor grid_ac{grid_buffer, cgh, sycl::read_only};
             index_t grid_width = this->get_grid_width();
             index_t grid_height = this->get_grid_height();
 
             cgh.single_task([=]() {
-                index_t start_c = tile_c * tile_width - halo_radius;
-                index_t end_c =
-                    std::min(index_t((tile_c + 1) * tile_width), grid_width) + halo_radius;
-                index_t start_r = tile_r * tile_height - halo_radius;
-                index_t end_r =
-                    std::min(index_t((tile_r + 1) * tile_height), grid_height) + halo_radius;
+                index_t c_offset = tile_c * tile_width;
+                index_c_t start_tile_c = -halo_radius;
+                index_c_t end_tile_c =
+                    index_c_t(std::min(grid_width - tile_c * tile_width, tile_width)) + halo_radius;
 
-                for (index_t c = start_c; c < end_c; c++) {
-                    for (index_t r = start_r; r < end_r; r++) {
+                index_t r_offset = tile_r * tile_height;
+                index_r_t start_tile_r = -halo_radius;
+                index_r_t end_tile_r =
+                    index_r_t(std::min(grid_height - tile_r * tile_height, tile_height)) +
+                    halo_radius;
+
+                [[intel::loop_coalesce(2)]] for (index_c_t tile_c = start_tile_c;
+                                                 tile_c < end_tile_c; tile_c++) {
+                    for (index_r_t tile_r = start_tile_r; tile_r < end_tile_r; tile_r++) {
+                        index_t c = c_offset + tile_c.to_long();
+                        index_t r = r_offset + tile_r.to_long();
+
                         Cell value;
                         if (c >= 0 && r >= 0 && c < grid_width && r < grid_height) {
                             value = grid_ac[c][r];
@@ -200,20 +213,30 @@ class Grid {
             throw std::out_of_range("Tile index out of range!");
         }
 
+        constexpr uindex_t column_bits = std::bit_width(tile_width);
+        constexpr uindex_t row_bits = std::bit_width(tile_height);
+        using uindex_c_t = ac_int<column_bits, false>;
+        using uindex_r_t = ac_int<row_bits, false>;
+
         queue.submit([&](sycl::handler &cgh) {
             sycl::accessor grid_ac{grid_buffer, cgh, sycl::read_write};
             uindex_t grid_width = this->get_grid_width();
             uindex_t grid_height = this->get_grid_height();
 
             cgh.single_task([=]() {
-                uindex_t start_c = tile_c * tile_width;
-                uindex_t end_c = std::min((tile_c + 1) * tile_width, grid_width);
-                uindex_t start_r = tile_r * tile_height;
-                uindex_t end_r = std::min((tile_r + 1) * tile_height, grid_height);
+                uindex_t c_offset = tile_c * tile_width;
+                uindex_c_t end_tile_c =
+                    uindex_c_t(std::min(grid_width - tile_c * tile_width, tile_width));
 
-                for (uindex_t c = start_c; c < end_c; c++) {
-                    for (uindex_t r = start_r; r < end_r; r++) {
-                        grid_ac[c][r] = out_pipe::read();
+                uindex_t r_offset = tile_r * tile_height;
+                uindex_r_t end_tile_r =
+                    uindex_r_t(std::min(grid_height - tile_r * tile_height, tile_height));
+
+                [[intel::loop_coalesce(2)]] for (uindex_c_t tile_c = 0; tile_c < end_tile_c;
+                                                 tile_c++) {
+                    for (uindex_r_t tile_r = 0; tile_r < end_tile_r; tile_r++) {
+                        grid_ac[c_offset + tile_c.to_long()][r_offset + tile_r.to_long()] =
+                            out_pipe::read();
                     }
                 }
             });
