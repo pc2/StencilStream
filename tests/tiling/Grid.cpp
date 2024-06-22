@@ -72,7 +72,7 @@ TEST_CASE("tiling::Grid::submit_read", "[tiling::Grid]") {
     for (uindex_t tile_c = 0; tile_c < 3; tile_c++) {
         for (uindex_t tile_r = 0; tile_r < 3; tile_r++) {
             using in_pipe = sycl::pipe<class tiled_grid_submit_read_test_id, ID>;
-            grid.template submit_read<in_pipe>(input_kernel_queue, tile_c, tile_r);
+            grid.template submit_read<in_pipe>(input_kernel_queue, tile_c, tile_r, ID(-1, -1));
 
             sycl::buffer<bool, 1> result_buffer = sycl::range<1>(1);
             working_queue.submit([&](sycl::handler &cgh) {
@@ -87,8 +87,10 @@ TEST_CASE("tiling::Grid::submit_read", "[tiling::Grid]") {
                     for (index_t c = c_start; c < c_end; c++) {
                         for (index_t r = r_start; r < r_end; r++) {
                             ID read_value = in_pipe::read();
-                            if (c >= 0 && r >= 0 && c < grid_width && r < grid_height) {
+                            if (c >= 0 && r >= 0 && c < 3 * tile_width && r < 3 * tile_height) {
                                 correct_input &= read_value == ID(c, r);
+                            } else {
+                                correct_input &= read_value == ID(-1, -1);
                             }
                         }
                     }

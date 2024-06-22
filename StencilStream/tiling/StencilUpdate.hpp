@@ -338,7 +338,7 @@ class StencilUpdate {
             for (uindex_t i_tile_c = 0; i_tile_c < tile_range.c; i_tile_c++) {
                 for (uindex_t i_tile_r = 0; i_tile_r < tile_range.r; i_tile_r++) {
                     pass_source->template submit_read<in_pipe>(input_kernel_queue, i_tile_c,
-                                                               i_tile_r);
+                                                               i_tile_r, params.halo_value);
 
                     auto work_event = working_queue.submit([&](sycl::handler &cgh) {
                         TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i,
