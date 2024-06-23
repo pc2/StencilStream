@@ -36,7 +36,7 @@ workflow:
         when: always
         paths:
             - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}"
-            - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.prj/reports"
+            - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.prj"
             - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.tar.gz"
 
 # =============
