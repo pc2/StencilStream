@@ -36,7 +36,9 @@ workflow:
         when: always
         paths:
             - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}"
-            - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.prj"
+            - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.prj/reports"
+            - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.prj/quartuserr.tmp"
+            - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.prj/quartus_sh_compile.log"
             - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.tar.gz"
 
 # =============
