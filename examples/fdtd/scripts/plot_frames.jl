@@ -26,6 +26,11 @@ hz_indices = parse.(Int, getindex.(match.(r"hz\.([0-9]+)\.csv", hz_file_paths), 
 sort!(hz_indices)
 hz_file_paths = (output_directory_path * "/hz.") .* string.(hz_indices) .* ".csv"
 
+if (target == :frames)
+    hz_sum_file_paths = glob("hz_sum.*.csv", output_directory_path)
+    append!(hz_file_paths, hz_sum_file_paths)
+end
+
 hzs = Vector{Matrix}(undef, size(hz_file_paths))
 
 for i in axes(hzs)[1]
