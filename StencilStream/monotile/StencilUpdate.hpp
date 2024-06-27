@@ -115,9 +115,8 @@ class StencilUpdateKernel {
     StencilUpdateKernel(TransFunc trans_func, uindex_t i_iteration, uindex_t target_i_iteration,
                         uindex_t grid_width, uindex_t grid_height, Cell halo_value,
                         TDVKernelArgument tdv_kernel_argument)
-        : trans_func(trans_func), i_iteration(i_iteration),
-          target_i_iteration(target_i_iteration), grid_width(grid_width),
-          grid_height(grid_height), halo_value(halo_value),
+        : trans_func(trans_func), i_iteration(i_iteration), target_i_iteration(target_i_iteration),
+          grid_width(grid_width), grid_height(grid_height), halo_value(halo_value),
           tdv_kernel_argument(tdv_kernel_argument) {
         assert(grid_height <= max_grid_height);
     }
@@ -211,8 +210,8 @@ class StencilUpdateKernel {
                     TDV tdv = tdv_local_state.get_time_dependent_value(
                         (i_processing_element / TransFunc::n_subiterations).to_uint());
                     StencilImpl stencil(ID(c[i_processing_element], r[i_processing_element]),
-                                        UID(grid_width, grid_height), pe_iteration,
-                                        pe_subiteration, i_processing_element, tdv);
+                                        UID(grid_width, grid_height), pe_iteration, pe_subiteration,
+                                        i_processing_element, tdv);
 
                     bool h_halo_mask[stencil_diameter];
                     bool v_halo_mask[stencil_diameter];
@@ -349,14 +348,12 @@ class StencilUpdate {
         auto walltime_start = std::chrono::high_resolution_clock::now();
 
         uindex_t target_n_iterations = params.iteration_offset + params.n_iterations;
-        for (uindex_t i = params.iteration_offset; i < target_n_iterations;
-             i += iters_per_pass) {
+        for (uindex_t i = params.iteration_offset; i < target_n_iterations; i += iters_per_pass) {
             pass_source->template submit_read<in_pipe>(input_kernel_queue);
             uindex_t iters_in_this_pass = std::min(iters_per_pass, target_n_iterations - i);
 
             sycl::event work_event = update_kernel_queue.submit([&](sycl::handler &cgh) {
-                TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i,
-                                                      iters_in_this_pass);
+                TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i, iters_in_this_pass);
                 ExecutionKernelImpl exec_kernel(
                     trans_func, i, target_n_iterations, source_grid.get_grid_width(),
                     source_grid.get_grid_height(), params.halo_value, tdv_kernel_argument);

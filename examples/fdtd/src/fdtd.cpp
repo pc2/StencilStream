@@ -195,8 +195,8 @@ int main(int argc, char **argv) {
 
     if (parameters.interval().has_value()) {
         simulation.get_params().n_iterations = parameters.interval().value();
-        for (uindex_t &i = simulation.get_params().iteration_offset;
-             i < parameters.n_timesteps(); i += parameters.interval().value()) {
+        for (uindex_t &i = simulation.get_params().iteration_offset; i < parameters.n_timesteps();
+             i += parameters.interval().value()) {
             grid = simulation(grid);
             save_frame(grid, i, CellField::HZ, parameters);
         }

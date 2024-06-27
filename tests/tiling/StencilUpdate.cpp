@@ -65,8 +65,7 @@ void test_tiling_kernel_with_strategy(uindex_t grid_width, uindex_t grid_height,
 
     TDVGlobalState global_state(TransFunc(), iteration_offset, target_i_iteration);
     working_queue.submit([&](sycl::handler &cgh) {
-        TDVKernelArgument kernel_argument(global_state, cgh, iteration_offset,
-                                          target_i_iteration);
+        TDVKernelArgument kernel_argument(global_state, cgh, iteration_offset, target_i_iteration);
         TestExecutionKernel kernel(TransFunc(), iteration_offset, target_i_iteration, 0, 0,
                                    grid_width, grid_height, Cell::halo(), kernel_argument);
         cgh.single_task(kernel);
@@ -133,7 +132,7 @@ TEST_CASE("tiling::StencilUpdateKernel (iteration offset, partial pipeline)",
 
 struct HaloHandlingKernel : public BaseTransitionFunction {
     using Cell = bool;
-    
+
     bool operator()(Stencil<bool, 1> const &stencil) const {
         ID idx = stencil.id;
         bool is_valid = true;

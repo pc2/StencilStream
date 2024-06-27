@@ -21,7 +21,6 @@
 #include "../AccessorSubscript.hpp"
 #include "../Concepts.hpp"
 #include "../GenericID.hpp"
-#include "Tile.hpp"
 #include <memory>
 #include <numeric>
 #include <vector>
@@ -46,14 +45,10 @@ namespace tiling {
  * \tparam halo_radius The radius (aka width and height) of the tile halo.
  */
 template <typename Cell, uindex_t tile_width = 1024, uindex_t tile_height = 1024,
-          uindex_t halo_radius = 1, uindex_t word_size = 64>
+          uindex_t halo_radius = 1>
 class Grid {
   public:
     static_assert(2 * halo_radius < tile_height && 2 * halo_radius < tile_width);
-    static constexpr uindex_t core_height = tile_height - 2 * halo_radius;
-    static constexpr uindex_t core_width = tile_width - 2 * halo_radius;
-
-    using Tile = Tile<Cell, tile_width, tile_height, halo_radius, word_size>;
 
     /**
      * \brief Create a grid with undefined contents.
@@ -66,31 +61,21 @@ class Grid {
      * \param grid_height The number of rows of the grid.
      */
     Grid(uindex_t grid_width, uindex_t grid_height)
-        : tiles(), grid_width(grid_width), grid_height(grid_height) {
-        allocate_tiles();
-    }
+        : grid_buffer(sycl::range<2>(grid_width, grid_height)) {}
 
-    Grid(sycl::range<2> range) : Grid(range[0], range[1]) {}
+    Grid(sycl::range<2> range) : grid_buffer(range) {}
 
-    Grid(sycl::buffer<Cell, 2> input_buffer) : Grid(input_buffer.get_range()) {
+    Grid(sycl::buffer<Cell, 2> input_buffer) : grid_buffer(input_buffer.get_range()) {
         copy_from_buffer(input_buffer);
     }
 
+    Grid(Grid const &other_grid) : grid_buffer(other_grid.grid_buffer) {}
+
     template <sycl::access::mode access_mode> class GridAccessor {
       public:
-        using TileAccessor = typename Tile::template TileAccessor<access_mode>;
         static constexpr uindex_t dimensions = 2;
 
-        GridAccessor(Grid &grid)
-            : tile_acs(), grid_width(grid.get_grid_width()), grid_height(grid.get_grid_height()) {
-            for (uindex_t tile_c = 0; tile_c < grid.get_tile_range().c; tile_c++) {
-                tile_acs.push_back(std::vector<TileAccessor>());
-                for (uindex_t tile_r = 0; tile_r < grid.get_tile_range().r; tile_r++) {
-                    TileAccessor next_ac(grid.get_tile(tile_c, tile_r));
-                    tile_acs.back().push_back(next_ac);
-                }
-            }
-        }
+        GridAccessor(Grid &grid) : accessor(grid.grid_buffer) {}
 
         using BaseSubscript = AccessorSubscript<Cell, GridAccessor, access_mode>;
         BaseSubscript operator[](uindex_t i) { return BaseSubscript(*this, i); }
@@ -98,34 +83,29 @@ class Grid {
         Cell const &operator[](sycl::id<2> id)
             requires(access_mode == sycl::access::mode::read)
         {
-            return tile_acs[id[0] / tile_width][id[1] / tile_height][id[0] % tile_width]
-                           [id[1] % tile_height];
+            return accessor[id];
         }
 
         Cell &operator[](sycl::id<2> id)
             requires(access_mode != sycl::access::mode::read)
         {
-            return tile_acs[id[0] / tile_width][id[1] / tile_height][id[0] % tile_width]
-                           [id[1] % tile_height];
+            return accessor[id];
         }
 
       private:
-        std::vector<std::vector<TileAccessor>> tile_acs;
-        uindex_t grid_width, grid_height;
+        sycl::host_accessor<Cell, 2, access_mode> accessor;
     };
 
     void copy_from_buffer(sycl::buffer<Cell, 2> input_buffer) {
-        if (input_buffer.get_range() !=
-            sycl::range<2>(this->get_grid_width(), this->get_grid_height())) {
-            throw std::range_error("The target buffer has not the same size as the grid");
+        if (input_buffer.get_range() != grid_buffer.get_range()) {
+            throw std::out_of_range("The target buffer has not the same size as the grid");
         }
 
-        allocate_tiles();
-
-        for (uindex_t tile_column = 1; tile_column < tiles.size() - 1; tile_column++) {
-            for (uindex_t tile_row = 1; tile_row < tiles[tile_column].size() - 1; tile_row++) {
-                sycl::id<2> offset((tile_column - 1) * tile_width, (tile_row - 1) * tile_height);
-                tiles[tile_column][tile_row].copy_from(input_buffer, offset);
+        sycl::host_accessor grid_ac{grid_buffer, sycl::write_only};
+        sycl::host_accessor input_ac{input_buffer, sycl::read_only};
+        for (uindex_t c = 0; c < get_grid_width(); c++) {
+            for (uindex_t r = 0; r < get_grid_height(); r++) {
+                grid_ac[c][r] = input_ac[c][r];
             }
         }
     }
@@ -137,18 +117,18 @@ class Grid {
      * thrown.
      *
      * \param out_buffer The buffer to copy the cells to.
-     * \throws std::range_error The buffer's size is not the same as the grid's size.
+     * \throws std::out_of_range The buffer's size is not the same as the grid's size.
      */
     void copy_to_buffer(sycl::buffer<Cell, 2> output_buffer) {
-        if (output_buffer.get_range() !=
-            sycl::range<2>(this->get_grid_width(), this->get_grid_height())) {
-            throw std::range_error("The target buffer has not the same size as the grid");
+        if (output_buffer.get_range() != grid_buffer.get_range()) {
+            throw std::out_of_range("The target buffer has not the same size as the grid");
         }
 
-        for (uindex_t tile_column = 1; tile_column < tiles.size() - 1; tile_column++) {
-            for (uindex_t tile_row = 1; tile_row < tiles[tile_column].size() - 1; tile_row++) {
-                sycl::id<2> offset((tile_column - 1) * tile_width, (tile_row - 1) * tile_height);
-                tiles[tile_column][tile_row].copy_to(output_buffer, offset);
+        sycl::host_accessor grid_ac{grid_buffer, sycl::read_only};
+        sycl::host_accessor output_ac{output_buffer, sycl::write_only};
+        for (uindex_t c = 0; c < get_grid_width(); c++) {
+            for (uindex_t r = 0; r < get_grid_height(); r++) {
+                output_ac[c][r] = grid_ac[c][r];
             }
         }
     }
@@ -160,11 +140,11 @@ class Grid {
      *
      * \return The new grid.
      */
-    Grid make_similar() const { return Grid(grid_width, grid_height); }
+    Grid make_similar() const { return Grid(grid_buffer.get_range()); }
 
-    uindex_t get_grid_width() const { return grid_width; }
+    uindex_t get_grid_width() const { return grid_buffer.get_range()[0]; }
 
-    uindex_t get_grid_height() const { return grid_height; }
+    uindex_t get_grid_height() const { return grid_buffer.get_range()[1]; }
 
     /**
      * \brief Return the range of (central) tiles of the grid.
@@ -176,138 +156,49 @@ class Grid {
      * \return The range of tiles of the grid.
      */
     GenericID<uindex_t> get_tile_range() const {
-        return GenericID<uindex_t>(tiles.size() - 2, tiles[0].size() - 2);
+        return GenericID<uindex_t>(std::ceil(float(get_grid_width()) / float(tile_width)),
+                                   std::ceil(float(get_grid_height()) / float(tile_height)));
     }
 
-    /**
-     * \brief Get the tile at the given index.
-     *
-     * \param tile_id The id of the tile to return.
-     * \return The tile.
-     * \throws std::out_of_range Thrown if the tile id is outside the range of tiles, as returned by
-     * \ref Grid.get_tile_range.
-     */
-    Tile &get_tile(index_t tile_c, index_t tile_r) { return tiles.at(tile_c + 1).at(tile_r + 1); }
-
     template <typename in_pipe>
-    void submit_read(std::array<sycl::queue, 6> &queues, index_t tile_c, index_t tile_r) {
-        using feed_in_pipe_0 = sycl::pipe<class feed_in_pipe_0_id, Cell>;
-        using feed_in_pipe_1 = sycl::pipe<class feed_in_pipe_1_id, Cell>;
-        using feed_in_pipe_2 = sycl::pipe<class feed_in_pipe_2_id, Cell>;
-        using feed_in_pipe_3 = sycl::pipe<class feed_in_pipe_3_id, Cell>;
-        using feed_in_pipe_4 = sycl::pipe<class feed_in_pipe_4_id, Cell>;
-
+    void submit_read(sycl::queue &queue, uindex_t tile_c, uindex_t tile_r, Cell halo_value) {
         if (tile_c >= get_tile_range().c || tile_r >= get_tile_range().r) {
-            throw std::range_error("Tile ID out of range!");
+            throw std::out_of_range("Tile index out of range!");
         }
 
-        auto part_widths = get_part_widths(tile_c);
+        constexpr uindex_t column_bits = 1 + std::bit_width(tile_width + halo_radius);
+        constexpr uindex_t row_bits = 1 + std::bit_width(tile_height + halo_radius);
+        using index_c_t = ac_int<column_bits, true>;
+        using index_r_t = ac_int<row_bits, true>;
 
-        get_tile(tile_c - 1, tile_r - 1)
-            .template submit_read_part<feed_in_pipe_0>(queues[0], Tile::Part::SOUTH_EAST_CORNER,
-                                                       part_widths[0]);
-        get_tile(tile_c, tile_r - 1)
-            .template submit_read_part<feed_in_pipe_0>(queues[0], Tile::Part::SOUTH_WEST_CORNER,
-                                                       part_widths[1]);
-        get_tile(tile_c, tile_r - 1)
-            .template submit_read_part<feed_in_pipe_0>(queues[0], Tile::Part::SOUTH_BORDER,
-                                                       part_widths[2]);
-        get_tile(tile_c, tile_r - 1)
-            .template submit_read_part<feed_in_pipe_0>(queues[0], Tile::Part::SOUTH_EAST_CORNER,
-                                                       part_widths[3]);
-        get_tile(tile_c + 1, tile_r - 1)
-            .template submit_read_part<feed_in_pipe_0>(queues[0], Tile::Part::SOUTH_WEST_CORNER,
-                                                       part_widths[4]);
-
-        get_tile(tile_c - 1, tile_r)
-            .template submit_read_part<feed_in_pipe_1>(queues[1], Tile::Part::NORTH_EAST_CORNER,
-                                                       part_widths[0]);
-        get_tile(tile_c, tile_r)
-            .template submit_read_part<feed_in_pipe_1>(queues[1], Tile::Part::NORTH_WEST_CORNER,
-                                                       part_widths[1]);
-        get_tile(tile_c, tile_r)
-            .template submit_read_part<feed_in_pipe_1>(queues[1], Tile::Part::NORTH_BORDER,
-                                                       part_widths[2]);
-        get_tile(tile_c, tile_r)
-            .template submit_read_part<feed_in_pipe_1>(queues[1], Tile::Part::NORTH_EAST_CORNER,
-                                                       part_widths[3]);
-        get_tile(tile_c + 1, tile_r)
-            .template submit_read_part<feed_in_pipe_1>(queues[1], Tile::Part::NORTH_WEST_CORNER,
-                                                       part_widths[4]);
-
-        get_tile(tile_c - 1, tile_r)
-            .template submit_read_part<feed_in_pipe_2>(queues[2], Tile::Part::EAST_BORDER,
-                                                       part_widths[0]);
-        get_tile(tile_c, tile_r)
-            .template submit_read_part<feed_in_pipe_2>(queues[2], Tile::Part::WEST_BORDER,
-                                                       part_widths[1]);
-        get_tile(tile_c, tile_r)
-            .template submit_read_part<feed_in_pipe_2>(queues[2], Tile::Part::CORE, part_widths[2]);
-        get_tile(tile_c, tile_r)
-            .template submit_read_part<feed_in_pipe_2>(queues[2], Tile::Part::EAST_BORDER,
-                                                       part_widths[3]);
-        get_tile(tile_c + 1, tile_r)
-            .template submit_read_part<feed_in_pipe_2>(queues[2], Tile::Part::WEST_BORDER,
-                                                       part_widths[4]);
-
-        get_tile(tile_c - 1, tile_r)
-            .template submit_read_part<feed_in_pipe_3>(queues[3], Tile::Part::SOUTH_EAST_CORNER,
-                                                       part_widths[0]);
-        get_tile(tile_c, tile_r)
-            .template submit_read_part<feed_in_pipe_3>(queues[3], Tile::Part::SOUTH_WEST_CORNER,
-                                                       part_widths[1]);
-        get_tile(tile_c, tile_r)
-            .template submit_read_part<feed_in_pipe_3>(queues[3], Tile::Part::SOUTH_BORDER,
-                                                       part_widths[2]);
-        get_tile(tile_c, tile_r)
-            .template submit_read_part<feed_in_pipe_3>(queues[3], Tile::Part::SOUTH_EAST_CORNER,
-                                                       part_widths[3]);
-        get_tile(tile_c + 1, tile_r)
-            .template submit_read_part<feed_in_pipe_3>(queues[3], Tile::Part::SOUTH_WEST_CORNER,
-                                                       part_widths[4]);
-
-        get_tile(tile_c - 1, tile_r + 1)
-            .template submit_read_part<feed_in_pipe_4>(queues[4], Tile::Part::NORTH_EAST_CORNER,
-                                                       part_widths[0]);
-        get_tile(tile_c, tile_r + 1)
-            .template submit_read_part<feed_in_pipe_4>(queues[4], Tile::Part::NORTH_WEST_CORNER,
-                                                       part_widths[1]);
-        get_tile(tile_c, tile_r + 1)
-            .template submit_read_part<feed_in_pipe_4>(queues[4], Tile::Part::NORTH_BORDER,
-                                                       part_widths[2]);
-        get_tile(tile_c, tile_r + 1)
-            .template submit_read_part<feed_in_pipe_4>(queues[4], Tile::Part::NORTH_EAST_CORNER,
-                                                       part_widths[3]);
-        get_tile(tile_c + 1, tile_r + 1)
-            .template submit_read_part<feed_in_pipe_4>(queues[4], Tile::Part::NORTH_WEST_CORNER,
-                                                       part_widths[4]);
-
-        queues[5].submit([&](sycl::handler &cgh) {
-            uindex_t n_inner_columns = part_widths[1] + part_widths[2] + part_widths[3];
+        queue.submit([&](sycl::handler &cgh) {
+            sycl::accessor grid_ac{grid_buffer, cgh, sycl::read_only};
+            index_t grid_width = this->get_grid_width();
+            index_t grid_height = this->get_grid_height();
 
             cgh.single_task([=]() {
-                constexpr unsigned long bits_width = std::bit_width(2 * halo_radius + tile_width);
-                constexpr unsigned long bits_height = std::bit_width(2 * halo_radius + tile_height);
-                using uindex_width_t = ac_int<bits_width, false>;
-                using uindex_height_t = ac_int<bits_height, false>;
+                index_t c_offset = tile_c * tile_width;
+                index_c_t start_tile_c = -halo_radius;
+                index_c_t end_tile_c =
+                    index_c_t(std::min(grid_width - tile_c * tile_width, tile_width)) + halo_radius;
 
-                [[intel::loop_coalesce(2)]] for (uindex_width_t c = 0;
-                                                 c <
-                                                 uindex_width_t(2 * halo_radius + n_inner_columns);
-                                                 c++) {
-                    for (uindex_height_t r = 0; r < uindex_height_t(2 * halo_radius + tile_height);
-                         r++) {
+                index_t r_offset = tile_r * tile_height;
+                index_r_t start_tile_r = -halo_radius;
+                index_r_t end_tile_r =
+                    index_r_t(std::min(grid_height - tile_r * tile_height, tile_height)) +
+                    halo_radius;
+
+                [[intel::loop_coalesce(2)]] for (index_c_t tile_c = start_tile_c;
+                                                 tile_c < end_tile_c; tile_c++) {
+                    for (index_r_t tile_r = start_tile_r; tile_r < end_tile_r; tile_r++) {
+                        index_t c = c_offset + tile_c.to_long();
+                        index_t r = r_offset + tile_r.to_long();
+
                         Cell value;
-                        if (r < uindex_height_t(halo_radius)) {
-                            value = feed_in_pipe_0::read();
-                        } else if (r < uindex_height_t(2 * halo_radius)) {
-                            value = feed_in_pipe_1::read();
-                        } else if (r < uindex_height_t(2 * halo_radius + core_height)) {
-                            value = feed_in_pipe_2::read();
-                        } else if (r < uindex_height_t(3 * halo_radius + core_height)) {
-                            value = feed_in_pipe_3::read();
+                        if (c >= 0 && r >= 0 && c < grid_width && r < grid_height) {
+                            value = grid_ac[c][r];
                         } else {
-                            value = feed_in_pipe_4::read();
+                            value = halo_value;
                         }
                         in_pipe::write(value);
                     }
@@ -317,120 +208,43 @@ class Grid {
     }
 
     template <typename out_pipe>
-    void submit_write(std::array<sycl::queue, 4> &queues, index_t tile_c, index_t tile_r) {
-        using feed_out_pipe_0 = sycl::pipe<class feed_out_pipe_0_id, Cell>;
-        using feed_out_pipe_1 = sycl::pipe<class feed_out_pipe_1_id, Cell>;
-        using feed_out_pipe_2 = sycl::pipe<class feed_out_pipe_2_id, Cell>;
-
+    void submit_write(sycl::queue queue, uindex_t tile_c, uindex_t tile_r) {
         if (tile_c >= get_tile_range().c || tile_r >= get_tile_range().r) {
-            throw std::range_error("Tile ID out of range!");
+            throw std::out_of_range("Tile index out of range!");
         }
 
-        auto part_widths = get_part_widths(tile_c);
+        constexpr uindex_t column_bits = std::bit_width(tile_width);
+        constexpr uindex_t row_bits = std::bit_width(tile_height);
+        using uindex_c_t = ac_int<column_bits, false>;
+        using uindex_r_t = ac_int<row_bits, false>;
 
-        queues[3].submit([&](sycl::handler &cgh) {
-            uindex_t n_inner_columns = part_widths[1] + part_widths[2] + part_widths[3];
+        queue.submit([&](sycl::handler &cgh) {
+            sycl::accessor grid_ac{grid_buffer, cgh, sycl::read_write};
+            uindex_t grid_width = this->get_grid_width();
+            uindex_t grid_height = this->get_grid_height();
 
             cgh.single_task([=]() {
-                constexpr unsigned long bits_width = std::bit_width(tile_width);
-                constexpr unsigned long bits_height = std::bit_width(tile_height);
-                using uindex_width_t = ac_int<bits_width, false>;
-                using uindex_height_t = ac_int<bits_height, false>;
+                uindex_t c_offset = tile_c * tile_width;
+                uindex_c_t end_tile_c =
+                    uindex_c_t(std::min(grid_width - tile_c * tile_width, tile_width));
 
-                [[intel::loop_coalesce(2)]] for (uindex_width_t c = 0;
-                                                 c < uindex_width_t(n_inner_columns); c++) {
-                    for (uindex_height_t r = 0; r < uindex_height_t(tile_height); r++) {
-                        Cell value = out_pipe::read();
-                        if (r < uindex_height_t(halo_radius)) {
-                            feed_out_pipe_0::write(value);
-                        } else if (r < uindex_height_t(tile_height - halo_radius)) {
-                            feed_out_pipe_1::write(value);
-                        } else {
-                            feed_out_pipe_2::write(value);
-                        }
+                uindex_t r_offset = tile_r * tile_height;
+                uindex_r_t end_tile_r =
+                    uindex_r_t(std::min(grid_height - tile_r * tile_height, tile_height));
+
+                [[intel::loop_coalesce(2)]] for (uindex_c_t tile_c = 0; tile_c < end_tile_c;
+                                                 tile_c++) {
+                    for (uindex_r_t tile_r = 0; tile_r < end_tile_r; tile_r++) {
+                        grid_ac[c_offset + tile_c.to_long()][r_offset + tile_r.to_long()] =
+                            out_pipe::read();
                     }
                 }
             });
         });
-
-        Tile &tile = get_tile(tile_c, tile_r);
-        tile.template submit_write_part<feed_out_pipe_0>(queues[0], Tile::Part::NORTH_WEST_CORNER,
-                                                         part_widths[1]);
-        tile.template submit_write_part<feed_out_pipe_0>(queues[0], Tile::Part::NORTH_BORDER,
-                                                         part_widths[2]);
-        tile.template submit_write_part<feed_out_pipe_0>(queues[0], Tile::Part::NORTH_EAST_CORNER,
-                                                         part_widths[3]);
-
-        tile.template submit_write_part<feed_out_pipe_1>(queues[1], Tile::Part::WEST_BORDER,
-                                                         part_widths[1]);
-        tile.template submit_write_part<feed_out_pipe_1>(queues[1], Tile::Part::CORE,
-                                                         part_widths[2]);
-        tile.template submit_write_part<feed_out_pipe_1>(queues[1], Tile::Part::EAST_BORDER,
-                                                         part_widths[3]);
-
-        tile.template submit_write_part<feed_out_pipe_2>(queues[2], Tile::Part::SOUTH_WEST_CORNER,
-                                                         part_widths[1]);
-        tile.template submit_write_part<feed_out_pipe_2>(queues[2], Tile::Part::SOUTH_BORDER,
-                                                         part_widths[2]);
-        tile.template submit_write_part<feed_out_pipe_2>(queues[2], Tile::Part::SOUTH_EAST_CORNER,
-                                                         part_widths[3]);
     }
 
   private:
-    std::array<uindex_t, 5> get_part_widths(index_t tile_c) const {
-        uindex_t column_offset = tile_c * tile_width;
-        uindex_t n_inner_columns = std::min(tile_width, grid_width - column_offset);
-
-        std::array<uindex_t, 5> part_widths;
-        part_widths[0] = halo_radius;
-
-        part_widths[1] = std::min(n_inner_columns, halo_radius);
-
-        if (n_inner_columns > halo_radius) {
-            part_widths[2] = std::min(n_inner_columns - halo_radius, Tile::core_width);
-        } else {
-            part_widths[2] = 0;
-        }
-
-        if (n_inner_columns > halo_radius + Tile::core_width) {
-            part_widths[3] =
-                std::min(n_inner_columns - halo_radius - Tile::core_width, halo_radius);
-        } else {
-            part_widths[3] = 0;
-        }
-
-        part_widths[4] = halo_radius;
-
-        assert(part_widths[1] + part_widths[2] + part_widths[3] == n_inner_columns);
-
-        return part_widths;
-    }
-
-    void allocate_tiles() {
-        tiles.clear();
-
-        uindex_t n_tile_columns = grid_width / tile_width;
-        if (grid_width % tile_width != 0) {
-            n_tile_columns++;
-        }
-        uindex_t n_tile_rows = grid_height / tile_height;
-        if (grid_height % tile_height != 0) {
-            n_tile_rows++;
-        }
-
-        tiles.reserve(n_tile_columns + 2);
-        for (uindex_t i_column = 0; i_column < n_tile_columns + 2; i_column++) {
-            std::vector<Tile> column;
-            column.reserve(n_tile_rows + 2);
-            for (uindex_t i_row = 0; i_row < n_tile_rows + 2; i_row++) {
-                column.push_back(Tile());
-            }
-            tiles.push_back(column);
-        }
-    }
-
-    std::vector<std::vector<Tile>> tiles;
-    uindex_t grid_width, grid_height;
+    sycl::buffer<Cell, 2> grid_buffer;
 };
 
 } // namespace tiling

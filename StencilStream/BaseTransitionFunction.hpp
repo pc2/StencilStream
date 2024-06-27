@@ -33,9 +33,7 @@ class BaseTransitionFunction {
     static constexpr uindex_t stencil_radius = 1;
     static constexpr uindex_t n_subiterations = 1;
 
-    std::monostate get_time_dependent_value(uindex_t i_iteration) const {
-        return std::monostate();
-    }
+    std::monostate get_time_dependent_value(uindex_t i_iteration) const { return std::monostate(); }
 };
 
 } // namespace stencil
