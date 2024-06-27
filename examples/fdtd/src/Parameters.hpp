@@ -51,9 +51,9 @@ struct Parameters {
     }
 
     Parameters(int argc, char **argv)
-        : t_cutoff_factor(7.0), t_detect_factor(14.0), t_max_factor(15.0), t_snap_factor(std::nullopt), frequency(120e12),
-          t_0_factor(3.0), source_x(0.0), source_y(0.0), source_radius(0.0), dx(10e-9),
-          tau(100e-15), rings(), out_dir(".") {
+        : t_cutoff_factor(7.0), t_detect_factor(14.0), t_max_factor(15.0),
+          t_snap_factor(std::nullopt), frequency(120e12), t_0_factor(3.0), source_x(0.0),
+          source_y(0.0), source_radius(0.0), dx(10e-9), tau(100e-15), rings(), out_dir(".") {
 
         bool config_loaded = false;
 
@@ -276,7 +276,8 @@ struct Parameters {
         std::cout << std::endl;
 
         std::cout << "# Source Wave" << std::endl;
-        std::cout << "phase             = " << t_0_factor << " tau = " << t_0() << " s" << std::endl;
+        std::cout << "phase             = " << t_0_factor << " tau = " << t_0() << " s"
+                  << std::endl;
         std::cout << "frequency         = " << frequency << " Hz" << std::endl;
         std::cout << std::endl;
 

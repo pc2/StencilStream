@@ -196,8 +196,8 @@ int main(int argc, char **argv) {
     if (parameters.n_snap_timesteps().has_value()) {
         uindex_t n_snap_timesteps = parameters.n_snap_timesteps().value();
         simulation.get_params().n_iterations = n_snap_timesteps;
-        for (uindex_t &i = simulation.get_params().iteration_offset;
-             i < parameters.n_timesteps(); i += n_snap_timesteps) {
+        for (uindex_t &i = simulation.get_params().iteration_offset; i < parameters.n_timesteps();
+             i += n_snap_timesteps) {
             grid = simulation(grid);
             save_frame(grid, i + n_snap_timesteps, CellField::HZ, parameters);
         }
