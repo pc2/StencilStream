@@ -44,7 +44,7 @@ endforeach()
 # Adding options for report executables
 foreach(EXECUTABLE hotspot_mono_report hotspot_tiling_report)
     target_compile_definitions(${EXECUTABLE} PUBLIC HARDWARE=1)
-    target_link_options(${EXECUTABLE} PUBLIC -Xshardware -fsycl-link -Xsclock=300MHz -Xsseed=3)
+    target_link_options(${EXECUTABLE} PUBLIC -Xshardware -fsycl-link)
     if(VERBOSE_SYNTHESIS)
         target_link_options(${EXECUTABLE} PUBLIC -Xsv)
     endif()
@@ -53,10 +53,15 @@ endforeach()
 # Adding options for hardware executables
 foreach(EXECUTABLE hotspot_mono hotspot_tiling)
     target_compile_definitions(${EXECUTABLE} PUBLIC HARDWARE=1)
-    target_link_options(${EXECUTABLE} PUBLIC -Xshardware -Xsclock=300MHz -Xsseed=3)
+    target_link_options(${EXECUTABLE} PUBLIC -Xshardware)
     if(VERBOSE_SYNTHESIS)
         target_link_options(${EXECUTABLE} PUBLIC -Xsv)
     endif()
+endforeach()
+
+# Limiting clock speed and setting the seed for Hotspot Tiling
+foreach(EXECUTABLE hotspot_tiling_report hotspot_tiling)
+    target_link_options(${EXECUTABLE} PUBLIC -Xsclock=300MHz -Xsseed=3)
 endforeach()
 
 # Adding a custom target for all Hotspot reports
