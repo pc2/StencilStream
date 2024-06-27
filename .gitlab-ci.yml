@@ -17,14 +17,19 @@ default:
         CI_JOB_JWT:
             aud: https://git.uni-paderborn.de
 
-workflow:
+.cheap_job:
     rules:
-        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-        - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-        - if: $CI_MERGE_REQUEST_TITLE =~ /^Draft:/
-          when: never
+        - if: $CI_PIPELINE_SOURCE == 'merge_request_event' # Run for all merge-requests (even drafts)
+        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH # Run on the main branch
+
+.expensive_job:
+    rules:
+        - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_MERGE_REQUEST_TITLE !~ /^Draft:/ # Run for non-draft merge requests
+        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH # Run on the main branch
+
 
 .synthesis:
+    extends: .expensive_job
     stage: synthesis
     tags:
         - noctua2
@@ -46,6 +51,7 @@ workflow:
 # =============
 
 documentation:
+    extends: .cheap_job
     stage: preevaluation
     tags:
         - docker-shared
@@ -59,6 +65,7 @@ documentation:
             - doxygen/html
 
 unit test:
+    extends: .cheap_job
     stage: preevaluation
     tags:
         - noctua2
@@ -82,6 +89,7 @@ convection synthesis:
         STST_EXECUTABLE: "convection"
 
 convection benchmark:
+    extends: .expensive_job
     stage: benchmark
     needs: 
         - convection synthesis
@@ -111,6 +119,7 @@ hotspot (monotile) synthesis:
         STST_EXECUTABLE: "hotspot_mono"
 
 .hotspot benchmark:
+    extends: .expensive_job
     stage: benchmark
     tags:
         - noctua2
@@ -124,6 +133,7 @@ hotspot (monotile) synthesis:
             - examples/hotspot/metrics.*.json
 
 hotspot (monotile) benchmark:
+    extends: .expensive_job
     extends: .hotspot benchmark
     needs: 
         - hotspot (monotile) synthesis
@@ -161,6 +171,7 @@ fdtd (monotile) synthesis:
         STST_EXECUTABLE: "fdtd_coef_device_mono"
 
 .fdtd benchmark:
+    extends: .expensive_job
     stage: benchmark
     tags:
         - noctua2
