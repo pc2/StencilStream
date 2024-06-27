@@ -59,6 +59,10 @@ foreach(MATERIAL coef lut render)
                     target_compile_definitions(${EXECUTABLE} PUBLIC HARDWARE)
                     target_link_options(${EXECUTABLE} PUBLIC -Xshardware)
 
+                    if(${EXECUTOR} MATCHES "^tiling")
+                        target_link_options(${EXECUTABLE} PUBLIC -Xsclock=300MHz)
+                    endif()
+
                     if(VERBOSE_SYNTHESIS)
                         target_link_options(${EXECUTABLE} PUBLIC -Xsv)
                     endif()

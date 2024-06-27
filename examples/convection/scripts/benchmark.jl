@@ -4,8 +4,8 @@ include("../../../scripts/benchmark-common.jl")
 const N_SUBITERATIONS = 3
 const N_REPLICATIONS = 8
 const N_CUS = N_SUBITERATIONS * N_REPLICATIONS
-const OPERATIONS_PER_CELL = (5+5+3+6+6+6) + (10+3+2+14+3+2) + 2
-const CELL_SIZE = 128 # bytes, with padding
+const OPERATIONS_PER_CELL = (5 + 5 + 3 + 6 + 6 + 6) + (10 + 3 + 2 + 14 + 3 + 2) + 2
+const CELL_SIZE = 88 # bytes
 const TILE_HEIGHT = 512
 const TILE_WIDTH = 2^16
 
@@ -22,7 +22,7 @@ function analyze_log(logfile)
         if length(line) == 0
             continue
         end
-        
+
         if (line_match = match(iteration_re, line)) !== nothing
             i_iteration = parse(Int, line_match[1])
             pseudo_steps = parse(Int, line_match[2])
@@ -39,60 +39,6 @@ function analyze_log(logfile)
     end
 
     return e2e_runtime, pseudo_transient_runtimes
-end
-
-function resolution_exploration()
-    exec = ARGS[2]
-
-    experiment_template = Dict(
-        "ly" => 1.0,
-        "lx" => 1.0,
-        "py" => 0.5,
-        "px" => 0.5,
-        "res" => 32,
-    
-        "eta0" => 1.0,
-        "DcT" => 1.0,
-        "deltaT" => 1.0,
-        "Ra" => 1e7,
-        "Pra" => 1e3,
-    
-        "iterMax" => 50000,
-        "nt" => 1000,
-        "nout" => 10,
-        "nerr" => 100,
-        "epsilon" => 1e-4,
-        "dmp" => 2
-    )
-    experiment_path, _ = Base.Filesystem.mktemp(cleanup=false)
-    
-    pseudo_transient_runtimes = DataFrame(res=Int[], i_iteration=Int[], pseudo_steps=Int[], runtime=Float64[])
-    e2e_runtimes = DataFrame(res=Int[], runtime=Float64[])
-    
-    for res in 32:32:512
-        println("Running with res $res...")
-    
-        experiment = copy(experiment_template)
-        experiment["res"] = res
-        open(experiment_path, "w") do experiment_file 
-            JSON.print(experiment_file, experiment)
-        end
-    
-        command = `$exec $experiment_path out`
-    
-        open(command, "r") do process_in
-            e2e_runtime, invocation_runtimes = analyze_log(process_in)
-            push!(e2e_runtimes, (res, e2e_runtime))
-            invocation_runtimes.res = [res for _ in eachrow(invocation_runtimes)]
-            append!(pseudo_transient_runtimes, invocation_runtimes)
-        end
-    
-        CSV.write("pseudo_transient_perf.csv", pseudo_transient_runtimes)
-        CSV.write("e2e_perf.csv", e2e_runtimes)
-    end
-    
-    Base.Filesystem.rm(experiment_path)
-    nothing
 end
 
 function default_benchmark()
@@ -114,31 +60,34 @@ function default_benchmark()
         CSV.write("pseudo_transient_runtimes.csv", pseudo_transient_runtimes)
 
         best_performing_invocation = argmax(pseudo_transient_runtimes.pseudo_steps ./ pseudo_transient_runtimes.runtime)
-        raw_metrics = build_metrics(
-            pseudo_transient_runtimes.runtime[best_performing_invocation],
-            pseudo_transient_runtimes.pseudo_steps[best_performing_invocation] * N_SUBITERATIONS,
-            :monotile,
-            f,
-            loop_latency,
+
+        info = BenchmarkInformation(
+            pseudo_transient_runtimes.pseudo_steps[best_performing_invocation],
             ly * res,
             lx * res,
+            N_SUBITERATIONS,
+            CELL_SIZE,
+            OPERATIONS_PER_CELL,
+            :monotile,
+            N_CUS,
             TILE_HEIGHT,
             TILE_WIDTH,
-            N_CUS,
-            OPERATIONS_PER_CELL,
-            CELL_SIZE
+            f,
+            loop_latency,
+            pseudo_transient_runtimes.runtime[best_performing_invocation]
         )
+
         metrics = Dict(
             "target" => "Convection",
             "n_cus" => N_CUS,
             "f" => f,
-            "occupancy" => raw_metrics[:occupancy],
-            "measured" => raw_metrics[:measured_rate],
-            "accuracy" => raw_metrics[:model_accurracy],
-            "FLOPS" => raw_metrics[:flops],
-            "mem_throughput" => raw_metrics[:mem_throughput]
+            "occupancy" => occupancy(info),
+            "measured" => measured_throughput(info),
+            "accuracy" => model_accurracy(info),
+            "FLOPS" => measured_flops(info),
+            "mem_throughput" => measured_mem_throughput(info)
         )
-        
+
         open("metrics.json", "w") do metrics_file
             JSON.print(metrics_file, metrics)
         end
@@ -146,8 +95,6 @@ function default_benchmark()
 end
 
 mode = ARGS[1]
-if mode == "res-exploration"
-    resolution_exploration()
-else mode == "default"
+if mode == "default"
     default_benchmark()
 end

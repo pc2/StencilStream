@@ -28,7 +28,6 @@ set(UNIT_TEST_SOURCES
     monotile/StencilUpdate.cpp
     tiling/Grid.cpp
     tiling/StencilUpdate.cpp
-    tiling/Tile.cpp
     constraint_test.cpp
 )
 

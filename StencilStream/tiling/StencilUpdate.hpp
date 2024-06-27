@@ -123,10 +123,10 @@ class StencilUpdateKernel {
                         uindex_t grid_c_offset, uindex_t grid_r_offset, uindex_t grid_width,
                         uindex_t grid_height, Cell halo_value,
                         TDVKernelArgument tdv_kernel_argument)
-        : trans_func(trans_func), i_iteration(i_iteration),
-          target_i_iteration(target_i_iteration), grid_c_offset(grid_c_offset),
-          grid_r_offset(grid_r_offset), grid_width(grid_width), grid_height(grid_height),
-          halo_value(halo_value), tdv_kernel_argument(tdv_kernel_argument) {
+        : trans_func(trans_func), i_iteration(i_iteration), target_i_iteration(target_i_iteration),
+          grid_c_offset(grid_c_offset), grid_r_offset(grid_r_offset), grid_width(grid_width),
+          grid_height(grid_height), halo_value(halo_value),
+          tdv_kernel_argument(tdv_kernel_argument) {
         assert(grid_c_offset % output_tile_width == 0);
         assert(grid_r_offset % output_tile_height == 0);
     }
@@ -153,10 +153,13 @@ class StencilUpdateKernel {
         [[intel::fpga_register]] Cell stencil_buffer[n_processing_elements][stencil_diameter]
                                                     [stencil_diameter];
 
-        uindex_1d_t tile_section_width = std::min(output_tile_width, grid_width - grid_c_offset);
-        uindex_1d_t tile_section_height = output_tile_height;
-        uindex_2d_t n_iterations =
-            (tile_section_width + 2 * halo_radius) * (tile_section_height + 2 * halo_radius);
+        uindex_1d_t output_tile_section_width =
+            std::min(output_tile_width, grid_width - grid_c_offset);
+        uindex_1d_t output_tile_section_height =
+            std::min(output_tile_height, grid_height - grid_r_offset);
+        uindex_1d_t input_tile_section_width = output_tile_section_width + 2 * halo_radius;
+        uindex_1d_t input_tile_section_height = output_tile_section_height + 2 * halo_radius;
+        uindex_2d_t n_iterations = input_tile_section_width * input_tile_section_height;
 
         for (uindex_2d_t i = 0; i < n_iterations; i++) {
             [[intel::fpga_register]] Cell carry = in_pipe::read();
@@ -226,9 +229,8 @@ class StencilUpdateKernel {
                 TDV tdv = tdv_local_state.get_time_dependent_value(i_processing_element /
                                                                    TransFunc::n_subiterations);
                 StencilImpl stencil(ID(output_grid_c, output_grid_r), UID(grid_width, grid_height),
-                                    pe_iteration, pe_subiteration,
-                                    i_processing_element.to_uint64(), tdv,
-                                    stencil_buffer[i_processing_element]);
+                                    pe_iteration, pe_subiteration, i_processing_element.to_uint64(),
+                                    tdv, stencil_buffer[i_processing_element]);
 
                 if (pe_iteration < target_i_iteration) {
                     carry = trans_func(stencil);
@@ -247,7 +249,7 @@ class StencilUpdateKernel {
                 out_pipe::write(carry);
             }
 
-            if (input_tile_r == uindex_1d_t(input_tile_height - 1)) {
+            if (input_tile_r == input_tile_section_height - 1) {
                 input_tile_r = 0;
                 input_tile_c++;
             } else {
@@ -271,13 +273,12 @@ class StencilUpdateKernel {
 template <concepts::TransitionFunction F, uindex_t n_processing_elements = 1,
           uindex_t tile_width = 1024, uindex_t tile_height = 1024,
           tdv::single_pass::Strategy<F, n_processing_elements> TDVStrategy =
-              tdv::single_pass::InlineStrategy,
-          uindex_t word_size = 64>
+              tdv::single_pass::InlineStrategy>
 class StencilUpdate {
   public:
     using Cell = F::Cell;
     static constexpr uindex_t halo_radius = F::stencil_radius * n_processing_elements;
-    using GridImpl = Grid<Cell, tile_width, tile_height, halo_radius, word_size>;
+    using GridImpl = Grid<Cell, tile_width, tile_height, halo_radius>;
     using TDVGlobalState = typename TDVStrategy::template GlobalState<F, n_processing_elements>;
     using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
 
@@ -297,8 +298,8 @@ class StencilUpdate {
     Params &get_params() { return params; }
 
     GridImpl operator()(GridImpl &source_grid) {
-        using in_pipe = sycl::pipe<class monotile_in_pipe, Cell>;
-        using out_pipe = sycl::pipe<class monotile_out_pipe, Cell>;
+        using in_pipe = sycl::pipe<class tiling_in_pipe, Cell>;
+        using out_pipe = sycl::pipe<class tiling_out_pipe, Cell>;
         using ExecutionKernelImpl = StencilUpdateKernel<F, TDVKernelArgument, n_processing_elements,
                                                         tile_width, tile_height, in_pipe, out_pipe>;
 
@@ -306,16 +307,10 @@ class StencilUpdate {
             return GridImpl(source_grid);
         }
 
-        std::array<sycl::queue, 6> input_kernel_queues;
-        for (uindex_t i = 0; i < 6; i++) {
-            input_kernel_queues[i] =
-                sycl::queue(params.device, {sycl::property::queue::in_order{}});
-        }
-        std::array<sycl::queue, 4> output_kernel_queues;
-        for (uindex_t i = 0; i < 4; i++) {
-            output_kernel_queues[i] =
-                sycl::queue(params.device, {sycl::property::queue::in_order{}});
-        }
+        sycl::queue input_kernel_queue =
+            sycl::queue(params.device, {sycl::property::queue::in_order{}});
+        sycl::queue output_kernel_queue =
+            sycl::queue(params.device, {sycl::property::queue::in_order{}});
         sycl::queue working_queue =
             sycl::queue(params.device, {cl::sycl::property::queue::enable_profiling{},
                                         sycl::property::queue::in_order{}});
@@ -337,14 +332,13 @@ class StencilUpdate {
         auto walltime_start = std::chrono::high_resolution_clock::now();
 
         uindex_t target_n_iterations = params.iteration_offset + params.n_iterations;
-        for (uindex_t i = params.iteration_offset; i < target_n_iterations;
-             i += iters_per_pass) {
+        for (uindex_t i = params.iteration_offset; i < target_n_iterations; i += iters_per_pass) {
             uindex_t iters_in_this_pass = std::min(iters_per_pass, target_n_iterations - i);
 
             for (uindex_t i_tile_c = 0; i_tile_c < tile_range.c; i_tile_c++) {
                 for (uindex_t i_tile_r = 0; i_tile_r < tile_range.r; i_tile_r++) {
-                    pass_source->template submit_read<in_pipe>(input_kernel_queues, i_tile_c,
-                                                               i_tile_r);
+                    pass_source->template submit_read<in_pipe>(input_kernel_queue, i_tile_c,
+                                                               i_tile_r, params.halo_value);
 
                     auto work_event = working_queue.submit([&](sycl::handler &cgh) {
                         TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i,
@@ -362,7 +356,7 @@ class StencilUpdate {
                         work_events.push_back(work_event);
                     }
 
-                    pass_target->template submit_write<out_pipe>(output_kernel_queues, i_tile_c,
+                    pass_target->template submit_write<out_pipe>(output_kernel_queue, i_tile_c,
                                                                  i_tile_r);
                 }
             }
@@ -376,9 +370,7 @@ class StencilUpdate {
         }
 
         if (params.blocking) {
-            for (sycl::queue queue : output_kernel_queues) {
-                queue.wait();
-            }
+            output_kernel_queue.wait();
         }
 
         auto walltime_end = std::chrono::high_resolution_clock::now();

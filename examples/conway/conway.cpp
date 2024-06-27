@@ -32,7 +32,7 @@ using namespace stencil::monotile;
 
 struct ConwayKernel : public BaseTransitionFunction {
     using Cell = bool;
-    
+
     bool operator()(Stencil<bool, stencil_radius> const &stencil) const {
         ID idx = stencil.id;
 

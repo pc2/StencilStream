@@ -25,12 +25,12 @@ namespace tdv {
 namespace single_pass {
 
 template <typename T, typename TransFunc>
-concept LocalState = stencil::concepts::TransitionFunction<TransFunc> &&
-                     requires(T const &local_state, uindex_t i) {
-                         {
-                             local_state.get_time_dependent_value(i)
-                             } -> std::same_as<typename TransFunc::TimeDependentValue>;
-                     };
+concept LocalState =
+    stencil::concepts::TransitionFunction<TransFunc> && requires(T const &local_state, uindex_t i) {
+        {
+            local_state.get_time_dependent_value(i)
+        } -> std::same_as<typename TransFunc::TimeDependentValue>;
+    };
 
 template <typename T, typename TransFunc>
 concept KernelArgument = stencil::concepts::TransitionFunction<TransFunc> &&
@@ -58,8 +58,8 @@ struct InlineStrategy {
             : trans_func(trans_func) {}
 
         struct KernelArgument {
-            KernelArgument(GlobalState &global_state, sycl::handler &cgh,
-                           uindex_t iteration_offset, uindex_t n_iterations)
+            KernelArgument(GlobalState &global_state, sycl::handler &cgh, uindex_t iteration_offset,
+                           uindex_t n_iterations)
                 : trans_func(global_state.trans_func), iteration_offset(iteration_offset) {}
 
             using LocalState = KernelArgument;
@@ -87,8 +87,8 @@ struct PrecomputeOnDeviceStrategy {
             : trans_func(trans_func) {}
 
         struct KernelArgument {
-            KernelArgument(GlobalState &global_state, sycl::handler &cgh,
-                           uindex_t iteration_offset, uindex_t n_iterations)
+            KernelArgument(GlobalState &global_state, sycl::handler &cgh, uindex_t iteration_offset,
+                           uindex_t n_iterations)
                 : trans_func(global_state.trans_func), iteration_offset(iteration_offset) {}
 
             struct LocalState {
@@ -131,6 +131,10 @@ struct PrecomputeOnHostStrategy {
                 ac[i] = function.get_time_dependent_value(iteration_offset + i);
             }
         }
+
+        GlobalState(GlobalState const &other)
+            : function(other.function), iteration_offset(other.iteration_offset),
+              value_buffer(other.value_buffer) {}
 
         struct KernelArgument {
             KernelArgument(GlobalState &global_state, sycl::handler &cgh, uindex_t i_iteration,

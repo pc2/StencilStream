@@ -50,29 +50,29 @@ concept TransitionFunction =
     requires(T const &trans_func, uindex_t i_iteration) {
         {
             trans_func.get_time_dependent_value(i_iteration)
-            } -> std::same_as<typename T::TimeDependentValue>;
+        } -> std::same_as<typename T::TimeDependentValue>;
     };
 
 template <typename Accessor, typename Cell>
 concept GridAccessor = requires(Accessor ac, uindex_t c, uindex_t r) {
-                           { ac[sycl::id<2>(c, r)] } -> std::same_as<Cell &>;
-                           { ac[c][r] } -> std::same_as<Cell &>;
-                       };
+    { ac[sycl::id<2>(c, r)] } -> std::same_as<Cell &>;
+    { ac[c][r] } -> std::same_as<Cell &>;
+};
 
 template <typename G, typename Cell>
 concept Grid = requires(G &grid, sycl::buffer<Cell, 2> buffer, uindex_t c, uindex_t r, Cell cell) {
-                   { G(c, r) } -> std::same_as<G>;
-                   { G(sycl::range<2>(c, r)) } -> std::same_as<G>;
-                   { G(buffer) } -> std::same_as<G>;
-                   { grid.copy_from_buffer(buffer) } -> std::same_as<void>;
-                   { grid.copy_to_buffer(buffer) } -> std::same_as<void>;
-                   { grid.get_grid_width() } -> std::convertible_to<uindex_t>;
-                   { grid.get_grid_height() } -> std::convertible_to<uindex_t>;
-                   { grid.make_similar() } -> std::same_as<G>;
-                   {
-                       typename G::template GridAccessor<sycl::access::mode::read_write>(grid)
-                       } -> GridAccessor<Cell>;
-               };
+    { G(c, r) } -> std::same_as<G>;
+    { G(sycl::range<2>(c, r)) } -> std::same_as<G>;
+    { G(buffer) } -> std::same_as<G>;
+    { grid.copy_from_buffer(buffer) } -> std::same_as<void>;
+    { grid.copy_to_buffer(buffer) } -> std::same_as<void>;
+    { grid.get_grid_width() } -> std::convertible_to<uindex_t>;
+    { grid.get_grid_height() } -> std::convertible_to<uindex_t>;
+    { grid.make_similar() } -> std::same_as<G>;
+    {
+        typename G::template GridAccessor<sycl::access::mode::read_write>(grid)
+    } -> GridAccessor<Cell>;
+};
 
 template <typename SU, typename TF, typename G>
 concept StencilUpdate =

@@ -13,6 +13,9 @@ variables:
 default:
     before_script:
         - source scripts/env.sh
+    id_tokens:
+        CI_JOB_JWT:
+            aud: https://git.uni-paderborn.de
 
 workflow:
     rules:
@@ -34,6 +37,8 @@ workflow:
         paths:
             - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}"
             - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.prj/reports"
+            - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.prj/quartuserr.tmp"
+            - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.prj/quartus_sh_compile.log"
             - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.tar.gz"
 
 # =============
