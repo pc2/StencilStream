@@ -14,9 +14,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
-include_directories(../)
-add_compile_options(-fsycl -std=c++20 -qactypes -fintelfpga -Wtautological-constant-compare -Rno-debug-disables-optimization)
-add_link_options(-fsycl -std=c++20 -qactypes -fintelfpga -Wtautological-constant-compare -Rno-debug-disables-optimization)
 add_compile_definitions(STENCIL_INDEX_WIDTH=32)
 
 set(UNIT_TEST_SOURCES
@@ -32,4 +29,4 @@ set(UNIT_TEST_SOURCES
 )
 
 add_executable(unit_test ${UNIT_TEST_SOURCES})
-target_link_libraries(unit_test PRIVATE Catch2::Catch2WithMain)
+target_link_libraries(unit_test PRIVATE Catch2::Catch2WithMain StencilStreamFPGAEmulator)

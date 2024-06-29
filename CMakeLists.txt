@@ -6,16 +6,53 @@
 # 
 # THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+# Structure heavily inspired by https://github.com/nlohmann/json/blob/v3.11.3/CMakeLists.txt
+
 set(CMAKE_CXX_COMPILER icpx)
 cmake_minimum_required(VERSION 3.21)
 
 project(StencilStream CXX)
-set(CMAKE_PROJECT_VERSION 3.0.0)
+set(CMAKE_PROJECT_VERSION 4.0.0)
 
 find_package(Boost 1.74.0 REQUIRED)
 
-add_subdirectory(examples/convection)
-add_subdirectory(examples/conway)
-add_subdirectory(examples/fdtd)
-add_subdirectory(examples/hotspot)
-add_subdirectory(tests)
+##
+## MAIN_PROJECT CHECK
+## determine if StencilStream is built as a subproject (using add_subdirectory) or if it is the main project
+##
+set(MAIN_PROJECT OFF)
+if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    set(MAIN_PROJECT ON)
+endif()
+
+if(${MAIN_PROJECT})
+    add_subdirectory(examples/convection)
+    add_subdirectory(examples/conway)
+    add_subdirectory(examples/fdtd)
+    add_subdirectory(examples/hotspot)
+    add_subdirectory(tests)
+endif()
+
+add_library(StencilStream INTERFACE)
+target_include_directories(StencilStream INTERFACE "${PROJECT_SOURCE_DIR}/")
+target_compile_options(StencilStream INTERFACE -fsycl -std=c++20)
+target_link_options(StencilStream INTERFACE -fsycl)
+target_link_libraries(StencilStream INTERFACE Boost::boost)
+
+add_library(StencilStreamCPU INTERFACE)
+target_link_libraries(StencilStreamCPU INTERFACE StencilStream)
+
+add_library(StencilStreamFPGA INTERFACE)
+target_link_libraries(StencilStreamFPGA INTERFACE StencilStream)
+target_compile_options(StencilStreamFPGA INTERFACE -qactypes -fintelfpga)
+target_link_options(StencilStreamFPGA INTERFACE -fintelfpga -Xshardware)
+
+add_library(StencilStreamFPGAEmulator INTERFACE)
+target_link_libraries(StencilStreamFPGAEmulator INTERFACE StencilStream)
+target_compile_options(StencilStreamFPGAEmulator INTERFACE -qactypes -fintelfpga)
+target_link_options(StencilStreamFPGAEmulator INTERFACE -fintelfpga)
+
+add_library(StencilStreamFPGAReport INTERFACE)
+target_link_libraries(StencilStreamFPGAReport INTERFACE StencilStream)
+target_compile_options(StencilStreamFPGAReport INTERFACE -qactypes -fintelfpga)
+target_link_options(StencilStreamFPGAReport INTERFACE -fintelfpga -Xshardware -fsycl-link)
