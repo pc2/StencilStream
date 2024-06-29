@@ -6,24 +6,17 @@
 # 
 # THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# Structure heavily inspired by https://github.com/nlohmann/json/blob/v3.11.3/CMakeLists.txt
+if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    set(MAIN_PROJECT ON)
+    set(CMAKE_CXX_COMPILER icpx)
+else()
+    set(MAIN_PROJECT OFF)
+endif()
 
-set(CMAKE_CXX_COMPILER icpx)
 cmake_minimum_required(VERSION 3.21)
 
 project(StencilStream CXX)
 set(CMAKE_PROJECT_VERSION 4.0.0)
-
-find_package(Boost 1.74.0 REQUIRED)
-
-##
-## MAIN_PROJECT CHECK
-## determine if StencilStream is built as a subproject (using add_subdirectory) or if it is the main project
-##
-set(MAIN_PROJECT OFF)
-if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-    set(MAIN_PROJECT ON)
-endif()
 
 if(${MAIN_PROJECT})
     add_subdirectory(examples/convection)
@@ -32,6 +25,8 @@ if(${MAIN_PROJECT})
     add_subdirectory(examples/hotspot)
     add_subdirectory(tests)
 endif()
+
+find_package(Boost 1.74.0 REQUIRED)
 
 add_library(StencilStream INTERFACE)
 target_include_directories(StencilStream INTERFACE "${PROJECT_SOURCE_DIR}/")
