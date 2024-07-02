@@ -8,8 +8,7 @@
 
 # Pure CPU-based executable
 add_executable(conway_cpu conway.cpp)
-target_link_libraries(conway_cpu PUBLIC StencilStreamCPU)
-target_compile_definitions(conway_cpu PUBLIC CPU)
+target_link_libraries(conway_cpu PUBLIC StencilStream_CPU)
 
 # Common settings for all FPGA-based executables
 if(VERBOSE_SYNTHESIS)
@@ -18,15 +17,12 @@ endif()
 
 # The emulation image
 add_executable(conway_emu conway.cpp)
-target_link_libraries(conway_emu PUBLIC StencilStreamFPGAEmulator)
-target_compile_definitions(conway_emu PUBLIC EMULATOR)
+target_link_libraries(conway_emu PUBLIC StencilStream_MonotileEmulator)
 
 # The hardware usage report
 add_executable(conway_hw_report conway.cpp)
-target_link_libraries(conway_hw_report PUBLIC StencilStreamFPGAReport)
-target_compile_definitions(conway_hw_report PUBLIC HARDWARE)
+target_link_libraries(conway_hw_report PUBLIC StencilStream_MonotileReport)
 
 # The hardware image
 add_executable(conway_hw conway.cpp)
-target_link_libraries(conway_hw PUBLIC StencilStreamFPGA)
-target_compile_definitions(conway_hw PUBLIC HARDWARE)
+target_link_libraries(conway_hw PUBLIC StencilStream_MonotileHW)

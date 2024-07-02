@@ -45,18 +45,18 @@ using TDVStrategy = tdv::single_pass::PrecomputeOnDeviceStrategy;
 using TDVStrategy = tdv::single_pass::PrecomputeOnHostStrategy;
 #endif
 
-#if EXECUTOR == 0
+#if defined(STENCILSTREAM_MONOTILE)
     #include <StencilStream/monotile/StencilUpdate.hpp>
 
 using Grid = monotile::Grid<CellImpl>;
 using StencilUpdate = monotile::StencilUpdate<KernelImpl, n_processing_elements, tile_width,
                                               tile_height, TDVStrategy>;
-#elif EXECUTOR == 1
+#elif defined(STENCILSTREAM_TILING)
     #include <StencilStream/tiling/StencilUpdate.hpp>
 using StencilUpdate =
     tiling::StencilUpdate<KernelImpl, n_processing_elements, tile_width, tile_height, TDVStrategy>;
 using Grid = StencilUpdate::GridImpl;
-#elif EXECUTOR == 2
+#elif defined(STENCILSTREAM_CPU)
     #include <StencilStream/cpu/StencilUpdate.hpp>
 using Grid = cpu::Grid<CellImpl>;
 using StencilUpdate = cpu::StencilUpdate<KernelImpl>;
@@ -138,7 +138,7 @@ int main(int argc, char **argv) {
     Parameters parameters(argc, argv);
     parameters.print_configuration();
 
-#if EXECUTOR == 0
+#if defined(STENCILSTREAM_MONOTILE)
     if (parameters.grid_range()[0] > tile_width || parameters.grid_range()[1] > tile_height) {
         std::cerr << "Error: The grid may not exceed the size of the tile (" << tile_width << " by "
                   << tile_height << " cells) when using the monotile architecture." << std::endl;
@@ -173,7 +173,7 @@ int main(int argc, char **argv) {
         }
     }
 
-#if HARDWARE == 1
+#if defined(STENCILSTREAM_FPGA_HW)
     sycl::device device(sycl::ext::intel::fpga_selector_v);
 #else
     sycl::device device;
@@ -183,7 +183,7 @@ int main(int argc, char **argv) {
         .transition_function = KernelImpl(parameters, mat_resolver), .halo_value = CellImpl::halo(),
         .iteration_offset = 0, .n_iterations = parameters.n_timesteps(), .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
-#if EXECUTOR != 2
+#if !defined(STENCILSTREAM_CPU)
             .profiling = true, // enable additional profiling for FPGA targets
 #endif
     });
@@ -206,7 +206,7 @@ int main(int argc, char **argv) {
 
     std::cout << "Simulation complete!" << std::endl;
     std::cout << "Walltime: " << simulation.get_walltime() << " s" << std::endl;
-#if EXECUTOR != 2
+#if !defined(STENCILSTREAM_CPU)
     // Print pure kernel runtime for FPGA targets
     std::cout << "Kernel Runtime: " << simulation.get_kernel_runtime() << " s" << std::endl;
 #endif

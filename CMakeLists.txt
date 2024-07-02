@@ -28,26 +28,63 @@ endif()
 
 find_package(Boost 1.74.0 REQUIRED)
 
-add_library(StencilStream INTERFACE)
-target_include_directories(StencilStream INTERFACE "${PROJECT_SOURCE_DIR}/")
-target_compile_options(StencilStream INTERFACE -fsycl -std=c++20)
-target_link_options(StencilStream INTERFACE -fsycl)
-target_link_libraries(StencilStream INTERFACE Boost::boost)
+# Base target
 
-add_library(StencilStreamCPU INTERFACE)
-target_link_libraries(StencilStreamCPU INTERFACE StencilStream)
+add_library(StencilStream_Base INTERFACE)
+target_include_directories(StencilStream_Base INTERFACE "${PROJECT_SOURCE_DIR}/")
+target_compile_options(StencilStream_Base INTERFACE -fsycl -std=c++20)
+target_link_options(StencilStream_Base INTERFACE -fsycl)
+target_link_libraries(StencilStream_Base INTERFACE Boost::boost)
 
-add_library(StencilStreamFPGA INTERFACE)
-target_link_libraries(StencilStreamFPGA INTERFACE StencilStream)
-target_compile_options(StencilStreamFPGA INTERFACE -qactypes -fintelfpga)
-target_link_options(StencilStreamFPGA INTERFACE -fintelfpga -Xshardware)
+# Target for CPU backend
 
-add_library(StencilStreamFPGAEmulator INTERFACE)
-target_link_libraries(StencilStreamFPGAEmulator INTERFACE StencilStream)
-target_compile_options(StencilStreamFPGAEmulator INTERFACE -qactypes -fintelfpga)
-target_link_options(StencilStreamFPGAEmulator INTERFACE -fintelfpga)
+add_library(StencilStream_CPU INTERFACE)
+target_link_libraries(StencilStream_CPU INTERFACE StencilStream_Base)
+target_compile_definitions(StencilStream_CPU INTERFACE STENCILSTREAM_CPU=1)
 
-add_library(StencilStreamFPGAReport INTERFACE)
-target_link_libraries(StencilStreamFPGAReport INTERFACE StencilStream)
-target_compile_options(StencilStreamFPGAReport INTERFACE -qactypes -fintelfpga)
-target_link_options(StencilStreamFPGAReport INTERFACE -fintelfpga -Xshardware -fsycl-link)
+# Base target for FPGA-based backends
+
+add_library(StencilStream_FPGABase INTERFACE)
+target_link_libraries(StencilStream_FPGABase INTERFACE StencilStream_Base)
+target_compile_options(StencilStream_FPGABase INTERFACE -qactypes -fintelfpga)
+target_link_options(StencilStream_FPGABase INTERFACE -fintelfpga)
+
+# Monotile FPGA backends
+
+add_library(StencilStream_MonotileBase INTERFACE)
+target_link_libraries(StencilStream_MonotileBase INTERFACE StencilStream_FPGABase)
+target_compile_definitions(StencilStream_MonotileBase INTERFACE STENCILSTREAM_MONOTILE=1)
+
+add_library(StencilStream_MonotileEmulator INTERFACE)
+target_link_libraries(StencilStream_MonotileEmulator INTERFACE StencilStream_MonotileBase)
+target_compile_definitions(StencilStream_MonotileEmulator INTERFACE STENCILSTREAM_FPGA_EMU=1)
+
+add_library(StencilStream_MonotileHW INTERFACE)
+target_link_libraries(StencilStream_MonotileHW INTERFACE StencilStream_MonotileBase)
+target_compile_definitions(StencilStream_MonotileHW INTERFACE STENCILSTREAM_FPGA_HW=1)
+target_link_options(StencilStream_MonotileHW INTERFACE -Xshardware)
+
+add_library(StencilStream_MonotileReport INTERFACE)
+target_link_libraries(StencilStream_MonotileReport INTERFACE StencilStream_MonotileBase)
+target_compile_definitions(StencilStream_MonotileReport INTERFACE STENCILSTREAM_FPGA_REPORT=1)
+target_link_options(StencilStream_MonotileReport INTERFACE -Xshardware -fsycl-link)
+
+# Tiling FPGA backends
+
+add_library(StencilStream_TilingBase INTERFACE)
+target_link_libraries(StencilStream_TilingBase INTERFACE StencilStream_FPGABase)
+target_compile_definitions(StencilStream_TilingBase INTERFACE STENCILSTREAM_TILING=1)
+
+add_library(StencilStream_TilingEmulator INTERFACE)
+target_link_libraries(StencilStream_TilingEmulator INTERFACE StencilStream_TilingBase)
+target_compile_definitions(StencilStream_TilingEmulator INTERFACE STENCILSTREAM_FPGA_EMU=1)
+
+add_library(StencilStream_TilingHW INTERFACE)
+target_link_libraries(StencilStream_TilingHW INTERFACE StencilStream_TilingBase)
+target_compile_definitions(StencilStream_TilingHW INTERFACE STENCILSTREAM_FPGA_HW=1)
+target_link_options(StencilStream_TilingHW INTERFACE -Xshardware)
+
+add_library(StencilStream_TilingReport INTERFACE)
+target_link_libraries(StencilStream_TilingReport INTERFACE StencilStream_TilingBase)
+target_compile_definitions(StencilStream_TilingReport INTERFACE STENCILSTREAM_FPGA_REPORT=1)
+target_link_options(StencilStream_TilingReport INTERFACE -Xshardware -fsycl-link)
