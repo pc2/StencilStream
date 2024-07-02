@@ -10,11 +10,6 @@
 add_executable(conway_cpu conway.cpp)
 target_link_libraries(conway_cpu PUBLIC StencilStream_CPU)
 
-# Common settings for all FPGA-based executables
-if(VERBOSE_SYNTHESIS)
-    add_link_options(-Xsv)
-endif()
-
 # The emulation image
 add_executable(conway_emu conway.cpp)
 target_link_libraries(conway_emu PUBLIC StencilStream_MonotileEmulator)

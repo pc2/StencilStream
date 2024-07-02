@@ -18,6 +18,8 @@ cmake_minimum_required(VERSION 3.21)
 project(StencilStream CXX)
 set(CMAKE_PROJECT_VERSION 4.0.0)
 
+option(StencilStream_VerboseSynthesis "Print some progress information during hardware synthesis" OFF)
+
 if(${MAIN_PROJECT})
     add_subdirectory(examples/convection)
     add_subdirectory(examples/conway)
@@ -48,6 +50,10 @@ add_library(StencilStream_FPGABase INTERFACE)
 target_link_libraries(StencilStream_FPGABase INTERFACE StencilStream_Base)
 target_compile_options(StencilStream_FPGABase INTERFACE -qactypes -fintelfpga)
 target_link_options(StencilStream_FPGABase INTERFACE -fintelfpga)
+
+if(StencilStream_VerboseSynthesis)
+    target_link_options(StencilStream_FPGABase INTERFACE -Xsv)
+endif() 
 
 # Monotile FPGA backends
 
