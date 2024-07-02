@@ -22,11 +22,11 @@
 #include <fstream>
 #include <sycl/ext/intel/fpga_extensions.hpp>
 
-#if defined(STENCILSTREAM_MONOTILE)
+#if defined(STENCILSTREAM_BACKEND_MONOTILE)
     #include <StencilStream/monotile/StencilUpdate.hpp>
-#elif defined(STENCILSTREAM_TILING)
+#elif defined(STENCILSTREAM_BACKEND_TILING)
     #include <StencilStream/tiling/StencilUpdate.hpp>
-#elif defined(STENCILSTREAM_CPU)
+#elif defined(STENCILSTREAM_BACKEND_CPU)
     #include <StencilStream/cpu/StencilUpdate.hpp>
 #endif
 
@@ -98,7 +98,7 @@ struct HotspotKernel : public BaseTransitionFunction {
     }
 };
 
-#if defined(STENCILSTREAM_MONOTILE)
+#if defined(STENCILSTREAM_BACKEND_MONOTILE)
 const uindex_t max_grid_width = 1024;
 const uindex_t max_grid_height = 1024;
 const uindex_t n_processing_elements = 280;
@@ -106,7 +106,7 @@ using StencilUpdate =
     monotile::StencilUpdate<HotspotKernel, n_processing_elements, max_grid_width, max_grid_height>;
 using Grid = monotile::Grid<HotspotCell>;
 
-#elif defined(STENCILSTREAM_TILING)
+#elif defined(STENCILSTREAM_BACKEND_TILING)
 const uindex_t tile_width = 1 << 16;
 const uindex_t tile_height = 1024;
 const uindex_t n_processing_elements = 224;
@@ -114,7 +114,7 @@ using StencilUpdate =
     tiling::StencilUpdate<HotspotKernel, n_processing_elements, tile_width, tile_height>;
 using Grid = StencilUpdate::GridImpl;
 
-#elif defined(STENCILSTREAM_CPU)
+#elif defined(STENCILSTREAM_BACKEND_CPU)
 using StencilUpdate = cpu::StencilUpdate<HotspotKernel>;
 using Grid = StencilUpdate::GridImpl;
 
@@ -230,7 +230,7 @@ int main(int argc, char **argv) {
     if ((sim_time = atoi(argv[3])) <= 0)
         usage(argc, argv);
 
-#if defined(STENCILSTREAM_MONOTILE)
+#if defined(STENCILSTREAM_BACKEND_MONOTILE)
     if (n_columns > max_grid_width || n_rows > max_grid_height) {
         std::cerr << "Error: The grid may not exceed a size of " << max_grid_width << " by "
                   << max_grid_height << " cells when using the monotile architecture." << std::endl;
@@ -266,7 +266,7 @@ int main(int argc, char **argv) {
     FLOAT Rz_1 = 1.f / Rz;
     FLOAT Cap_1 = step / Cap;
 
-#if defined(STENCILSTREAM_FPGA_HW)
+#if defined(STENCILSTREAM_TARGET_FPGA)
     sycl::device device(sycl::ext::intel::fpga_selector_v);
 #else
     sycl::device device;
@@ -277,7 +277,7 @@ int main(int argc, char **argv) {
             HotspotKernel{.Rx_1 = Rx_1, .Ry_1 = Ry_1, .Rz_1 = Rz_1, .Cap_1 = Cap_1},
         .halo_value = HotspotCell(0.0, 0.0), .n_iterations = sim_time, .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
-#if !defined(STENCILSTREAM_CPU)
+#if !defined(STENCILSTREAM_BACKEND_CPU)
             .profiling = true, // enable additional profiling for FPGA targets
 #endif
     });
@@ -286,7 +286,7 @@ int main(int argc, char **argv) {
 
     std::cout << "Ending simulation" << std::endl;
     std::cout << "Walltime: " << update.get_walltime() << " s" << std::endl;
-#if !defined(STENCILSTREAM_CPU)
+#if !defined(STENCILSTREAM_BACKEND_CPU)
     // Print pure kernel runtime for FPGA targets
     std::cout << "Kernel Runtime: " << update.get_kernel_runtime() << " s" << std::endl;
 #endif

@@ -40,13 +40,13 @@ constexpr float sqrt_2 = 1.4142135623730951;
 
 constexpr float pi = 3.1415926535897932384626433;
 
-#if defined(STENCILSTREAM_MONOTILE)
+#if defined(STENCILSTREAM_BACKEND_MONOTILE)
 constexpr uindex_t n_processing_elements = 200;
 
-#elif defined(STENCILSTREAM_TILING)
+#elif defined(STENCILSTREAM_BACKEND_TILING)
 constexpr uindex_t n_processing_elements = 190;
 
-#elif defined(STENCILSTREAM_CPU)
+#elif defined(STENCILSTREAM_BACKEND_CPU)
 constexpr uindex_t n_processing_elements = 2;
 
 #endif
@@ -57,7 +57,7 @@ constexpr uindex_t iters_per_pass = n_processing_elements / 2;
 /* stencil parameters */
 constexpr uindex_t tile_height = 512;
 
-#if defined(STENCILSTREAM_TILING)
+#if defined(STENCILSTREAM_BACKEND_TILING)
 // tiling, make tile as wide as possible.
 constexpr uindex_t tile_width = 1 << 16;
 #else

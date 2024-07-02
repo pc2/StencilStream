@@ -13,7 +13,7 @@ add_executable(convection_cpu convection.cpp)
 target_link_libraries(convection_cpu PUBLIC StencilStream_CPU)
 
 add_executable(convection convection.cpp)
-target_link_libraries(convection PUBLIC StencilStream_MonotileHW)
+target_link_libraries(convection PUBLIC StencilStream_Monotile)
 
 add_executable(convection_emu convection.cpp)
 target_link_libraries(convection_emu PUBLIC StencilStream_MonotileEmulator)

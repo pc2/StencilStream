@@ -20,7 +20,7 @@ target_link_libraries(hotspot_cpu PUBLIC StencilStream_CPU)
 
 # Monotile versions
 add_executable(hotspot_mono hotspot.cpp)
-target_link_libraries(hotspot_mono PUBLIC StencilStream_MonotileHW)
+target_link_libraries(hotspot_mono PUBLIC StencilStream_Monotile)
 
 add_executable(hotspot_mono_emu hotspot.cpp)
 target_link_libraries(hotspot_mono_emu PUBLIC StencilStream_MonotileEmulator)
@@ -30,7 +30,7 @@ target_link_libraries(hotspot_mono_report PUBLIC StencilStream_MonotileReport)
 
 # Tiling versions
 add_executable(hotspot_tiling hotspot.cpp)
-target_link_libraries(hotspot_tiling PUBLIC StencilStream_TilingHW)
+target_link_libraries(hotspot_tiling PUBLIC StencilStream_Tiling)
 
 add_executable(hotspot_tiling_emu hotspot.cpp)
 target_link_libraries(hotspot_tiling_emu PUBLIC StencilStream_TilingEmulator)

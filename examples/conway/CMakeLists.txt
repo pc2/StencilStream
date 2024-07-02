@@ -10,14 +10,10 @@
 add_executable(conway_cpu conway.cpp)
 target_link_libraries(conway_cpu PUBLIC StencilStream_CPU)
 
-# The emulation image
-add_executable(conway_emu conway.cpp)
-target_link_libraries(conway_emu PUBLIC StencilStream_MonotileEmulator)
-
 # The hardware usage report
 add_executable(conway_hw_report conway.cpp)
 target_link_libraries(conway_hw_report PUBLIC StencilStream_MonotileReport)
 
 # The hardware image
 add_executable(conway_hw conway.cpp)
-target_link_libraries(conway_hw PUBLIC StencilStream_MonotileHW)
+target_link_libraries(conway_hw PUBLIC StencilStream_Monotile)

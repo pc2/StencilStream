@@ -24,7 +24,7 @@
 #include <sycl/ext/intel/fpga_extensions.hpp>
 
 using namespace stencil;
-#ifdef STENCILSTREAM_CPU
+#if defined(STENCILSTREAM_BACKEND_CPU)
 using namespace stencil::cpu;
 #else
 using namespace stencil::monotile;
@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
 
     Grid<bool> grid = read(width, height);
 
-#ifdef STENCILSTREAM_FPGA_HW
+#if defined(STENCILSTREAM_TARGET_FPGA)
     sycl::device device(sycl::ext::intel::fpga_selector_v);
 #else
     sycl::device device;
