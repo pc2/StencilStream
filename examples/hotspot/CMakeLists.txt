@@ -12,52 +12,31 @@ target_compile_options(hotspot_openmp PUBLIC -g -fopenmp -O2)
 target_link_options(hotspot_openmp PUBLIC -g -fopenmp -O2)
 
 # Global settings
-include_directories(.)
-add_compile_options(-fsycl -std=c++20 -qactypes)
-add_link_options(-fsycl)
 add_compile_definitions(STENCIL_INDEX_WIDTH=32)
 
 # Pure CPU-based executable
 add_executable(hotspot_cpu hotspot.cpp)
-target_compile_definitions(hotspot_cpu PUBLIC EXECUTOR=2)
-
-# Common hardware options
-add_compile_options(-fintelfpga)
-add_link_options(-fintelfpga)
-
-if(VERBOSE_SYNTHESIS)
-    add_link_options(-Xsv)
-endif()
+target_link_libraries(hotspot_cpu PUBLIC StencilStream_CPU)
 
 # Monotile versions
-foreach(EXECUTABLE hotspot_mono hotspot_mono_emu hotspot_mono_report)
-    add_executable(${EXECUTABLE} hotspot.cpp)
-    target_compile_definitions(${EXECUTABLE} PUBLIC EXECUTOR=0)
-endforeach()
+add_executable(hotspot_mono hotspot.cpp)
+target_link_libraries(hotspot_mono PUBLIC StencilStream_Monotile)
+
+add_executable(hotspot_mono_emu hotspot.cpp)
+target_link_libraries(hotspot_mono_emu PUBLIC StencilStream_MonotileEmulator)
+
+add_executable(hotspot_mono_report hotspot.cpp)
+target_link_libraries(hotspot_mono_report PUBLIC StencilStream_MonotileReport)
 
 # Tiling versions
-foreach(EXECUTABLE hotspot_tiling hotspot_tiling_emu hotspot_tiling_report)
-    add_executable(${EXECUTABLE} hotspot.cpp)
-    target_compile_definitions(${EXECUTABLE} PUBLIC EXECUTOR=1)
-endforeach()
+add_executable(hotspot_tiling hotspot.cpp)
+target_link_libraries(hotspot_tiling PUBLIC StencilStream_Tiling)
 
-# Adding options for report executables
-foreach(EXECUTABLE hotspot_mono_report hotspot_tiling_report)
-    target_compile_definitions(${EXECUTABLE} PUBLIC HARDWARE=1)
-    target_link_options(${EXECUTABLE} PUBLIC -Xshardware -fsycl-link)
-    if(VERBOSE_SYNTHESIS)
-        target_link_options(${EXECUTABLE} PUBLIC -Xsv)
-    endif()
-endforeach()
+add_executable(hotspot_tiling_emu hotspot.cpp)
+target_link_libraries(hotspot_tiling_emu PUBLIC StencilStream_TilingEmulator)
 
-# Adding options for hardware executables
-foreach(EXECUTABLE hotspot_mono hotspot_tiling)
-    target_compile_definitions(${EXECUTABLE} PUBLIC HARDWARE=1)
-    target_link_options(${EXECUTABLE} PUBLIC -Xshardware)
-    if(VERBOSE_SYNTHESIS)
-        target_link_options(${EXECUTABLE} PUBLIC -Xsv)
-    endif()
-endforeach()
+add_executable(hotspot_tiling_report hotspot.cpp)
+target_link_libraries(hotspot_tiling_report PUBLIC StencilStream_TilingReport)
 
 # Limiting clock speed and setting the seed for Hotspot Tiling
 foreach(EXECUTABLE hotspot_tiling_report hotspot_tiling)

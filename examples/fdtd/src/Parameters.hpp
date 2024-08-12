@@ -41,8 +41,6 @@ The CSV files use commata (",") as field separators and new-lines ("\n") as line
 -h:         Print this help message and exit.
 -c <path>:  Load the given experiment JSON file. If set to "-", it will be read from stdin (Required).
 -o <path>:  Directory for output files (default: ".").
--i <float>: Write a snapshot of the magnetic field to the output directory
-            every x multiples of tau (default: disabled).
 )";
 
 struct Parameters {
@@ -53,9 +51,9 @@ struct Parameters {
     }
 
     Parameters(int argc, char **argv)
-        : t_cutoff_factor(7.0), t_detect_factor(14.0), t_max_factor(15.0), frequency(120e12),
-          t_0_factor(3.0), source_x(0.0), source_y(0.0), source_radius(0.0), dx(10e-9),
-          tau(100e-15), rings(), out_dir("."), interval_factor(std::nullopt) {
+        : t_cutoff_factor(7.0), t_detect_factor(14.0), t_max_factor(15.0),
+          t_snap_factor(std::nullopt), frequency(120e12), t_0_factor(3.0), source_x(0.0),
+          source_y(0.0), source_radius(0.0), dx(10e-9), tau(100e-15), rings(), out_dir(".") {
 
         bool config_loaded = false;
 
@@ -75,9 +73,6 @@ struct Parameters {
                 break;
             case 'o':
                 out_dir = std::string(arg);
-                break;
-            case 'i':
-                interval_factor = stof(arg);
                 break;
             default:
                 break;
@@ -159,6 +154,9 @@ struct Parameters {
         t_cutoff_factor = get_checked_float(time, "t_cutoff");
         t_detect_factor = get_checked_float(time, "t_detect");
         t_max_factor = get_checked_float(time, "t_max");
+        if (time.contains("t_snap")) {
+            t_snap_factor = get_checked_float(time, "t_snap");
+        }
 
         json &source = get_checked_object(config, "source");
         frequency = get_checked_float(source, "frequency");
@@ -186,6 +184,8 @@ struct Parameters {
     float t_detect_factor;
 
     float t_max_factor;
+
+    std::optional<float> t_snap_factor;
 
     float frequency;
 
@@ -224,8 +224,6 @@ struct Parameters {
 
     std::string out_dir;
 
-    std::optional<float> interval_factor;
-
     float t_cutoff() const { return t_cutoff_factor * tau; }
 
     float t_detect() const { return t_detect_factor * tau; }
@@ -242,6 +240,14 @@ struct Parameters {
 
     uindex_t n_timesteps() const { return uindex_t(std::ceil(t_max() / dt())); }
 
+    std::optional<uindex_t> n_snap_timesteps() const {
+        if (t_snap_factor.has_value()) {
+            return uindex_t(std::ceil((*t_snap_factor * tau) / dt()));
+        } else {
+            return std::nullopt;
+        }
+    }
+
     // Omega (?) in Hz.
     float omega() const { return 2.0 * pi * frequency; }
 
@@ -255,51 +261,47 @@ struct Parameters {
         return cl::sycl::range<2>(width, height);
     }
 
-    std::optional<uindex_t> interval() const {
-        if (interval_factor.has_value()) {
-            return uindex_t(std::ceil((*interval_factor * tau) / dt()));
-        } else {
-            return std::nullopt;
-        }
-    }
-
     void print_configuration() const {
         std::cout << "Simulation Configuration:" << std::endl;
         std::cout << std::endl;
 
         std::cout << "# Timing" << std::endl;
-        std::cout << "tau           = " << tau << " s" << std::endl;
-        std::cout << "t_cutoff      = " << t_cutoff_factor << " tau = " << t_cutoff() << " s"
+        std::cout << "tau               = " << tau << " s" << std::endl;
+        std::cout << "t_cutoff          = " << t_cutoff_factor << " tau = " << t_cutoff() << " s"
                   << std::endl;
-        std::cout << "t_detect      = " << t_detect_factor << " tau = " << t_detect() << " s"
+        std::cout << "t_detect          = " << t_detect_factor << " tau = " << t_detect() << " s"
                   << std::endl;
-        std::cout << "t_max         = " << t_max_factor << " tau = " << t_max() << " s"
+        std::cout << "t_max             = " << t_max_factor << " tau = " << t_max() << " s"
                   << std::endl;
         std::cout << std::endl;
 
         std::cout << "# Source Wave" << std::endl;
-        std::cout << "phase         = " << t_0_factor << " tau = " << t_0() << " s" << std::endl;
-        std::cout << "frequency     = " << frequency << " Hz" << std::endl;
+        std::cout << "phase             = " << t_0_factor << " tau = " << t_0() << " s"
+                  << std::endl;
+        std::cout << "frequency         = " << frequency << " Hz" << std::endl;
         std::cout << std::endl;
 
         std::cout << "# Cavity" << std::endl;
         float inner_radius = 0.0;
         for (uindex_t i = 0; i < rings.size(); i++) {
             std::cout << "## Ring No. " << i << std::endl;
-            std::cout << "distance range= [" << inner_radius << ", "
+            std::cout << "distance range    = [" << inner_radius << ", "
                       << inner_radius + rings[i].width << "]" << std::endl;
             inner_radius += rings[i].width;
-            std::cout << "mu_r          = " << rings[i].material.mu_r << std::endl;
-            std::cout << "eps_r         = " << rings[i].material.eps_r << std::endl;
-            std::cout << "sigma         = " << rings[i].material.sigma << std::endl;
+            std::cout << "mu_r              = " << rings[i].material.mu_r << std::endl;
+            std::cout << "eps_r             = " << rings[i].material.eps_r << std::endl;
+            std::cout << "sigma             = " << rings[i].material.sigma << std::endl;
             std::cout << std::endl;
         }
 
         std::cout << "# Execution parameters" << std::endl;
-        std::cout << "dx            = " << dx << " m/cell" << std::endl;
-        std::cout << "dt            = " << dt() << " s/iteration" << std::endl;
-        std::cout << "grid w/h      = " << grid_range()[0] << " cells" << std::endl;
-        std::cout << "n. timesteps  = " << n_timesteps() << std::endl;
+        std::cout << "dx                = " << dx << " m/cell" << std::endl;
+        std::cout << "dt                = " << dt() << " s/iteration" << std::endl;
+        std::cout << "grid w/h          = " << grid_range()[0] << " cells" << std::endl;
+        std::cout << "n. timesteps      = " << n_timesteps() << std::endl;
+        if (t_snap_factor.has_value()) {
+            std::cout << "n. snap timesteps = " << n_snap_timesteps().value() << std::endl;
+        }
         std::cout << std::endl;
     }
 };

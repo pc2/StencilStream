@@ -17,7 +17,7 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#if EXECUTOR == 0
+#if defined(STENCILSTREAM_BACKEND_CPU)
     #include <StencilStream/cpu/StencilUpdate.hpp>
 #else
     #include <StencilStream/monotile/StencilUpdate.hpp>
@@ -240,7 +240,7 @@ class ThermalSolverKernel : public BaseTransitionFunction {
     }
 };
 
-#if EXECUTOR == 0
+#if defined(STENCILSTREAM_BACKEND_CPU)
 using Grid = cpu::Grid<ThermalConvectionCell>;
 using PseudoTransientUpdate = cpu::StencilUpdate<PseudoTransientKernel>;
 using ThermalSolverUpdate = cpu::StencilUpdate<ThermalSolverKernel>;
@@ -336,7 +336,7 @@ int main(int argc, char **argv) {
     double dampX = 1.0 - dmp / nx; // damping term for the x-momentum equation
     double dampY = 1.0 - dmp / ny; // damping term for the y-momentum equation
 
-#if HARDWARE == 1
+#if defined(STENCILSTREAM_TARGET_FPGA)
     sycl::device device(sycl::ext::intel::fpga_selector_v);
 #else
     sycl::device device;

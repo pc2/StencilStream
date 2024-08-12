@@ -6,33 +6,14 @@
 # 
 # THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# Global settings
-include_directories(.)
-add_compile_options(-fsycl -std=c++20 -qactypes)
-add_link_options(-fsycl)
-add_compile_definitions(STENCIL_INDEX_WIDTH=32)
-
 # Pure CPU-based executable
 add_executable(conway_cpu conway.cpp)
-target_compile_definitions(conway_cpu PUBLIC CPU)
-
-# Common settings for all FPGA-based executables
-add_compile_options(-fintelfpga)
-add_link_options(-fintelfpga)
-if(VERBOSE_SYNTHESIS)
-    add_link_options(-Xsv)
-endif()
-
-# The emulation image
-add_executable(conway_emu conway.cpp)
-target_compile_definitions(conway_emu PUBLIC EMULATOR)
+target_link_libraries(conway_cpu PUBLIC StencilStream_CPU)
 
 # The hardware usage report
 add_executable(conway_hw_report conway.cpp)
-target_compile_definitions(conway_hw_report PUBLIC HARDWARE)
-target_link_options(conway_hw_report PUBLIC -fintelfpga -Xshardware -fsycl-link)
+target_link_libraries(conway_hw_report PUBLIC StencilStream_MonotileReport)
 
 # The hardware image
 add_executable(conway_hw conway.cpp)
-target_compile_definitions(conway_hw PUBLIC HARDWARE)
-target_link_options(conway_hw PUBLIC -fintelfpga -Xshardware)
+target_link_libraries(conway_hw PUBLIC StencilStream_Monotile)
