@@ -20,7 +20,6 @@
 #pragma once
 #include "../AccessorSubscript.hpp"
 #include "../Concepts.hpp"
-#include "../Padded.hpp"
 
 namespace stencil {
 namespace monotile {

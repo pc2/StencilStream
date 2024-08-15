@@ -23,19 +23,27 @@
 
 namespace stencil {
 
-inline constexpr bool is_mode_readable(sycl::access::mode access_mode) {
-    return access_mode == sycl::access::mode::read || access_mode == sycl::access::mode::read_write;
-}
-
-inline constexpr bool is_mode_writable(sycl::access::mode access_mode) {
-    return access_mode == sycl::access::mode::write ||
-           access_mode == sycl::access::mode::read_write ||
-           access_mode == sycl::access::mode::discard_write ||
-           access_mode == sycl::access::mode::discard_read_write;
-}
-
+/**
+ * \brief Compute the number of words necessary to store a given number of cells.
+ *
+ * Some backends store cells in groups called words. Each word contains a certain number of cells,
+ * and this function computes how many words are needed to store a certain number of cells. This is
+ * the total number of cells divided by the number of cells in a word, plus one additional word if
+ * the word length doesn't divide the total number of cells.
+ */
 inline constexpr uindex_t n_cells_to_n_words(uindex_t n_cells, uindex_t word_length) {
     return n_cells / word_length + (n_cells % word_length == 0 ? 0 : 1);
 }
+
+/**
+ * \brief A container with padding to the next power of two.
+ * 
+ * Wrapping a type in this template ensures that the resulting size is a power of two.
+ * 
+ * \tparam T The contained type.
+ */
+template <typename T> struct Padded {
+    T value;
+} __attribute__((aligned(std::bit_ceil(sizeof(T)))));
 
 } // namespace stencil
