@@ -30,59 +30,68 @@ namespace stencil {
 /**
  * \brief The stencil buffer.
  *
- * The stencil buffer contains the extended Moore neighborhood of a central cell and is used by the
+ * The stencil buffer contains the extended Moore neighborhood of a central cell and is used by a
  * transition function to calculate the next iteration of the central cell.
  *
  * This implementation provides two ways to index the stencil: With an `ID` and a `UID`. Since `ID`
  * is signed, the column and row axes are within the range of [-radius : radius]. Therefore, (0,0)
  * points to the central cell. `UID` is unsigned and the column and row axes are within the range of
  * [0 : 2*radius + 1). Therefore, (0,0) points to the north-western corner of the stencil.
+ *
+ * \tparam Cell The type of cells in the stencil
+ * \tparam stencil_radius The radius of the stencil, i.e. the extent of the stencil in each
+ * direction from the central cell. \tparam TimeDependentValue The type of values provided by the
+ * TDV system.
  */
 template <typename Cell, uindex_t stencil_radius, typename TimeDependentValue = std::monostate>
     requires std::semiregular<Cell> && (stencil_radius >= 1)
 class Stencil {
   public:
-    /**
-     * \brief The diameter (aka width and height) of the stencil buffer.
-     */
+    /// \brief The diameter (aka width and height) of the stencil buffer.
     static constexpr uindex_t diameter = 2 * stencil_radius + 1;
 
+    /// \brief The number of bits necessary to express column and row indices in the stencil.
     static constexpr unsigned long bits_stencil = std::bit_width(diameter);
+
+    /// \brief A signed index type for column and row indices in this stencil.
     using index_stencil_t = ac_int<bits_stencil, true>;
+
+    /// \brief An unsigned index type for column and row indices in this stencil.
     using uindex_stencil_t = ac_int<bits_stencil, false>;
 
+    /// \brief A signed, two-dimensional index to address cells in this stencil.
     using StencilID = GenericID<index_stencil_t>;
+
+    /// \brief An unsigned, two-dimensional index to address cells in this stencil.
     using StencilUID = GenericID<uindex_stencil_t>;
 
     /**
      * \brief Create a new stencil with an uninitialized buffer.
      *
      * \param id The position of the central cell in the global grid.
-     * \param iteration The present iteration index of the central cell.
-     * \param i_processing_element The index of the processing element that calls the transition
-     * function.
-     * \param grid_range The range of the stencil's grid.
+     * \param grid_range The range of the underlying grid.
+     * \param iteration The present iteration index of the cells in the stencil.
+     * \param subiteration The present sub-iteration index of the cells in the stencil.
+     * \param tdv The time-dependent value for this iteration.
      */
     Stencil(ID id, UID grid_range, uindex_t iteration, uindex_t subiteration,
-            uindex_t i_processing_element, TimeDependentValue tdv)
-        : id(id), iteration(iteration), subiteration(subiteration),
-          i_processing_element(i_processing_element), grid_range(grid_range),
+            TimeDependentValue tdv)
+        : id(id), iteration(iteration), subiteration(subiteration), grid_range(grid_range),
           time_dependent_value(tdv), internal() {}
 
     /**
-     * \brief Create a new stencil from the raw buffer.
+     * \brief Create a new stencil with the given contents.
      *
      * \param id The position of the central cell in the global grid.
-     * \param iteration The present iteration index of the central cell.
-     * \param i_processing_element The index of the processing element that calls the transition
-     * function.
-     * \param raw A raw array containing cells.
-     * \param grid_range The range of the stencil's grid.
+     * \param grid_range The range of the underlying grid.
+     * \param iteration The present iteration index of the cells in the stencil.
+     * \param subiteration The present sub-iteration index of the cells in the stencil.
+     * \param tdv The time-dependent value for this iteration.
+     * \param raw An array of cells, which is copied into the stencil object.
      */
     Stencil(ID id, UID grid_range, uindex_t iteration, uindex_t subiteration,
-            uindex_t i_processing_element, TimeDependentValue tdv, Cell raw[diameter][diameter])
-        : id(id), iteration(iteration), subiteration(subiteration),
-          i_processing_element(i_processing_element), grid_range(grid_range),
+            TimeDependentValue tdv, Cell raw[diameter][diameter])
+        : id(id), iteration(iteration), subiteration(subiteration), grid_range(grid_range),
           time_dependent_value(tdv), internal() {
 #pragma unroll
         for (uindex_t c = 0; c < diameter; c++) {
@@ -161,46 +170,19 @@ class Stencil {
      */
     Cell &operator[](StencilUID id) { return internal[id.c][id.r]; }
 
-    /**
-     * \brief The position of the central cell in the global grid.
-     */
+    /// \brief The position of the central cell in the global grid.
     const ID id;
 
-    /**
-     * \brief The present iteration index of the central cell.
-     */
+    /// \brief The present iteration index of the cells in the stencil.
     const uindex_t iteration;
 
+    /// \brief The present sub-iteration index of the cells in the stencil.
     const uindex_t subiteration;
 
-    /**
-     * \brief The index of the processing element that calls the transition function.
-     *
-     * The processing element index is added to the iteration index of the input tile to get the
-     * iteration index of this stencil. Under the assumption that the pipeline was always fully
-     * executed, it equals to `iteration % n_processing_elements`. Since it is hard coded in the
-     * final design, it can be used to alternate between two different data paths: When you write
-     * something like this
-     * ```
-     * if (stencil.i_processing_element & 0b1 == 0)
-     * {
-     *   return foo(stencil);
-     * }
-     * else
-     * {
-     *   return bar(stencil);
-     * }
-     * ```
-     * `foo` will only be synthesized for even processing elements, and `bar` will only be
-     * synthesized for odd processing elements.
-     */
-    const uindex_t i_processing_element;
-
-    /**
-     * \brief The number of columns and rows of the grid.
-     */
+    /// \brief The range of the underlying grid.
     const UID grid_range;
 
+    /// \brief The time-dependent value for this iteration.
     const TimeDependentValue time_dependent_value;
 
   private:

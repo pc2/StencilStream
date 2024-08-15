@@ -229,8 +229,8 @@ class StencilUpdateKernel {
                 TDV tdv = tdv_local_state.get_time_dependent_value(i_processing_element /
                                                                    TransFunc::n_subiterations);
                 StencilImpl stencil(ID(output_grid_c, output_grid_r), UID(grid_width, grid_height),
-                                    pe_iteration, pe_subiteration, i_processing_element.to_uint64(),
-                                    tdv, stencil_buffer[i_processing_element]);
+                                    pe_iteration, pe_subiteration, tdv,
+                                    stencil_buffer[i_processing_element]);
 
                 if (pe_iteration < target_i_iteration) {
                     carry = trans_func(stencil);

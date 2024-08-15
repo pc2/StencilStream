@@ -211,7 +211,7 @@ class StencilUpdateKernel {
                         (i_processing_element / TransFunc::n_subiterations).to_uint());
                     StencilImpl stencil(ID(c[i_processing_element], r[i_processing_element]),
                                         UID(grid_width, grid_height), pe_iteration, pe_subiteration,
-                                        i_processing_element, tdv);
+                                        tdv);
 
                     bool h_halo_mask[stencil_diameter];
                     bool v_halo_mask[stencil_diameter];

@@ -103,7 +103,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
 
             auto kernel = [=](sycl::id<2> id) {
                 StencilImpl stencil(ID(id[0], id[1]), UID(grid_width, grid_height), i_iter,
-                                    i_subiter, i_subiter, tdv);
+                                    i_subiter, tdv);
 
                 for (index_t rel_c = -stencil_radius; rel_c <= stencil_radius; rel_c++) {
                     for (index_t rel_r = -stencil_radius; rel_r <= stencil_radius; rel_r++) {
