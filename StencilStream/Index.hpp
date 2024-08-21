@@ -28,25 +28,30 @@ namespace stencil {
 #endif
 
 /**
- * Integer types for indexing.
+ * \brief An unsigned integer of configurable width.
  *
- * There are different index types available for different contexts, with different widths. Their
- * general schema is `[u]index_(type_)t`, where the optional leading `u` denotes whether the index
- * is signed, and where `type` denotes the type or context of the index.
+ * This integer type is used in StencilStream to indicate cell positions and iterations, among
+ * others. Its width can be configured using the `STENCIL_INDEX_WIDTH` macro, which defaults to 64.
  *
- * The different types are tailored towards different contexts and therefore have different widths.
- * The `min` indices are used in the context of stencil buffers, i.e. to index a cell in a stencil
- * buffer. The `1d` indices are used in the context of one physical dimension, i.e. to index the row
- * or column of a cell in a tile buffer. The `2d` indices are used in the context of combined tile
- * row and column indices, i.e. when iterating over a tile with a single coalesced index. Lastly,
- * the type can also be omited, which yields the widest index possible, which is used for example to
- * denote a iteration index or a cell in the grid.
- *
- * The exact widths are set using the `STENCIL_INDEX_(TYPE_)WIDTH` macros. Their dimensions are
- * reasonable for FPGAs in early 2022, but can be changed as necesssary. Static asserts throughout
- * the library ensure that the used index type is wide enough to hold certain values. Therefore, you
- * can in theory decrease the until you get compilation errors.
+ * Note that this type is likely to be replaced by `std::size_t` in a future update. Most
+ * performance-critical indices already use custom-precision integers tailored to their specific
+ * users, so the need to customize the width of the remaining indices is relatively low. In addition,
+ * using `std::size_t` as a general index type would allow better compatibility with SYCL and other
+ * libraries.
  */
-typedef BOOST_PP_CAT(BOOST_PP_CAT(uint, STENCIL_INDEX_WIDTH), _t) uindex_t;
-typedef BOOST_PP_CAT(BOOST_PP_CAT(int, STENCIL_INDEX_WIDTH), _t) index_t;
+using uindex_t = BOOST_PP_CAT(BOOST_PP_CAT(uint, STENCIL_INDEX_WIDTH), _t);
+
+/**
+ * \brief A signed integer of configurable width.
+ *
+ * This integer type is used in StencilStream to indicate cell positions and iterations, among
+ * others. Its width can be configured using the `STENCIL_INDEX_WIDTH` macro, which defaults to 64.
+ *
+ * Note that this type is likely to be replaced by `std::ptrdiff_t` in a future update. Most
+ * performance-critical indices already use custom-precision integers tailored to their specific
+ * users, so the need to customize the width of the remaining indices is relatively low. In addition,
+ * using `std::ptrdiff_t` as a general index type would allow better compatibility with SYCL and other
+ * libraries.
+ */
+using index_t = BOOST_PP_CAT(BOOST_PP_CAT(int, STENCIL_INDEX_WIDTH), _t);
 } // namespace stencil
