@@ -35,9 +35,9 @@ namespace stencil {
  *
  * Note that this type is likely to be replaced by `std::size_t` in a future update. Most
  * performance-critical indices already use custom-precision integers tailored to their specific
- * users, so the need to customize the width of the remaining indices is relatively low. In addition,
- * using `std::size_t` as a general index type would allow better compatibility with SYCL and other
- * libraries.
+ * users, so the need to customize the width of the remaining indices is relatively low. In
+ * addition, using `std::size_t` as a general index type would allow better compatibility with SYCL
+ * and other libraries.
  */
 using uindex_t = BOOST_PP_CAT(BOOST_PP_CAT(uint, STENCIL_INDEX_WIDTH), _t);
 
@@ -49,9 +49,9 @@ using uindex_t = BOOST_PP_CAT(BOOST_PP_CAT(uint, STENCIL_INDEX_WIDTH), _t);
  *
  * Note that this type is likely to be replaced by `std::ptrdiff_t` in a future update. Most
  * performance-critical indices already use custom-precision integers tailored to their specific
- * users, so the need to customize the width of the remaining indices is relatively low. In addition,
- * using `std::ptrdiff_t` as a general index type would allow better compatibility with SYCL and other
- * libraries.
+ * users, so the need to customize the width of the remaining indices is relatively low. In
+ * addition, using `std::ptrdiff_t` as a general index type would allow better compatibility with
+ * SYCL and other libraries.
  */
 using index_t = BOOST_PP_CAT(BOOST_PP_CAT(int, STENCIL_INDEX_WIDTH), _t);
 } // namespace stencil

@@ -37,9 +37,9 @@ inline constexpr uindex_t n_cells_to_n_words(uindex_t n_cells, uindex_t word_len
 
 /**
  * \brief A container with padding to the next power of two.
- * 
+ *
  * Wrapping a type in this template ensures that the resulting size is a power of two.
- * 
+ *
  * \tparam T The contained type.
  */
 template <typename T> struct Padded {

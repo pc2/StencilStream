@@ -26,6 +26,17 @@
 
 namespace stencil {
 
+/**
+ * \brief Base class for transition functions that disables advanced features.
+ *
+ * Users who want to start implementing a \ref stencil::concepts::TransitionFunction
+ * "transition function" should let it inherit this class. It provides default definitions that
+ * disable certain advanced StencilStream features, for example the time-dependent value feature or
+ * sub-iterations.
+ *
+ * For the time-dependent value system, this class uses the `std::monostate` type. This type has
+ * only one value, which is "computed" for every iteration.
+ */
 class BaseTransitionFunction {
   public:
     using TimeDependentValue = std::monostate;
