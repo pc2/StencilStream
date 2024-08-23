@@ -132,18 +132,52 @@ template <class Cell, uindex_t word_size = 64> class Grid {
      */
     uindex_t get_grid_height() const { return grid_height; }
 
+    /**
+     * \brief An accessor for the monotile grid.
+     *
+     * Instances of this class provide access to a grid, so that host code can read and write the
+     * contents of a grid. As such, it fullfils the \ref stencil::concepts::GridAccessor
+     * "GridAccessor" concept.
+     *
+     * \tparam access_mode The access mode for the accessor.
+     */
     template <sycl::access::mode access_mode = sycl::access::mode::read_write> class GridAccessor {
-      public:
+      private:
         using accessor_t = sycl::host_accessor<IOWord, 1, access_mode>;
+
+      public:
+        /**
+         * \brief The number of dimensions of the underlying grid.
+         */
         static constexpr uindex_t dimensions = Grid::dimensions;
 
+        /**
+         * \brief Create a new accessor to the given grid.
+         */
         GridAccessor(Grid &grid)
             : ac(grid.tile_buffer), grid_width(grid.get_grid_width()),
               grid_height(grid.get_grid_height()) {}
 
+        /**
+         * \brief Shorthand for the used subscript type.
+         */
         using BaseSubscript = AccessorSubscript<Cell, GridAccessor, access_mode>;
+
+        /**
+         * \brief Access/Dereference the first dimension.
+         *
+         * This subscript operator is the first subscript in an expression like
+         * `accessor[i_column][i_row]`. It will return a \ref BaseSubscript object that handles
+         * subsequent dimensions.
+         */
         BaseSubscript operator[](uindex_t i) { return BaseSubscript(*this, i); }
 
+        /**
+         * \brief Access a cell of the grid.
+         *
+         * \param id The index of the accessed cell. The first index is the column index, the second
+         * one is the row index. \returns A constant reference to the indexed cell.
+         */
         Cell const &operator[](sycl::id<2> id)
             requires(access_mode == sycl::access::mode::read)
         {
@@ -152,6 +186,12 @@ template <class Cell, uindex_t word_size = 64> class Grid {
             return ac[word_i][cell_i].value;
         }
 
+        /**
+         * \brief Access a cell of the grid.
+         *
+         * \param id The index of the accessed cell. The first index is the column index, the second
+         * one is the row index. \returns A reference to the indexed cell.
+         */
         Cell &operator[](sycl::id<2> id)
             requires(access_mode != sycl::access::mode::read)
         {
