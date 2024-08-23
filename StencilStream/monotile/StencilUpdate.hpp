@@ -31,7 +31,7 @@ namespace stencil {
 namespace monotile {
 
 /**
- * \brief A kernel that executes a stencil transition function using the monotile approach.
+ * \brief The execution kernel of the monotile architecture
  *
  * It receives the contents of a tile and it's halo from the `in_pipe`, applies the transition
  * function when applicable and writes the result to the `out_pipe`.
@@ -41,11 +41,21 @@ namespace monotile {
  * is described in \ref monotile.
  *
  * \tparam TransFunc The type of transition function to use.
+ *
+ * \tparam TDVKernelArgument The type of parameter for the TDV system that is passed from the host
+ * to the kernel.
+ *
  * \tparam n_processing_elements The number of processing elements to use. Similar to an unroll
  * factor for a loop.
- * \tparam output_tile_width The number of columns in a grid tile.
- * \tparam output_tile_height The number of rows in a grid tile.
+ *
+ * \tparam max_grid_width The maximum number of columns in the grid. This will define the bit width
+ * of the cell indices.
+ *
+ * \tparam max_grid_height The maximum number of rows in the grid. This will define the size of the
+ * column buffer.
+ *
  * \tparam in_pipe The pipe to read from.
+ *
  * \tparam out_pipe The pipe to write to.
  */
 template <concepts::TransitionFunction TransFunc,
@@ -54,10 +64,9 @@ template <concepts::TransitionFunction TransFunc,
           typename in_pipe, typename out_pipe>
     requires(n_processing_elements % TransFunc::n_subiterations == 0)
 class StencilUpdateKernel {
-  public:
+  private:
     using Cell = typename TransFunc::Cell;
     using TDV = typename TransFunc::TimeDependentValue;
-
     using TDVLocalState = typename TDVKernelArgument::LocalState;
     using StencilImpl = Stencil<Cell, TransFunc::stencil_radius, TDV>;
 
@@ -100,16 +109,26 @@ class StencilUpdateKernel {
     using index_n_iterations_t = ac_int<bits_n_iterations + 1, true>;
     using uindex_n_iterations_t = ac_int<bits_n_iterations, false>;
 
+  public:
     /**
      * \brief Create and configure the execution kernel.
      *
      * \param trans_func The instance of the transition function to use.
+     *
      * \param i_iteration The iteration index of the input cells.
-     * \param n_iterations The number of iterations to compute. If this number is bigger than
-     * `n_processing_elements`, only `n_processing_elements` iterations will be computed.
+     *
+     * \param target_i_iteration The final, requested iteration index after the updates. This may be
+     * higher than what the kernel can process in one pass. In this case, the kernel will compute
+     * the maximum number of iterations.
+     *
      * \param grid_width The number of cell columns in the grid.
+     *
      * \param grid_height The number of cell rows in the grid.
+     *
      * \param halo_value The value of cells outside the grid.
+     *
+     * \param tdv_kernel_argument The argument for the TDV system that is passed from the host to
+     * the device. This may for example contain global memory accessors.
      */
     StencilUpdateKernel(TransFunc trans_func, uindex_t i_iteration, uindex_t target_i_iteration,
                         uindex_t grid_width, uindex_t grid_height, Cell halo_value,
