@@ -301,32 +301,133 @@ class StencilUpdateKernel {
     TDVKernelArgument tdv_kernel_argument;
 };
 
+/**
+ * \brief A grid updater that applies an iterative stencil code to a grid.
+ *
+ * This updater applies an iterative stencil code, defined by the template parameter `F`, to the
+ * grid; As often as requested. Since the underlying FPGA design follows the Monotile architecture
+ * (See \ref monotile), an instance of this updater template can only process grids up to the
+ * defined `max_grid_width` and `max_grid_height`.
+ *
+ * \tparam F The transition function to apply to input grids.
+ *
+ * \tparam n_processing_elements (Optimization parameter) The number of processing elements (PEs) to
+ * implement. Increasing the number of PEs leads to a higher performance since more iterations are
+ * computed in parallel. However, it will also increase the resource and space usage of the design.
+ * Too many PEs might also decrease the clock frequency.
+ *
+ * \tparam max_grid_width (Optimization parameter) The maximally supported grid width. For best
+ * hardware utilization, this should be a power of two. Increase this parameter to the maximum your
+ * application is expected to handle. However, higher maximal grid width might lead to increased
+ * logic and space usage as well as decreased clock frequencies.
+ *
+ * \tparam max_grid_height (Optimization parameter) The maximally supported grid height. Increase
+ * this parameter to the maximum your application is expected to handle. However, increasing the
+ * maximal grid height will increase the BRAM usage of each PE.
+ *
+ * \tparam TDVStrategy (Optimization parameter) The precomputation strategy for the time-dependent
+ * value system (\ref page-tdv "See guide").
+ *
+ * \tparam word_size (Optimization parameter) The width of the global memory channel, in bytes. For
+ * DDR-based systems, this should be 512 bits, or 64 bytes.
+ */
 template <concepts::TransitionFunction F, uindex_t n_processing_elements = 1,
           uindex_t max_grid_width = 1024, uindex_t max_grid_height = 1024,
           tdv::single_pass::Strategy<F, n_processing_elements> TDVStrategy =
               tdv::single_pass::InlineStrategy,
           uindex_t word_size = 64>
 class StencilUpdate {
-  public:
+  private:
     using Cell = F::Cell;
     using TDV = typename F::TimeDependentValue;
+
+  public:
+    /// \brief Shorthand for the used and supported grid type.
     using GridImpl = Grid<Cell, word_size>;
 
+    /**
+     * \brief Parameters for the stencil updater.
+     */
     struct Params {
+        /**
+         * \brief An instance of the transition function type.
+         *
+         * User applications may store runtime parameters here.
+         */
         F transition_function;
+
+        /**
+         *  \brief The cell value to present for cells outside of the grid.
+         */
         Cell halo_value = Cell();
+
+        /**
+         * \brief The iteration index offset.
+         *
+         * This offset will be added to the "actual" iteration index. This way, simulations can
+         * "resume" with the next timestep if the intermediate grid has been evaluated by the host.
+         */
         uindex_t iteration_offset = 0;
+
+        /**
+         * \brief The number of iterations to compute.
+         */
         uindex_t n_iterations = 1;
+
+        /**
+         * \brief The device to use for computations.
+         *
+         * For some setups, it might be necessary to explicitly select the device to use for
+         * computation. This can be done for example with the `sycl::ext::intel::fpga_selector_v`
+         * class in the `sycl/ext/intel/fpga_extensions.hpp` header. This selector will select the
+         * first FPGA it sees.
+         */
         sycl::device device = sycl::device();
+
+        /**
+         * \brief Should the stencil updater block until completion, or return immediately after all
+         * kernels have been submitted.
+         *
+         * Choosing one option or the other won't effect the correctness: For example, if you choose
+         * a non-blocking stencil updater and immediately try to access the grid after the updater
+         * has returned, SYCL/OneAPI will block your thread until the computations are complete and
+         * it can actually provide you access to the data.
+         */
         bool blocking = false;
+
+        /**
+         * \brief Enable profiling.
+         *
+         * Setting this option to true will enable the recording of computation start and end
+         * timestamps. The recorded kernel runtime can be fetched using the \ref
+         * StencilUpdate::get_kernel_runtime method.
+         */
         bool profiling = false;
     };
 
+    /**
+     * \brief Create a new stencil updater object.
+     */
     StencilUpdate(Params params)
         : params(params), n_processed_cells(0), work_events(), walltime(0.0) {}
 
+    /**
+     * \brief Return a reference to the parameters.
+     *
+     * Modifications to the parameters struct will be used in the next call to \ref operator()().
+     */
     Params &get_params() { return params; }
 
+    /**
+     * \brief Compute a new grid based on the source grid, using the configured transition function.
+     *
+     * The computation does not work in-place. Instead, it will allocate two additional grids with
+     * the same size as the source grid and use them for a double buffering scheme. Therefore, you
+     * are free to reuse the source grid as it will not be altered.
+     *
+     * If \ref Params::blocking is set to true, this method will block until the computation is
+     * complete. Otherwise, it will return as soon as all kernels are submitted.
+     */
     GridImpl operator()(GridImpl &source_grid) {
         if (source_grid.get_grid_height() > max_grid_height) {
             throw std::range_error("The grid is too tall for the stencil update kernel.");
@@ -405,8 +506,21 @@ class StencilUpdate {
         return *pass_source;
     }
 
+    /**
+     * \brief Return the accumulated total number of cells processed by this updater.
+     *
+     * For each call of to \ref operator()(), this is the width times the height of the grid, times
+     * the number of computed iterations. This will also be accumulated across multiple calls to
+     * \ref operator()().
+     */
     uindex_t get_n_processed_cells() const { return n_processed_cells; }
 
+    /**
+     * \brief Return the accumulated total runtime of the execution kernel.
+     *
+     * This runtime is accumulated across multiple calls to \ref operator()(). However, this is only
+     * possible if \ref Params::profiling is set to true.
+     */
     double get_kernel_runtime() const {
         double kernel_runtime = 0.0;
         for (sycl::event work_event : work_events) {
@@ -424,6 +538,12 @@ class StencilUpdate {
         return kernel_runtime;
     }
 
+    /**
+     * \brief Return the accumulated runtime of the updater, measured from the host side.
+     *
+     * For each call to \ref operator()(), the time it took to submit all kernels and, if \ref
+     * Params::blocking is true, to finish the computation is recorded and accumulated.
+     */
     double get_walltime() const { return walltime; }
 
   private:
