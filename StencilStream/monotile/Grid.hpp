@@ -47,7 +47,7 @@ namespace monotile {
  * contents of the grid into a SYCL buffer.
  *
  * On the device side, the data can be read or written with the help of the method templates \ref
- * submit_read and \ref submit_write. Those take a SYCL pipe as a template argumment and enqueue
+ * submit_read and \ref submit_write. Those take a SYCL pipe as a template argument and enqueue
  * kernels that read/write the contents of the grid to/from the pipes.
  *
  * \tparam Cell The cell type to store.
@@ -259,7 +259,7 @@ template <class Cell, uindex_t word_size = 64> class Grid {
     }
 
     /**
-     * \brief Submit a kernel that sends the contents of the grid into the pipe.
+     * \brief Submit a kernel that sends the contents of the grid into a pipe.
      *
      * The entirety of the grid will be send into the pipe in column-major order, meaning that the
      * last index (which denotes the row) will change the quickest. The method returns the event of
@@ -268,7 +268,7 @@ template <class Cell, uindex_t word_size = 64> class Grid {
      * This method is explicitly part of the user-facing API: You are allowed and encouraged to use
      * this method to feed custom kernels.
      *
-     * \tparam in_pipe The pipe the data is written to.
+     * \tparam in_pipe The pipe the data is sent into.
      *
      * \param queue The queue to submit the kernel to.
      *

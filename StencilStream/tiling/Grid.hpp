@@ -29,63 +29,153 @@ namespace stencil {
 namespace tiling {
 
 /**
- * \brief A rectangular container of cells with a dynamic, arbitrary size, used by the \ref
- * StencilExecutor.
+ * \brief A grid class for the tiling architecture
  *
- * This class is part of the \ref tiling architecture. It logically contains the grid the transition
- * function is applied to and it partitions the grid into tiles of static size. These are the units
- * the \ref ExecutionKernel works on.
+ * This grid, which fullfils the \ref stencil::concepts::Grid "Grid" concept, contains a
+ * two-dimensional buffer of cells to be used together with the \ref StencilUpdate class.
  *
- * Apart from providing copy operations to and from monolithic grid buffers, it also handles the
- * input and output kernel submission for a given tile.
+ * Since this class template requires multiple template arguments that must match the used \ref
+ * StencilUpdate instance, it is advised to use the \ref StencilUpdate::GridImpl shorthand instead
+ * of re-applying the same arguments to the grid class template.
  *
- * \tparam Cell Cell value type.
- * \tparam tile_width The number of columns of a tile.
- * \tparam tile_height The number of rows of a tile.
- * \tparam halo_radius The radius (aka width and height) of the tile halo.
+ * The contents of the grid can be accessed by a host-side program using the \ref GridAccessor class
+ * template. For example, one can write the contents of a `grid` object as follows:
+ *
+ * ```
+ * Grid::GridAccessor<sycl::access::mode::read_write> accessor(grid);
+ * for (uindex_t c = 0; c < grid.get_grid_width(); c++) {
+ *     for (uindex_t r = 0; r < grid.get_grid_height(); r++) {
+ *         accessor[c][r] = foo(c, r);
+ *     }
+ * }
+ * ```
+ *
+ * Alternatively, one may write their data into a SYCL buffer and copy it into the grid using the
+ * method \ref copy_from_buffer. The method \ref copy_to_buffer does the reverse: It writes the
+ * contents of the grid into a SYCL buffer.
+ *
+ * On the device side, the data can be read or written with the help of the method templates \ref
+ * submit_read and \ref submit_write. Those take a SYCL pipe as a template argument and enqueue
+ * kernels that read/write the contents of the grid to/from the pipes.
+ *
+ * \tparam Cell The cell type to store.
+ *
+ * \tparam tile_width The width of a grid tile. This has to match the tile width of the used \ref
+ * StencilUpdate class instance.
+ *
+ * \tparam tile_height The height of a grid tile. This has to match the tile height of the used \ref
+ * StencilUpdate class instance.
+ *
+ * \tparam halo_radius The halo radius required for input tiles. This has to be the number of PEs in
+ * a \ref StencilUpdate times the stencil radius of the implemented transition function.
  */
 template <typename Cell, uindex_t tile_width = 1024, uindex_t tile_height = 1024,
           uindex_t halo_radius = 1>
 class Grid {
-  public:
     static_assert(2 * halo_radius < tile_height && 2 * halo_radius < tile_width);
 
+  public:
     /**
-     * \brief Create a grid with undefined contents.
+     * \brief The number of dimensions of the grid.
      *
-     * This constructor is used to create the output grid of a \ref ExecutionKernel
-     * invocation. It's contents do not need to be initialized or copied from another buffer since
-     * it will override cell values from the execution kernel anyway.
+     * May be changed in the future when other dimensions are supported.
+     */
+    static constexpr uindex_t dimensions = 2;
+
+    /**
+     * \brief Create a new, uninitialized grid with the given dimensions.
      *
-     * \param grid_width The number of columns of the grid.
-     * \param grid_height The number of rows of the grid.
+     * \param grid_width The width, or number of columns, of the new grid.
+     *
+     * \param grid_height The height, or number of rows, of the new grid.
      */
     Grid(uindex_t grid_width, uindex_t grid_height)
         : grid_buffer(sycl::range<2>(grid_width, grid_height)) {}
 
+    /**
+     * \brief Create a new, uninitialized grid with the given dimensions.
+     *
+     * \param range The range of the new grid. The first index will be the width and the second
+     * index will be the height of the grid.
+     */
     Grid(sycl::range<2> range) : grid_buffer(range) {}
 
+    /**
+     * \brief Create a new grid with the same size and contents as the given SYCL buffer.
+     *
+     * The contents of the buffer will be copied to the grid by the host. The SYCL buffer can later
+     * be used elsewhere.
+     *
+     * \param input_buffer The buffer with the contents of the new grid.
+     */
     Grid(sycl::buffer<Cell, 2> input_buffer) : grid_buffer(input_buffer.get_range()) {
         copy_from_buffer(input_buffer);
     }
 
+    /**
+     * \brief Create a new reference to the given grid.
+     *
+     * The newly created grid object will point to the same underlying data as the referenced grid.
+     * Changes made via the newly created grid object will also be visible to the old grid object,
+     * and vice-versa.
+     *
+     * \param other_grid The other grid the new grid should reference.
+     */
     Grid(Grid const &other_grid) : grid_buffer(other_grid.grid_buffer) {}
 
+    /**
+     * \brief An accessor for the monotile grid.
+     *
+     * Instances of this class provide access to a grid, so that host code can read and write the
+     * contents of a grid. As such, it fullfils the \ref stencil::concepts::GridAccessor
+     * "GridAccessor" concept.
+     *
+     * \tparam access_mode The access mode for the accessor.
+     */
     template <sycl::access::mode access_mode> class GridAccessor {
       public:
-        static constexpr uindex_t dimensions = 2;
+        /**
+         * \brief The number of dimensions of the underlying grid.
+         */
+        static constexpr uindex_t dimensions = Grid::dimensions;
 
+        /**
+         * \brief Create a new accessor to the given grid.
+         */
         GridAccessor(Grid &grid) : accessor(grid.grid_buffer) {}
 
+        /**
+         * \brief Shorthand for the used subscript type.
+         */
         using BaseSubscript = AccessorSubscript<Cell, GridAccessor, access_mode>;
+
+        /**
+         * \brief Access/Dereference the first dimension.
+         *
+         * This subscript operator is the first subscript in an expression like
+         * `accessor[i_column][i_row]`. It will return a \ref BaseSubscript object that handles
+         * subsequent dimensions.
+         */
         BaseSubscript operator[](uindex_t i) { return BaseSubscript(*this, i); }
 
+        /**
+         * \brief Access a cell of the grid.
+         *
+         * \param id The index of the accessed cell. The first index is the column index, the second
+         * one is the row index. \returns A constant reference to the indexed cell.
+         */
         Cell const &operator[](sycl::id<2> id)
             requires(access_mode == sycl::access::mode::read)
         {
             return accessor[id];
         }
 
+        /**
+         * \brief Access a cell of the grid.
+         *
+         * \param id The index of the accessed cell. The first index is the column index, the second
+         * one is the row index. \returns A reference to the indexed cell.
+         */
         Cell &operator[](sycl::id<2> id)
             requires(access_mode != sycl::access::mode::read)
         {
@@ -96,6 +186,16 @@ class Grid {
         sycl::host_accessor<Cell, 2, access_mode> accessor;
     };
 
+    /**
+     * \brief Copy the contents of the SYCL buffer into the grid.
+     *
+     * The SYCL buffer will be accessed read-only one the host; It may be used elsewhere too. The
+     * buffer however has to have the same size as the grid, otherwise a \ref std::range_error is
+     * thrown.
+     *
+     * \param input_buffer The buffer to copy the data from.
+     * \throws std::range_error The size of the buffer does not match the grid.
+     */
     void copy_from_buffer(sycl::buffer<Cell, 2> input_buffer) {
         if (input_buffer.get_range() != grid_buffer.get_range()) {
             throw std::out_of_range("The target buffer has not the same size as the grid");
@@ -111,13 +211,13 @@ class Grid {
     }
 
     /**
-     * \brief Copy the contents of the grid to a given buffer.
+     * \brief Copy the contents of the grid into the SYCL buffer.
      *
-     * This buffer has to exactly have the size of the grid, otherwise a `std::range_error` is
-     * thrown.
+     * The contents of the SYCL buffer will be overwritten on the host. The buffer also has to have
+     * the same size as the grid, otherwise a \ref std::range_error is thrown.
      *
-     * \param out_buffer The buffer to copy the cells to.
-     * \throws std::out_of_range The buffer's size is not the same as the grid's size.
+     * \param output_buffer The buffer to copy the data to.
+     * \throws std::range_error The size of the buffer does not match the grid.
      */
     void copy_to_buffer(sycl::buffer<Cell, 2> output_buffer) {
         if (output_buffer.get_range() != grid_buffer.get_range()) {
@@ -134,24 +234,26 @@ class Grid {
     }
 
     /**
-     * \brief Create a new grid that can be used as an output target.
-     *
-     * This grid will have the same range as the original grid and will use new buffers.
-     *
-     * \return The new grid.
+     * \brief Create an new, uninitialized grid with the same size as the current one.
      */
     Grid make_similar() const { return Grid(grid_buffer.get_range()); }
 
+    /**
+     * \brief Return the width, or number of columns, of the grid.
+     */
     uindex_t get_grid_width() const { return grid_buffer.get_range()[0]; }
 
+    /**
+     * \brief Return the height, or number of rows, of the grid.
+     */
     uindex_t get_grid_height() const { return grid_buffer.get_range()[1]; }
 
     /**
      * \brief Return the range of (central) tiles of the grid.
      *
      * This is not the range of a single tile nor is the range of the grid. It is the range of valid
-     * arguments for \ref Grid.get_tile. For example, if the grid is 60 by 60 cells in size and
-     * a tile is 32 by 32 cells in size, the tile range would be 2 by 2 tiles.
+     * arguments for \ref submit_read and \ref submit_write. For example, if the grid is 60 by 60
+     * cells in size and a tile is 32 by 32 cells in size, the tile range would be 2 by 2 tiles.
      *
      * \return The range of tiles of the grid.
      */
@@ -160,8 +262,37 @@ class Grid {
                                    std::ceil(float(get_grid_height()) / float(tile_height)));
     }
 
+    /**
+     * \brief Submit a kernel that sends a tile of the grid into a pipe.
+     *
+     * The submitted kernel will send the contents of a tile, along with the required halo, into a
+     * pipe in column-major order. This means that the last index (which denotes the row) will
+     * change the quickest. The method returns the event of the launched kernel immediately.
+     *
+     * The tile column and row indices denote the indices of the *tile*, not the cells. The starting
+     * column index will be `tile_c * tile_width - halo_radius` and the end index will be `(tile_c +
+     * 1) * tile_width + halo_radius`. The start and end indices for the rows are analogous.
+     *
+     * This method is explicitly part of the user-facing API: You are allowed and encouraged to use
+     * this method to feed custom kernels.
+     *
+     * \tparam in_pipe The pipe the data is sent into.
+     *
+     * \param queue The queue to submit the kernel to.
+     *
+     * \param tile_c The column index of the tile to read.
+     *
+     * \param tile_r The row index of the tile to read.
+     *
+     * \param halo_value The value to present for cells outside of the grid.
+     *
+     * \throws std::out_of_range The grid does not contain the requested tile; Either the column or
+     * row index to high.
+     *
+     * \returns The event object of the submitted kernel.
+     */
     template <typename in_pipe>
-    void submit_read(sycl::queue &queue, uindex_t tile_c, uindex_t tile_r, Cell halo_value) {
+    sycl::event submit_read(sycl::queue &queue, uindex_t tile_c, uindex_t tile_r, Cell halo_value) {
         if (tile_c >= get_tile_range().c || tile_r >= get_tile_range().r) {
             throw std::out_of_range("Tile index out of range!");
         }
@@ -171,7 +302,7 @@ class Grid {
         using index_c_t = ac_int<column_bits, true>;
         using index_r_t = ac_int<row_bits, true>;
 
-        queue.submit([&](sycl::handler &cgh) {
+        return queue.submit([&](sycl::handler &cgh) {
             sycl::accessor grid_ac{grid_buffer, cgh, sycl::read_only};
             index_t grid_width = this->get_grid_width();
             index_t grid_height = this->get_grid_height();
@@ -207,8 +338,36 @@ class Grid {
         });
     }
 
+    /**
+     * \brief Submit a kernel that receives cells from the pipe and writes them to the grid.
+     *
+     * The kernel expects that one tile worth of cells can be read from the pipe. Also, it expects
+     * that the cells are sent in column-major order, meaning that the last index (which denotes the
+     * row) will change the quickest. The method returns the event of the launched kernel
+     * immediately.
+     *
+     * The tile column and row indices denote the indices of the *tile*, not the cells. The starting
+     * column index will be `tile_c * tile_width` and the end index will be `(tile_c + 1) *
+     * tile_width`. The start and end indices for the rows are analogous.
+     *
+     * This method is explicitly part of the user-facing API: You are allowed and encouraged to use
+     * this method to feed custom kernels.
+     *
+     * \tparam out_pipe The pipe the data is received from.
+     *
+     * \param queue The queue to submit the kernel to.
+     *
+     * \param tile_c The column index of the tile to read.
+     *
+     * \param tile_r The row index of the tile to read.
+     *
+     * \throws std::out_of_range The grid does not contain the requested tile; Either the column or
+     * row index to high.
+     *
+     * \returns The event object of the submitted kernel.
+     */
     template <typename out_pipe>
-    void submit_write(sycl::queue queue, uindex_t tile_c, uindex_t tile_r) {
+    sycl::event submit_write(sycl::queue queue, uindex_t tile_c, uindex_t tile_r) {
         if (tile_c >= get_tile_range().c || tile_r >= get_tile_range().r) {
             throw std::out_of_range("Tile index out of range!");
         }
@@ -218,7 +377,7 @@ class Grid {
         using uindex_c_t = ac_int<column_bits, false>;
         using uindex_r_t = ac_int<row_bits, false>;
 
-        queue.submit([&](sycl::handler &cgh) {
+        return queue.submit([&](sycl::handler &cgh) {
             sycl::accessor grid_ac{grid_buffer, cgh, sycl::read_write};
             uindex_t grid_width = this->get_grid_width();
             uindex_t grid_height = this->get_grid_height();
