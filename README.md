@@ -1,6 +1,6 @@
-# StencilStream
+![StencilStream](docs/stencil-stream.png)
 
-Generic Stencil Simulation Library for FPGAs.
+SYCL-based Stencil Simulation Framework Targeting FPGAs.
 
 This project uses Intel's OneAPI to provide a C++ template library that can execute arbitrary Moore-like stencil kernels on arbitrary cell types in arbitrary buffers, using FPGAs.
 
