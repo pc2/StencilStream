@@ -1,4 +1,4 @@
-![StencilStream](docs/stencil-stream.png)
+![StencilStream](docs/stencil-stream.png){width=100%}
 
 StencilStream is a SYCL-based simulation framework for iterative stencil codes, primarily targeting FPGAs. With StencilStream, application developers and domain scientists can merely write down their stencil code definition and obtain a fully functional and optimized, FPGA-accelerated application.
 
@@ -26,13 +26,13 @@ This our implementation of the HotSpot benchmark from the [Rodinia Benchmark Sui
 
 The FDTD application in [examples/fdtd](examples/fdtd/) is used to simulate the behavior of electro-magnetic waves within micro-cavities. The computed experiment is highly configurable, using configuration files written in JSON. Computationally, it is interesting because it utilizes StencilStream's time-dependent value feature to precompute the source wave and the sub-iterations feature to alternate between a electric and a magnetic field update. Below, you find a rendering of the final magnetic field, computed for the ["Max Grid" experiment](examples/fdtd/experiments/max_grid.json):
 
-![Magnetic field within a micro-cavity, computed by the FDTD app](docs/FDTD.png)
+![Magnetic field within a micro-cavity, computed by the FDTD app](docs/FDTD.png){width=50%}
 
 ### Convection
 
 The convection app, found in [examples/convection](examples/convection/), simulates the convection within Earth's Mantle. It is a port of an example app for the [ParallelStencil.jl framework](https://github.com/omlins/ParallelStencil.jl) and can also be configured using a JSON file. Below, you find the animated output of the [default experiment](examples/convection/experiments/default.json).
 
-![A video showing convection, computed by the Convection app](docs/convection-animation.mp4)
+![A video showing convection, computed by the Convection app](docs/convection-animation.mp4){width=50%}
 
 ### Performance & Hardware Usage
 
