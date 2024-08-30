@@ -326,7 +326,7 @@ class StencilUpdateKernel {
  * maximal grid height will increase the BRAM usage of each PE.
  *
  * \tparam TDVStrategy (Optimization parameter) The precomputation strategy for the time-dependent
- * value system (\ref page-tdv "See guide").
+ * value system.
  *
  * \tparam word_size (Optimization parameter) The width of the global memory channel, in bytes. For
  * DDR-based systems, this should be 512 bits, or 64 bytes.

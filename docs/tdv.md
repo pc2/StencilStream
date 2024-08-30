@@ -1,3 +1,0 @@
-# The time-dependent value system {#page-tdv}
-
-Too be done...
