@@ -1,6 +1,4 @@
 var searchData=
 [
-  ['inc_5fi_5fgeneration_117',['inc_i_generation',['../classstencil_1_1AbstractExecutor.html#a2623b422fa14ef62324889ea4d10068c',1,'stencil::AbstractExecutor']]],
-  ['iokernel_118',['IOKernel',['../classstencil_1_1tiling_1_1IOKernel.html#aa38c2d9f25d53121168f8f7c77b87a0d',1,'stencil::tiling::IOKernel']]],
-  ['is_5fruntime_5fanalysis_5fenabled_119',['is_runtime_analysis_enabled',['../classstencil_1_1SingleQueueExecutor.html#a41a5db39828f2007a434d1c8fd8edd4d',1,'stencil::SingleQueueExecutor']]]
+  ['kernelargument_0',['kernelargument',['../structstencil_1_1tdv_1_1single__pass_1_1InlineStrategy_1_1GlobalState_1_1KernelArgument.html#a7fc2237ac97279b2386dbe2438579ce0',1,'stencil::tdv::single_pass::InlineStrategy::GlobalState::KernelArgument::KernelArgument()'],['../structstencil_1_1tdv_1_1single__pass_1_1PrecomputeOnDeviceStrategy_1_1GlobalState_1_1KernelArgument.html#a21260e0638acea1b0a9838ad1a358fac',1,'stencil::tdv::single_pass::PrecomputeOnDeviceStrategy::GlobalState::KernelArgument::KernelArgument()'],['../structstencil_1_1tdv_1_1single__pass_1_1PrecomputeOnHostStrategy_1_1GlobalState_1_1KernelArgument.html#ab412eaa8712251eb4c75b73b0f10ab03',1,'stencil::tdv::single_pass::PrecomputeOnHostStrategy::GlobalState::KernelArgument::KernelArgument()']]]
 ];

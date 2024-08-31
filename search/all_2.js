@@ -1,8 +1,8 @@
 var searchData=
 [
-  ['c_6',['c',['../classstencil_1_1GenericID.html#a3bfb826d3051950dac5ae91e9871b0d2',1,'stencil::GenericID']]],
-  ['copy_5ffrom_7',['copy_from',['../classstencil_1_1tiling_1_1Tile.html#a55c05bd6e2ea37d69a07f5979eb22163',1,'stencil::tiling::Tile']]],
-  ['copy_5foutput_8',['copy_output',['../classstencil_1_1AbstractExecutor.html#a9a1a12b6a2627a7cc941a4febe8edc0a',1,'stencil::AbstractExecutor::copy_output()'],['../classstencil_1_1MonotileExecutor.html#a74f83d965e01e552ffab546639cc36d3',1,'stencil::MonotileExecutor::copy_output()'],['../classstencil_1_1StencilExecutor.html#aefdbb17862cb2cadf03eaa56d0caaa3d',1,'stencil::StencilExecutor::copy_output()']]],
-  ['copy_5fto_9',['copy_to',['../classstencil_1_1tiling_1_1Grid.html#a609663e98397e03431b381b4b3d59bba',1,'stencil::tiling::Grid::copy_to()'],['../classstencil_1_1tiling_1_1Tile.html#a84ddc129c5d58a579256b6093e14eb63',1,'stencil::tiling::Tile::copy_to()']]],
-  ['counterid_10',['CounterID',['../classstencil_1_1CounterID.html#a70d3ee8130418cf23a7ab54791cc5c83',1,'stencil::CounterID::CounterID(T column_bound, T row_bound)'],['../classstencil_1_1CounterID.html#acc20732033a3142d65877048602ae9eb',1,'stencil::CounterID::CounterID(T column, T row, T column_bound, T row_bound)'],['../classstencil_1_1CounterID.html#a0c5626e12ad28c04e82fb70f32c3dbf4',1,'stencil::CounterID::CounterID(cl::sycl::id&lt; 2 &gt; sycl_id, T column_bound, T row_bound)'],['../classstencil_1_1CounterID.html',1,'stencil::CounterID&lt; T &gt;']]]
+  ['basesubscript_0',['basesubscript',['../classstencil_1_1monotile_1_1Grid_1_1GridAccessor.html#afa208bc822fecc8161d3d1b0b309ac48',1,'stencil::monotile::Grid::GridAccessor::BaseSubscript'],['../classstencil_1_1tiling_1_1Grid_1_1GridAccessor.html#aac5c5865903a9248aca45418d523c1ea',1,'stencil::tiling::Grid::GridAccessor::BaseSubscript']]],
+  ['basetransitionfunction_1',['BaseTransitionFunction',['../classstencil_1_1BaseTransitionFunction.html',1,'stencil']]],
+  ['basetransitionfunction_2ehpp_2',['BaseTransitionFunction.hpp',['../BaseTransitionFunction_8hpp.html',1,'']]],
+  ['bits_5fstencil_3',['bits_stencil',['../classstencil_1_1Stencil.html#ac6f7bd8e71f02bf45bf0cf184323d6f5',1,'stencil::Stencil']]],
+  ['blocking_4',['blocking',['../structstencil_1_1cpu_1_1StencilUpdate_1_1Params.html#a94cd094f6f6da58a2cf1e7355aa7f77d',1,'stencil::cpu::StencilUpdate::Params::blocking'],['../structstencil_1_1monotile_1_1StencilUpdate_1_1Params.html#aa91a3638a9e692d96676c1eaf4690df4',1,'stencil::monotile::StencilUpdate::Params::blocking'],['../structstencil_1_1tiling_1_1StencilUpdate_1_1Params.html#a14eb85ada46533ac48157dc870c2ff32',1,'stencil::tiling::StencilUpdate::Params::blocking']]]
 ];

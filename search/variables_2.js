@@ -1,4 +1,6 @@
 var searchData=
 [
-  ['c_148',['c',['../classstencil_1_1GenericID.html#a3bfb826d3051950dac5ae91e9871b0d2',1,'stencil::GenericID']]]
+  ['device_0',['device',['../structstencil_1_1cpu_1_1StencilUpdate_1_1Params.html#acc444e49b93f51d6dfd3d8d99a7e5286',1,'stencil::cpu::StencilUpdate::Params::device'],['../structstencil_1_1monotile_1_1StencilUpdate_1_1Params.html#a8c9d76deea44512abd4437a10dbdc568',1,'stencil::monotile::StencilUpdate::Params::device'],['../structstencil_1_1tiling_1_1StencilUpdate_1_1Params.html#af7b4d6ed81b0a8d5bd40ebb344e2337f',1,'stencil::tiling::StencilUpdate::Params::device']]],
+  ['diameter_1',['diameter',['../classstencil_1_1Stencil.html#aab6159ffdf319a04a2c8c5602dcf93d9',1,'stencil::Stencil']]],
+  ['dimensions_2',['dimensions',['../classstencil_1_1AccessorSubscript.html#a8846aebd91bc669a72470b4bc610efe4',1,'stencil::AccessorSubscript::dimensions'],['../classstencil_1_1cpu_1_1Grid.html#ad98fb54cdb652bc0da7ddbd31052c08c',1,'stencil::cpu::Grid::dimensions'],['../classstencil_1_1monotile_1_1Grid.html#a27ccb4d4a11043087ebbf22448a03651',1,'stencil::monotile::Grid::dimensions'],['../classstencil_1_1monotile_1_1Grid_1_1GridAccessor.html#aa6d18c348ac17b52b3d04c67f5650797',1,'stencil::monotile::Grid::GridAccessor::dimensions'],['../classstencil_1_1tiling_1_1Grid.html#a11cfc8d7b7039fa5df7e6134346a7ecb',1,'stencil::tiling::Grid::dimensions'],['../classstencil_1_1tiling_1_1Grid_1_1GridAccessor.html#ab42e41193eb39c25825a690a861b7d39',1,'stencil::tiling::Grid::GridAccessor::dimensions']]]
 ];

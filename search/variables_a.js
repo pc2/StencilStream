@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['stage_163',['stage',['../classstencil_1_1Stencil.html#a8093140b6072d63855f7853a34b12991',1,'stencil::Stencil']]],
-  ['stage_5flatency_164',['stage_latency',['../classstencil_1_1monotile_1_1ExecutionKernel.html#ae9e93836eca1cced46de68a6c90b1031',1,'stencil::monotile::ExecutionKernel']]],
-  ['stencil_5fdiameter_165',['stencil_diameter',['../classstencil_1_1monotile_1_1ExecutionKernel.html#aa7e66d629801d32e82dec3e9101bb339',1,'stencil::monotile::ExecutionKernel::stencil_diameter()'],['../classstencil_1_1tiling_1_1ExecutionKernel.html#ad81826faee1b9091bd4944a34300b155',1,'stencil::tiling::ExecutionKernel::stencil_diameter()']]]
+  ['time_5fdependent_5fvalue_0',['time_dependent_value',['../classstencil_1_1Stencil.html#acffd264870f0737c7572e72c9b840cdf',1,'stencil::Stencil']]],
+  ['transition_5ffunction_1',['transition_function',['../structstencil_1_1cpu_1_1StencilUpdate_1_1Params.html#af0068f29a608198fa8e9a0f9ee26bfd8',1,'stencil::cpu::StencilUpdate::Params::transition_function'],['../structstencil_1_1monotile_1_1StencilUpdate_1_1Params.html#acf20c3043c816e0500169f197e3f4af7',1,'stencil::monotile::StencilUpdate::Params::transition_function'],['../structstencil_1_1tiling_1_1StencilUpdate_1_1Params.html#a8f470dccab062b17d4dadfc3b1248ff0',1,'stencil::tiling::StencilUpdate::Params::transition_function']]]
 ];
