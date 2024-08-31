@@ -1,7 +1,0 @@
-var searchData=
-[
-  ['genericid_0',['GenericID',['../classstencil_1_1GenericID.html',1,'stencil']]],
-  ['globalstate_1',['globalstate',['../structstencil_1_1tdv_1_1single__pass_1_1InlineStrategy_1_1GlobalState.html',1,'stencil::tdv::single_pass::InlineStrategy::GlobalState&lt; TransFunc, max_n_iterations &gt;'],['../structstencil_1_1tdv_1_1single__pass_1_1PrecomputeOnDeviceStrategy_1_1GlobalState.html',1,'stencil::tdv::single_pass::PrecomputeOnDeviceStrategy::GlobalState&lt; TransFunc, max_n_iterations &gt;'],['../classstencil_1_1tdv_1_1single__pass_1_1PrecomputeOnHostStrategy_1_1GlobalState.html',1,'stencil::tdv::single_pass::PrecomputeOnHostStrategy::GlobalState&lt; TransFunc, max_n_iterations &gt;']]],
-  ['grid_2',['grid',['../classstencil_1_1cpu_1_1Grid.html',1,'stencil::cpu::Grid&lt; Cell &gt;'],['../classstencil_1_1monotile_1_1Grid.html',1,'stencil::monotile::Grid&lt; Cell, word_size &gt;'],['../classstencil_1_1tiling_1_1Grid.html',1,'stencil::tiling::Grid&lt; Cell, tile_width, tile_height, halo_radius &gt;']]],
-  ['gridaccessor_3',['gridaccessor',['../classstencil_1_1cpu_1_1Grid_1_1GridAccessor.html',1,'stencil::cpu::Grid&lt; Cell &gt;::GridAccessor&lt; access_mode &gt;'],['../classstencil_1_1monotile_1_1Grid_1_1GridAccessor.html',1,'stencil::monotile::Grid&lt; Cell, word_size &gt;::GridAccessor&lt; access_mode &gt;'],['../classstencil_1_1tiling_1_1Grid_1_1GridAccessor.html',1,'stencil::tiling::Grid&lt; Cell, tile_width, tile_height, halo_radius &gt;::GridAccessor&lt; access_mode &gt;']]]
-];

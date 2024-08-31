@@ -1,5 +1,0 @@
-<map id="stencil::cpu::Grid&lt; Cell &gt;::GridAccessor&lt; access_mode &gt;" name="stencil::cpu::Grid&lt; Cell &gt;::GridAccessor&lt; access_mode &gt;">
-<area shape="rect" id="Node000001" title="An accessor for the grid." alt="" coords="12,124,163,180"/>
-<area shape="rect" id="Node000002" title=" " alt="" coords="5,5,170,76"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="90,92,90,124,85,124,85,92"/>
-</map>

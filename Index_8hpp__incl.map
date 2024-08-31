@@ -1,9 +1,0 @@
-<map id="StencilStream/Index.hpp" name="StencilStream/Index.hpp">
-<area shape="rect" id="Node000001" title=" " alt="" coords="104,5,266,31"/>
-<area shape="rect" id="Node000002" title=" " alt="" coords="5,87,95,112"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="166,34,85,81,82,76,163,29"/>
-<area shape="rect" id="Node000003" title=" " alt="" coords="119,79,251,120"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="187,31,187,64,182,64,182,31"/>
-<area shape="rect" id="Node000004" title=" " alt="" coords="275,87,335,112"/>
-<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="204,29,275,76,273,80,201,34"/>
-</map>

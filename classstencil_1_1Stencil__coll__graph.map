@@ -1,5 +1,0 @@
-<map id="stencil::Stencil&lt; Cell, stencil_radius, TimeDependentValue &gt;" name="stencil::Stencil&lt; Cell, stencil_radius, TimeDependentValue &gt;">
-<area shape="rect" id="Node000001" title="The stencil buffer." alt="" coords="5,109,208,165"/>
-<area shape="rect" id="Node000002" href="$classstencil_1_1GenericID.html" title="A generic, two&#45;dimensional index." alt="" coords="30,5,183,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="109,47,109,109,104,109,104,47"/>
-</map>

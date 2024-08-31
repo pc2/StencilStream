@@ -1,7 +1,0 @@
-var searchData=
-[
-  ['tdv_0',['tdv',['../structstencil_1_1tdv_1_1single__pass_1_1InlineStrategy_1_1GlobalState.html#a22b6f2da6c2fe76786c49dc34a6bbc89',1,'stencil::tdv::single_pass::InlineStrategy::GlobalState::TDV'],['../structstencil_1_1tdv_1_1single__pass_1_1PrecomputeOnDeviceStrategy_1_1GlobalState.html#aad843a8a2808898ced35d11b86bf0455',1,'stencil::tdv::single_pass::PrecomputeOnDeviceStrategy::GlobalState::TDV'],['../classstencil_1_1tdv_1_1single__pass_1_1PrecomputeOnHostStrategy_1_1GlobalState.html#abd6424c017b5b39287c4f21006b64fdf',1,'stencil::tdv::single_pass::PrecomputeOnHostStrategy::GlobalState::TDV']]],
-  ['time_5fdependent_5fvalue_1',['time_dependent_value',['../classstencil_1_1Stencil.html#acffd264870f0737c7572e72c9b840cdf',1,'stencil::Stencil']]],
-  ['timedependentvalue_2',['TimeDependentValue',['../classstencil_1_1BaseTransitionFunction.html#a60c142abdbb606f20bdfac10dc886ddc',1,'stencil::BaseTransitionFunction']]],
-  ['transition_5ffunction_3',['transition_function',['../structstencil_1_1cpu_1_1StencilUpdate_1_1Params.html#af0068f29a608198fa8e9a0f9ee26bfd8',1,'stencil::cpu::StencilUpdate::Params::transition_function'],['../structstencil_1_1monotile_1_1StencilUpdate_1_1Params.html#acf20c3043c816e0500169f197e3f4af7',1,'stencil::monotile::StencilUpdate::Params::transition_function'],['../structstencil_1_1tiling_1_1StencilUpdate_1_1Params.html#a8f470dccab062b17d4dadfc3b1248ff0',1,'stencil::tiling::StencilUpdate::Params::transition_function']]]
-];
