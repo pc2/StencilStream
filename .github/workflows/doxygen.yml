@@ -18,18 +18,9 @@ jobs:
 
       - name: Doxygen Build
         uses: mattnotmitt/doxygen-action@v1.9.8
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-        
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          # Upload entire repository
-          path: './doxygen/html'
           
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./doxygen/html/
+          publish_dir: /github/workspace/StencilStream/doxygen/html/
