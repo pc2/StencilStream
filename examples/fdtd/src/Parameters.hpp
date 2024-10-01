@@ -18,9 +18,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
+
+#include <fstream>
+#include <nlohmann/json.hpp>
+
 #include "defines.hpp"
 #include "material/Material.hpp"
-#include <nlohmann/json.hpp>
 
 using namespace nlohmann;
 
