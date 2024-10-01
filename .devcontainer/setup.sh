@@ -17,5 +17,5 @@ echo "source /opt/intel/oneapi/setvars.sh" >> ~/.bash_profile
 curl -fsSL https://install.julialang.org > /tmp/juliaup.sh 
 chmod +x /tmp/juliaup.sh
 /tmp/juliaup.sh -y --default-channel 1.10.4
-source ~/.bashrc
+source ~/.bash_profile
 julia --project -e "using Pkg; Pkg.instantiate()"
