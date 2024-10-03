@@ -13,7 +13,7 @@ else()
     set(MAIN_PROJECT OFF)
 endif()
 
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.22.1)
 
 project(StencilStream CXX)
 set(CMAKE_PROJECT_VERSION 4.0.0)
