@@ -31,67 +31,19 @@ TEST_CASE("Stencil::diameter", "[Stencil]") {
     REQUIRE(stencil.diameter == StencilImpl::diameter);
     REQUIRE(stencil.diameter == 2 * stencil_radius + 1);
 };
-/*
-TEST_CASE("Stencil::operator[](ID)", "[Stencil]") {
-    StencilImpl stencil(ID(0, 0), UID(42, 42), 0, 0, std::monostate());
 
-    for (int c = -stencil_radius; c <= int(stencil_radius); c++) {
-        for (int r = -stencil_radius; r <= int(stencil_radius); r++) {
-            stencil[ID(c, r)] = c + r;
-        }
-    }
+TEST_CASE("Stencil::operator[](int)", "[Stencil]") {
+    StencilImpl stencil(sycl::id<2>(0, 0), sycl::range<2>(42, 42), 0, 0, std::monostate());
 
     for (std::size_t c = 0; c < stencil.diameter; c++) {
         for (std::size_t r = 0; r < stencil.diameter; r++) {
-            REQUIRE(stencil[UID(c, r)] == int(c) + int(r) - 2 * stencil_radius);
+            stencil[sycl::id<2>(c, r)] = int(c) + int(r) - 2 * stencil_radius;
+        }
+    }
+
+    for (int c = -int(stencil_radius); c <= int(stencil_radius); c++) {
+        for (int r = -int(stencil_radius); r <= int(stencil_radius); r++) {
+            REQUIRE(stencil[c][r] == c + r);
         }
     }
 };
-
-TEST_CASE("Stencil::operator[](UID)", "[Stencil]") {
-    StencilImpl stencil(ID(0, 0), UID(42, 42), 0, 0, std::monostate());
-
-    for (std::size_t c = 0; c < stencil.diameter; c++) {
-        for (std::size_t r = 0; r < stencil.diameter; r++) {
-            stencil[UID(c, r)] = c + r;
-        }
-    }
-
-    for (int c = -stencil_radius; c <= stencil_radius; c++) {
-        for (int r = -stencil_radius; r <= stencil_radius; r++) {
-            REQUIRE(stencil[ID(c, r)] == int(c) + int(r) + 2 * stencil_radius);
-        }
-    }
-};
-
-TEST_CASE("Stencil::operator[](StencilID)", "[Stencil]") {
-    StencilImpl stencil(ID(0, 0), UID(42, 42), 0, 0, std::monostate());
-
-    for (int c = -stencil_radius; c <= int(stencil_radius); c++) {
-        for (int r = -stencil_radius; r <= int(stencil_radius); r++) {
-            stencil[StencilID(c, r)] = c + r;
-        }
-    }
-
-    for (std::size_t c = 0; c < stencil.diameter; c++) {
-        for (std::size_t r = 0; r < stencil.diameter; r++) {
-            REQUIRE(stencil[StencilUID(c, r)] == int(c) + int(r) - 2 * stencil_radius);
-        }
-    }
-};
-
-TEST_CASE("Stencil::operator[](StencilUID)", "[Stencil]") {
-    StencilImpl stencil(ID(0, 0), UID(42, 42), 0, 0, std::monostate());
-
-    for (std::size_t c = 0; c < stencil.diameter; c++) {
-        for (std::size_t r = 0; r < stencil.diameter; r++) {
-            stencil[StencilUID(c, r)] = c + r;
-        }
-    }
-
-    for (int c = -stencil_radius; c <= stencil_radius; c++) {
-        for (int r = -stencil_radius; r <= stencil_radius; r++) {
-            REQUIRE(stencil[StencilID(c, r)] == int(c) + int(r) + 2 * stencil_radius);
-        }
-    }
-};*/

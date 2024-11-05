@@ -49,6 +49,7 @@ class Stencil {
   public:
     /// \brief The diameter (aka width and height) of the stencil buffer.
     static constexpr std::size_t diameter = 2 * stencil_radius + 1;
+    static_assert(diameter <= std::numeric_limits<int>::max());
 
     /**
      * \brief Create a new stencil with an uninitialized buffer.
@@ -85,6 +86,28 @@ class Stencil {
                 internal[c][r] = raw[c][r];
             }
         }
+    }
+
+    template <std::signed_integral index_t>
+        requires(stencil_radius <= std::numeric_limits<index_t>::max())
+    class StencilSubscript {
+      public:
+        StencilSubscript(Stencil const &stencil, index_t c) : stencil(stencil), c(c) {}
+
+        Cell const &operator[](index_t r) const {
+            return stencil[sycl::id<2>(c + stencil_radius, r + stencil_radius)];
+        }
+
+      private:
+        Stencil const &stencil;
+        index_t c;
+    };
+
+    template <std::signed_integral index_t>
+    StencilSubscript<index_t> operator[](index_t c) const
+        requires(stencil_radius <= std::numeric_limits<index_t>::max())
+    {
+        return StencilSubscript<index_t>(*this, c);
     }
 
     /**
