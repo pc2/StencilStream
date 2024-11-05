@@ -28,15 +28,12 @@ if(${MAIN_PROJECT})
     add_subdirectory(tests)
 endif()
 
-find_package(Boost 1.74.0 REQUIRED)
-
 # Base target
 
 add_library(StencilStream_Base INTERFACE)
 target_include_directories(StencilStream_Base INTERFACE "${PROJECT_SOURCE_DIR}/")
 target_compile_options(StencilStream_Base INTERFACE -fsycl -std=c++20)
 target_link_options(StencilStream_Base INTERFACE -fsycl)
-target_link_libraries(StencilStream_Base INTERFACE Boost::boost)
 
 # Target for CPU backend
 
