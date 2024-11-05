@@ -18,7 +18,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../Index.hpp"
 #include <memory>
 
 namespace stencil {
@@ -35,8 +34,8 @@ namespace cpu {
  *
  * ```
  * Grid::GridAccessor<sycl::access::mode::read_write> accessor(grid);
- * for (uindex_t c = 0; c < grid.get_grid_width(); c++) {
- *     for (uindex_t r = 0; r < grid.get_grid_height(); r++) {
+ * for (std::size_t c = 0; c < grid.get_grid_width(); c++) {
+ *     for (std::size_t r = 0; r < grid.get_grid_height(); r++) {
  *         accessor[c][r] = foo(c, r);
  *     }
  * }
@@ -55,7 +54,7 @@ template <typename Cell> class Grid {
      *
      * May be changed in the future when other dimensions are supported.
      */
-    static constexpr uindex_t dimensions = 2;
+    static constexpr std::size_t dimensions = 2;
 
     /**
      * \brief Create a new, uninitialized grid with the given dimensions.
@@ -64,7 +63,7 @@ template <typename Cell> class Grid {
      *
      * \param r The height, or number of rows, of the new grid.
      */
-    Grid(uindex_t c, uindex_t r) : buffer(sycl::range<2>(c, r)) {}
+    Grid(std::size_t c, std::size_t r) : buffer(sycl::range<2>(c, r)) {}
 
     /**
      * \brief Create a new, uninitialized grid with the given dimensions.
@@ -156,12 +155,12 @@ template <typename Cell> class Grid {
     /**
      * \brief Return the width, or number of columns, of the grid.
      */
-    uindex_t get_grid_width() const { return buffer.get_range()[0]; }
+    std::size_t get_grid_width() const { return buffer.get_range()[0]; }
 
     /**
      * \brief Return the height, or number of rows, of the grid.
      */
-    uindex_t get_grid_height() const { return buffer.get_range()[1]; }
+    std::size_t get_grid_height() const { return buffer.get_range()[1]; }
 
     /**
      * \brief Create an new, uninitialized grid with the same size as the current one.

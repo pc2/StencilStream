@@ -19,9 +19,7 @@
  */
 #pragma once
 #include "../Concepts.hpp"
-#include "../GenericID.hpp"
 #include "../Helpers.hpp"
-#include "../Index.hpp"
 #include "../tdv/SinglePassStrategies.hpp"
 #include "Grid.hpp"
 #include <chrono>
@@ -60,8 +58,8 @@ namespace monotile {
  */
 template <concepts::TransitionFunction TransFunc,
           tdv::single_pass::KernelArgument<TransFunc> TDVKernelArgument,
-          uindex_t n_processing_elements, uindex_t max_grid_width, uindex_t max_grid_height,
-          typename in_pipe, typename out_pipe>
+          std::size_t n_processing_elements, std::size_t max_grid_width,
+          std::size_t max_grid_height, typename in_pipe, typename out_pipe>
     requires(n_processing_elements % TransFunc::n_subiterations == 0)
 class StencilUpdateKernel {
   private:
@@ -73,22 +71,23 @@ class StencilUpdateKernel {
     /**
      * \brief The width and height of the stencil buffer.
      */
-    static constexpr uindex_t stencil_diameter = StencilImpl::diameter;
+    static constexpr std::size_t stencil_diameter = StencilImpl::diameter;
 
-    static constexpr uindex_t iters_per_pass = n_processing_elements / TransFunc::n_subiterations;
+    static constexpr std::size_t iters_per_pass =
+        n_processing_elements / TransFunc::n_subiterations;
 
-    static constexpr uindex_t calc_pipeline_latency(uindex_t grid_height) {
+    static constexpr std::size_t calc_pipeline_latency(std::size_t grid_height) {
         return n_processing_elements * TransFunc::stencil_radius * (grid_height + 1);
     }
 
-    static constexpr uindex_t calc_n_iterations(uindex_t grid_width, uindex_t grid_height) {
+    static constexpr std::size_t calc_n_iterations(std::size_t grid_width,
+                                                   std::size_t grid_height) {
         return grid_width * grid_height + calc_pipeline_latency(grid_height);
     }
 
-    using index_stencil_t = typename StencilImpl::index_stencil_t;
-    using uindex_stencil_t = typename StencilImpl::uindex_stencil_t;
-    using StencilID = typename StencilImpl::StencilID;
-    using StencilUID = typename StencilImpl::StencilUID;
+    static constexpr unsigned long bits_stencil = std::bit_width(stencil_diameter);
+    using index_stencil_t = ac_int<bits_stencil, true>;
+    using uindex_stencil_t = ac_int<bits_stencil, false>;
 
     static constexpr unsigned long bits_1d =
         std::bit_width(std::max(max_grid_width, max_grid_height));
@@ -130,8 +129,9 @@ class StencilUpdateKernel {
      * \param tdv_kernel_argument The argument for the TDV system that is passed from the host to
      * the device. This may for example contain global memory accessors.
      */
-    StencilUpdateKernel(TransFunc trans_func, uindex_t i_iteration, uindex_t target_i_iteration,
-                        uindex_t grid_width, uindex_t grid_height, Cell halo_value,
+    StencilUpdateKernel(TransFunc trans_func, std::size_t i_iteration,
+                        std::size_t target_i_iteration, std::size_t grid_width,
+                        std::size_t grid_height, Cell halo_value,
                         TDVKernelArgument tdv_kernel_argument)
         : trans_func(trans_func), i_iteration(i_iteration), target_i_iteration(target_i_iteration),
           grid_width(grid_width), grid_height(grid_height), halo_value(halo_value),
@@ -219,17 +219,18 @@ class StencilUpdateKernel {
                     }
                 }
 
-                uindex_t pe_iteration =
+                std::size_t pe_iteration =
                     (i_iteration + i_processing_element / TransFunc::n_subiterations).to_uint();
-                uindex_t pe_subiteration =
+                std::size_t pe_subiteration =
                     (i_processing_element % TransFunc::n_subiterations).to_uint();
 
                 if (pe_iteration < target_i_iteration) {
                     TDV tdv = tdv_local_state.get_time_dependent_value(
                         (i_processing_element / TransFunc::n_subiterations).to_uint());
-                    StencilImpl stencil(ID(c[i_processing_element], r[i_processing_element]),
-                                        UID(grid_width, grid_height), pe_iteration, pe_subiteration,
-                                        tdv);
+                    StencilImpl stencil(
+                        sycl::id<2>(c[i_processing_element], r[i_processing_element]),
+                        sycl::range<2>(grid_width, grid_height), pe_iteration, pe_subiteration,
+                        tdv);
 
                     bool h_halo_mask[stencil_diameter];
                     bool v_halo_mask[stencil_diameter];
@@ -264,10 +265,10 @@ class StencilUpdateKernel {
                         for (uindex_stencil_t cell_r = 0;
                              cell_r < uindex_stencil_t(stencil_diameter); cell_r++) {
                             if (h_halo_mask[cell_c] && v_halo_mask[cell_r]) {
-                                stencil[StencilUID(cell_c, cell_r)] =
+                                stencil[sycl::id<2>(cell_c, cell_r)] =
                                     stencil_buffer[i_processing_element][cell_c][cell_r];
                             } else {
-                                stencil[StencilUID(cell_c, cell_r)] = halo_value;
+                                stencil[sycl::id<2>(cell_c, cell_r)] = halo_value;
                             }
                         }
                     }
@@ -293,10 +294,10 @@ class StencilUpdateKernel {
 
   private:
     TransFunc trans_func;
-    uindex_t i_iteration;
-    uindex_t target_i_iteration;
-    uindex_t grid_width;
-    uindex_t grid_height;
+    std::size_t i_iteration;
+    std::size_t target_i_iteration;
+    std::size_t grid_width;
+    std::size_t grid_height;
     Cell halo_value;
     TDVKernelArgument tdv_kernel_argument;
 };
@@ -331,11 +332,11 @@ class StencilUpdateKernel {
  * \tparam word_size (Optimization parameter) The width of the global memory channel, in bytes. For
  * DDR-based systems, this should be 512 bits, or 64 bytes.
  */
-template <concepts::TransitionFunction F, uindex_t n_processing_elements = 1,
-          uindex_t max_grid_width = 1024, uindex_t max_grid_height = 1024,
+template <concepts::TransitionFunction F, std::size_t n_processing_elements = 1,
+          std::size_t max_grid_width = 1024, std::size_t max_grid_height = 1024,
           tdv::single_pass::Strategy<F, n_processing_elements> TDVStrategy =
               tdv::single_pass::InlineStrategy,
-          uindex_t word_size = 64>
+          std::size_t word_size = 64>
 class StencilUpdate {
   private:
     using Cell = F::Cell;
@@ -367,12 +368,12 @@ class StencilUpdate {
          * This offset will be added to the "actual" iteration index. This way, simulations can
          * "resume" with the next timestep if the intermediate grid has been evaluated by the host.
          */
-        uindex_t iteration_offset = 0;
+        std::size_t iteration_offset = 0;
 
         /**
          * \brief The number of iterations to compute.
          */
-        uindex_t n_iterations = 1;
+        std::size_t n_iterations = 1;
 
         /**
          * \brief The device to use for computations.
@@ -438,7 +439,7 @@ class StencilUpdate {
         using in_pipe = sycl::pipe<class monotile_in_pipe, Cell>;
         using out_pipe = sycl::pipe<class monotile_out_pipe, Cell>;
 
-        constexpr uindex_t iters_per_pass = n_processing_elements / F::n_subiterations;
+        constexpr std::size_t iters_per_pass = n_processing_elements / F::n_subiterations;
 
         using TDVGlobalState = TDVStrategy::template GlobalState<F, iters_per_pass>;
         using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
@@ -466,10 +467,11 @@ class StencilUpdate {
 
         auto walltime_start = std::chrono::high_resolution_clock::now();
 
-        uindex_t target_n_iterations = params.iteration_offset + params.n_iterations;
-        for (uindex_t i = params.iteration_offset; i < target_n_iterations; i += iters_per_pass) {
+        std::size_t target_n_iterations = params.iteration_offset + params.n_iterations;
+        for (std::size_t i = params.iteration_offset; i < target_n_iterations;
+             i += iters_per_pass) {
             pass_source->template submit_read<in_pipe>(input_kernel_queue);
-            uindex_t iters_in_this_pass = std::min(iters_per_pass, target_n_iterations - i);
+            std::size_t iters_in_this_pass = std::min(iters_per_pass, target_n_iterations - i);
 
             sycl::event work_event = update_kernel_queue.submit([&](sycl::handler &cgh) {
                 TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i, iters_in_this_pass);
@@ -513,7 +515,7 @@ class StencilUpdate {
      * the number of computed iterations. This will also be accumulated across multiple calls to
      * \ref operator()().
      */
-    uindex_t get_n_processed_cells() const { return n_processed_cells; }
+    std::size_t get_n_processed_cells() const { return n_processed_cells; }
 
     /**
      * \brief Return the accumulated total runtime of the execution kernel.
@@ -548,7 +550,7 @@ class StencilUpdate {
 
   private:
     Params params;
-    uindex_t n_processed_cells;
+    std::size_t n_processed_cells;
     double walltime;
     std::vector<sycl::event> work_events;
 };

@@ -24,9 +24,9 @@
 using namespace stencil;
 using namespace stencil::cpu;
 
-using TestGrid = Grid<ID>;
+using TestGrid = Grid<sycl::id<2>>;
 
-static_assert(concepts::Grid<TestGrid, ID>);
+static_assert(concepts::Grid<TestGrid, sycl::id<2>>);
 
 TEST_CASE("cpu::Grid::Grid", "[cpu::Grid]") {
     grid_test::test_constructors<TestGrid>(tile_width, tile_height);

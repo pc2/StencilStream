@@ -28,18 +28,17 @@ using namespace sycl;
 using namespace stencil;
 
 template <concepts::Grid<Cell> Grid, concepts::StencilUpdate<FPGATransFunc<1>, Grid> SU>
-void test_stencil_update(stencil::uindex_t grid_width, uindex_t grid_height,
-                         uindex_t iteration_offset, uindex_t n_iterations) {
+void test_stencil_update(std::size_t grid_width, std::size_t grid_height,
+                         std::size_t iteration_offset, std::size_t n_iterations) {
 
     using Accessor = Grid::template GridAccessor<access::mode::read_write>;
 
     Grid input_grid(grid_width, grid_height);
     {
         Accessor ac(input_grid);
-        for (uindex_t c = 0; c < grid_width; c++) {
-            for (uindex_t r = 0; r < grid_height; r++) {
-                ac[c][r] =
-                    Cell{index_t(c), index_t(r), (index_t)iteration_offset, 0, CellStatus::Normal};
+        for (std::size_t c = 0; c < grid_width; c++) {
+            for (std::size_t r = 0; r < grid_height; r++) {
+                ac[c][r] = Cell{int(c), int(r), int(iteration_offset), 0, CellStatus::Normal};
             }
         }
     }
@@ -52,8 +51,8 @@ void test_stencil_update(stencil::uindex_t grid_width, uindex_t grid_height,
     Grid output_grid = update(input_grid);
 
     Accessor ac(output_grid);
-    for (uindex_t c = 0; c < grid_width; c++) {
-        for (uindex_t r = 0; r < grid_height; r++) {
+    for (std::size_t c = 0; c < grid_width; c++) {
+        for (std::size_t r = 0; r < grid_height; r++) {
             REQUIRE(ac[c][r].c == c);
             REQUIRE(ac[c][r].r == r);
             REQUIRE(ac[c][r].i_iteration == iteration_offset + n_iterations);

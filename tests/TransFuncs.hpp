@@ -22,8 +22,6 @@
  */
 #pragma once
 #include <CL/sycl.hpp>
-#include <StencilStream/GenericID.hpp>
-#include <StencilStream/Index.hpp>
 #include <StencilStream/Stencil.hpp>
 #include <catch2/catch_all.hpp>
 
@@ -34,47 +32,44 @@ enum class CellStatus {
 };
 
 struct Cell {
-    stencil::index_t c;
-    stencil::index_t r;
-    stencil::index_t i_iteration;
-    stencil::index_t i_subiteration;
+    int c;
+    int r;
+    int i_iteration;
+    int i_subiteration;
     CellStatus status;
 
     static Cell halo() { return Cell{0, 0, 0, 0, CellStatus::Halo}; }
 };
 
 struct IterationFunction {
-    using Value = stencil::uindex_t;
+    using Value = std::size_t;
 
-    stencil::uindex_t operator()(stencil::uindex_t i_iteration) const { return i_iteration; }
+    std::size_t operator()(std::size_t i_iteration) const { return i_iteration; }
 };
 
-template <stencil::uindex_t radius> class FPGATransFunc {
+template <std::size_t radius> class FPGATransFunc {
   public:
     using Cell = Cell;
-    using TimeDependentValue = stencil::uindex_t;
+    using TimeDependentValue = std::size_t;
 
-    static constexpr stencil::uindex_t stencil_radius = radius;
-    static constexpr stencil::uindex_t n_subiterations = 2;
+    static constexpr std::size_t stencil_radius = radius;
+    static constexpr std::size_t n_subiterations = 2;
 
-    stencil::uindex_t get_time_dependent_value(stencil::uindex_t i_iteration) const {
-        return i_iteration;
-    }
+    std::size_t get_time_dependent_value(std::size_t i_iteration) const { return i_iteration; }
 
     Cell operator()(stencil::Stencil<Cell, radius, TimeDependentValue> const &stencil) const {
-        Cell new_cell = stencil[stencil::ID(0, 0)];
+        Cell new_cell = stencil[sycl::id<2>(radius, radius)];
 
         bool is_valid = true;
 #pragma unroll
-        for (stencil::index_t c = -stencil::index_t(radius); c <= stencil::index_t(radius); c++) {
+        for (int c = -int(radius); c <= int(radius); c++) {
 #pragma unroll
-            for (stencil::index_t r = -stencil::index_t(radius); r <= stencil::index_t(radius);
-                 r++) {
-                Cell old_cell = stencil[stencil::ID(c, r)];
-                stencil::index_t cell_c = stencil.id.c + c;
-                stencil::index_t cell_r = stencil.id.r + r;
-                if (cell_c >= 0 && cell_r >= 0 && cell_c < stencil.grid_range.c &&
-                    cell_r < stencil.grid_range.r) {
+            for (int r = -int(radius); r <= int(radius); r++) {
+                Cell old_cell = stencil[sycl::id<2>(c + radius, r + radius)];
+                int cell_c = stencil.id[0] + c;
+                int cell_r = stencil.id[1] + r;
+                if (cell_c >= 0 && cell_r >= 0 && cell_c < stencil.grid_range[0] &&
+                    cell_r < stencil.grid_range[1]) {
                     is_valid &= old_cell.c == cell_c;
                     is_valid &= old_cell.r == cell_r;
                     is_valid &= old_cell.i_iteration == stencil.iteration;
@@ -103,20 +98,18 @@ template <stencil::uindex_t radius> class FPGATransFunc {
     }
 };
 
-template <stencil::uindex_t radius> class HostTransFunc {
+template <std::size_t radius> class HostTransFunc {
   public:
     using Cell = Cell;
-    using TimeDependentValue = stencil::uindex_t;
+    using TimeDependentValue = std::size_t;
 
-    static constexpr stencil::uindex_t stencil_radius = radius;
-    static constexpr stencil::uindex_t n_subiterations = 2;
+    static constexpr std::size_t stencil_radius = radius;
+    static constexpr std::size_t n_subiterations = 2;
 
-    stencil::uindex_t get_time_dependent_value(stencil::uindex_t i_iteration) const {
-        return i_iteration;
-    }
+    std::size_t get_time_dependent_value(std::size_t i_iteration) const { return i_iteration; }
 
-    Cell operator()(stencil::Stencil<Cell, radius, stencil::uindex_t> const &stencil) const {
-        Cell new_cell = stencil[stencil::ID(0, 0)];
+    Cell operator()(stencil::Stencil<Cell, radius, std::size_t> const &stencil) const {
+        Cell new_cell = stencil[sycl::id<2>(radius, radius)];
 
         if (stencil.id.c < 0 || stencil.id.r < 0 || stencil.id.c >= stencil.grid_range.c ||
             stencil.id.r >= stencil.grid_range.r) {
@@ -126,13 +119,12 @@ template <stencil::uindex_t radius> class HostTransFunc {
         }
 
 #pragma unroll
-        for (stencil::index_t c = -stencil::index_t(radius); c <= stencil::index_t(radius); c++) {
+        for (int c = -int(radius); c <= int(radius); c++) {
 #pragma unroll
-            for (stencil::index_t r = -stencil::index_t(radius); r <= stencil::index_t(radius);
-                 r++) {
-                Cell old_cell = stencil[stencil::ID(c, r)];
-                stencil::index_t cell_c = stencil.id.c + c;
-                stencil::index_t cell_r = stencil.id.r + r;
+            for (int r = -int(radius); r <= int(radius); r++) {
+                Cell old_cell = stencil[sycl::id<2>(c + radius, r + radius)];
+                int cell_c = stencil.id.c + c;
+                int cell_r = stencil.id.r + r;
                 if (cell_c >= 0 && cell_r >= 0 && cell_c < stencil.grid_range.c &&
                     cell_r < stencil.grid_range.r) {
                     REQUIRE(old_cell.c == cell_c);

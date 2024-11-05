@@ -35,8 +35,8 @@ namespace monotile {
  *
  * ```
  * Grid::GridAccessor<sycl::access::mode::read_write> accessor(grid);
- * for (uindex_t c = 0; c < grid.get_grid_width(); c++) {
- *     for (uindex_t r = 0; r < grid.get_grid_height(); r++) {
+ * for (std::size_t c = 0; c < grid.get_grid_width(); c++) {
+ *     for (std::size_t r = 0; r < grid.get_grid_height(); r++) {
  *         accessor[c][r] = foo(c, r);
  *     }
  * }
@@ -55,9 +55,9 @@ namespace monotile {
  * \tparam word_size The word size of the memory system, in bytes. This is used to optimize the
  * kernels submitted by \ref submit_read and \ref submit_write.
  */
-template <class Cell, uindex_t word_size = 64> class Grid {
+template <class Cell, std::size_t word_size = 64> class Grid {
   private:
-    static constexpr uindex_t word_length =
+    static constexpr std::size_t word_length =
         std::lcm(sizeof(Padded<Cell>), word_size) / sizeof(Padded<Cell>);
     using IOWord = std::array<Padded<Cell>, word_length>;
 
@@ -67,7 +67,7 @@ template <class Cell, uindex_t word_size = 64> class Grid {
      *
      * May be changed in the future when other dimensions are supported.
      */
-    static constexpr uindex_t dimensions = 2;
+    static constexpr std::size_t dimensions = 2;
 
     /**
      * \brief Create a new, uninitialized grid with the given dimensions.
@@ -76,7 +76,7 @@ template <class Cell, uindex_t word_size = 64> class Grid {
      *
      * \param grid_height The height, or number of rows, of the new grid.
      */
-    Grid(uindex_t grid_width, uindex_t grid_height)
+    Grid(std::size_t grid_width, std::size_t grid_height)
         : tile_buffer(sycl::range<1>(n_cells_to_n_words(grid_width * grid_height, word_length))),
           grid_width(grid_width), grid_height(grid_height) {}
 
@@ -125,12 +125,12 @@ template <class Cell, uindex_t word_size = 64> class Grid {
     /**
      * \brief Return the width, or number of columns, of the grid.
      */
-    uindex_t get_grid_width() const { return grid_width; }
+    std::size_t get_grid_width() const { return grid_width; }
 
     /**
      * \brief Return the height, or number of rows, of the grid.
      */
-    uindex_t get_grid_height() const { return grid_height; }
+    std::size_t get_grid_height() const { return grid_height; }
 
     /**
      * \brief An accessor for the monotile grid.
@@ -149,7 +149,7 @@ template <class Cell, uindex_t word_size = 64> class Grid {
         /**
          * \brief The number of dimensions of the underlying grid.
          */
-        static constexpr uindex_t dimensions = Grid::dimensions;
+        static constexpr std::size_t dimensions = Grid::dimensions;
 
         /**
          * \brief Create a new accessor to the given grid.
@@ -170,7 +170,7 @@ template <class Cell, uindex_t word_size = 64> class Grid {
          * `accessor[i_column][i_row]`. It will return a \ref BaseSubscript object that handles
          * subsequent dimensions.
          */
-        BaseSubscript operator[](uindex_t i) { return BaseSubscript(*this, i); }
+        BaseSubscript operator[](std::size_t i) { return BaseSubscript(*this, i); }
 
         /**
          * \brief Access a cell of the grid.
@@ -181,8 +181,8 @@ template <class Cell, uindex_t word_size = 64> class Grid {
         Cell const &operator[](sycl::id<2> id)
             requires(access_mode == sycl::access::mode::read)
         {
-            uindex_t word_i = (id[0] * grid_height + id[1]) / word_length;
-            uindex_t cell_i = (id[0] * grid_height + id[1]) % word_length;
+            std::size_t word_i = (id[0] * grid_height + id[1]) / word_length;
+            std::size_t cell_i = (id[0] * grid_height + id[1]) % word_length;
             return ac[word_i][cell_i].value;
         }
 
@@ -195,14 +195,14 @@ template <class Cell, uindex_t word_size = 64> class Grid {
         Cell &operator[](sycl::id<2> id)
             requires(access_mode != sycl::access::mode::read)
         {
-            uindex_t word_i = (id[0] * grid_height + id[1]) / word_length;
-            uindex_t cell_i = (id[0] * grid_height + id[1]) % word_length;
+            std::size_t word_i = (id[0] * grid_height + id[1]) / word_length;
+            std::size_t cell_i = (id[0] * grid_height + id[1]) % word_length;
             return ac[word_i][cell_i].value;
         }
 
       private:
         accessor_t ac;
-        uindex_t grid_width, grid_height;
+        std::size_t grid_width, grid_height;
     };
 
     /**
@@ -216,8 +216,8 @@ template <class Cell, uindex_t word_size = 64> class Grid {
      * \throws std::range_error The size of the buffer does not match the grid.
      */
     void copy_from_buffer(sycl::buffer<Cell, 2> input_buffer) {
-        uindex_t width = this->get_grid_width();
-        uindex_t height = this->get_grid_height();
+        std::size_t width = this->get_grid_width();
+        std::size_t height = this->get_grid_height();
 
         if (input_buffer.get_range() != sycl::range<2>(width, height)) {
             throw std::range_error("The target buffer has not the same size as the grid");
@@ -225,8 +225,8 @@ template <class Cell, uindex_t word_size = 64> class Grid {
 
         sycl::host_accessor in_ac(input_buffer, sycl::read_only);
         GridAccessor<sycl::access::mode::read_write> tile_ac(*this);
-        for (uindex_t c = 0; c < width; c++) {
-            for (uindex_t r = 0; r < height; r++) {
+        for (std::size_t c = 0; c < width; c++) {
+            for (std::size_t r = 0; r < height; r++) {
                 tile_ac[c][r] = in_ac[c][r];
             }
         }
@@ -242,8 +242,8 @@ template <class Cell, uindex_t word_size = 64> class Grid {
      * \throws std::range_error The size of the buffer does not match the grid.
      */
     void copy_to_buffer(sycl::buffer<Cell, 2> output_buffer) {
-        uindex_t width = this->get_grid_width();
-        uindex_t height = this->get_grid_height();
+        std::size_t width = this->get_grid_width();
+        std::size_t height = this->get_grid_height();
 
         if (output_buffer.get_range() != sycl::range<2>(width, height)) {
             throw std::range_error("The target buffer has not the same size as the grid");
@@ -251,8 +251,8 @@ template <class Cell, uindex_t word_size = 64> class Grid {
 
         GridAccessor<sycl::access::mode::read> in_ac(*this);
         sycl::host_accessor out_ac(output_buffer, sycl::write_only);
-        for (uindex_t c = 0; c < width; c++) {
-            for (uindex_t r = 0; r < height; r++) {
+        for (std::size_t c = 0; c < width; c++) {
+            for (std::size_t r = 0; r < height; r++) {
                 out_ac[c][r] = in_ac[c][r];
             }
         }
@@ -277,14 +277,14 @@ template <class Cell, uindex_t word_size = 64> class Grid {
     template <typename in_pipe> sycl::event submit_read(sycl::queue queue) {
         return queue.submit([&](sycl::handler &cgh) {
             sycl::accessor ac(tile_buffer, cgh, sycl::read_only);
-            uindex_t n_cells = grid_width * grid_height;
+            std::size_t n_cells = grid_width * grid_height;
 
             cgh.single_task([=]() {
                 IOWord cache;
 
-                uindex_t word_i = 0;
-                uindex_t cell_i = word_length;
-                for (uindex_t i = 0; i < n_cells; i++) {
+                std::size_t word_i = 0;
+                std::size_t cell_i = word_length;
+                for (std::size_t i = 0; i < n_cells; i++) {
                     if (cell_i == word_length) {
                         cache = ac[word_i];
                         word_i++;
@@ -317,14 +317,14 @@ template <class Cell, uindex_t word_size = 64> class Grid {
     template <typename out_pipe> sycl::event submit_write(sycl::queue queue) {
         return queue.submit([&](sycl::handler &cgh) {
             sycl::accessor ac(tile_buffer, cgh, sycl::write_only);
-            uindex_t n_cells = grid_width * grid_height;
+            std::size_t n_cells = grid_width * grid_height;
 
             cgh.single_task([=]() {
                 IOWord cache;
 
-                uindex_t word_i = 0;
-                uindex_t cell_i = 0;
-                for (uindex_t i = 0; i < n_cells; i++) {
+                std::size_t word_i = 0;
+                std::size_t cell_i = 0;
+                for (std::size_t i = 0; i < n_cells; i++) {
                     cache[cell_i].value = out_pipe::read();
                     cell_i++;
                     if (cell_i == word_length || i == n_cells - 1) {
@@ -339,7 +339,7 @@ template <class Cell, uindex_t word_size = 64> class Grid {
 
   private:
     sycl::buffer<IOWord, 1> tile_buffer;
-    uindex_t grid_width, grid_height;
+    std::size_t grid_width, grid_height;
 };
 } // namespace monotile
 } // namespace stencil
