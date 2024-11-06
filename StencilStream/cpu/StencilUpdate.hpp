@@ -205,7 +205,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
                         if (id[0] + rel_c >= F::stencil_radius &&
                             id[1] + rel_r >= F::stencil_radius &&
                             id[0] + rel_c < grid_width + F::stencil_radius &&
-                            id[1] + rel_r < grid_width + F::stencil_radius) {
+                            id[1] + rel_r < grid_height + F::stencil_radius) {
                             cell = source_ac[id[0] + rel_c - F::stencil_radius]
                                             [id[1] + rel_r - F::stencil_radius];
                         } else {

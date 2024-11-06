@@ -229,6 +229,10 @@ TEST_CASE("tiling::StencilUpdate", "[tiling::StencilUpdate]") {
                                                              iters_per_pass);
             test_stencil_update<GridImpl, StencilUpdateImpl>(grid_width, grid_height, 0,
                                                              iters_per_pass + 1);
+            test_stencil_update<GridImpl, StencilUpdateImpl>(grid_width - 1, grid_height, 0,
+                                                             iters_per_pass + 1);
+            test_stencil_update<GridImpl, StencilUpdateImpl>(grid_width, grid_height - 1, 0,
+                                                             iters_per_pass + 1);
         }
     }
 }
