@@ -178,7 +178,7 @@ class StencilUpdateKernel {
 
         bool all_pes_enabled = target_i_iteration - i_iteration > iters_per_pass;
         uindex_pes_t n_iterations = target_i_iteration - i_iteration;
-        uindex_step_t n_steps = calc_n_iterations(grid_width, grid_height);
+        uindex_step_t n_steps = calc_n_steps(grid_width, grid_height);
         for (uindex_step_t i = 0; i < n_steps; i++) {
             Cell carry;
             if (i < grid_width * grid_height) {
