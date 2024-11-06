@@ -29,7 +29,7 @@ class RenderResolver {
 
         static MaterialCell halo() { return MaterialCell{Cell::halo()}; }
 
-        static MaterialCell from_parameters(Parameters const &parameters, uindex_t material_index) {
+        static MaterialCell from_parameters(Parameters const &parameters, size_t material_index) {
             // No computations needed here, since no material information is stored in the cells.
             return MaterialCell{Cell::halo()};
         }
@@ -40,7 +40,7 @@ class RenderResolver {
         float x = parameters.grid_range()[0] / 2;
 
         float radius = 0.0;
-        for (uindex_t i = 0; i < max_n_rings + 1; i++) {
+        for (size_t i = 0; i < max_n_rings + 1; i++) {
             if (i < parameters.rings.size()) {
                 Parameters::RingParameter const &ring = parameters.rings[i];
                 radius += ring.width;
@@ -49,14 +49,14 @@ class RenderResolver {
                 materials[i] = CoefMaterial::from_relative_material(ring.material, parameters.dx,
                                                                     parameters.dt());
             } else {
-                distance_bounds[i] = std::numeric_limits<index_t>::max();
+                distance_bounds[i] = std::numeric_limits<float>::infinity();
                 materials[i] = CoefMaterial::perfect_metal();
             }
         }
     }
 
     CoefMaterial get_material_coefficients(Stencil<MaterialCell, 1, float> const &stencil,
-                                           index_t distance_score) const {
+                                           float distance_score) const {
 #pragma unroll
         for (uindex_ring_t i = 0; i < max_n_rings + 1; i++) {
             if (distance_score <= distance_bounds[i]) {
@@ -67,6 +67,6 @@ class RenderResolver {
     }
 
   private:
-    index_t distance_bounds[max_n_rings + 1];
+    float distance_bounds[max_n_rings + 1];
     CoefMaterial materials[max_n_rings + 1];
 };

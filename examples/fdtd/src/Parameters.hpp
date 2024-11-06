@@ -67,7 +67,6 @@ struct Parameters {
             }
 
             std::string arg = std::string(optarg);
-            index_t first_comma, second_comma;
 
             switch (c) {
             case 'c':
@@ -102,19 +101,6 @@ struct Parameters {
             exit(1);
         }
         return object[key].get<float>();
-    }
-
-    static index_t get_checked_int(json &object, std::string key) {
-        check_existance(object, key);
-        if (!object[key].is_number()) {
-            std::cerr << "Field '" << key << "' has to be an integer, but is a "
-                      << object[key].type_name() << "!" << std::endl;
-            exit(1);
-        }
-        if (object[key].is_number_float()) {
-            std::cerr << "Field '" << key << "' has to be an integer, but is a float!" << std::endl;
-        }
-        return object[key].get<index_t>();
     }
 
     static json &get_checked_object(json &object, std::string key) {
@@ -235,17 +221,17 @@ struct Parameters {
 
     float t_0() const { return t_0_factor * tau; }
 
-    uindex_t source_c() const { return uindex_t(float(grid_range()[0] / 2) + source_x / dx); }
+    size_t source_c() const { return size_t(float(grid_range()[0] / 2) + source_x / dx); }
 
-    uindex_t source_r() const { return uindex_t(float(grid_range()[0] / 2) + source_y / dx); }
+    size_t source_r() const { return size_t(float(grid_range()[0] / 2) + source_y / dx); }
 
     float dt() const { return (dx / float(c0 * sqrt_2)) * 0.99; }
 
-    uindex_t n_timesteps() const { return uindex_t(std::ceil(t_max() / dt())); }
+    size_t n_timesteps() const { return size_t(std::ceil(t_max() / dt())); }
 
-    std::optional<uindex_t> n_snap_timesteps() const {
+    std::optional<size_t> n_snap_timesteps() const {
         if (t_snap_factor.has_value()) {
-            return uindex_t(std::ceil((*t_snap_factor * tau) / dt()));
+            return size_t(std::ceil((*t_snap_factor * tau) / dt()));
         } else {
             return std::nullopt;
         }
@@ -259,8 +245,8 @@ struct Parameters {
         for (auto ring : rings) {
             outer_radius += ring.width;
         }
-        uindex_t width = uindex_t(std::ceil((2 * outer_radius / dx) + 2));
-        uindex_t height = width;
+        size_t width = size_t(std::ceil((2 * outer_radius / dx) + 2));
+        size_t height = width;
         return cl::sycl::range<2>(width, height);
     }
 
@@ -286,7 +272,7 @@ struct Parameters {
 
         std::cout << "# Cavity" << std::endl;
         float inner_radius = 0.0;
-        for (uindex_t i = 0; i < rings.size(); i++) {
+        for (size_t i = 0; i < rings.size(); i++) {
             std::cout << "## Ring No. " << i << std::endl;
             std::cout << "distance range    = [" << inner_radius << ", "
                       << inner_radius + rings[i].width << "]" << std::endl;
