@@ -62,30 +62,22 @@ struct HotspotKernel : public BaseTransitionFunction {
     float Rx_1, Ry_1, Rz_1, Cap_1;
 
     Cell operator()(Stencil<HotspotCell, 1> const &temp) const {
-        using StencilID = typename Stencil<HotspotCell, 1>::StencilID;
+        FLOAT power = temp[0][0][1];
+        FLOAT old = temp[0][0][0];
+        FLOAT left = temp[-1][0][0];
+        FLOAT right = temp[1][0][0];
+        FLOAT top = temp[0][-1][0];
+        FLOAT bottom = temp[0][1][0];
 
-        ID idx = temp.id;
-        index_t c = idx.c;
-        index_t r = idx.r;
-        uindex_t width = temp.grid_range.c;
-        uindex_t height = temp.grid_range.r;
-
-        FLOAT power = temp[StencilID(0, 0)][1];
-        FLOAT old = temp[StencilID(0, 0)][0];
-        FLOAT left = temp[StencilID(-1, 0)][0];
-        FLOAT right = temp[StencilID(1, 0)][0];
-        FLOAT top = temp[StencilID(0, -1)][0];
-        FLOAT bottom = temp[StencilID(0, 1)][0];
-
-        if (c == 0) {
+        if (temp.id[0] == 0) {
             left = old;
-        } else if (c == width - 1) {
+        } else if (temp.id[0] == temp.grid_range[0] - 1) {
             right = old;
         }
 
-        if (r == 0) {
+        if (temp.id[1] == 0) {
             top = old;
-        } else if (r == height - 1) {
+        } else if (temp.id[1] == temp.grid_range[1] - 1) {
             bottom = old;
         }
 
@@ -99,17 +91,17 @@ struct HotspotKernel : public BaseTransitionFunction {
 };
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
-const uindex_t max_grid_width = 1024;
-const uindex_t max_grid_height = 1024;
-const uindex_t n_processing_elements = 280;
+const size_t max_grid_width = 1024;
+const size_t max_grid_height = 1024;
+const size_t n_processing_elements = 280;
 using StencilUpdate =
     monotile::StencilUpdate<HotspotKernel, n_processing_elements, max_grid_width, max_grid_height>;
 using Grid = monotile::Grid<HotspotCell>;
 
 #elif defined(STENCILSTREAM_BACKEND_TILING)
-const uindex_t tile_width = 1 << 16;
-const uindex_t tile_height = 1024;
-const uindex_t n_processing_elements = 224;
+const size_t tile_width = 1 << 16;
+const size_t tile_height = 1024;
+const size_t n_processing_elements = 224;
 using StencilUpdate =
     tiling::StencilUpdate<HotspotKernel, n_processing_elements, tile_width, tile_height>;
 using Grid = StencilUpdate::GridImpl;
@@ -132,13 +124,11 @@ void write_output(Grid vect, string file, bool binary) {
         throw std::runtime_error("The file was not opened\n");
     }
 
-    uindex_t n_columns = vect.get_grid_width();
-    uindex_t n_rows = vect.get_grid_height();
     Grid::GridAccessor<access::mode::read> vect_ac(vect);
 
     int i = 0;
-    for (index_t r = 0; r < n_rows; r++) {
-        for (index_t c = 0; c < n_columns; c++) {
+    for (size_t r = 0; r < vect.get_grid_height(); r++) {
+        for (size_t c = 0; c < vect.get_grid_width(); c++) {
             if (binary) {
                 out.write((char *)&vect_ac[c][r][0], sizeof(float));
             } else {
@@ -151,7 +141,7 @@ void write_output(Grid vect, string file, bool binary) {
     out.close();
 }
 
-Grid read_input(string temp_file, string power_file, uindex_t n_columns, uindex_t n_rows,
+Grid read_input(string temp_file, string power_file, size_t n_columns, size_t n_rows,
                 bool binary) {
     fstream temp, power;
     if (binary) {
@@ -166,8 +156,8 @@ Grid read_input(string temp_file, string power_file, uindex_t n_columns, uindex_
     {
         Grid::GridAccessor<access::mode::read_write> vect_ac(vect);
 
-        for (index_t r = 0; r < n_rows; r++) {
-            for (index_t c = 0; c < n_columns; c++) {
+        for (size_t r = 0; r < n_rows; r++) {
+            for (size_t c = 0; c < n_columns; c++) {
                 FLOAT tmp_temp, tmp_power;
                 if (binary) {
                     temp.read((char *)&tmp_temp, sizeof(float));
@@ -217,7 +207,7 @@ auto exception_handler = [](sycl::exception_list exceptions) {
 };
 
 int main(int argc, char **argv) {
-    uindex_t n_rows, n_columns, sim_time;
+    size_t n_rows, n_columns, sim_time;
     bool benchmark_mode = false;
 
     /* check validity of inputs	*/
