@@ -80,7 +80,7 @@ class StencilUpdateKernel {
         return n_processing_elements * TransFunc::stencil_radius * (grid_height + 1);
     }
 
-    static constexpr std::size_t calc_n_iterations(std::size_t grid_width,
+    static constexpr std::size_t calc_n_steps(std::size_t grid_width,
                                                    std::size_t grid_height) {
         return grid_width * grid_height + calc_pipeline_latency(grid_height);
     }
@@ -103,11 +103,11 @@ class StencilUpdateKernel {
     using index_pes_t = ac_int<bits_pes + 1, true>;
     using uindex_pes_t = ac_int<bits_pes, false>;
 
-    static constexpr unsigned long bits_n_iterations =
-        std::bit_width(calc_n_iterations(max_grid_width, max_grid_height));
-    using index_n_iterations_t = ac_int<bits_n_iterations + 1, true>;
-    using uindex_n_iterations_t = ac_int<bits_n_iterations, false>;
-
+    static constexpr unsigned long bits_n_steps =
+        std::bit_width(calc_n_steps(max_grid_width, max_grid_height));
+    using index_step_t = ac_int<bits_n_steps + 1, true>;
+    using uindex_step_t = ac_int<bits_n_steps, false>;
+    
   public:
     /**
      * \brief Create and configure the execution kernel.
@@ -137,6 +137,7 @@ class StencilUpdateKernel {
           grid_width(grid_width), grid_height(grid_height), halo_value(halo_value),
           tdv_kernel_argument(tdv_kernel_argument) {
         assert(grid_height <= max_grid_height);
+        assert(grid_width <= max_grid_width);
     }
 
     /**
@@ -175,10 +176,12 @@ class StencilUpdateKernel {
         [[intel::fpga_register]] Cell stencil_buffer[n_processing_elements][stencil_diameter]
                                                     [stencil_diameter];
 
-        uindex_n_iterations_t n_iterations = calc_n_iterations(grid_width, grid_height);
-        for (uindex_n_iterations_t i = 0; i < n_iterations; i++) {
+        bool all_pes_enabled = target_i_iteration - i_iteration > iters_per_pass;
+        uindex_pes_t n_iterations = target_i_iteration - i_iteration;
+        uindex_step_t n_steps = calc_n_iterations(grid_width, grid_height);
+        for (uindex_step_t i = 0; i < n_steps; i++) {
             Cell carry;
-            if (i < uindex_n_iterations_t(grid_width * grid_height)) {
+            if (i < grid_width * grid_height) {
                 carry = in_pipe::read();
             } else {
                 carry = halo_value;
@@ -219,17 +222,15 @@ class StencilUpdateKernel {
                     }
                 }
 
-                std::size_t pe_iteration =
-                    (i_iteration + i_processing_element / TransFunc::n_subiterations).to_uint();
-                std::size_t pe_subiteration =
-                    (i_processing_element % TransFunc::n_subiterations).to_uint();
+                uindex_1d_t pe_iteration = i_processing_element / TransFunc::n_subiterations;
 
-                if (pe_iteration < target_i_iteration) {
-                    TDV tdv = tdv_local_state.get_time_dependent_value(
-                        (i_processing_element / TransFunc::n_subiterations).to_uint());
+                if (all_pes_enabled || pe_iteration < n_iterations) {
+                    TDV tdv = tdv_local_state.get_time_dependent_value(pe_iteration);
                     StencilImpl stencil(
                         sycl::id<2>(c[i_processing_element], r[i_processing_element]),
-                        sycl::range<2>(grid_width, grid_height), pe_iteration, pe_subiteration,
+                        sycl::range<2>(grid_width, grid_height),
+                        i_iteration + std::size_t(pe_iteration),
+                        i_processing_element % TransFunc::n_subiterations,
                         tdv);
 
                     bool h_halo_mask[stencil_diameter];
@@ -280,13 +281,13 @@ class StencilUpdateKernel {
                 }
 
                 r[i_processing_element] += 1;
-                if (r[i_processing_element] == index_1d_t(grid_height)) {
+                if (r[i_processing_element] == grid_height) {
                     r[i_processing_element] = 0;
                     c[i_processing_element] += 1;
                 }
             }
 
-            if (i >= uindex_n_iterations_t(calc_pipeline_latency(grid_height))) {
+            if (i >= uindex_step_t(calc_pipeline_latency(grid_height))) {
                 out_pipe::write(carry);
             }
         }
@@ -296,8 +297,8 @@ class StencilUpdateKernel {
     TransFunc trans_func;
     std::size_t i_iteration;
     std::size_t target_i_iteration;
-    std::size_t grid_width;
-    std::size_t grid_height;
+    uindex_1d_t grid_width;
+    uindex_1d_t grid_height;
     Cell halo_value;
     TDVKernelArgument tdv_kernel_argument;
 };
