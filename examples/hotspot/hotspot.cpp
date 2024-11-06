@@ -141,8 +141,7 @@ void write_output(Grid vect, string file, bool binary) {
     out.close();
 }
 
-Grid read_input(string temp_file, string power_file, size_t n_columns, size_t n_rows,
-                bool binary) {
+Grid read_input(string temp_file, string power_file, size_t n_columns, size_t n_rows, bool binary) {
     fstream temp, power;
     if (binary) {
         temp = fstream(temp_file, temp.in | temp.binary);

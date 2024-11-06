@@ -80,8 +80,7 @@ class StencilUpdateKernel {
         return n_processing_elements * TransFunc::stencil_radius * (grid_height + 1);
     }
 
-    static constexpr std::size_t calc_n_steps(std::size_t grid_width,
-                                                   std::size_t grid_height) {
+    static constexpr std::size_t calc_n_steps(std::size_t grid_width, std::size_t grid_height) {
         return grid_width * grid_height + calc_pipeline_latency(grid_height);
     }
 
@@ -107,7 +106,7 @@ class StencilUpdateKernel {
         std::bit_width(calc_n_steps(max_grid_width, max_grid_height));
     using index_step_t = ac_int<bits_n_steps + 1, true>;
     using uindex_step_t = ac_int<bits_n_steps, false>;
-    
+
   public:
     /**
      * \brief Create and configure the execution kernel.
@@ -230,8 +229,7 @@ class StencilUpdateKernel {
                         sycl::id<2>(c[i_processing_element], r[i_processing_element]),
                         sycl::range<2>(grid_width, grid_height),
                         i_iteration + std::size_t(pe_iteration),
-                        i_processing_element % TransFunc::n_subiterations,
-                        tdv);
+                        i_processing_element % TransFunc::n_subiterations, tdv);
 
                     bool h_halo_mask[stencil_diameter];
                     bool v_halo_mask[stencil_diameter];

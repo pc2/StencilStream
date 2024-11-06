@@ -61,7 +61,8 @@ struct ThermalConvectionCell {
 #define D_YA(FIELD) (stencil[0][1].FIELD - stencil[0][0].FIELD)
 #define D_XI(FIELD) (stencil[1][1].FIELD - stencil[0][1].FIELD)
 #define D_YI(FIELD) (stencil[1][1].FIELD - stencil[1][0].FIELD)
-#define AV(FIELD) ((stencil[0][0].FIELD + stencil[1][0].FIELD + stencil[0][1].FIELD + stencil[1][1].FIELD) * 0.25)
+#define AV(FIELD)                                                                                  \
+    ((stencil[0][0].FIELD + stencil[1][0].FIELD + stencil[0][1].FIELD + stencil[1][1].FIELD) * 0.25)
 #define AV_YI(FIELD) ((stencil[1][0].FIELD + stencil[1][1].FIELD) * 0.5)
 
 class PseudoTransientKernel : public BaseTransitionFunction {
@@ -127,12 +128,11 @@ class PseudoTransientKernel : public BaseTransitionFunction {
                     new_cell.Vx = ALL(Vx) + new_cell.dVxd_tau * delta_tau_iter;
                 }
                 if (c < nx - 1 && r < (ny + 1) - 1) {
-                    double Ry =
-                        1.0 / rho *
-                        ((stencil[0][0].tau_yy - stencil[0][-1].tau_yy) / dy +
-                         (stencil[0][-1].sigma_xy - stencil[-1][-1].sigma_xy) / dx -
-                         (stencil[0][0].Pt - stencil[0][-1].Pt) / dy +
-                         roh0_g_alpha * ((stencil[0][-1].T + stencil[0][0].T) * 0.5));
+                    double Ry = 1.0 / rho *
+                                ((stencil[0][0].tau_yy - stencil[0][-1].tau_yy) / dy +
+                                 (stencil[0][-1].sigma_xy - stencil[-1][-1].sigma_xy) / dx -
+                                 (stencil[0][0].Pt - stencil[0][-1].Pt) / dy +
+                                 roh0_g_alpha * ((stencil[0][-1].T + stencil[0][0].T) * 0.5));
                     new_cell.dVyd_tau = dampY * ALL(dVyd_tau) + Ry * delta_tau_iter;
                     new_cell.Vy = ALL(Vy) + new_cell.dVyd_tau * delta_tau_iter;
                 }
@@ -203,20 +203,16 @@ class ThermalSolverKernel : public BaseTransitionFunction {
                 // dT_dt from the (-1, -1) cell.
                 double dT_dt = -((qTx_top - qTx_top_left) / dx + (qTy_left - qTy_top_left) / dy);
                 if (stencil[0][0].Vx > 0) {
-                    dT_dt -=
-                        stencil[0][0].Vx * (stencil[0][0].T - stencil[-1][0].T) / dx;
+                    dT_dt -= stencil[0][0].Vx * (stencil[0][0].T - stencil[-1][0].T) / dx;
                 }
                 if (stencil[1][0].Vx < 0) {
-                    dT_dt -=
-                        stencil[1][0].Vx * (stencil[1][0].T - stencil[0][0].T) / dx;
+                    dT_dt -= stencil[1][0].Vx * (stencil[1][0].T - stencil[0][0].T) / dx;
                 }
                 if (stencil[0][0].Vy > 0) {
-                    dT_dt -=
-                        stencil[0][0].Vy * (stencil[0][0].T - stencil[0][-1].T) / dy;
+                    dT_dt -= stencil[0][0].Vy * (stencil[0][0].T - stencil[0][-1].T) / dy;
                 }
                 if (stencil[0][1].Vy < 0) {
-                    dT_dt -=
-                        stencil[0][1].Vy * (stencil[0][1].T - stencil[0][0].T) / dy;
+                    dT_dt -= stencil[0][1].Vy * (stencil[0][1].T - stencil[0][0].T) / dy;
                 }
 
                 // compute_qT!(...)
@@ -312,13 +308,13 @@ int main(int argc, char **argv) {
     // Numerics
     size_t res = experiment.at("res");
     size_t nx = res * lx - 1;
-    size_t ny = res * ly - 1;                   // numerical grid resolutions
-    size_t iterMax = experiment.at("iterMax");  // maximal number of pseudo-transient iterations
-    size_t nt = experiment.at("nt");            // total number of timesteps
-    size_t nout = experiment.at("nout");        // frequency of plotting
-    size_t nerr = experiment.at("nerr");        // frequency of error checking
-    double epsilon = experiment.at("epsilon");  // nonlinear absolute tolerence
-    double dmp = experiment.at("dmp");          // damping paramter
+    size_t ny = res * ly - 1;                  // numerical grid resolutions
+    size_t iterMax = experiment.at("iterMax"); // maximal number of pseudo-transient iterations
+    size_t nt = experiment.at("nt");           // total number of timesteps
+    size_t nout = experiment.at("nout");       // frequency of plotting
+    size_t nerr = experiment.at("nerr");       // frequency of error checking
+    double epsilon = experiment.at("epsilon"); // nonlinear absolute tolerence
+    double dmp = experiment.at("dmp");         // damping paramter
 
     // Derived numerics
     double dx = lx / (nx - 1);
