@@ -61,7 +61,7 @@ TEST_CASE("monotile::Grid::submit_read", "[monotile::Grid]") {
     sycl::queue queue;
 
     using in_pipe = sycl::pipe<class monotile_grid_submit_read_test_id, sycl::id<2>>;
-    in_grid.template submit_read<in_pipe>(queue);
+    in_grid.template submit_read<in_pipe, tile_width * tile_height>(queue);
 
     buffer<sycl::id<2>, 2> out_buffer = range<2>(tile_width, tile_height);
     queue.submit([&](handler &cgh) {
@@ -99,7 +99,7 @@ TEST_CASE("monotile::Grid::submit_write", "[monotile::Grid]") {
     });
 
     TestGrid grid(tile_width, tile_height);
-    grid.template submit_write<out_pipe>(queue);
+    grid.template submit_write<out_pipe, tile_width * tile_height>(queue);
 
     TestGrid::GridAccessor<access::mode::read_write> out_ac(grid);
     for (std::size_t c = 0; c < tile_width; c++) {

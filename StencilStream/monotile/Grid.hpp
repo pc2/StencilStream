@@ -274,24 +274,31 @@ template <class Cell, std::size_t word_size = 64> class Grid {
      *
      * \returns The event object of the submitted kernel.
      */
-    template <typename in_pipe> sycl::event submit_read(sycl::queue queue) {
+    template <typename in_pipe, size_t max_n_cells = std::numeric_limits<size_t>::max()>
+    sycl::event submit_read(sycl::queue queue) {
+        using uindex_cell_t = ac_int<std::bit_width(max_n_cells), false>;
+        using uindex_word_t = ac_int<std::bit_width(max_n_cells / word_length + 1), false>;
+        using uindex_subword_t = ac_int<std::bit_width(word_length), false>;
+
+        assert(grid_width * grid_height < max_n_cells);
+        uindex_cell_t n_cells = grid_width * grid_height;
+
         return queue.submit([&](sycl::handler &cgh) {
             sycl::accessor ac(tile_buffer, cgh, sycl::read_only);
-            std::size_t n_cells = grid_width * grid_height;
 
             cgh.single_task([=]() {
                 IOWord cache;
 
-                std::size_t word_i = 0;
-                std::size_t cell_i = word_length;
-                for (std::size_t i = 0; i < n_cells; i++) {
-                    if (cell_i == word_length) {
-                        cache = ac[word_i];
+                uindex_word_t word_i = 0;
+                uindex_subword_t subword_i = word_length;
+                for (uindex_cell_t i = 0; i < n_cells; i++) {
+                    if (subword_i == uindex_subword_t(word_length)) {
+                        cache = ac[size_t(word_i)];
                         word_i++;
-                        cell_i = 0;
+                        subword_i = 0;
                     }
-                    in_pipe::write(cache[cell_i].value);
-                    cell_i++;
+                    in_pipe::write(cache[subword_i].value);
+                    subword_i++;
                 }
             });
         });
@@ -314,22 +321,29 @@ template <class Cell, std::size_t word_size = 64> class Grid {
      *
      * \returns The event object of the submitted kernel.
      */
-    template <typename out_pipe> sycl::event submit_write(sycl::queue queue) {
+    template <typename out_pipe, size_t max_n_cells = std::numeric_limits<size_t>::max()>
+    sycl::event submit_write(sycl::queue queue) {
+        using uindex_cell_t = ac_int<std::bit_width(max_n_cells), false>;
+        using uindex_word_t = ac_int<std::bit_width(max_n_cells / word_length + 1), false>;
+        using uindex_subword_t = ac_int<std::bit_width(word_length), false>;
+
+        assert(grid_width * grid_height < max_n_cells);
+        uindex_cell_t n_cells = grid_width * grid_height;
+
         return queue.submit([&](sycl::handler &cgh) {
             sycl::accessor ac(tile_buffer, cgh, sycl::write_only);
-            std::size_t n_cells = grid_width * grid_height;
 
             cgh.single_task([=]() {
                 IOWord cache;
 
-                std::size_t word_i = 0;
-                std::size_t cell_i = 0;
-                for (std::size_t i = 0; i < n_cells; i++) {
-                    cache[cell_i].value = out_pipe::read();
-                    cell_i++;
-                    if (cell_i == word_length || i == n_cells - 1) {
-                        ac[word_i] = cache;
-                        cell_i = 0;
+                uindex_word_t word_i = 0;
+                uindex_subword_t subword_i = 0;
+                for (uindex_cell_t i = 0; i < n_cells; i++) {
+                    cache[subword_i].value = out_pipe::read();
+                    subword_i++;
+                    if (subword_i == uindex_subword_t(word_length) || i == n_cells - 1) {
+                        ac[size_t(word_i)] = cache;
+                        subword_i = 0;
                         word_i++;
                     }
                 }
