@@ -280,7 +280,7 @@ template <class Cell, std::size_t word_size = 64> class Grid {
         using uindex_word_t = ac_int<std::bit_width(max_n_cells / word_length + 1), false>;
         using uindex_subword_t = ac_int<std::bit_width(word_length), false>;
 
-        assert(grid_width * grid_height < max_n_cells);
+        assert(grid_width * grid_height <= max_n_cells);
         uindex_cell_t n_cells = grid_width * grid_height;
 
         return queue.submit([&](sycl::handler &cgh) {
@@ -327,7 +327,7 @@ template <class Cell, std::size_t word_size = 64> class Grid {
         using uindex_word_t = ac_int<std::bit_width(max_n_cells / word_length + 1), false>;
         using uindex_subword_t = ac_int<std::bit_width(word_length), false>;
 
-        assert(grid_width * grid_height < max_n_cells);
+        assert(grid_width * grid_height <= max_n_cells);
         uindex_cell_t n_cells = grid_width * grid_height;
 
         return queue.submit([&](sycl::handler &cgh) {
