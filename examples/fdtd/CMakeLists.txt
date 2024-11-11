@@ -60,7 +60,7 @@ foreach(MATERIAL coef lut render)
                 target_link_libraries(${EXECUTABLE} PUBLIC StencilStream_CPU)
             endif()
 
-            if(${EXECUTOR} MATCHES "tiling")
+            if(${EXECUTOR} MATCHES "(tiling)|(mono)")
                 target_link_options(${EXECUTABLE} PUBLIC -Xsclock=300MHz)
             endif()
 
