@@ -49,12 +49,12 @@ using TDVStrategy = tdv::single_pass::PrecomputeOnHostStrategy;
     #include <StencilStream/monotile/StencilUpdate.hpp>
 
 using Grid = monotile::Grid<CellImpl>;
-using StencilUpdate = monotile::StencilUpdate<KernelImpl, n_processing_elements, tile_width,
-                                              tile_height, TDVStrategy>;
+using StencilUpdate = monotile::StencilUpdate<KernelImpl, n_processing_elements, tile_height, tile_width,
+                                              TDVStrategy>;
 #elif defined(STENCILSTREAM_BACKEND_TILING)
     #include <StencilStream/tiling/StencilUpdate.hpp>
 using StencilUpdate =
-    tiling::StencilUpdate<KernelImpl, n_processing_elements, tile_width, tile_height, TDVStrategy>;
+    tiling::StencilUpdate<KernelImpl, n_processing_elements, tile_height, tile_width, TDVStrategy>;
 using Grid = StencilUpdate::GridImpl;
 #elif defined(STENCILSTREAM_BACKEND_CPU)
     #include <StencilStream/cpu/StencilUpdate.hpp>
@@ -109,16 +109,16 @@ void save_frame(Grid frame_buffer, size_t iteration_index, CellField field,
         for (size_t c = 0; c < parameters.grid_range()[0]; c++) {
             switch (field) {
             case CellField::EX:
-                out << frame[c][r].cell.ex;
+                out << frame[r][c].cell.ex;
                 break;
             case CellField::EY:
-                out << frame[c][r].cell.ey;
+                out << frame[r][c].cell.ey;
                 break;
             case CellField::HZ:
-                out << frame[c][r].cell.hz;
+                out << frame[r][c].cell.hz;
                 break;
             case CellField::HZ_SUM:
-                out << frame[c][r].cell.hz_sum;
+                out << frame[r][c].cell.hz_sum;
                 break;
             default:
                 break;
@@ -151,22 +151,22 @@ int main(int argc, char **argv) {
     Grid grid(parameters.grid_range());
     {
         Grid::GridAccessor<access::mode::read_write> init_ac(grid);
-        for (size_t c = 0; c < parameters.grid_range()[0]; c++) {
-            for (size_t r = 0; r < parameters.grid_range()[1]; r++) {
-                float a = float(c) - float(parameters.grid_range()[0]) / 2.0;
-                float b = float(r) - float(parameters.grid_range()[1]) / 2.0;
+        for (size_t r = 0; r < parameters.grid_range()[1]; r++) {
+            for (size_t c = 0; c < parameters.grid_range()[0]; c++) {
+                float a = float(r) - float(parameters.grid_range()[0]) / 2.0;
+                float b = float(c) - float(parameters.grid_range()[1]) / 2.0;
                 float distance = parameters.dx * sqrt(a * a + b * b);
 
                 float radius = 0.0;
                 for (size_t i = 0; i <= parameters.rings.size(); i++) {
                     if (i < parameters.rings.size()) {
-                        radius += parameters.rings[i].width;
+                        radius += parameters.rings[i].radius;
                         if (distance < radius) {
-                            init_ac[c][r] = CellImpl::from_parameters(parameters, i);
+                            init_ac[r][c] = CellImpl::from_parameters(parameters, i);
                             break;
                         }
                     } else {
-                        init_ac[c][r] = CellImpl::from_parameters(parameters, i);
+                        init_ac[r][c] = CellImpl::from_parameters(parameters, i);
                     }
                 }
             }
@@ -180,8 +180,11 @@ int main(int argc, char **argv) {
 #endif
 
     StencilUpdate simulation({
-        .transition_function = KernelImpl(parameters, mat_resolver), .halo_value = CellImpl::halo(),
-        .iteration_offset = 0, .n_iterations = parameters.n_timesteps(), .device = device,
+        .transition_function = KernelImpl(parameters, mat_resolver),
+        .halo_value = CellImpl::halo(),
+        .iteration_offset = 0,
+        .n_iterations = parameters.n_timesteps(),
+        .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
 #if !defined(STENCILSTREAM_BACKEND_CPU)
             .profiling = true, // enable additional profiling for FPGA targets

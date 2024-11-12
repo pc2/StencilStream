@@ -37,15 +37,15 @@ class RenderResolver {
 
     RenderResolver(Parameters const &parameters) : distance_bounds(), materials() {
         float dx = parameters.dx;
-        float x = parameters.grid_range()[0] / 2;
+        float center_r = parameters.grid_range()[0] / 2;
 
         float radius = 0.0;
         for (size_t i = 0; i < max_n_rings + 1; i++) {
             if (i < parameters.rings.size()) {
                 Parameters::RingParameter const &ring = parameters.rings[i];
-                radius += ring.width;
+                radius += ring.radius;
 
-                distance_bounds[i] = (radius / dx) * (radius / dx) - 2 * x * x;
+                distance_bounds[i] = (radius / dx) * (radius / dx) - 2 * center_r * center_r;
                 materials[i] = CoefMaterial::from_relative_material(ring.material, parameters.dx,
                                                                     parameters.dt());
             } else {

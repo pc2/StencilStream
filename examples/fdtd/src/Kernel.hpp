@@ -38,20 +38,20 @@ template <typename MaterialResolver> class Kernel {
         : dt(parameters.dt()), t_0(parameters.t_0()), tau(parameters.tau),
           omega(parameters.omega()), cutoff_iteration(), detect_iteration(),
           source_radius_squared(), source_c(), source_r(), source_distance_bound(),
-          double_center_cr(), mat_resolver(mat_resolver) {
+          double_center_rc(), mat_resolver(mat_resolver) {
         cutoff_iteration = std::floor(parameters.t_cutoff() / parameters.dt());
         detect_iteration = std::floor(parameters.t_detect() / parameters.dt());
 
         source_radius_squared = parameters.source_radius / parameters.dx;
         source_radius_squared *= source_radius_squared;
 
-        source_c = parameters.source_c();
         source_r = parameters.source_r();
+        source_c = parameters.source_c();
         source_distance_bound = parameters.source_radius / parameters.dx;
         source_distance_bound = source_distance_bound * source_distance_bound;
         source_distance_bound -= source_c * source_c + source_r * source_r;
 
-        double_center_cr = parameters.grid_range()[0];
+        double_center_rc = parameters.grid_range()[0];
     }
 
     float get_time_dependent_value(size_t i_iteration) const {
@@ -64,10 +64,10 @@ template <typename MaterialResolver> class Kernel {
     Cell operator()(Stencil<Cell, 1, float> const &stencil) const {
         Cell cell = stencil[0][0];
 
-        float c = stencil.id[0];
-        float r = stencil.id[1];
-        float center_distance_score = c * (c - double_center_cr) + r * (r - double_center_cr);
-        float source_distance_score = c * (c - 2 * source_c) + r * (r - 2 * source_r);
+        float r = stencil.id[0];
+        float c = stencil.id[1];
+        float center_distance_score = r * (r - double_center_rc) + c * (c - double_center_rc);
+        float source_distance_score = r * (r - 2 * source_r) + c * (c - 2 * source_c);
 
         CoefMaterial material =
             mat_resolver.get_material_coefficients(stencil, center_distance_score);
@@ -113,8 +113,8 @@ template <typename MaterialResolver> class Kernel {
     size_t detect_iteration;
 
     float source_radius_squared;
-    float source_c, source_r, source_distance_bound;
-    float double_center_cr;
+    float source_r, source_c, source_distance_bound;
+    float double_center_rc;
 
     MaterialResolver mat_resolver;
 };

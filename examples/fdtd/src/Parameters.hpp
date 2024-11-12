@@ -191,13 +191,13 @@ struct Parameters {
     float tau;
 
     struct RingParameter {
-        float width;
+        float radius;
         RelMaterial material;
 
-        RingParameter(json &object) : width(0.0), material(RelMaterial::perfect_metal()) {
-            width = get_checked_float(object, "width");
-            if (width < 0.0) {
-                std::cerr << "Invalid config file: Cavity ring width may not be negative!"
+        RingParameter(json &object) : radius(0.0), material(RelMaterial::perfect_metal()) {
+            radius = get_checked_float(object, "radius");
+            if (radius < 0.0) {
+                std::cerr << "Invalid config file: Cavity ring radius may not be negative!"
                           << std::endl;
                 exit(1);
             }
@@ -221,9 +221,9 @@ struct Parameters {
 
     float t_0() const { return t_0_factor * tau; }
 
-    size_t source_c() const { return size_t(float(grid_range()[0] / 2) + source_x / dx); }
-
     size_t source_r() const { return size_t(float(grid_range()[0] / 2) + source_y / dx); }
+
+    size_t source_c() const { return size_t(float(grid_range()[0] / 2) + source_x / dx); }
 
     float dt() const { return (dx / float(c0 * sqrt_2)) * 0.99; }
 
@@ -243,7 +243,7 @@ struct Parameters {
     cl::sycl::range<2> grid_range() const {
         float outer_radius = 0.0;
         for (auto ring : rings) {
-            outer_radius += ring.width;
+            outer_radius += ring.radius;
         }
         size_t width = size_t(std::ceil((2 * outer_radius / dx) + 2));
         size_t height = width;
@@ -275,8 +275,8 @@ struct Parameters {
         for (size_t i = 0; i < rings.size(); i++) {
             std::cout << "## Ring No. " << i << std::endl;
             std::cout << "distance range    = [" << inner_radius << ", "
-                      << inner_radius + rings[i].width << "]" << std::endl;
-            inner_radius += rings[i].width;
+                      << inner_radius + rings[i].radius << "]" << std::endl;
+            inner_radius += rings[i].radius;
             std::cout << "mu_r              = " << rings[i].material.mu_r << std::endl;
             std::cout << "eps_r             = " << rings[i].material.eps_r << std::endl;
             std::cout << "sigma             = " << rings[i].material.sigma << std::endl;
