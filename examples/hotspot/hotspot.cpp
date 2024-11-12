@@ -64,21 +64,21 @@ struct HotspotKernel : public BaseTransitionFunction {
     Cell operator()(Stencil<HotspotCell, 1> const &temp) const {
         FLOAT power = temp[0][0][1];
         FLOAT old = temp[0][0][0];
-        FLOAT left = temp[-1][0][0];
-        FLOAT right = temp[1][0][0];
-        FLOAT top = temp[0][-1][0];
-        FLOAT bottom = temp[0][1][0];
+        FLOAT top = temp[-1][0][0];
+        FLOAT bottom = temp[1][0][0];
+        FLOAT left = temp[0][-1][0];
+        FLOAT right = temp[0][1][0];
 
         if (temp.id[0] == 0) {
-            left = old;
+            top = old;
         } else if (temp.id[0] == temp.grid_range[0] - 1) {
-            right = old;
+            bottom = old;
         }
 
         if (temp.id[1] == 0) {
-            top = old;
+            left = old;
         } else if (temp.id[1] == temp.grid_range[1] - 1) {
-            bottom = old;
+            right = old;
         }
 
         // As in the OpenCL version of the rodinia "hotspot" benchmark.
@@ -91,19 +91,19 @@ struct HotspotKernel : public BaseTransitionFunction {
 };
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
-const size_t max_grid_width = 1024;
 const size_t max_grid_height = 1024;
+const size_t max_grid_width = 1024;
 const size_t n_processing_elements = 280;
 using StencilUpdate =
     monotile::StencilUpdate<HotspotKernel, n_processing_elements, max_grid_width, max_grid_height>;
 using Grid = monotile::Grid<HotspotCell>;
 
 #elif defined(STENCILSTREAM_BACKEND_TILING)
-const size_t tile_width = 1 << 16;
-const size_t tile_height = 1024;
+const size_t tile_height = 1 << 16;
+const size_t tile_width = 1024;
 const size_t n_processing_elements = 224;
 using StencilUpdate =
-    tiling::StencilUpdate<HotspotKernel, n_processing_elements, tile_width, tile_height>;
+    tiling::StencilUpdate<HotspotKernel, n_processing_elements, tile_height, tile_width>;
 using Grid = StencilUpdate::GridImpl;
 
 #elif defined(STENCILSTREAM_BACKEND_CPU)
@@ -130,9 +130,9 @@ void write_output(Grid vect, string file, bool binary) {
     for (size_t r = 0; r < vect.get_grid_height(); r++) {
         for (size_t c = 0; c < vect.get_grid_width(); c++) {
             if (binary) {
-                out.write((char *)&vect_ac[c][r][0], sizeof(float));
+                out.write((char *)&vect_ac[r][c][0], sizeof(float));
             } else {
-                out << i << "\t" << vect_ac[c][r][0] << std::endl;
+                out << i << "\t" << vect_ac[r][c][0] << std::endl;
             }
             i++;
         }
@@ -141,7 +141,7 @@ void write_output(Grid vect, string file, bool binary) {
     out.close();
 }
 
-Grid read_input(string temp_file, string power_file, size_t n_columns, size_t n_rows, bool binary) {
+Grid read_input(string temp_file, string power_file, size_t n_rows, size_t n_columns, bool binary) {
     fstream temp, power;
     if (binary) {
         temp = fstream(temp_file, temp.in | temp.binary);
@@ -151,7 +151,7 @@ Grid read_input(string temp_file, string power_file, size_t n_columns, size_t n_
         power = fstream(power_file, power.in);
     }
 
-    Grid vect(n_columns, n_rows);
+    Grid vect(n_rows, n_columns);
     {
         Grid::GridAccessor<access::mode::read_write> vect_ac(vect);
 
@@ -165,7 +165,7 @@ Grid read_input(string temp_file, string power_file, size_t n_columns, size_t n_
                     temp >> tmp_temp;
                     power >> tmp_power;
                 }
-                vect_ac[c][r] = HotspotCell(tmp_temp, tmp_power);
+                vect_ac[r][c] = HotspotCell(tmp_temp, tmp_power);
             }
         }
     }
@@ -220,9 +220,9 @@ int main(int argc, char **argv) {
         usage(argc, argv);
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
-    if (n_columns > max_grid_width || n_rows > max_grid_height) {
-        std::cerr << "Error: The grid may not exceed a size of " << max_grid_width << " by "
-                  << max_grid_height << " cells when using the monotile architecture." << std::endl;
+    if (n_rows > max_grid_height || n_columns > max_grid_width) {
+        std::cerr << "Error: The grid may not exceed a size of " << max_grid_height << " by "
+                  << max_grid_width << " cells when using the monotile architecture." << std::endl;
         exit(1);
     }
 #endif
@@ -235,14 +235,14 @@ int main(int argc, char **argv) {
     bool binary_io = tfile.ends_with(".bin");
     assert(!binary_io || pfile.ends_with(".bin"));
 
-    Grid grid = read_input(tfile, pfile, n_columns, n_rows, binary_io);
+    Grid grid = read_input(tfile, pfile, n_rows, n_columns, binary_io);
 
     printf("Start computing the transient temperature\n");
 
     FLOAT grid_height = chip_height / n_rows;
     FLOAT grid_width = chip_width / n_columns;
 
-    FLOAT Cap = FACTOR_CHIP * SPEC_HEAT_SI * t_chip * grid_width * grid_height;
+    FLOAT Cap = FACTOR_CHIP * SPEC_HEAT_SI * t_chip * grid_height * grid_width;
     FLOAT Rx = grid_width / (2.0 * K_SI * t_chip * grid_height);
     FLOAT Ry = grid_height / (2.0 * K_SI * t_chip * grid_width);
     FLOAT Rz = t_chip / (K_SI * grid_height * grid_width);
