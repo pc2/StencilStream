@@ -114,7 +114,8 @@ template <class Cell, std::size_t word_size = 64> class Grid {
      * \param other_grid The other grid the new grid should reference.
      */
     Grid(Grid const &other_grid)
-        : tile_buffer(other_grid.tile_buffer), grid_height(other_grid.grid_height),grid_width(other_grid.grid_width)           {}
+        : tile_buffer(other_grid.tile_buffer), grid_height(other_grid.grid_height),
+          grid_width(other_grid.grid_width) {}
 
     /**
      * \brief Create an new, uninitialized grid with the same size as the current one.
