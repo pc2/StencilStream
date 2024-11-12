@@ -85,22 +85,22 @@ class PseudoTransientKernel : public BaseTransitionFunction {
 
     Cell operator()(Stencil<Cell, 1> const &stencil) const {
         Cell new_cell = stencil[0][0];
-        size_t c = stencil.id[0];
-        size_t r = stencil.id[1];
+        size_t x = stencil.id[0];
+        size_t y = stencil.id[1];
 
         if (stencil.subiteration == 0) {
             // assign!(ErrV, Vy)
-            if (c < nx && r < ny + 1) {
+            if (x < nx && y < ny + 1) {
                 new_cell.ErrV = ALL(Vy);
             }
 
             // assign!(ErrP, Pt)
-            if (c < nx && r < ny) {
+            if (x < nx && y < ny) {
                 new_cell.ErrP = ALL(Pt);
             }
 
             // compute_1!(...)
-            if (c < nx && r < ny) {
+            if (x < nx && y < ny) {
                 double delta_V = D_XA(Vx) / dx + D_YA(Vy) / dy;
                 double eta = eta0 * (1.0 - delta_eta_delta_T * (ALL(T) + deltaT / 2.0));
 
@@ -111,15 +111,15 @@ class PseudoTransientKernel : public BaseTransitionFunction {
                 // did not make a noticeable difference, which is why I'm using new_cell.eta here.
                 new_cell.tau_yy = 2.0 * eta * (D_YA(Vy) / dy - (1.0 / 3.0) * delta_V);
 
-                if (c < nx - 1 && r < ny - 1) {
+                if (x < nx - 1 && y < ny - 1) {
                     new_cell.sigma_xy = eta * (D_YI(Vx) / dy + D_XI(Vy) / dx);
                 }
             }
 
         } else if (stencil.subiteration == 1) {
             // compute_2!(...) and update_V!(...)
-            if (c >= 1 && r >= 1) {
-                if (c < (nx + 1) - 1 && r < ny - 1) {
+            if (x >= 1 && y >= 1) {
+                if (x < (nx + 1) - 1 && y < ny - 1) {
                     double Rx = 1.0 / rho *
                                 ((stencil[0][0].tau_xx - stencil[-1][0].tau_xx) / dx +
                                  (stencil[-1][0].sigma_xy - stencil[-1][-1].sigma_xy) / dy -
@@ -127,7 +127,7 @@ class PseudoTransientKernel : public BaseTransitionFunction {
                     new_cell.dVxd_tau = dampX * ALL(dVxd_tau) + Rx * delta_tau_iter;
                     new_cell.Vx = ALL(Vx) + new_cell.dVxd_tau * delta_tau_iter;
                 }
-                if (c < nx - 1 && r < (ny + 1) - 1) {
+                if (x < nx - 1 && y < (ny + 1) - 1) {
                     double Ry = 1.0 / rho *
                                 ((stencil[0][0].tau_yy - stencil[0][-1].tau_yy) / dy +
                                  (stencil[0][-1].sigma_xy - stencil[-1][-1].sigma_xy) / dx -
@@ -140,32 +140,32 @@ class PseudoTransientKernel : public BaseTransitionFunction {
 
         } else if (stencil.subiteration == 2) {
             // bc_y!(Vx)
-            if (c < nx + 1 && r < ny) {
-                if (r == 0) {
+            if (x < nx + 1 && y < ny) {
+                if (y == 0) {
                     new_cell.Vx = stencil[0][1].Vx;
                 }
-                if (r == ny - 1) {
+                if (y == ny - 1) {
                     new_cell.Vx = stencil[0][-1].Vx;
                 }
             }
 
             // bc_x!(Vy)
-            if (c < nx && r < ny + 1) {
-                if (c == 0) {
+            if (x < nx && y < ny + 1) {
+                if (x == 0) {
                     new_cell.Vy = stencil[1][0].Vy;
                 }
-                if (c == nx - 1) {
+                if (x == nx - 1) {
                     new_cell.Vy = stencil[-1][0].Vy;
                 }
             }
 
             // compute_error!(ErrV, Vy)
-            if (c < nx && r < ny + 1) {
+            if (x < nx && y < ny + 1) {
                 new_cell.ErrV = ALL(ErrV) - new_cell.Vy;
             }
 
             // compute_error!(ErrP, Pt)
-            if (c < nx && r < ny) {
+            if (x < nx && y < ny) {
                 new_cell.ErrP = ALL(ErrP) - ALL(Pt);
             }
         }
@@ -186,11 +186,11 @@ class ThermalSolverKernel : public BaseTransitionFunction {
 
     Cell operator()(Stencil<Cell, 1> const &stencil) const {
         Cell new_cell = stencil[0][0];
-        size_t c = stencil.id[0];
-        size_t r = stencil.id[1];
+        size_t x = stencil.id[0];
+        size_t y = stencil.id[1];
 
         if (stencil.subiteration == 0) {
-            if (c > 0 && r > 0 && c < nx - 1 && r < ny - 1) {
+            if (x > 0 && y > 0 && x < nx - 1 && y < ny - 1) {
                 // We only need qTx and qTy in this iteration, so I'm moving them here.
                 double qTx_top_left = -DcT * (stencil[0][0].T - stencil[-1][0].T) / dx;
                 double qTx_top = -DcT * (stencil[1][0].T - stencil[0][0].T) / dx;
@@ -221,10 +221,10 @@ class ThermalSolverKernel : public BaseTransitionFunction {
 
         } else if (stencil.subiteration == 1) {
             // no_fluxY_T!(...)
-            if (c == nx - 1 && r < ny) {
+            if (x == nx - 1 && y < ny) {
                 new_cell.T = stencil[-1][0].T;
             }
-            if (c == 0 && r < ny) {
+            if (x == 0 && y < ny) {
                 new_cell.T = stencil[1][0].T;
             }
         }
@@ -239,15 +239,16 @@ using PseudoTransientUpdate = cpu::StencilUpdate<PseudoTransientKernel>;
 using ThermalSolverUpdate = cpu::StencilUpdate<ThermalSolverKernel>;
 
 #else
-constexpr size_t max_grid_width = 1 << 16;
-constexpr size_t max_grid_height = 512;
+// 
+constexpr size_t max_nx = 1 << 16;
+constexpr size_t max_ny = 512;
 using Grid = monotile::Grid<ThermalConvectionCell>;
 using PseudoTransientUpdate =
     monotile::StencilUpdate<PseudoTransientKernel, PseudoTransientKernel::n_subiterations * 8,
-                            max_grid_width, max_grid_height>;
+                            max_nx, max_ny>;
 using ThermalSolverUpdate =
     monotile::StencilUpdate<ThermalSolverKernel, ThermalSolverKernel::n_subiterations,
-                            max_grid_width, max_grid_height>;
+                            max_nx, max_ny>;
 
 #endif
 
@@ -315,6 +316,13 @@ int main(int argc, char **argv) {
     size_t nerr = experiment.at("nerr");       // frequency of error checking
     double epsilon = experiment.at("epsilon"); // nonlinear absolute tolerence
     double dmp = experiment.at("dmp");         // damping paramter
+
+#if defined(STENCILSTREAM_BACKEND_MONOTILE)
+    if (nx > max_nx || ny > max_ny) {
+        std::cerr << "The grid is too large for the synthesized accelerator. Required size: " << nx << "x" << ny << " cells. Maximal size: " << max_nx << "x" << max_ny << " cells!" << std::endl;
+        return 1;
+    }
+#endif
 
     // Derived numerics
     double dx = lx / (nx - 1);
@@ -445,10 +453,10 @@ int main(int argc, char **argv) {
             std::ofstream out_file(output_file_path);
             {
                 Grid::GridAccessor<sycl::access::mode::read> ac(grid);
-                for (size_t c = 0; c < nx; c++) {
-                    for (size_t r = 0; r < ny; r++) {
-                        out_file << ac[c][r].T;
-                        if (r != ny - 1) {
+                for (size_t x = 0; x < nx; x++) {
+                    for (size_t y = 0; y < ny; y++) {
+                        out_file << ac[x][y].T;
+                        if (y != ny - 1) {
                             out_file << ",";
                         }
                     }
