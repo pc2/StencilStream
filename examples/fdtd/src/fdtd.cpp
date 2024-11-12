@@ -49,8 +49,8 @@ using TDVStrategy = tdv::single_pass::PrecomputeOnHostStrategy;
     #include <StencilStream/monotile/StencilUpdate.hpp>
 
 using Grid = monotile::Grid<CellImpl>;
-using StencilUpdate = monotile::StencilUpdate<KernelImpl, n_processing_elements, tile_height, tile_width,
-                                              TDVStrategy>;
+using StencilUpdate = monotile::StencilUpdate<KernelImpl, n_processing_elements, tile_height,
+                                              tile_width, TDVStrategy>;
 #elif defined(STENCILSTREAM_BACKEND_TILING)
     #include <StencilStream/tiling/StencilUpdate.hpp>
 using StencilUpdate =
@@ -180,11 +180,8 @@ int main(int argc, char **argv) {
 #endif
 
     StencilUpdate simulation({
-        .transition_function = KernelImpl(parameters, mat_resolver),
-        .halo_value = CellImpl::halo(),
-        .iteration_offset = 0,
-        .n_iterations = parameters.n_timesteps(),
-        .device = device,
+        .transition_function = KernelImpl(parameters, mat_resolver), .halo_value = CellImpl::halo(),
+        .iteration_offset = 0, .n_iterations = parameters.n_timesteps(), .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
 #if !defined(STENCILSTREAM_BACKEND_CPU)
             .profiling = true, // enable additional profiling for FPGA targets

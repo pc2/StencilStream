@@ -239,7 +239,7 @@ using PseudoTransientUpdate = cpu::StencilUpdate<PseudoTransientKernel>;
 using ThermalSolverUpdate = cpu::StencilUpdate<ThermalSolverKernel>;
 
 #else
-// 
+//
 constexpr size_t max_nx = 1 << 16;
 constexpr size_t max_ny = 512;
 using Grid = monotile::Grid<ThermalConvectionCell>;
@@ -247,8 +247,8 @@ using PseudoTransientUpdate =
     monotile::StencilUpdate<PseudoTransientKernel, PseudoTransientKernel::n_subiterations * 8,
                             max_nx, max_ny>;
 using ThermalSolverUpdate =
-    monotile::StencilUpdate<ThermalSolverKernel, ThermalSolverKernel::n_subiterations,
-                            max_nx, max_ny>;
+    monotile::StencilUpdate<ThermalSolverKernel, ThermalSolverKernel::n_subiterations, max_nx,
+                            max_ny>;
 
 #endif
 
@@ -319,7 +319,9 @@ int main(int argc, char **argv) {
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
     if (nx > max_nx || ny > max_ny) {
-        std::cerr << "The grid is too large for the synthesized accelerator. Required size: " << nx << "x" << ny << " cells. Maximal size: " << max_nx << "x" << max_ny << " cells!" << std::endl;
+        std::cerr << "The grid is too large for the synthesized accelerator. Required size: " << nx
+                  << "x" << ny << " cells. Maximal size: " << max_nx << "x" << max_ny << " cells!"
+                  << std::endl;
         return 1;
     }
 #endif
