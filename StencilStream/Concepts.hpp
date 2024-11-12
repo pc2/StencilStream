@@ -83,9 +83,9 @@ concept TransitionFunction =
  * `std::size_t`s.
  */
 template <typename Accessor, typename Cell>
-concept GridAccessor = requires(Accessor ac, std::size_t c, std::size_t r) {
-    { ac[sycl::id<2>(c, r)] } -> std::same_as<Cell &>;
-    { ac[c][r] } -> std::same_as<Cell &>;
+concept GridAccessor = requires(Accessor ac, std::size_t r, std::size_t c) {
+    { ac[sycl::id<2>(r, c)] } -> std::same_as<Cell &>;
+    { ac[r][c] } -> std::same_as<Cell &>;
 };
 
 /**
@@ -113,14 +113,14 @@ concept GridAccessor = requires(Accessor ac, std::size_t c, std::size_t r) {
  */
 template <typename G, typename Cell>
 concept Grid =
-    requires(G &grid, sycl::buffer<Cell, 2> buffer, std::size_t c, std::size_t r, Cell cell) {
-        { G(c, r) } -> std::same_as<G>;
-        { G(sycl::range<2>(c, r)) } -> std::same_as<G>;
+    requires(G &grid, sycl::buffer<Cell, 2> buffer, std::size_t r, std::size_t c, Cell cell) {
+        { G(r, c) } -> std::same_as<G>;
+        { G(sycl::range<2>(r, c)) } -> std::same_as<G>;
         { G(buffer) } -> std::same_as<G>;
         { grid.copy_from_buffer(buffer) } -> std::same_as<void>;
         { grid.copy_to_buffer(buffer) } -> std::same_as<void>;
-        { grid.get_grid_width() } -> std::convertible_to<std::size_t>;
         { grid.get_grid_height() } -> std::convertible_to<std::size_t>;
+        { grid.get_grid_width() } -> std::convertible_to<std::size_t>;
         { grid.make_similar() } -> std::same_as<G>;
         {
             typename G::template GridAccessor<sycl::access::mode::read_write>(grid)

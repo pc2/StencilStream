@@ -80,10 +80,10 @@ class Stencil {
         : id(id), iteration(iteration), subiteration(subiteration), grid_range(grid_range),
           time_dependent_value(tdv), internal() {
 #pragma unroll
-        for (std::size_t c = 0; c < diameter; c++) {
+        for (std::size_t r = 0; r < diameter; r++) {
 #pragma unroll
-            for (std::size_t r = 0; r < diameter; r++) {
-                internal[c][r] = raw[c][r];
+            for (std::size_t c = 0; c < diameter; c++) {
+                internal[r][c] = raw[r][c];
             }
         }
     }
@@ -92,22 +92,22 @@ class Stencil {
         requires(stencil_radius <= std::numeric_limits<index_t>::max())
     class StencilSubscript {
       public:
-        StencilSubscript(Stencil const &stencil, index_t c) : stencil(stencil), c(c) {}
+        StencilSubscript(Stencil const &stencil, index_t r) : stencil(stencil), r(r) {}
 
-        Cell const &operator[](index_t r) const {
-            return stencil[sycl::id<2>(c + stencil_radius, r + stencil_radius)];
+        Cell const &operator[](index_t c) const {
+            return stencil[sycl::id<2>(r + stencil_radius, c + stencil_radius)];
         }
 
       private:
         Stencil const &stencil;
-        index_t c;
+        index_t r;
     };
 
     template <std::signed_integral index_t>
-    StencilSubscript<index_t> operator[](index_t c) const
+    StencilSubscript<index_t> operator[](index_t r) const
         requires(stencil_radius <= std::numeric_limits<index_t>::max())
     {
-        return StencilSubscript<index_t>(*this, c);
+        return StencilSubscript<index_t>(*this, r);
     }
 
     /**

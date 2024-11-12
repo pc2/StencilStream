@@ -35,15 +35,15 @@ TEST_CASE("Stencil::diameter", "[Stencil]") {
 TEST_CASE("Stencil::operator[](int)", "[Stencil]") {
     StencilImpl stencil(sycl::id<2>(0, 0), sycl::range<2>(42, 42), 0, 0, std::monostate());
 
-    for (std::size_t c = 0; c < stencil.diameter; c++) {
-        for (std::size_t r = 0; r < stencil.diameter; r++) {
-            stencil[sycl::id<2>(c, r)] = int(c) + int(r) - 2 * stencil_radius;
+    for (std::size_t r = 0; r < stencil.diameter; r++) {
+        for (std::size_t c = 0; c < stencil.diameter; c++) {
+            stencil[sycl::id<2>(r, c)] = int(r) + int(c) - 2 * stencil_radius;
         }
     }
 
-    for (int c = -int(stencil_radius); c <= int(stencil_radius); c++) {
-        for (int r = -int(stencil_radius); r <= int(stencil_radius); r++) {
-            REQUIRE(stencil[c][r] == c + r);
+    for (int r = -int(stencil_radius); r <= int(stencil_radius); r++) {
+        for (int c = -int(stencil_radius); c <= int(stencil_radius); c++) {
+            REQUIRE(stencil[r][c] == r + c);
         }
     }
 };

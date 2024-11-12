@@ -25,7 +25,7 @@ namespace stencil {
  * @brief A helper class to support the double-subscript idiom for
  * \ref stencil::concepts::GridAccessor "GridAccessors"
  *
- * This class is used to support expressions like `accessor[i_column][i_row]`. Each subscript except
+ * This class is used to support expressions like `accessor[i_row][i_column]`. Each subscript except
  * the last one creates an object of this class, which stores the index of the subscript as well as
  * all previous indices to form a so-called "prefix." When the last subscript is called, the index
  * is added to the prefix to yield the complete, multi-dimensional index. Then, the last subscript

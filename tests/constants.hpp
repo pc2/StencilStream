@@ -23,16 +23,16 @@
 #pragma once
 #include <StencilStream/Helpers.hpp>
 
-const std::size_t tile_width = 64;
-const std::size_t tile_height = 32;
+const std::size_t tile_height = 64;
+const std::size_t tile_width = 32;
 
 const std::size_t subiterations = 2;
 const std::size_t n_processing_elements = 4;
 const std::size_t iters_per_pass = n_processing_elements / subiterations;
 const std::size_t stencil_radius = 2;
 const std::size_t halo_radius = n_processing_elements * stencil_radius;
-const std::size_t core_width = tile_width - 2 * halo_radius;
 const std::size_t core_height = tile_height - 2 * halo_radius;
+const std::size_t core_width = tile_width - 2 * halo_radius;
 
-const std::size_t grid_width = 128;
-const std::size_t grid_height = 64;
+const std::size_t grid_height = 128;
+const std::size_t grid_width = 64;

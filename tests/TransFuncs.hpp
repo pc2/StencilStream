@@ -32,8 +32,8 @@ enum class CellStatus {
 };
 
 struct Cell {
-    int c;
     int r;
+    int c;
     int i_iteration;
     int i_subiteration;
     CellStatus status;
@@ -58,26 +58,26 @@ template <std::size_t radius> class FPGATransFunc {
     std::size_t get_time_dependent_value(std::size_t i_iteration) const { return i_iteration; }
 
     Cell operator()(stencil::Stencil<Cell, radius, TimeDependentValue> const &stencil) const {
-        Cell new_cell = stencil[sycl::id<2>(radius, radius)];
+        Cell new_cell = stencil[0][0];
 
         bool is_valid = true;
 #pragma unroll
-        for (int c = -int(radius); c <= int(radius); c++) {
+        for (int r = -int(radius); r <= int(radius); r++) {
 #pragma unroll
-            for (int r = -int(radius); r <= int(radius); r++) {
-                Cell old_cell = stencil[sycl::id<2>(c + radius, r + radius)];
-                int cell_c = stencil.id[0] + c;
-                int cell_r = stencil.id[1] + r;
-                if (cell_c >= 0 && cell_r >= 0 && cell_c < stencil.grid_range[0] &&
-                    cell_r < stencil.grid_range[1]) {
-                    is_valid &= old_cell.c == cell_c;
+            for (int c = -int(radius); c <= int(radius); c++) {
+                Cell old_cell = stencil[r][c];
+                int cell_r = stencil.id[0] + r;
+                int cell_c = stencil.id[1] + c;
+                if (cell_r >= 0 && cell_c >= 0 && cell_r < stencil.grid_range[0] &&
+                    cell_c < stencil.grid_range[1]) {
                     is_valid &= old_cell.r == cell_r;
+                    is_valid &= old_cell.c == cell_c;
                     is_valid &= old_cell.i_iteration == stencil.iteration;
                     is_valid &= old_cell.i_subiteration == stencil.subiteration;
                     is_valid &= old_cell.status == CellStatus::Normal;
                 } else {
-                    is_valid &= old_cell.c == Cell::halo().c;
                     is_valid &= old_cell.r == Cell::halo().r;
+                    is_valid &= old_cell.c == Cell::halo().c;
                     is_valid &= old_cell.i_iteration == Cell::halo().i_iteration;
                     is_valid &= old_cell.i_subiteration == Cell::halo().i_subiteration;
                     is_valid &= old_cell.status == Cell::halo().status;
@@ -109,32 +109,30 @@ template <std::size_t radius> class HostTransFunc {
     std::size_t get_time_dependent_value(std::size_t i_iteration) const { return i_iteration; }
 
     Cell operator()(stencil::Stencil<Cell, radius, std::size_t> const &stencil) const {
-        Cell new_cell = stencil[sycl::id<2>(radius, radius)];
+        Cell new_cell = stencil[0][0];
 
-        if (stencil.id.c < 0 || stencil.id.r < 0 || stencil.id.c >= stencil.grid_range.c ||
-            stencil.id.r >= stencil.grid_range.r) {
+        if (stencil.id.r < 0 || stencil.id.c < 0 || stencil.id.r >= stencil.grid_range.r ||
+            stencil.id.c >= stencil.grid_range.c) {
             // Things may be weird in this (illegal) situation, we should not do
-            // anything with effects.
+            // anything with side-effects.
             return new_cell;
         }
 
-#pragma unroll
-        for (int c = -int(radius); c <= int(radius); c++) {
-#pragma unroll
-            for (int r = -int(radius); r <= int(radius); r++) {
-                Cell old_cell = stencil[sycl::id<2>(c + radius, r + radius)];
-                int cell_c = stencil.id.c + c;
+        for (int r = -int(radius); r <= int(radius); r++) {
+            for (int c = -int(radius); c <= int(radius); c++) {
+                Cell old_cell = stencil[r][c];
                 int cell_r = stencil.id.r + r;
-                if (cell_c >= 0 && cell_r >= 0 && cell_c < stencil.grid_range.c &&
-                    cell_r < stencil.grid_range.r) {
-                    REQUIRE(old_cell.c == cell_c);
+                int cell_c = stencil.id.c + c;
+                if (cell_r >= 0 && cell_c >= 0 && cell_r < stencil.grid_range.r &&
+                    cell_c < stencil.grid_range.c) {
                     REQUIRE(old_cell.r == cell_r);
+                    REQUIRE(old_cell.c == cell_c);
                     REQUIRE(old_cell.i_iteration == stencil.iteration);
                     REQUIRE(old_cell.i_subiteration == stencil.subiteration);
                     REQUIRE(old_cell.status == CellStatus::Normal);
                 } else {
-                    REQUIRE(old_cell.c == Cell::halo().c);
                     REQUIRE(old_cell.r == Cell::halo().r);
+                    REQUIRE(old_cell.c == Cell::halo().c);
                     REQUIRE(old_cell.i_iteration == Cell::halo().i_iteration);
                     REQUIRE(old_cell.i_subiteration == Cell::halo().i_subiteration);
                     REQUIRE(old_cell.status == Cell::halo().status);
