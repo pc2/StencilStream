@@ -7,9 +7,9 @@ const OPERATIONS_PER_CELL = 15
 const CELL_SIZE = 8 # bytes
 const N_MONOTILE_CUS = 280
 const N_TILING_CUS = 224
-const TILE_HEIGHT = 1024
-const MONO_TILE_WIDTH = 1024
-const TILING_TILE_WIDTH = 2^16
+const MONO_TILE_HEIGHT = 1024
+const TILING_TILE_HEIGHT = 2^16
+const TILE_WIDTH = 1024
 
 function create_experiment(n_rows, n_columns, temp_file, power_file)
     begin
@@ -28,14 +28,14 @@ end
 function max_perf_benchmark(exec, variant, f, loop_latency)
     if variant == :monotile
         n_cus = N_MONOTILE_CUS
-        grid_height = 720
-        grid_width = 1024
-        n_iters = n_cus
-        n_samples = 100
+        grid_height = MONO_TILE_HEIGHT
+        grid_width = TILE_WIDTH
+        n_iters = 1_000n_cus
+        n_samples = 10
     elseif variant == :tiling
         n_cus = N_TILING_CUS
-        grid_height = 16*1024
-        grid_width = 16*1024
+        grid_height = 16*TILE_WIDTH
+        grid_width = 16*TILE_WIDTH
         n_iters = ceil(1000/n_cus) * n_cus
         n_samples = 3
     end
@@ -68,7 +68,7 @@ function max_perf_benchmark(exec, variant, f, loop_latency)
         push!(runtimes, runtime)
     end
     runtime = mean(runtimes)
-    tile_width = (variant == :monotile) ? MONO_TILE_WIDTH : TILING_TILE_WIDTH
+    tile_height = (variant == :monotile) ? MONO_TILE_HEIGHT : TILING_TILE_HEIGHT
 
     info = BenchmarkInformation(
         n_iters,
@@ -79,8 +79,8 @@ function max_perf_benchmark(exec, variant, f, loop_latency)
         OPERATIONS_PER_CELL,
         variant,
         n_cus,
-        TILE_HEIGHT,
-        tile_width,
+        tile_height,
+        TILE_WIDTH,
         f,
         loop_latency,
         runtime
@@ -145,8 +145,8 @@ function scaling_benchmark(exec, variant, f, loop_latency)
                 OPERATIONS_PER_CELL,
                 variant,
                 (variant == :monotile) ? N_MONOTILE_CUS : N_TILING_CUS,
-                TILE_HEIGHT,
-                (variant == :monotile) ? MONO_TILE_WIDTH : TILING_TILE_WIDTH,
+                (variant == :monotile) ? MONO_TILE_HEIGHT : TILING_TILE_HEIGHT,
+                TILE_WIDTH,
                 f,
                 loop_latency,
                 kernel_runtime

@@ -6,8 +6,8 @@ const N_REPLICATIONS = 8
 const N_CUS = N_SUBITERATIONS * N_REPLICATIONS
 const OPERATIONS_PER_CELL = (5 + 5 + 3 + 6 + 6 + 6) + (10 + 3 + 2 + 14 + 3 + 2) + 2
 const CELL_SIZE = 88 # bytes
-const TILE_HEIGHT = 512
-const TILE_WIDTH = 2^16
+const TILE_NX = 2^16
+const TILE_NY = 512
 
 function analyze_log(logfile)
     iteration_re = r"it = ([0-9]+) \(iter = ([0-9]+), time = ([^)]+)\)"
@@ -48,8 +48,8 @@ function default_benchmark()
 
     experiment_path = "experiments/max-res-default.json"
     experiment_data = JSON.parsefile(experiment_path)
-    ly = experiment_data["ly"]
     lx = experiment_data["lx"]
+    ly = experiment_data["ly"]
     res = experiment_data["res"]
 
     out_path = Base.Filesystem.mkpath("./out/")
@@ -63,15 +63,15 @@ function default_benchmark()
 
         info = BenchmarkInformation(
             pseudo_transient_runtimes.pseudo_steps[best_performing_invocation],
-            ly * res,
             lx * res,
+            ly * res,
             N_SUBITERATIONS,
             CELL_SIZE,
             OPERATIONS_PER_CELL,
             :monotile,
             N_CUS,
-            TILE_HEIGHT,
-            TILE_WIDTH,
+            TILE_NX,
+            TILE_NY,
             f,
             loop_latency,
             pseudo_transient_runtimes.runtime[best_performing_invocation]
