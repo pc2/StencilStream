@@ -42,7 +42,7 @@ constexpr float pi = 3.1415926535897932384626433;
 constexpr size_t n_processing_elements = 200;
 
 #elif defined(STENCILSTREAM_BACKEND_TILING)
-constexpr size_t n_processing_elements = 4;
+constexpr size_t n_processing_elements = 190;
 
 #elif defined(STENCILSTREAM_BACKEND_CPU)
 constexpr size_t n_processing_elements = 2;
