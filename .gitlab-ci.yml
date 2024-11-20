@@ -178,11 +178,11 @@ fdtd (monotile) synthesis:
     script:
         - cd examples/fdtd
         - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/${STST_EXECUTABLE} ${STST_VARIANT}
-        - ./scripts/plot_frames.jl frames .
+        - ./scripts/plot_frames.jl frames out/
     artifacts:
         paths:
-            - examples/fdtd/*.csv
-            - examples/fdtd/*.png
+            - examples/fdtd/out/*.csv
+            - examples/fdtd/out/*.png
             - examples/fdtd/metrics.*.json
 
 fdtd (monotile) benchmark:

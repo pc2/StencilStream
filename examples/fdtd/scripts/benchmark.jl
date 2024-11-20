@@ -24,7 +24,7 @@ function max_perf_benchmark(exe, variant, f, loop_latency)
         n_cus = N_TILING_CUS
         n_samples = 10
     end
-    out_dir = mktempdir("/tmp/")
+    out_dir = Base.Filesystem.mkpath("./out/")
     command = `$exe -c $experiment_path -o $out_dir`
 
     kernel_runtimes = Vector()
