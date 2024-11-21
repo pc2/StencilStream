@@ -22,7 +22,7 @@ function max_perf_benchmark(exe, variant, f, loop_latency)
         tile_height = TILING_TILE_HEIGHT
         tile_width = TILE_WIDTH
         n_cus = N_TILING_CUS
-        n_samples = 10
+        n_samples = 1
     end
     out_dir = Base.Filesystem.mkpath("./out/")
     command = `$exe -c $experiment_path -o $out_dir`
