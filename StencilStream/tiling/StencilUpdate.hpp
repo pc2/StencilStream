@@ -51,9 +51,7 @@ namespace tiling {
  *
  * \tparam out_pipe The pipe to write to.
  */
-template <concepts::TransitionFunction TransFunc,
-          tdv::single_pass::KernelArgument<TransFunc> TDVKernelArgument,
-          std::size_t n_processing_elements, std::size_t output_tile_height,
+template <concepts::TransitionFunction TransFunc, tdv::single_pass::KernelArgument<TransFunc> TDVKernelArgument, std::size_t n_processing_elements, std::size_t output_tile_height,
           std::size_t output_tile_width, typename in_pipe, typename out_pipe>
     requires(n_processing_elements % TransFunc::n_subiterations == 0)
 class StencilUpdateKernel {
@@ -77,8 +75,7 @@ class StencilUpdateKernel {
     using index_stencil_t = ac_int<bits_stencil, true>;
     using uindex_stencil_t = ac_int<bits_stencil, false>;
 
-    static constexpr unsigned long bits_1d =
-        std::bit_width(std::max(max_input_tile_height, max_input_tile_width));
+    static constexpr unsigned long bits_1d = std::bit_width(std::max(max_input_tile_height, max_input_tile_width));
     using index_1d_t = ac_int<bits_1d + 1, true>;
     using uindex_1d_t = ac_int<bits_1d, false>;
 
@@ -88,8 +85,7 @@ class StencilUpdateKernel {
 
     // bits_pes must not be 1 since modulo operations on ac_int<1, false> don't work with oneAPI
     // 2022.2. If they work with a future version of oneAPI, this can be reverted.
-    static constexpr unsigned long bits_pes =
-        std::max<int>(2, std::bit_width(n_processing_elements));
+    static constexpr unsigned long bits_pes = std::max<int>(2, std::bit_width(n_processing_elements));
     using index_pes_t = ac_int<bits_pes + 1, true>;
     using uindex_pes_t = ac_int<bits_pes, false>;
 
@@ -120,12 +116,9 @@ class StencilUpdateKernel {
      * \param tdv_kernel_argument The argument for the TDV system that is passed from the host to
      * the device. This may for example contain global memory accessors.
      */
-    StencilUpdateKernel(TransFunc trans_func, std::size_t i_iteration,
-                        std::size_t target_i_iteration, std::size_t grid_r_offset,
-                        std::size_t grid_c_offset, std::size_t grid_height, std::size_t grid_width,
-                        Cell halo_value, TDVKernelArgument tdv_kernel_argument)
-        : trans_func(trans_func), i_iteration(i_iteration), target_i_iteration(target_i_iteration),
-          grid_r_offset(grid_r_offset), grid_c_offset(grid_c_offset), grid_height(grid_height),
+    StencilUpdateKernel(TransFunc trans_func, std::size_t i_iteration, std::size_t target_i_iteration, std::size_t grid_r_offset, std::size_t grid_c_offset, std::size_t grid_height,
+                        std::size_t grid_width, Cell halo_value, TDVKernelArgument tdv_kernel_argument)
+        : trans_func(trans_func), i_iteration(i_iteration), target_i_iteration(target_i_iteration), grid_r_offset(grid_r_offset), grid_c_offset(grid_c_offset), grid_height(grid_height),
           grid_width(grid_width), halo_value(halo_value), tdv_kernel_argument(tdv_kernel_argument) {
         assert(grid_r_offset % output_tile_height == 0);
         assert(grid_c_offset % output_tile_width == 0);
@@ -147,17 +140,11 @@ class StencilUpdateKernel {
          * smart enough to see that these additional banks in the cache aren't used and therefore
          * optimizes them away.
          */
-        [[intel::fpga_memory,
-          intel::numbanks(2 * std::bit_ceil(n_processing_elements))]] Padded<Cell>
-            cache[2][max_input_tile_width][std::bit_ceil(n_processing_elements)]
-                 [stencil_diameter - 1];
-        [[intel::fpga_register]] Cell stencil_buffer[n_processing_elements][stencil_diameter]
-                                                    [stencil_diameter];
+        [[intel::fpga_memory, intel::numbanks(2 * std::bit_ceil(n_processing_elements))]] Padded<Cell> cache[2][max_input_tile_width][std::bit_ceil(n_processing_elements)][stencil_diameter - 1];
+        [[intel::fpga_register]] Cell stencil_buffer[n_processing_elements][stencil_diameter][stencil_diameter];
 
-        uindex_1d_t output_tile_section_height =
-            std::min(output_tile_height, grid_height - grid_r_offset);
-        uindex_1d_t output_tile_section_width =
-            std::min(output_tile_width, grid_width - grid_c_offset);
+        uindex_1d_t output_tile_section_height = std::min(output_tile_height, grid_height - grid_r_offset);
+        uindex_1d_t output_tile_section_width = std::min(output_tile_width, grid_width - grid_c_offset);
         uindex_1d_t input_tile_section_height = output_tile_section_height + 2 * halo_radius;
         uindex_1d_t input_tile_section_width = output_tile_section_width + 2 * halo_radius;
         uindex_2d_t n_iterations = input_tile_section_height * input_tile_section_width;
@@ -166,9 +153,7 @@ class StencilUpdateKernel {
             [[intel::fpga_register]] Cell carry = in_pipe::read();
 
 #pragma unroll
-            for (uindex_pes_t i_processing_element = 0;
-                 i_processing_element < uindex_pes_t(n_processing_elements);
-                 i_processing_element++) {
+            for (uindex_pes_t i_processing_element = 0; i_processing_element < uindex_pes_t(n_processing_elements); i_processing_element++) {
                 /*
                  * Shift every value in the stencil_buffer left.
                  * This operation does not touch the values in the right-most column, which will be
@@ -178,29 +163,19 @@ class StencilUpdateKernel {
                 for (uindex_stencil_t r = 0; r < uindex_stencil_t(stencil_diameter); r++) {
 #pragma unroll
                     for (uindex_stencil_t c = 0; c < uindex_stencil_t(stencil_diameter - 1); c++) {
-                        stencil_buffer[i_processing_element][r][c] =
-                            stencil_buffer[i_processing_element][r][c + 1];
+                        stencil_buffer[i_processing_element][r][c] = stencil_buffer[i_processing_element][r][c + 1];
                     }
                 }
 
-                index_1d_t rel_input_grid_r =
-                    index_1d_t(input_tile_r) -
-                    index_1d_t((stencil_diameter - 1) +
-                               (n_processing_elements + i_processing_element - 2) *
-                                   TransFunc::stencil_radius);
+                index_1d_t rel_input_grid_r = index_1d_t(input_tile_r) - index_1d_t((stencil_diameter - 1) + (n_processing_elements + i_processing_element - 2) * TransFunc::stencil_radius);
                 std::size_t input_grid_r = grid_r_offset + std::ptrdiff_t(rel_input_grid_r);
-                index_1d_t rel_input_grid_c =
-                    index_1d_t(input_tile_c) -
-                    index_1d_t((stencil_diameter - 1) +
-                               (n_processing_elements + i_processing_element - 2) *
-                                   TransFunc::stencil_radius);
+                index_1d_t rel_input_grid_c = index_1d_t(input_tile_c) - index_1d_t((stencil_diameter - 1) + (n_processing_elements + i_processing_element - 2) * TransFunc::stencil_radius);
                 std::size_t input_grid_c = grid_c_offset + std::ptrdiff_t(rel_input_grid_c);
 
                 // Update the stencil buffer and cache with previous cache contents and the new
                 // input cell.
 #pragma unroll
-                for (uindex_stencil_t cache_r = 0; cache_r < uindex_stencil_t(stencil_diameter);
-                     cache_r++) {
+                for (uindex_stencil_t cache_r = 0; cache_r < uindex_stencil_t(stencil_diameter); cache_r++) {
                     Cell new_value;
                     if (cache_r == uindex_stencil_t(stencil_diameter - 1)) {
                         bool is_halo = (grid_r_offset == 0 && rel_input_grid_r < 0);
@@ -209,40 +184,30 @@ class StencilUpdateKernel {
 
                         new_value = is_halo ? halo_value : carry;
                     } else {
-                        new_value =
-                            cache[input_tile_r[0]][input_tile_c][i_processing_element][cache_r]
-                                .value;
+                        new_value = cache[input_tile_r[0]][input_tile_c][i_processing_element][cache_r].value;
                     }
 
                     stencil_buffer[i_processing_element][cache_r][stencil_diameter - 1] = new_value;
                     if (cache_r > 0) {
-                        cache[(~input_tile_r)[0]][input_tile_c][i_processing_element][cache_r - 1]
-                            .value = new_value;
+                        cache[(~input_tile_r)[0]][input_tile_c][i_processing_element][cache_r - 1].value = new_value;
                     }
                 }
 
-                std::size_t pe_iteration =
-                    i_iteration + std::size_t(i_processing_element / TransFunc::n_subiterations);
+                std::size_t pe_iteration = i_iteration + std::size_t(i_processing_element / TransFunc::n_subiterations);
                 std::size_t pe_subiteration = i_processing_element % TransFunc::n_subiterations;
                 std::size_t output_grid_r = input_grid_r - TransFunc::stencil_radius;
                 std::size_t output_grid_c = input_grid_c - TransFunc::stencil_radius;
-                TDV tdv = tdv_local_state.get_time_dependent_value(i_processing_element /
-                                                                   TransFunc::n_subiterations);
-                StencilImpl stencil(sycl::id<2>(output_grid_r, output_grid_c),
-                                    sycl::range<2>(grid_height, grid_width), pe_iteration,
-                                    pe_subiteration, tdv, stencil_buffer[i_processing_element]);
+                TDV tdv = tdv_local_state.get_time_dependent_value(i_processing_element / TransFunc::n_subiterations);
+                StencilImpl stencil(sycl::id<2>(output_grid_r, output_grid_c), sycl::range<2>(grid_height, grid_width), pe_iteration, pe_subiteration, tdv, stencil_buffer[i_processing_element]);
 
                 if (pe_iteration < target_i_iteration) {
                     carry = trans_func(stencil);
                 } else {
-                    carry = stencil_buffer[i_processing_element][TransFunc::stencil_radius]
-                                          [TransFunc::stencil_radius];
+                    carry = stencil_buffer[i_processing_element][TransFunc::stencil_radius][TransFunc::stencil_radius];
                 }
             }
 
-            bool is_valid_output =
-                (input_tile_r >= uindex_1d_t((stencil_diameter - 1) * n_processing_elements)) &&
-                (input_tile_c >= uindex_1d_t((stencil_diameter - 1) * n_processing_elements));
+            bool is_valid_output = (input_tile_r >= uindex_1d_t((stencil_diameter - 1) * n_processing_elements)) && (input_tile_c >= uindex_1d_t((stencil_diameter - 1) * n_processing_elements));
 
             if (is_valid_output) {
                 out_pipe::write(carry);
@@ -296,10 +261,8 @@ class StencilUpdateKernel {
  * \tparam TDVStrategy (Optimization parameter) The precomputation strategy for the time-dependent
  * value system (\ref page-tdv "See guide").
  */
-template <concepts::TransitionFunction F, std::size_t n_processing_elements = 1,
-          std::size_t tile_height = 1024, std::size_t tile_width = 1024,
-          tdv::single_pass::Strategy<F, n_processing_elements> TDVStrategy =
-              tdv::single_pass::InlineStrategy>
+template <concepts::TransitionFunction F, std::size_t n_processing_elements = 1, std::size_t tile_height = 1024, std::size_t tile_width = 1024,
+          tdv::single_pass::Strategy<F, n_processing_elements> TDVStrategy = tdv::single_pass::InlineStrategy>
 class StencilUpdate {
   private:
     using Cell = F::Cell;
@@ -380,8 +343,7 @@ class StencilUpdate {
     /**
      * \brief Create a new stencil updater object.
      */
-    StencilUpdate(Params params)
-        : params(params), n_processed_cells(0), work_events(), walltime(0.0) {}
+    StencilUpdate(Params params) : params(params), n_processed_cells(0), work_events(), walltime(0.0) {}
 
     /**
      * \brief Return a reference to the parameters.
@@ -403,20 +365,15 @@ class StencilUpdate {
     GridImpl operator()(GridImpl &source_grid) {
         using in_pipe = sycl::pipe<class tiling_in_pipe, Cell>;
         using out_pipe = sycl::pipe<class tiling_out_pipe, Cell>;
-        using ExecutionKernelImpl = StencilUpdateKernel<F, TDVKernelArgument, n_processing_elements,
-                                                        tile_height, tile_width, in_pipe, out_pipe>;
+        using ExecutionKernelImpl = StencilUpdateKernel<F, TDVKernelArgument, n_processing_elements, tile_height, tile_width, in_pipe, out_pipe>;
 
         if (params.n_iterations == 0) {
             return GridImpl(source_grid);
         }
 
-        sycl::queue input_kernel_queue =
-            sycl::queue(params.device, {sycl::property::queue::in_order{}});
-        sycl::queue output_kernel_queue =
-            sycl::queue(params.device, {sycl::property::queue::in_order{}});
-        sycl::queue working_queue =
-            sycl::queue(params.device, {cl::sycl::property::queue::enable_profiling{},
-                                        sycl::property::queue::in_order{}});
+        sycl::queue input_kernel_queue = sycl::queue(params.device, {sycl::property::queue::in_order{}});
+        sycl::queue output_kernel_queue = sycl::queue(params.device, {sycl::property::queue::in_order{}});
+        sycl::queue working_queue = sycl::queue(params.device, {cl::sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order{}});
 
         GridImpl swap_grid_a = source_grid.make_similar();
         GridImpl swap_grid_b = source_grid.make_similar();
@@ -435,24 +392,19 @@ class StencilUpdate {
         auto walltime_start = std::chrono::high_resolution_clock::now();
 
         std::size_t target_n_iterations = params.iteration_offset + params.n_iterations;
-        for (std::size_t i = params.iteration_offset; i < target_n_iterations;
-             i += iters_per_pass) {
+        for (std::size_t i = params.iteration_offset; i < target_n_iterations; i += iters_per_pass) {
             std::size_t iters_in_this_pass = std::min(iters_per_pass, target_n_iterations - i);
 
             for (std::size_t i_tile_r = 0; i_tile_r < tile_range[0]; i_tile_r++) {
                 for (std::size_t i_tile_c = 0; i_tile_c < tile_range[1]; i_tile_c++) {
-                    pass_source->template submit_read<in_pipe>(input_kernel_queue, i_tile_r,
-                                                               i_tile_c, params.halo_value);
+                    pass_source->template submit_read<in_pipe>(input_kernel_queue, i_tile_r, i_tile_c, params.halo_value);
 
                     auto work_event = working_queue.submit([&](sycl::handler &cgh) {
-                        TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i,
-                                                              iters_in_this_pass);
+                        TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i, iters_in_this_pass);
                         std::size_t r_offset = i_tile_r * tile_height;
                         std::size_t c_offset = i_tile_c * tile_width;
 
-                        ExecutionKernelImpl exec_kernel(trans_func, i, target_n_iterations,
-                                                        r_offset, c_offset, grid_height, grid_width,
-                                                        params.halo_value, tdv_kernel_argument);
+                        ExecutionKernelImpl exec_kernel(trans_func, i, target_n_iterations, r_offset, c_offset, grid_height, grid_width, params.halo_value, tdv_kernel_argument);
 
                         cgh.single_task<ExecutionKernelImpl>(exec_kernel);
                     });
@@ -460,8 +412,7 @@ class StencilUpdate {
                         work_events.push_back(work_event);
                     }
 
-                    pass_target->template submit_write<out_pipe>(output_kernel_queue, i_tile_r,
-                                                                 i_tile_c);
+                    pass_target->template submit_write<out_pipe>(output_kernel_queue, i_tile_r, i_tile_c);
                 }
             }
 
@@ -481,8 +432,7 @@ class StencilUpdate {
         std::chrono::duration<double> walltime = walltime_end - walltime_start;
         this->walltime += walltime.count();
 
-        n_processed_cells +=
-            params.n_iterations * source_grid.get_grid_height() * source_grid.get_grid_width();
+        n_processed_cells += params.n_iterations * source_grid.get_grid_height() * source_grid.get_grid_width();
 
         return *pass_source;
     }
@@ -506,14 +456,8 @@ class StencilUpdate {
         double kernel_runtime = 0.0;
         for (sycl::event work_event : work_events) {
             const double timesteps_per_second = 1000000000.0;
-            double start =
-                double(work_event
-                           .get_profiling_info<cl::sycl::info::event_profiling::command_start>()) /
-                timesteps_per_second;
-            double end =
-                double(
-                    work_event.get_profiling_info<cl::sycl::info::event_profiling::command_end>()) /
-                timesteps_per_second;
+            double start = double(work_event.get_profiling_info<cl::sycl::info::event_profiling::command_start>()) / timesteps_per_second;
+            double end = double(work_event.get_profiling_info<cl::sycl::info::event_profiling::command_end>()) / timesteps_per_second;
             kernel_runtime += end - start;
         }
         return kernel_runtime;

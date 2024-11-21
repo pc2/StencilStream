@@ -30,9 +30,7 @@ namespace stencil {
  * the total number of cells divided by the number of cells in a word, plus one additional word if
  * the word length doesn't divide the total number of cells.
  */
-inline constexpr std::size_t n_cells_to_n_words(std::size_t n_cells, std::size_t word_length) {
-    return n_cells / word_length + (n_cells % word_length == 0 ? 0 : 1);
-}
+inline constexpr std::size_t n_cells_to_n_words(std::size_t n_cells, std::size_t word_length) { return n_cells / word_length + (n_cells % word_length == 0 ? 0 : 1); }
 
 /**
  * \brief A container with padding to the next power of two.

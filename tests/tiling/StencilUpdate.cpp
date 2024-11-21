@@ -32,19 +32,14 @@ using namespace sycl;
 using namespace stencil;
 using namespace stencil::tiling;
 
-template <
-    tdv::single_pass::Strategy<FPGATransFunc<stencil_radius>, n_processing_elements> TDVStrategy>
-void test_tiling_kernel_with_strategy(std::size_t grid_height, std::size_t grid_width,
-                                      std::size_t iteration_offset,
-                                      std::size_t target_i_iteration) {
+template <tdv::single_pass::Strategy<FPGATransFunc<stencil_radius>, n_processing_elements> TDVStrategy>
+void test_tiling_kernel_with_strategy(std::size_t grid_height, std::size_t grid_width, std::size_t iteration_offset, std::size_t target_i_iteration) {
     using TransFunc = FPGATransFunc<stencil_radius>;
     using in_pipe = sycl::pipe<class TilingExecutionKernelInPipeID, Cell>;
     using out_pipe = sycl::pipe<class TilingExecutionKernelOutPipeID, Cell>;
     using TDVGlobalState = TDVStrategy::template GlobalState<TransFunc, n_processing_elements>;
     using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
-    using TestExecutionKernel =
-        StencilUpdateKernel<TransFunc, TDVKernelArgument, n_processing_elements, tile_height,
-                            tile_width, in_pipe, out_pipe>;
+    using TestExecutionKernel = StencilUpdateKernel<TransFunc, TDVKernelArgument, n_processing_elements, tile_height, tile_width, in_pipe, out_pipe>;
 
     sycl::queue working_queue;
 
@@ -52,10 +47,8 @@ void test_tiling_kernel_with_strategy(std::size_t grid_height, std::size_t grid_
         cgh.single_task([=]() {
             for (std::size_t r = 0; r < 2 * halo_radius + grid_height; r++) {
                 for (std::size_t c = 0; c < 2 * halo_radius + grid_width; c++) {
-                    if (r >= halo_radius && r < grid_height + halo_radius && c >= halo_radius &&
-                        c < grid_width + halo_radius) {
-                        in_pipe::write(Cell{int(r - halo_radius), int(c - halo_radius),
-                                            int(iteration_offset), 0, CellStatus::Normal});
+                    if (r >= halo_radius && r < grid_height + halo_radius && c >= halo_radius && c < grid_width + halo_radius) {
+                        in_pipe::write(Cell{int(r - halo_radius), int(c - halo_radius), int(iteration_offset), 0, CellStatus::Normal});
                     } else {
                         in_pipe::write(Cell::halo());
                     }
@@ -67,8 +60,7 @@ void test_tiling_kernel_with_strategy(std::size_t grid_height, std::size_t grid_
     TDVGlobalState global_state(TransFunc(), iteration_offset, target_i_iteration);
     working_queue.submit([&](sycl::handler &cgh) {
         TDVKernelArgument kernel_argument(global_state, cgh, iteration_offset, target_i_iteration);
-        TestExecutionKernel kernel(TransFunc(), iteration_offset, target_i_iteration, 0, 0,
-                                   grid_height, grid_width, Cell::halo(), kernel_argument);
+        TestExecutionKernel kernel(TransFunc(), iteration_offset, target_i_iteration, 0, 0, grid_height, grid_width, Cell::halo(), kernel_argument);
         cgh.single_task(kernel);
     });
 
@@ -98,35 +90,24 @@ void test_tiling_kernel_with_strategy(std::size_t grid_height, std::size_t grid_
     }
 }
 
-void test_tiling_kernel(std::size_t grid_height, std::size_t grid_width,
-                        std::size_t iteration_offset, std::size_t target_i_iteration) {
-    test_tiling_kernel_with_strategy<tdv::single_pass::InlineStrategy>(
-        tile_height, tile_width, iteration_offset, target_i_iteration);
-    test_tiling_kernel_with_strategy<tdv::single_pass::PrecomputeOnDeviceStrategy>(
-        tile_height, tile_width, iteration_offset, target_i_iteration);
-    test_tiling_kernel_with_strategy<tdv::single_pass::PrecomputeOnHostStrategy>(
-        tile_height, tile_width, iteration_offset, target_i_iteration);
+void test_tiling_kernel(std::size_t grid_height, std::size_t grid_width, std::size_t iteration_offset, std::size_t target_i_iteration) {
+    test_tiling_kernel_with_strategy<tdv::single_pass::InlineStrategy>(tile_height, tile_width, iteration_offset, target_i_iteration);
+    test_tiling_kernel_with_strategy<tdv::single_pass::PrecomputeOnDeviceStrategy>(tile_height, tile_width, iteration_offset, target_i_iteration);
+    test_tiling_kernel_with_strategy<tdv::single_pass::PrecomputeOnHostStrategy>(tile_height, tile_width, iteration_offset, target_i_iteration);
 }
 
-TEST_CASE("tiling::StencilUpdateKernel", "[tiling::StencilUpdateKernel]") {
-    test_tiling_kernel(tile_height, tile_width, 0, iters_per_pass);
-}
+TEST_CASE("tiling::StencilUpdateKernel", "[tiling::StencilUpdateKernel]") { test_tiling_kernel(tile_height, tile_width, 0, iters_per_pass); }
 
-TEST_CASE("tiling::StencilUpdateKernel (partial tile)", "[tiling::StencilUpdateKernel]") {
-    test_tiling_kernel(tile_height, tile_width / 2, 0, iters_per_pass);
-}
+TEST_CASE("tiling::StencilUpdateKernel (partial tile)", "[tiling::StencilUpdateKernel]") { test_tiling_kernel(tile_height, tile_width / 2, 0, iters_per_pass); }
 
 TEST_CASE("tiling::StencilUpdateKernel (partial pipeline)", "[tiling::StencilUpdateKernel]") {
     static_assert(iters_per_pass != 1);
     test_tiling_kernel(tile_height, tile_width, 0, iters_per_pass - 1);
 }
 
-TEST_CASE("tiling::StencilUpdateKernel (iteration offset)", "[tiling::StencilUpdateKernel]") {
-    test_tiling_kernel(tile_height, tile_width, iters_per_pass, 2 * iters_per_pass);
-}
+TEST_CASE("tiling::StencilUpdateKernel (iteration offset)", "[tiling::StencilUpdateKernel]") { test_tiling_kernel(tile_height, tile_width, iters_per_pass, 2 * iters_per_pass); }
 
-TEST_CASE("tiling::StencilUpdateKernel (iteration offset, partial pipeline)",
-          "[tiling::StencilUpdateKernel]") {
+TEST_CASE("tiling::StencilUpdateKernel (iteration offset, partial pipeline)", "[tiling::StencilUpdateKernel]") {
     static_assert(iters_per_pass != 1);
     test_tiling_kernel(tile_height, tile_width, iters_per_pass, 2 * iters_per_pass - 1);
 }
@@ -153,17 +134,12 @@ struct HaloHandlingKernel : public BaseTransitionFunction {
     }
 };
 
-TEST_CASE("Halo values inside the pipeline are handled correctly",
-          "[tiling::StencilUpdateKernel]") {
+TEST_CASE("Halo values inside the pipeline are handled correctly", "[tiling::StencilUpdateKernel]") {
     using in_pipe = sycl::pipe<class HaloValueTestInPipeID, bool>;
     using out_pipe = sycl::pipe<class HaloValueTestOutPipeID, bool>;
-    using TDVGlobalState =
-        tdv::single_pass::InlineStrategy::template GlobalState<HaloHandlingKernel,
-                                                               n_processing_elements>;
+    using TDVGlobalState = tdv::single_pass::InlineStrategy::template GlobalState<HaloHandlingKernel, n_processing_elements>;
     using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
-    using TestExecutionKernel =
-        StencilUpdateKernel<HaloHandlingKernel, TDVKernelArgument, n_processing_elements,
-                            tile_height, tile_width, in_pipe, out_pipe>;
+    using TestExecutionKernel = StencilUpdateKernel<HaloHandlingKernel, TDVKernelArgument, n_processing_elements, tile_height, tile_width, in_pipe, out_pipe>;
 
     sycl::queue working_queue;
 
@@ -182,8 +158,7 @@ TEST_CASE("Halo values inside the pipeline are handled correctly",
     TDVGlobalState global_state(HaloHandlingKernel(), 0, iters_per_pass);
     working_queue.submit([&](sycl::handler &cgh) {
         TDVKernelArgument kernel_argument(global_state, cgh, 0, iters_per_pass);
-        TestExecutionKernel kernel(HaloHandlingKernel(), 0, iters_per_pass, 0, 0, tile_height,
-                                   tile_width, true, kernel_argument);
+        TestExecutionKernel kernel(HaloHandlingKernel(), 0, iters_per_pass, 0, 0, tile_height, tile_width, true, kernel_argument);
         cgh.single_task(kernel);
     });
 
@@ -207,8 +182,7 @@ TEST_CASE("Halo values inside the pipeline are handled correctly",
     }
 }
 
-using StencilUpdateImpl =
-    StencilUpdate<FPGATransFunc<1>, n_processing_elements, tile_height, tile_width>;
+using StencilUpdateImpl = StencilUpdate<FPGATransFunc<1>, n_processing_elements, tile_height, tile_width>;
 using GridImpl = typename StencilUpdateImpl::GridImpl;
 
 static_assert(concepts::StencilUpdate<StencilUpdateImpl, FPGATransFunc<1>, GridImpl>);
@@ -219,16 +193,11 @@ TEST_CASE("tiling::StencilUpdate", "[tiling::StencilUpdate]") {
             std::size_t grid_height = (1 + i_grid_height) * (tile_height / 2);
             std::size_t grid_width = (1 + i_grid_width) * (tile_width / 2);
 
-            test_stencil_update<GridImpl, StencilUpdateImpl>(grid_height, grid_width, 0,
-                                                             iters_per_pass);
-            test_stencil_update<GridImpl, StencilUpdateImpl>(grid_height, grid_width, 1,
-                                                             iters_per_pass);
-            test_stencil_update<GridImpl, StencilUpdateImpl>(grid_height, grid_width, 0,
-                                                             iters_per_pass + 1);
-            test_stencil_update<GridImpl, StencilUpdateImpl>(grid_height - 1, grid_width, 0,
-                                                             iters_per_pass + 1);
-            test_stencil_update<GridImpl, StencilUpdateImpl>(grid_height, grid_width - 1, 0,
-                                                             iters_per_pass + 1);
+            test_stencil_update<GridImpl, StencilUpdateImpl>(grid_height, grid_width, 0, iters_per_pass);
+            test_stencil_update<GridImpl, StencilUpdateImpl>(grid_height, grid_width, 1, iters_per_pass);
+            test_stencil_update<GridImpl, StencilUpdateImpl>(grid_height, grid_width, 0, iters_per_pass + 1);
+            test_stencil_update<GridImpl, StencilUpdateImpl>(grid_height - 1, grid_width, 0, iters_per_pass + 1);
+            test_stencil_update<GridImpl, StencilUpdateImpl>(grid_height, grid_width - 1, 0, iters_per_pass + 1);
         }
     }
 }

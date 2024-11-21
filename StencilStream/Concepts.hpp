@@ -62,18 +62,12 @@ template <typename T>
 concept TransitionFunction =
     std::semiregular<typename T::Cell> && std::copyable<typename T::TimeDependentValue> &&
 
-    std::same_as<decltype(T::stencil_radius), const std::size_t> && (T::stencil_radius >= 1) &&
-    std::same_as<decltype(T::n_subiterations), const std::size_t> && (T::n_subiterations >= 1) &&
+    std::same_as<decltype(T::stencil_radius), const std::size_t> && (T::stencil_radius >= 1) && std::same_as<decltype(T::n_subiterations), const std::size_t> && (T::n_subiterations >= 1) &&
 
-    requires(T const &trans_func,
-             Stencil<typename T::Cell, T::stencil_radius, typename T::TimeDependentValue> const
-                 &stencil) {
+    requires(T const &trans_func, Stencil<typename T::Cell, T::stencil_radius, typename T::TimeDependentValue> const &stencil) {
         { trans_func(stencil) } -> std::same_as<typename T::Cell>;
-    } &&
-    requires(T const &trans_func, std::size_t i_iteration) {
-        {
-            trans_func.get_time_dependent_value(i_iteration)
-        } -> std::same_as<typename T::TimeDependentValue>;
+    } && requires(T const &trans_func, std::size_t i_iteration) {
+        { trans_func.get_time_dependent_value(i_iteration) } -> std::same_as<typename T::TimeDependentValue>;
     };
 
 /**
@@ -112,20 +106,17 @@ concept GridAccessor = requires(Accessor ac, std::size_t r, std::size_t c) {
  * Newly created grids may be uninitialized.
  */
 template <typename G, typename Cell>
-concept Grid =
-    requires(G &grid, sycl::buffer<Cell, 2> buffer, std::size_t r, std::size_t c, Cell cell) {
-        { G(r, c) } -> std::same_as<G>;
-        { G(sycl::range<2>(r, c)) } -> std::same_as<G>;
-        { G(buffer) } -> std::same_as<G>;
-        { grid.copy_from_buffer(buffer) } -> std::same_as<void>;
-        { grid.copy_to_buffer(buffer) } -> std::same_as<void>;
-        { grid.get_grid_height() } -> std::convertible_to<std::size_t>;
-        { grid.get_grid_width() } -> std::convertible_to<std::size_t>;
-        { grid.make_similar() } -> std::same_as<G>;
-        {
-            typename G::template GridAccessor<sycl::access::mode::read_write>(grid)
-        } -> GridAccessor<Cell>;
-    };
+concept Grid = requires(G &grid, sycl::buffer<Cell, 2> buffer, std::size_t r, std::size_t c, Cell cell) {
+    { G(r, c) } -> std::same_as<G>;
+    { G(sycl::range<2>(r, c)) } -> std::same_as<G>;
+    { G(buffer) } -> std::same_as<G>;
+    { grid.copy_from_buffer(buffer) } -> std::same_as<void>;
+    { grid.copy_to_buffer(buffer) } -> std::same_as<void>;
+    { grid.get_grid_height() } -> std::convertible_to<std::size_t>;
+    { grid.get_grid_width() } -> std::convertible_to<std::size_t>;
+    { grid.make_similar() } -> std::same_as<G>;
+    { typename G::template GridAccessor<sycl::access::mode::read_write>(grid) } -> GridAccessor<Cell>;
+};
 
 /**
  * \brief A grid updater that repeatedly applies stencil updates to each cell.
@@ -168,8 +159,7 @@ concept StencilUpdate =
         { params.iteration_offset } -> std::same_as<std::size_t &>;
         { params.n_iterations } -> std::same_as<std::size_t &>;
         { params.device } -> std::same_as<sycl::device &>;
-    } && TransitionFunction<TF> && Grid<G, typename TF::Cell> &&
-    (std::is_class<typename SU::Params>::value);
+    } && TransitionFunction<TF> && Grid<G, typename TF::Cell> && (std::is_class<typename SU::Params>::value);
 
 } // namespace concepts
 } // namespace stencil

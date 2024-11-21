@@ -35,10 +35,8 @@ template <typename MaterialResolver> class Kernel {
     static constexpr size_t n_subiterations = 2;
 
     Kernel(Parameters const &parameters, MaterialResolver mat_resolver)
-        : dt(parameters.dt()), t_0(parameters.t_0()), tau(parameters.tau),
-          omega(parameters.omega()), cutoff_iteration(), detect_iteration(),
-          source_radius_squared(), source_c(), source_r(), source_distance_bound(),
-          double_center_rc(), mat_resolver(mat_resolver) {
+        : dt(parameters.dt()), t_0(parameters.t_0()), tau(parameters.tau), omega(parameters.omega()), cutoff_iteration(), detect_iteration(), source_radius_squared(), source_c(), source_r(),
+          source_distance_bound(), double_center_rc(), mat_resolver(mat_resolver) {
         cutoff_iteration = std::floor(parameters.t_cutoff() / parameters.dt());
         detect_iteration = std::floor(parameters.t_detect() / parameters.dt());
 
@@ -57,8 +55,7 @@ template <typename MaterialResolver> class Kernel {
     float get_time_dependent_value(size_t i_iteration) const {
         float current_time = i_iteration * dt;
         float wave_progress = (current_time - t_0) / tau;
-        return cl::sycl::cos(omega * current_time) *
-               cl::sycl::exp(-1 * wave_progress * wave_progress);
+        return cl::sycl::cos(omega * current_time) * cl::sycl::exp(-1 * wave_progress * wave_progress);
     }
 
     Cell operator()(Stencil<Cell, 1, float> const &stencil) const {
@@ -69,8 +66,7 @@ template <typename MaterialResolver> class Kernel {
         float center_distance_score = r * (r - double_center_rc) + c * (c - double_center_rc);
         float source_distance_score = r * (r - 2 * source_r) + c * (c - 2 * source_c);
 
-        CoefMaterial material =
-            mat_resolver.get_material_coefficients(stencil, center_distance_score);
+        CoefMaterial material = mat_resolver.get_material_coefficients(stencil, center_distance_score);
 
         if (stencil.subiteration == 0) {
             cell.cell.ex *= material.ca;
@@ -80,15 +76,12 @@ template <typename MaterialResolver> class Kernel {
             cell.cell.ey += material.cb * (stencil[-1][0].cell.hz - stencil[0][0].cell.hz);
         } else {
             cell.cell.hz *= material.da;
-            cell.cell.hz += material.db * (stencil[0][1].cell.ex - stencil[0][0].cell.ex +
-                                           stencil[0][0].cell.ey - stencil[1][0].cell.ey);
+            cell.cell.hz += material.db * (stencil[0][1].cell.ex - stencil[0][0].cell.ex + stencil[0][0].cell.ey - stencil[1][0].cell.ey);
 
-            if (source_distance_score <= source_distance_bound &&
-                stencil.iteration <= cutoff_iteration) {
+            if (source_distance_score <= source_distance_bound && stencil.iteration <= cutoff_iteration) {
                 float interp_factor;
                 if (source_radius_squared != 0) {
-                    float cell_distance_squared =
-                        source_distance_score + source_c * source_c + source_r * source_r;
+                    float cell_distance_squared = source_distance_score + source_c * source_c + source_r * source_r;
                     // cell_distance_squared == (distance / dx)^2
                     interp_factor = 1.0 - float(cell_distance_squared) / source_radius_squared;
                 } else {

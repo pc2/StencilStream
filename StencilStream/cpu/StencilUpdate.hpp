@@ -117,8 +117,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
 
         for (std::size_t i_iter = 0; i_iter < params.n_iterations; i_iter++) {
             for (std::size_t i_subiter = 0; i_subiter < F::n_subiterations; i_subiter++) {
-                run_iter(queue, pass_source, pass_target, params.iteration_offset + i_iter,
-                         i_subiter);
+                run_iter(queue, pass_source, pass_target, params.iteration_offset + i_iter, i_subiter);
                 if (i_iter == 0 && i_subiter == 0) {
                     pass_source = &swap_grid_b;
                     pass_target = &swap_grid_a;
@@ -135,8 +134,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
         auto walltime_end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> walltime = walltime_end - walltime_start;
         this->walltime += walltime.count();
-        n_processed_cells +=
-            params.n_iterations * source_grid.get_grid_height() * source_grid.get_grid_width();
+        n_processed_cells += params.n_iterations * source_grid.get_grid_height() * source_grid.get_grid_width();
 
         return *pass_source;
     }
@@ -182,8 +180,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
      *
      * \param i_subiter The index of the sub-iteration to compute.
      */
-    void run_iter(sycl::queue queue, GridImpl *pass_source, GridImpl *pass_target,
-                  std::size_t i_iter, std::size_t i_subiter) {
+    void run_iter(sycl::queue queue, GridImpl *pass_source, GridImpl *pass_target, std::size_t i_iter, std::size_t i_subiter) {
         using TDV = typename F::TimeDependentValue;
         using StencilImpl = Stencil<Cell, F::stencil_radius, TDV>;
 
@@ -202,12 +199,9 @@ template <concepts::TransitionFunction F> class StencilUpdate {
                 for (std::size_t rel_r = 0; rel_r < 2 * F::stencil_radius + 1; rel_r++) {
                     for (std::size_t rel_c = 0; rel_c < 2 * F::stencil_radius + 1; rel_c++) {
                         Cell cell;
-                        if (id[0] + rel_r >= F::stencil_radius &&
-                            id[1] + rel_c >= F::stencil_radius &&
-                            id[0] + rel_r < grid_height + F::stencil_radius &&
+                        if (id[0] + rel_r >= F::stencil_radius && id[1] + rel_c >= F::stencil_radius && id[0] + rel_r < grid_height + F::stencil_radius &&
                             id[1] + rel_c < grid_width + F::stencil_radius) {
-                            cell = source_ac[id[0] + rel_r - F::stencil_radius]
-                                            [id[1] + rel_c - F::stencil_radius];
+                            cell = source_ac[id[0] + rel_r - F::stencil_radius][id[1] + rel_c - F::stencil_radius];
                         } else {
                             cell = halo_value;
                         }

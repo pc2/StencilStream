@@ -81,9 +81,7 @@ template <typename Cell> class Grid {
      *
      * \param other_buffer The buffer with the contents of the new grid.
      */
-    Grid(sycl::buffer<Cell, 2> other_buffer) : buffer(other_buffer.get_range()) {
-        copy_from_buffer(other_buffer);
-    }
+    Grid(sycl::buffer<Cell, 2> other_buffer) : buffer(other_buffer.get_range()) { copy_from_buffer(other_buffer); }
 
     /**
      * \brief Create a new reference to the given grid.
@@ -142,14 +140,12 @@ template <typename Cell> class Grid {
      *
      * \tparam access_mode The access mode for the accessor.
      */
-    template <sycl::access::mode access_mode = sycl::access::mode::read_write>
-    class GridAccessor : public sycl::host_accessor<Cell, Grid::dimensions, access_mode> {
+    template <sycl::access::mode access_mode = sycl::access::mode::read_write> class GridAccessor : public sycl::host_accessor<Cell, Grid::dimensions, access_mode> {
       public:
         /**
          * \brief Create a new accessor to the given grid.
          */
-        GridAccessor(Grid &grid)
-            : sycl::host_accessor<Cell, Grid::dimensions, access_mode>(grid.buffer) {}
+        GridAccessor(Grid &grid) : sycl::host_accessor<Cell, Grid::dimensions, access_mode>(grid.buffer) {}
     };
 
     /**

@@ -31,21 +31,13 @@ using TestGrid = Grid<sycl::id<2>, 64>;
 // Assert that the monotile grid fulfills the grid concept.
 static_assert(concepts::Grid<TestGrid, sycl::id<2>>);
 
-TEST_CASE("monotile::Grid::Grid", "[monotile::Grid]") {
-    grid_test::test_constructors<TestGrid>(tile_height, tile_width);
-}
+TEST_CASE("monotile::Grid::Grid", "[monotile::Grid]") { grid_test::test_constructors<TestGrid>(tile_height, tile_width); }
 
-TEST_CASE("monotile::Grid::copy_from_buffer", "[monotile::Grid]") {
-    grid_test::test_copy_from_buffer<TestGrid>(tile_height, tile_width);
-}
+TEST_CASE("monotile::Grid::copy_from_buffer", "[monotile::Grid]") { grid_test::test_copy_from_buffer<TestGrid>(tile_height, tile_width); }
 
-TEST_CASE("monotile::Grid::copy_to_buffer", "[monotile::Grid]") {
-    grid_test::test_copy_to_buffer<TestGrid>(tile_height, tile_width);
-}
+TEST_CASE("monotile::Grid::copy_to_buffer", "[monotile::Grid]") { grid_test::test_copy_to_buffer<TestGrid>(tile_height, tile_width); }
 
-TEST_CASE("monotile::Grid::make_similar", "[monotile::Grid]") {
-    grid_test::test_make_similar<TestGrid>(tile_height, tile_width);
-}
+TEST_CASE("monotile::Grid::make_similar", "[monotile::Grid]") { grid_test::test_make_similar<TestGrid>(tile_height, tile_width); }
 
 TEST_CASE("monotile::Grid::submit_read", "[monotile::Grid]") {
     TestGrid in_grid(tile_height, tile_width);

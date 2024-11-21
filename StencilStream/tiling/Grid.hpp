@@ -68,9 +68,7 @@ namespace tiling {
  * \tparam halo_radius The halo radius required for input tiles. This has to be the number of PEs in
  * a \ref StencilUpdate times the stencil radius of the implemented transition function.
  */
-template <typename Cell, std::size_t tile_height = 1024, std::size_t tile_width = 1024,
-          std::size_t halo_radius = 1>
-class Grid {
+template <typename Cell, std::size_t tile_height = 1024, std::size_t tile_width = 1024, std::size_t halo_radius = 1> class Grid {
     static_assert(2 * halo_radius < tile_height && 2 * halo_radius < tile_width);
 
   public:
@@ -88,8 +86,7 @@ class Grid {
      *
      * \param grid_width The width, or number of columns, of the new grid.
      */
-    Grid(std::size_t grid_height, std::size_t grid_width)
-        : grid_buffer(sycl::range<2>(grid_height, grid_width)) {}
+    Grid(std::size_t grid_height, std::size_t grid_width) : grid_buffer(sycl::range<2>(grid_height, grid_width)) {}
 
     /**
      * \brief Create a new, uninitialized grid with the given dimensions.
@@ -107,9 +104,7 @@ class Grid {
      *
      * \param input_buffer The buffer with the contents of the new grid.
      */
-    Grid(sycl::buffer<Cell, 2> input_buffer) : grid_buffer(input_buffer.get_range()) {
-        copy_from_buffer(input_buffer);
-    }
+    Grid(sycl::buffer<Cell, 2> input_buffer) : grid_buffer(input_buffer.get_range()) { copy_from_buffer(input_buffer); }
 
     /**
      * \brief Create a new reference to the given grid.
@@ -260,10 +255,7 @@ class Grid {
      *
      * \return The range of tiles of the grid.
      */
-    sycl::range<2> get_tile_range() const {
-        return sycl::range<2>(std::ceil(float(get_grid_height()) / float(tile_height)),
-                              std::ceil(float(get_grid_width()) / float(tile_width)));
-    }
+    sycl::range<2> get_tile_range() const { return sycl::range<2>(std::ceil(float(get_grid_height()) / float(tile_height)), std::ceil(float(get_grid_width()) / float(tile_width))); }
 
     /**
      * \brief Submit a kernel that sends a tile of the grid into a pipe.
@@ -294,9 +286,7 @@ class Grid {
      *
      * \returns The event object of the submitted kernel.
      */
-    template <typename in_pipe>
-    sycl::event submit_read(sycl::queue &queue, std::size_t tile_r, std::size_t tile_c,
-                            Cell halo_value) {
+    template <typename in_pipe> sycl::event submit_read(sycl::queue &queue, std::size_t tile_r, std::size_t tile_c, Cell halo_value) {
         if (tile_r >= get_tile_range()[0] || tile_c >= get_tile_range()[1]) {
             throw std::out_of_range("Tile index out of range!");
         }
@@ -314,25 +304,20 @@ class Grid {
             cgh.single_task([=]() {
                 std::size_t r_offset = tile_r * tile_height;
                 index_r_t start_local_r = -halo_radius;
-                index_r_t end_local_r =
-                    index_r_t(std::min(grid_height - tile_r * tile_height, tile_height)) +
-                    halo_radius;
+                index_r_t end_local_r = index_r_t(std::min(grid_height - tile_r * tile_height, tile_height)) + halo_radius;
 
                 std::size_t c_offset = tile_c * tile_width;
                 index_c_t start_local_c = -halo_radius;
-                index_c_t end_local_c =
-                    index_c_t(std::min(grid_width - tile_c * tile_width, tile_width)) + halo_radius;
+                index_c_t end_local_c = index_c_t(std::min(grid_width - tile_c * tile_width, tile_width)) + halo_radius;
 
-                [[intel::loop_coalesce(2)]] for (index_r_t local_r = start_local_r;
-                                                 local_r < end_local_r; local_r++) {
+                [[intel::loop_coalesce(2)]] for (index_r_t local_r = start_local_r; local_r < end_local_r; local_r++) {
                     for (index_c_t local_c = start_local_c; local_c < end_local_c; local_c++) {
 
                         std::size_t r = r_offset + std::size_t(local_r);
                         std::size_t c = c_offset + std::size_t(local_c);
 
                         Cell value;
-                        if ((tile_r > 0 || local_r >= 0) && (tile_c > 0 || local_c >= 0) &&
-                            r < grid_height && c < grid_width) {
+                        if ((tile_r > 0 || local_r >= 0) && (tile_c > 0 || local_c >= 0) && r < grid_height && c < grid_width) {
                             value = grid_ac[r][c];
                         } else {
                             value = halo_value;
@@ -372,8 +357,7 @@ class Grid {
      *
      * \returns The event object of the submitted kernel.
      */
-    template <typename out_pipe>
-    sycl::event submit_write(sycl::queue queue, std::size_t tile_r, std::size_t tile_c) {
+    template <typename out_pipe> sycl::event submit_write(sycl::queue queue, std::size_t tile_r, std::size_t tile_c) {
         if (tile_r >= get_tile_range()[0] || tile_c >= get_tile_range()[1]) {
             throw std::out_of_range("Tile index out of range!");
         }
@@ -390,18 +374,14 @@ class Grid {
 
             cgh.single_task([=]() {
                 std::size_t r_offset = tile_r * tile_height;
-                uindex_r_t end_local_r =
-                    uindex_r_t(std::min(grid_height - tile_r * tile_height, tile_height));
+                uindex_r_t end_local_r = uindex_r_t(std::min(grid_height - tile_r * tile_height, tile_height));
 
                 std::size_t c_offset = tile_c * tile_width;
-                uindex_c_t end_local_c =
-                    uindex_c_t(std::min(grid_width - tile_c * tile_width, tile_width));
+                uindex_c_t end_local_c = uindex_c_t(std::min(grid_width - tile_c * tile_width, tile_width));
 
-                [[intel::loop_coalesce(2)]] for (uindex_r_t local_r = 0; local_r < end_local_r;
-                                                 local_r++) {
+                [[intel::loop_coalesce(2)]] for (uindex_r_t local_r = 0; local_r < end_local_r; local_r++) {
                     for (uindex_c_t local_c = 0; local_c < end_local_c; local_c++) {
-                        grid_ac[r_offset + std::size_t(local_r)][c_offset + std::size_t(local_c)] =
-                            out_pipe::read();
+                        grid_ac[r_offset + std::size_t(local_r)][c_offset + std::size_t(local_c)] = out_pipe::read();
                     }
                 }
             });

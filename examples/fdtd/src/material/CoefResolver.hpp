@@ -39,17 +39,12 @@ class CoefResolver {
             if (ring_index >= parameters.rings.size()) {
                 return MaterialCell{Cell::halo(), CoefMaterial::perfect_metal()};
             } else {
-                return MaterialCell{Cell::halo(), CoefMaterial::from_relative_material(
-                                                      parameters.rings[ring_index].material,
-                                                      parameters.dx, parameters.dt())};
+                return MaterialCell{Cell::halo(), CoefMaterial::from_relative_material(parameters.rings[ring_index].material, parameters.dx, parameters.dt())};
             }
         }
     };
 
     CoefResolver(Parameters const &parameters) {}
 
-    CoefMaterial get_material_coefficients(Stencil<MaterialCell, 1, float> const &stencil,
-                                           float distance_score) const {
-        return stencil[0][0].coefficients;
-    }
+    CoefMaterial get_material_coefficients(Stencil<MaterialCell, 1, float> const &stencil, float distance_score) const { return stencil[0][0].coefficients; }
 };

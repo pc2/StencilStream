@@ -46,8 +46,7 @@ class RenderResolver {
                 radius += ring.radius;
 
                 distance_bounds[i] = (radius / dx) * (radius / dx) - 2 * center_r * center_r;
-                materials[i] = CoefMaterial::from_relative_material(ring.material, parameters.dx,
-                                                                    parameters.dt());
+                materials[i] = CoefMaterial::from_relative_material(ring.material, parameters.dx, parameters.dt());
             } else {
                 distance_bounds[i] = std::numeric_limits<float>::infinity();
                 materials[i] = CoefMaterial::perfect_metal();
@@ -55,8 +54,7 @@ class RenderResolver {
         }
     }
 
-    CoefMaterial get_material_coefficients(Stencil<MaterialCell, 1, float> const &stencil,
-                                           float distance_score) const {
+    CoefMaterial get_material_coefficients(Stencil<MaterialCell, 1, float> const &stencil, float distance_score) const {
 #pragma unroll
         for (uindex_ring_t i = 0; i < max_n_rings + 1; i++) {
             if (distance_score <= distance_bounds[i]) {

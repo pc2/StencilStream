@@ -68,8 +68,7 @@ template <std::size_t radius> class FPGATransFunc {
                 Cell old_cell = stencil[r][c];
                 int cell_r = stencil.id[0] + r;
                 int cell_c = stencil.id[1] + c;
-                if (cell_r >= 0 && cell_c >= 0 && cell_r < stencil.grid_range[0] &&
-                    cell_c < stencil.grid_range[1]) {
+                if (cell_r >= 0 && cell_c >= 0 && cell_r < stencil.grid_range[0] && cell_c < stencil.grid_range[1]) {
                     is_valid &= old_cell.r == cell_r;
                     is_valid &= old_cell.c == cell_c;
                     is_valid &= old_cell.i_iteration == stencil.iteration;
@@ -111,8 +110,7 @@ template <std::size_t radius> class HostTransFunc {
     Cell operator()(stencil::Stencil<Cell, radius, std::size_t> const &stencil) const {
         Cell new_cell = stencil[0][0];
 
-        if (stencil.id.r < 0 || stencil.id.c < 0 || stencil.id.r >= stencil.grid_range.r ||
-            stencil.id.c >= stencil.grid_range.c) {
+        if (stencil.id.r < 0 || stencil.id.c < 0 || stencil.id.r >= stencil.grid_range.r || stencil.id.c >= stencil.grid_range.c) {
             // Things may be weird in this (illegal) situation, we should not do
             // anything with side-effects.
             return new_cell;
@@ -123,8 +121,7 @@ template <std::size_t radius> class HostTransFunc {
                 Cell old_cell = stencil[r][c];
                 int cell_r = stencil.id.r + r;
                 int cell_c = stencil.id.c + c;
-                if (cell_r >= 0 && cell_c >= 0 && cell_r < stencil.grid_range.r &&
-                    cell_c < stencil.grid_range.c) {
+                if (cell_r >= 0 && cell_c >= 0 && cell_r < stencil.grid_range.r && cell_c < stencil.grid_range.c) {
                     REQUIRE(old_cell.r == cell_r);
                     REQUIRE(old_cell.c == cell_c);
                     REQUIRE(old_cell.i_iteration == stencil.iteration);

@@ -49,12 +49,10 @@ using TDVStrategy = tdv::single_pass::PrecomputeOnHostStrategy;
     #include <StencilStream/monotile/StencilUpdate.hpp>
 
 using Grid = monotile::Grid<CellImpl>;
-using StencilUpdate = monotile::StencilUpdate<KernelImpl, n_processing_elements, tile_height,
-                                              tile_width, TDVStrategy>;
+using StencilUpdate = monotile::StencilUpdate<KernelImpl, n_processing_elements, tile_height, tile_width, TDVStrategy>;
 #elif defined(STENCILSTREAM_BACKEND_TILING)
     #include <StencilStream/tiling/StencilUpdate.hpp>
-using StencilUpdate =
-    tiling::StencilUpdate<KernelImpl, n_processing_elements, tile_height, tile_width, TDVStrategy>;
+using StencilUpdate = tiling::StencilUpdate<KernelImpl, n_processing_elements, tile_height, tile_width, TDVStrategy>;
 using Grid = StencilUpdate::GridImpl;
 #elif defined(STENCILSTREAM_BACKEND_CPU)
     #include <StencilStream/cpu/StencilUpdate.hpp>
@@ -80,8 +78,7 @@ enum class CellField {
     HZ_SUM,
 };
 
-void save_frame(Grid frame_buffer, size_t iteration_index, CellField field,
-                Parameters const &parameters) {
+void save_frame(Grid frame_buffer, size_t iteration_index, CellField field, Parameters const &parameters) {
     Grid::GridAccessor<access::mode::read> frame(frame_buffer);
 
     ostringstream frame_path;
@@ -140,8 +137,7 @@ int main(int argc, char **argv) {
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
     if (parameters.grid_range()[0] > tile_width || parameters.grid_range()[1] > tile_height) {
-        std::cerr << "Error: The grid may not exceed the size of the tile (" << tile_width << " by "
-                  << tile_height << " cells) when using the monotile architecture." << std::endl;
+        std::cerr << "Error: The grid may not exceed the size of the tile (" << tile_width << " by " << tile_height << " cells) when using the monotile architecture." << std::endl;
         exit(1);
     }
 #endif
@@ -180,8 +176,7 @@ int main(int argc, char **argv) {
 #endif
 
     StencilUpdate simulation({
-        .transition_function = KernelImpl(parameters, mat_resolver), .halo_value = CellImpl::halo(),
-        .iteration_offset = 0, .n_iterations = parameters.n_timesteps(), .device = device,
+        .transition_function = KernelImpl(parameters, mat_resolver), .halo_value = CellImpl::halo(), .iteration_offset = 0, .n_iterations = parameters.n_timesteps(), .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
 #if !defined(STENCILSTREAM_BACKEND_CPU)
             .profiling = true, // enable additional profiling for FPGA targets
@@ -196,8 +191,7 @@ int main(int argc, char **argv) {
     if (parameters.n_snap_timesteps().has_value()) {
         size_t n_snap_timesteps = parameters.n_snap_timesteps().value();
         simulation.get_params().n_iterations = n_snap_timesteps;
-        for (size_t &i = simulation.get_params().iteration_offset; i < parameters.n_timesteps();
-             i += n_snap_timesteps) {
+        for (size_t &i = simulation.get_params().iteration_offset; i < parameters.n_timesteps(); i += n_snap_timesteps) {
             grid = simulation(grid);
             save_frame(grid, i + n_snap_timesteps, CellField::HZ, parameters);
         }
