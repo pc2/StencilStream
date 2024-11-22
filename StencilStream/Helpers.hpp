@@ -45,4 +45,8 @@ template <typename T> struct Padded {
     T value;
 } __attribute__((aligned(std::bit_ceil(sizeof(T)))));
 
+template <typename T> inline constexpr T int_ceil_div(T a, T b) {
+    return a / b + ((a % b == 0) ? 0 : 1);
+}
+
 } // namespace stencil
