@@ -39,7 +39,8 @@ template <typename id, typename T> class HostPipe {
 
         T read() {
             if (queue.empty()) {
-                throw std::runtime_error("Try to read from empty pipe (blocking is not implemented).");
+                throw std::runtime_error(
+                    "Try to read from empty pipe (blocking is not implemented).");
             } else {
                 T new_value = queue.back();
                 queue.pop_back();

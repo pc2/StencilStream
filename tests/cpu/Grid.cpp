@@ -28,10 +28,18 @@ using TestGrid = Grid<sycl::id<2>>;
 
 static_assert(concepts::Grid<TestGrid, sycl::id<2>>);
 
-TEST_CASE("cpu::Grid::Grid", "[cpu::Grid]") { grid_test::test_constructors<TestGrid>(tile_height, tile_width); }
+TEST_CASE("cpu::Grid::Grid", "[cpu::Grid]") {
+    grid_test::test_constructors<TestGrid>(tile_height, tile_width);
+}
 
-TEST_CASE("cpu::Grid::copy_from_buffer", "[cpu::Grid]") { grid_test::test_copy_from_buffer<TestGrid>(tile_height, tile_width); }
+TEST_CASE("cpu::Grid::copy_from_buffer", "[cpu::Grid]") {
+    grid_test::test_copy_from_buffer<TestGrid>(tile_height, tile_width);
+}
 
-TEST_CASE("cpu::Grid::copy_to_buffer", "[cpu::Grid]") { grid_test::test_copy_to_buffer<TestGrid>(tile_height, tile_width); }
+TEST_CASE("cpu::Grid::copy_to_buffer", "[cpu::Grid]") {
+    grid_test::test_copy_to_buffer<TestGrid>(tile_height, tile_width);
+}
 
-TEST_CASE("cpu::Grid::make_similar", "[cpu::Grid]") { grid_test::test_make_similar<TestGrid>(tile_height, tile_width); }
+TEST_CASE("cpu::Grid::make_similar", "[cpu::Grid]") {
+    grid_test::test_make_similar<TestGrid>(tile_height, tile_width);
+}

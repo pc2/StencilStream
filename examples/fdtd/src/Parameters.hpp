@@ -54,8 +54,9 @@ struct Parameters {
     }
 
     Parameters(int argc, char **argv)
-        : t_cutoff_factor(7.0), t_detect_factor(14.0), t_max_factor(15.0), t_snap_factor(std::nullopt), frequency(120e12), t_0_factor(3.0), source_x(0.0), source_y(0.0), source_radius(0.0), dx(10e-9),
-          tau(100e-15), rings(), out_dir(".") {
+        : t_cutoff_factor(7.0), t_detect_factor(14.0), t_max_factor(15.0),
+          t_snap_factor(std::nullopt), frequency(120e12), t_0_factor(3.0), source_x(0.0),
+          source_y(0.0), source_radius(0.0), dx(10e-9), tau(100e-15), rings(), out_dir(".") {
 
         bool config_loaded = false;
 
@@ -95,7 +96,8 @@ struct Parameters {
     static float get_checked_float(json &object, std::string key) {
         check_existance(object, key);
         if (!object[key].is_number()) {
-            std::cerr << "Field '" << key << "' has to be a number, but is a " << object[key].type_name() << "!" << std::endl;
+            std::cerr << "Field '" << key << "' has to be a number, but is a "
+                      << object[key].type_name() << "!" << std::endl;
             exit(1);
         }
         return object[key].get<float>();
@@ -104,7 +106,8 @@ struct Parameters {
     static json &get_checked_object(json &object, std::string key) {
         check_existance(object, key);
         if (!object[key].is_object()) {
-            std::cerr << "Field '" << key << "' has to be an object, but is a " << object[key].type_name() << "!" << std::endl;
+            std::cerr << "Field '" << key << "' has to be an object, but is a "
+                      << object[key].type_name() << "!" << std::endl;
             exit(1);
         }
         return object[key];
@@ -113,7 +116,8 @@ struct Parameters {
     static json &get_checked_array(json &object, std::string key) {
         check_existance(object, key);
         if (!object[key].is_array()) {
-            std::cerr << "Field '" << key << "' has to be an array, but is a " << object[key].type_name() << "!" << std::endl;
+            std::cerr << "Field '" << key << "' has to be an array, but is a "
+                      << object[key].type_name() << "!" << std::endl;
             exit(1);
         }
         return object[key];
@@ -152,7 +156,8 @@ struct Parameters {
 
         json rings_array = get_checked_array(config, "cavity_rings");
         if (rings_array.size() > max_n_rings) {
-            std::cerr << "Illegal config file: Too many rings. This build only supports up to " << max_n_rings << std::endl;
+            std::cerr << "Illegal config file: Too many rings. This build only supports up to "
+                      << max_n_rings << std::endl;
             exit(1);
         }
 
@@ -192,7 +197,8 @@ struct Parameters {
         RingParameter(json &object) : radius(0.0), material(RelMaterial::perfect_metal()) {
             radius = get_checked_float(object, "radius");
             if (radius < 0.0) {
-                std::cerr << "Invalid config file: Cavity ring radius may not be negative!" << std::endl;
+                std::cerr << "Invalid config file: Cavity ring radius may not be negative!"
+                          << std::endl;
                 exit(1);
             }
 
@@ -250,13 +256,17 @@ struct Parameters {
 
         std::cout << "# Timing" << std::endl;
         std::cout << "tau               = " << tau << " s" << std::endl;
-        std::cout << "t_cutoff          = " << t_cutoff_factor << " tau = " << t_cutoff() << " s" << std::endl;
-        std::cout << "t_detect          = " << t_detect_factor << " tau = " << t_detect() << " s" << std::endl;
-        std::cout << "t_max             = " << t_max_factor << " tau = " << t_max() << " s" << std::endl;
+        std::cout << "t_cutoff          = " << t_cutoff_factor << " tau = " << t_cutoff() << " s"
+                  << std::endl;
+        std::cout << "t_detect          = " << t_detect_factor << " tau = " << t_detect() << " s"
+                  << std::endl;
+        std::cout << "t_max             = " << t_max_factor << " tau = " << t_max() << " s"
+                  << std::endl;
         std::cout << std::endl;
 
         std::cout << "# Source Wave" << std::endl;
-        std::cout << "phase             = " << t_0_factor << " tau = " << t_0() << " s" << std::endl;
+        std::cout << "phase             = " << t_0_factor << " tau = " << t_0() << " s"
+                  << std::endl;
         std::cout << "frequency         = " << frequency << " Hz" << std::endl;
         std::cout << std::endl;
 
@@ -264,7 +274,8 @@ struct Parameters {
         float inner_radius = 0.0;
         for (size_t i = 0; i < rings.size(); i++) {
             std::cout << "## Ring No. " << i << std::endl;
-            std::cout << "distance range    = [" << inner_radius << ", " << inner_radius + rings[i].radius << "]" << std::endl;
+            std::cout << "distance range    = [" << inner_radius << ", "
+                      << inner_radius + rings[i].radius << "]" << std::endl;
             inner_radius += rings[i].radius;
             std::cout << "mu_r              = " << rings[i].material.mu_r << std::endl;
             std::cout << "eps_r             = " << rings[i].material.eps_r << std::endl;

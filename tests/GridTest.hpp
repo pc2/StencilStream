@@ -23,7 +23,8 @@
 #include <catch2/catch_all.hpp>
 
 namespace grid_test {
-template <stencil::concepts::Grid<sycl::id<2>> G> void test_constructors(std::size_t grid_height, std::size_t grid_width) {
+template <stencil::concepts::Grid<sycl::id<2>> G>
+void test_constructors(std::size_t grid_height, std::size_t grid_width) {
     G grid(1, 1);
     REQUIRE(grid.get_grid_height() == 1);
     REQUIRE(grid.get_grid_width() == 1);
@@ -60,7 +61,8 @@ template <stencil::concepts::Grid<sycl::id<2>> G> void test_constructors(std::si
     }
 }
 
-template <stencil::concepts::Grid<sycl::id<2>> G> void test_copy_from_buffer(std::size_t grid_height, std::size_t grid_width) {
+template <stencil::concepts::Grid<sycl::id<2>> G>
+void test_copy_from_buffer(std::size_t grid_height, std::size_t grid_width) {
     sycl::buffer<sycl::id<2>, 2> in_buffer = sycl::range<2>(grid_height, grid_width);
     {
         sycl::host_accessor in_buffer_ac(in_buffer, sycl::read_write);
@@ -84,7 +86,8 @@ template <stencil::concepts::Grid<sycl::id<2>> G> void test_copy_from_buffer(std
     }
 }
 
-template <stencil::concepts::Grid<sycl::id<2>> G> void test_copy_to_buffer(std::size_t grid_height, std::size_t grid_width) {
+template <stencil::concepts::Grid<sycl::id<2>> G>
+void test_copy_to_buffer(std::size_t grid_height, std::size_t grid_width) {
     G grid(grid_height, grid_width);
     {
         typename G::template GridAccessor<sycl::access::mode::read_write> grid_ac(grid);
@@ -107,7 +110,8 @@ template <stencil::concepts::Grid<sycl::id<2>> G> void test_copy_to_buffer(std::
     }
 }
 
-template <stencil::concepts::Grid<sycl::id<2>> G> void test_make_similar(std::size_t grid_height, std::size_t grid_width) {
+template <stencil::concepts::Grid<sycl::id<2>> G>
+void test_make_similar(std::size_t grid_height, std::size_t grid_width) {
     G grid(grid_height, grid_width);
     G similar_grid = grid.make_similar();
     REQUIRE(similar_grid.get_grid_height() == grid_height);

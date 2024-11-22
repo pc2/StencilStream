@@ -61,7 +61,8 @@ struct ThermalConvectionCell {
 #define D_YA(FIELD) (stencil[0][1].FIELD - stencil[0][0].FIELD)
 #define D_XI(FIELD) (stencil[1][1].FIELD - stencil[0][1].FIELD)
 #define D_YI(FIELD) (stencil[1][1].FIELD - stencil[1][0].FIELD)
-#define AV(FIELD) ((stencil[0][0].FIELD + stencil[1][0].FIELD + stencil[0][1].FIELD + stencil[1][1].FIELD) * 0.25)
+#define AV(FIELD)                                                                                  \
+    ((stencil[0][0].FIELD + stencil[1][0].FIELD + stencil[0][1].FIELD + stencil[1][1].FIELD) * 0.25)
 #define AV_YI(FIELD) ((stencil[1][0].FIELD + stencil[1][1].FIELD) * 0.5)
 
 class PseudoTransientKernel : public BaseTransitionFunction {
@@ -119,14 +120,18 @@ class PseudoTransientKernel : public BaseTransitionFunction {
             // compute_2!(...) and update_V!(...)
             if (x >= 1 && y >= 1) {
                 if (x < (nx + 1) - 1 && y < ny - 1) {
-                    double Rx =
-                        1.0 / rho * ((stencil[0][0].tau_xx - stencil[-1][0].tau_xx) / dx + (stencil[-1][0].sigma_xy - stencil[-1][-1].sigma_xy) / dy - (stencil[0][0].Pt - stencil[-1][0].Pt) / dx);
+                    double Rx = 1.0 / rho *
+                                ((stencil[0][0].tau_xx - stencil[-1][0].tau_xx) / dx +
+                                 (stencil[-1][0].sigma_xy - stencil[-1][-1].sigma_xy) / dy -
+                                 (stencil[0][0].Pt - stencil[-1][0].Pt) / dx);
                     new_cell.dVxd_tau = dampX * ALL(dVxd_tau) + Rx * delta_tau_iter;
                     new_cell.Vx = ALL(Vx) + new_cell.dVxd_tau * delta_tau_iter;
                 }
                 if (x < nx - 1 && y < (ny + 1) - 1) {
                     double Ry = 1.0 / rho *
-                                ((stencil[0][0].tau_yy - stencil[0][-1].tau_yy) / dy + (stencil[0][-1].sigma_xy - stencil[-1][-1].sigma_xy) / dx - (stencil[0][0].Pt - stencil[0][-1].Pt) / dy +
+                                ((stencil[0][0].tau_yy - stencil[0][-1].tau_yy) / dy +
+                                 (stencil[0][-1].sigma_xy - stencil[-1][-1].sigma_xy) / dx -
+                                 (stencil[0][0].Pt - stencil[0][-1].Pt) / dy +
                                  roh0_g_alpha * ((stencil[0][-1].T + stencil[0][0].T) * 0.5));
                     new_cell.dVyd_tau = dampY * ALL(dVyd_tau) + Ry * delta_tau_iter;
                     new_cell.Vy = ALL(Vy) + new_cell.dVyd_tau * delta_tau_iter;
@@ -238,14 +243,19 @@ using ThermalSolverUpdate = cpu::StencilUpdate<ThermalSolverKernel>;
 constexpr size_t max_nx = 1 << 16;
 constexpr size_t max_ny = 512;
 using Grid = monotile::Grid<ThermalConvectionCell>;
-using PseudoTransientUpdate = monotile::StencilUpdate<PseudoTransientKernel, PseudoTransientKernel::n_subiterations * 8, max_nx, max_ny>;
-using ThermalSolverUpdate = monotile::StencilUpdate<ThermalSolverKernel, ThermalSolverKernel::n_subiterations, max_nx, max_ny>;
+using PseudoTransientUpdate =
+    monotile::StencilUpdate<PseudoTransientKernel, PseudoTransientKernel::n_subiterations * 8,
+                            max_nx, max_ny>;
+using ThermalSolverUpdate =
+    monotile::StencilUpdate<ThermalSolverKernel, ThermalSolverKernel::n_subiterations, max_nx,
+                            max_ny>;
 
 #endif
 
 int main(int argc, char **argv) {
     if (argc != 3) {
-        std::cerr << "Usage: " << argv[0] << " <path to experiment>.json <path to output directory>" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <path to experiment>.json <path to output directory>"
+                  << std::endl;
         return 1;
     }
 
@@ -292,9 +302,9 @@ int main(int argc, char **argv) {
     double ar = lx / ly;               // aspect ratio
 
     // Physics - dimentionally dependent parameters
-    double w = 1e-2 * ly;                                             // initial perturbation standard deviation, m
+    double w = 1e-2 * ly; // initial perturbation standard deviation, m
     double roh0_g_alpha = Ra * eta0 * DcT / deltaT / std::pow(ly, 3); // thermal expansion
-    double delta_eta_delta_T = 1e-10 / deltaT;                        // viscosity's temperature dependence
+    double delta_eta_delta_T = 1e-10 / deltaT; // viscosity's temperature dependence
 
     // Numerics
     size_t res = experiment.at("res");
@@ -309,20 +319,25 @@ int main(int argc, char **argv) {
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
     if (nx > max_nx || ny > max_ny) {
-        std::cerr << "The grid is too large for the synthesized accelerator. Required size: " << nx << "x" << ny << " cells. Maximal size: " << max_nx << "x" << max_ny << " cells!" << std::endl;
+        std::cerr << "The grid is too large for the synthesized accelerator. Required size: " << nx
+                  << "x" << ny << " cells. Maximal size: " << max_nx << "x" << max_ny << " cells!"
+                  << std::endl;
         return 1;
     }
 #endif
 
     // Derived numerics
     double dx = lx / (nx - 1);
-    double dy = ly / (ny - 1);                                                             // cell size
-    double rho = 1.0 / Pra * eta0 / DcT;                                                   // density
-    double dt_diff = 1.0 / 4.1 * std::pow(std::min(dx, dy), 2) / DcT;                      // diffusive CFL timestep limiter
-    double delta_tau_iter = 1.0 / 6.1 * std::min(dx, dy) / std::sqrt(eta0 / rho);          // iterative CFL pseudo-timestep limiter
-    double beta = 6.1 * std::pow(delta_tau_iter, 2) / std::pow(std::min(dx, dy), 2) / rho; // numerical bulk compressibility
-    double dampX = 1.0 - dmp / nx;                                                         // damping term for the x-momentum equation
-    double dampY = 1.0 - dmp / ny;                                                         // damping term for the y-momentum equation
+    double dy = ly / (ny - 1);           // cell size
+    double rho = 1.0 / Pra * eta0 / DcT; // density
+    double dt_diff =
+        1.0 / 4.1 * std::pow(std::min(dx, dy), 2) / DcT; // diffusive CFL timestep limiter
+    double delta_tau_iter = 1.0 / 6.1 * std::min(dx, dy) /
+                            std::sqrt(eta0 / rho); // iterative CFL pseudo-timestep limiter
+    double beta = 6.1 * std::pow(delta_tau_iter, 2) / std::pow(std::min(dx, dy), 2) /
+                  rho;             // numerical bulk compressibility
+    double dampX = 1.0 - dmp / nx; // damping term for the x-momentum equation
+    double dampY = 1.0 - dmp / ny; // damping term for the y-momentum equation
 
 #if defined(STENCILSTREAM_TARGET_FPGA)
     sycl::device device(sycl::ext::intel::fpga_selector_v);
@@ -364,7 +379,8 @@ int main(int argc, char **argv) {
                 } else if (y == ny - 1) {
                     cell.T = -deltaT / 2.0;
                 } else if (x < nx && y < ny) {
-                    cell.T = deltaT * std::exp(-std::pow((x * dx - px) / w, 2) - std::pow((y * dy - py) / w, 2));
+                    cell.T = deltaT * std::exp(-std::pow((x * dx - px) / w, 2) -
+                                               std::pow((y * dy - py) / w, 2));
                 }
                 ac[x][y] = cell;
             }
@@ -384,7 +400,8 @@ int main(int argc, char **argv) {
         for (iter = 0; iter < iterMax && (errV > epsilon || errP > epsilon); iter += nerr) {
             grid = pseudo_transient_update(grid);
 
-            max_ErrV = max_ErrP = max_Vx = max_Vy = max_Pt = -std::numeric_limits<double>::infinity();
+            max_ErrV = max_ErrP = max_Vx = max_Vy = max_Pt =
+                -std::numeric_limits<double>::infinity();
             {
                 Grid::GridAccessor<sycl::access::mode::read> ac(grid);
                 for (size_t x = 0; x < nx + 1; x++) {
@@ -413,15 +430,19 @@ int main(int argc, char **argv) {
         }
         auto transients_end = std::chrono::high_resolution_clock::now();
 
-        auto transients_computation_time = std::chrono::duration_cast<std::chrono::duration<double>>(transients_end - transients_start);
+        auto transients_computation_time =
+            std::chrono::duration_cast<std::chrono::duration<double>>(transients_end -
+                                                                      transients_start);
 
-        printf("it = %zu (iter = %zu, time = %e), errV=%1.3e, errP=%1.3e \n", it, iter, transients_computation_time.count(), errV, errP);
+        printf("it = %zu (iter = %zu, time = %e), errV=%1.3e, errP=%1.3e \n", it, iter,
+               transients_computation_time.count(), errV, errP);
 
         double dt_adv = std::min(dx / max_Vx, dy / max_Vy) / 2.1;
         double dt = std::min(dt_diff, dt_adv);
 
         ThermalSolverUpdate thermal_solver_update({
-            .transition_function = ThermalSolverKernel{.nx = nx, .ny = ny, .dx = dx, .dy = dy, .dt = dt, .DcT = DcT},
+            .transition_function =
+                ThermalSolverKernel{.nx = nx, .ny = ny, .dx = dx, .dy = dy, .dt = dt, .DcT = DcT},
             .halo_value = ThermalConvectionCell::halo_value(),
             .n_iterations = 1,
             .device = device,
@@ -429,7 +450,8 @@ int main(int argc, char **argv) {
         grid = thermal_solver_update(grid);
 
         if (it > 0 && it % nout == 0) {
-            std::filesystem::path output_file_path = output_dir_path / std::filesystem::path(std::to_string(it) + ".csv");
+            std::filesystem::path output_file_path =
+                output_dir_path / std::filesystem::path(std::to_string(it) + ".csv");
             std::ofstream out_file(output_file_path);
             {
                 Grid::GridAccessor<sycl::access::mode::read> ac(grid);
@@ -448,7 +470,8 @@ int main(int argc, char **argv) {
     }
 
     auto computation_end = std::chrono::system_clock::now();
-    auto computation_time = std::chrono::duration_cast<std::chrono::duration<double>>(computation_end - computation_start);
+    auto computation_time = std::chrono::duration_cast<std::chrono::duration<double>>(
+        computation_end - computation_start);
     std::cout << "Total time = " << computation_time.count() << std::endl;
     return 0;
 }

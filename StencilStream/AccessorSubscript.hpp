@@ -43,7 +43,9 @@ namespace stencil {
  * \tparam current_subdim The current subdim. Decides whether the next call to \ref
  * operator[] returns another \ref AccessorSubscript or the final cell reference.
  */
-template <typename Cell, typename Accessor, sycl::access::mode access_mode, std::size_t current_subdim = 0> class AccessorSubscript {
+template <typename Cell, typename Accessor, sycl::access::mode access_mode,
+          std::size_t current_subdim = 0>
+class AccessorSubscript {
   public:
     /// \brief The number of dimensions in the accessed grid.
     static constexpr std::size_t dimensions = Accessor::dimensions;
@@ -74,7 +76,10 @@ template <typename Cell, typename Accessor, sycl::access::mode access_mode, std:
      * \param id_prefix The previous prefix
      * \param i The new index to add to the prefix.
      */
-    AccessorSubscript(Accessor &ac, sycl::id<dimensions> id_prefix, std::size_t i) : ac(ac), id_prefix(id_prefix) { id_prefix[current_subdim] = i; }
+    AccessorSubscript(Accessor &ac, sycl::id<dimensions> id_prefix, std::size_t i)
+        : ac(ac), id_prefix(id_prefix) {
+        id_prefix[current_subdim] = i;
+    }
 
     /**
      * \brief Access the next dimension's accessor subscript.

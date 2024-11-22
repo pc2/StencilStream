@@ -37,13 +37,21 @@ using TestGrid = Grid<sycl::id<2>, tile_height, tile_width, halo_radius>;
 // Assert that the tiled grid fulfills the grid concept.
 static_assert(concepts::Grid<TestGrid, sycl::id<2>>);
 
-TEST_CASE("tiling::Grid::Grid", "[tiling::Grid]") { grid_test::test_constructors<TestGrid>(add_grid_height, add_grid_width); }
+TEST_CASE("tiling::Grid::Grid", "[tiling::Grid]") {
+    grid_test::test_constructors<TestGrid>(add_grid_height, add_grid_width);
+}
 
-TEST_CASE("tiling::Grid::copy_from_buffer", "[tiling::Grid]") { grid_test::test_copy_from_buffer<TestGrid>(add_grid_height, add_grid_width); }
+TEST_CASE("tiling::Grid::copy_from_buffer", "[tiling::Grid]") {
+    grid_test::test_copy_from_buffer<TestGrid>(add_grid_height, add_grid_width);
+}
 
-TEST_CASE("tiling::Grid::copy_to_buffer", "[tiling::Grid]") { grid_test::test_copy_to_buffer<TestGrid>(add_grid_height, add_grid_width); }
+TEST_CASE("tiling::Grid::copy_to_buffer", "[tiling::Grid]") {
+    grid_test::test_copy_to_buffer<TestGrid>(add_grid_height, add_grid_width);
+}
 
-TEST_CASE("tiling::Grid::make_similar", "[tiling::Grid]") { grid_test::test_make_similar<TestGrid>(add_grid_height, add_grid_width); }
+TEST_CASE("tiling::Grid::make_similar", "[tiling::Grid]") {
+    grid_test::test_make_similar<TestGrid>(add_grid_height, add_grid_width);
+}
 
 TEST_CASE("tiling::Grid::submit_read", "[tiling::Grid]") {
     TestGrid grid(3 * tile_height, 3 * tile_width);
@@ -57,13 +65,15 @@ TEST_CASE("tiling::Grid::submit_read", "[tiling::Grid]") {
         }
     }
 
-    sycl::queue input_kernel_queue = sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
+    sycl::queue input_kernel_queue =
+        sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
     sycl::queue working_queue = sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
 
     for (std::size_t tile_r = 0; tile_r < 3; tile_r++) {
         for (std::size_t tile_c = 0; tile_c < 3; tile_c++) {
             using in_pipe = sycl::pipe<class tiled_grid_submit_read_test_id, sycl::id<2>>;
-            grid.template submit_read<in_pipe>(input_kernel_queue, tile_r, tile_c, sycl::id<2>(-1, -1));
+            grid.template submit_read<in_pipe>(input_kernel_queue, tile_r, tile_c,
+                                               sycl::id<2>(-1, -1));
 
             sycl::buffer<bool, 1> result_buffer = sycl::range<1>(1);
             working_queue.submit([&](sycl::handler &cgh) {
@@ -78,8 +88,11 @@ TEST_CASE("tiling::Grid::submit_read", "[tiling::Grid]") {
                     for (std::size_t r = r_start; r < r_end; r++) {
                         for (std::size_t c = c_start; c < c_end; c++) {
                             sycl::id<2> read_value = in_pipe::read();
-                            if (r >= halo_radius && c >= halo_radius && r < 3 * tile_height + halo_radius && c < 3 * tile_width + halo_radius) {
-                                correct_input &= read_value == sycl::id<2>(r - halo_radius, c - halo_radius);
+                            if (r >= halo_radius && c >= halo_radius &&
+                                r < 3 * tile_height + halo_radius &&
+                                c < 3 * tile_width + halo_radius) {
+                                correct_input &=
+                                    read_value == sycl::id<2>(r - halo_radius, c - halo_radius);
                             } else {
                                 correct_input &= read_value == sycl::id<2>(-1, -1);
                             }
@@ -97,7 +110,8 @@ TEST_CASE("tiling::Grid::submit_read", "[tiling::Grid]") {
 TEST_CASE("tiling::Grid::submit_write", "[tiling::Grid]") {
     using out_pipe = sycl::pipe<class tiled_grid_submit_write_test_id, sycl::id<2>>;
 
-    sycl::queue output_kernel_queue = sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
+    sycl::queue output_kernel_queue =
+        sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
     sycl::queue working_queue = sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
 
     TestGrid grid(3 * tile_height, 3 * tile_width);

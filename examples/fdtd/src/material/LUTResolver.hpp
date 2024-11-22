@@ -31,20 +31,26 @@ class LUTResolver {
 
         static MaterialCell halo() { return MaterialCell{Cell::halo(), 0}; }
 
-        static MaterialCell from_parameters(Parameters const &parameters, size_t ring_index) { return MaterialCell{Cell::halo(), uindex_ring_t(ring_index)}; }
+        static MaterialCell from_parameters(Parameters const &parameters, size_t ring_index) {
+            return MaterialCell{Cell::halo(), uindex_ring_t(ring_index)};
+        }
     };
 
     LUTResolver(Parameters const &parameters) : materials() {
         for (size_t i = 0; i < max_n_rings + 1; i++) {
             if (i < parameters.rings.size()) {
-                materials[i] = CoefMaterial::from_relative_material(parameters.rings[i].material, parameters.dx, parameters.dt());
+                materials[i] = CoefMaterial::from_relative_material(parameters.rings[i].material,
+                                                                    parameters.dx, parameters.dt());
             } else {
                 materials[i] = CoefMaterial::perfect_metal();
             }
         }
     }
 
-    CoefMaterial get_material_coefficients(Stencil<MaterialCell, 1, float> const &stencil, float distance_score) const { return materials[stencil[0][0].index]; }
+    CoefMaterial get_material_coefficients(Stencil<MaterialCell, 1, float> const &stencil,
+                                           float distance_score) const {
+        return materials[stencil[0][0].index];
+    }
 
   private:
     CoefMaterial materials[max_n_rings + 1];

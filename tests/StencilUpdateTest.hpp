@@ -28,7 +28,8 @@ using namespace sycl;
 using namespace stencil;
 
 template <concepts::Grid<Cell> Grid, concepts::StencilUpdate<FPGATransFunc<1>, Grid> SU>
-void test_stencil_update(std::size_t grid_height, std::size_t grid_width, std::size_t iteration_offset, std::size_t n_iterations) {
+void test_stencil_update(std::size_t grid_height, std::size_t grid_width,
+                         std::size_t iteration_offset, std::size_t n_iterations) {
 
     using Accessor = Grid::template GridAccessor<access::mode::read_write>;
 
@@ -42,7 +43,10 @@ void test_stencil_update(std::size_t grid_height, std::size_t grid_width, std::s
         }
     }
 
-    SU update({.transition_function = FPGATransFunc<1>(), .halo_value = Cell::halo(), .iteration_offset = iteration_offset, .n_iterations = n_iterations});
+    SU update({.transition_function = FPGATransFunc<1>(),
+               .halo_value = Cell::halo(),
+               .iteration_offset = iteration_offset,
+               .n_iterations = n_iterations});
 
     Grid output_grid = update(input_grid);
 

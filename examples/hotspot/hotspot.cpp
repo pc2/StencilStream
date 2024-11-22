@@ -82,7 +82,9 @@ struct HotspotKernel : public BaseTransitionFunction {
         }
 
         // As in the OpenCL version of the rodinia "hotspot" benchmark.
-        FLOAT new_temp = old + Cap_1 * (power + (bottom + top - 2.f * old) * Ry_1 + (right + left - 2.f * old) * Rx_1 + (amb_temp - old) * Rz_1);
+        FLOAT new_temp =
+            old + Cap_1 * (power + (bottom + top - 2.f * old) * Ry_1 +
+                           (right + left - 2.f * old) * Rx_1 + (amb_temp - old) * Rz_1);
 
         return vec(new_temp, power);
     }
@@ -92,14 +94,16 @@ struct HotspotKernel : public BaseTransitionFunction {
 const size_t max_grid_height = 1024;
 const size_t max_grid_width = 1024;
 const size_t n_processing_elements = 280;
-using StencilUpdate = monotile::StencilUpdate<HotspotKernel, n_processing_elements, max_grid_width, max_grid_height>;
+using StencilUpdate =
+    monotile::StencilUpdate<HotspotKernel, n_processing_elements, max_grid_width, max_grid_height>;
 using Grid = monotile::Grid<HotspotCell>;
 
 #elif defined(STENCILSTREAM_BACKEND_TILING)
 const size_t tile_height = 1 << 16;
 const size_t tile_width = 1024;
 const size_t n_processing_elements = 224;
-using StencilUpdate = tiling::StencilUpdate<HotspotKernel, n_processing_elements, tile_height, tile_width>;
+using StencilUpdate =
+    tiling::StencilUpdate<HotspotKernel, n_processing_elements, tile_height, tile_width>;
 using Grid = StencilUpdate::GridImpl;
 
 #elif defined(STENCILSTREAM_BACKEND_CPU)
@@ -172,9 +176,13 @@ Grid read_input(string temp_file, string power_file, size_t n_rows, size_t n_col
 }
 
 void usage(int argc, char **argv) {
-    std::cerr << "Usage: " << argv[0] << "  <grid_rows> <grid_cols> <sim_time> <temp_file> <power_file> <output_file>" << std::endl;
-    std::cerr << "    <grid_rows>      - number of rows in the grid (positive integer)" << std::endl;
-    std::cerr << "    <grid_cols>      - number of columns in the grid (positive integer)" << std::endl;
+    std::cerr << "Usage: " << argv[0]
+              << "  <grid_rows> <grid_cols> <sim_time> <temp_file> <power_file> <output_file>"
+              << std::endl;
+    std::cerr << "    <grid_rows>      - number of rows in the grid (positive integer)"
+              << std::endl;
+    std::cerr << "    <grid_cols>      - number of columns in the grid (positive integer)"
+              << std::endl;
     std::cerr << "    <sim_time>       - number of iterations (positive integer)" << std::endl;
     std::cerr << "    <temp_file>      - name of the file containing the initial temperature "
                  "values of each cell"
@@ -213,7 +221,8 @@ int main(int argc, char **argv) {
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
     if (n_rows > max_grid_height || n_columns > max_grid_width) {
-        std::cerr << "Error: The grid may not exceed a size of " << max_grid_height << " by " << max_grid_width << " cells when using the monotile architecture." << std::endl;
+        std::cerr << "Error: The grid may not exceed a size of " << max_grid_height << " by "
+                  << max_grid_width << " cells when using the monotile architecture." << std::endl;
         exit(1);
     }
 #endif
@@ -253,7 +262,9 @@ int main(int argc, char **argv) {
 #endif
 
     StencilUpdate update({
-        .transition_function = HotspotKernel{.Rx_1 = Rx_1, .Ry_1 = Ry_1, .Rz_1 = Rz_1, .Cap_1 = Cap_1}, .halo_value = HotspotCell(0.0, 0.0), .n_iterations = sim_time, .device = device,
+        .transition_function =
+            HotspotKernel{.Rx_1 = Rx_1, .Ry_1 = Ry_1, .Rz_1 = Rz_1, .Cap_1 = Cap_1},
+        .halo_value = HotspotCell(0.0, 0.0), .n_iterations = sim_time, .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
 #if !defined(STENCILSTREAM_BACKEND_CPU)
             .profiling = true, // enable additional profiling for FPGA targets

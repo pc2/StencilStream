@@ -60,8 +60,10 @@ class Stencil {
      * \param subiteration The present sub-iteration index of the cells in the stencil.
      * \param tdv The time-dependent value for this iteration.
      */
-    Stencil(sycl::id<2> id, sycl::range<2> grid_range, std::size_t iteration, std::size_t subiteration, TimeDependentValue tdv)
-        : id(id), iteration(iteration), subiteration(subiteration), grid_range(grid_range), time_dependent_value(tdv), internal() {}
+    Stencil(sycl::id<2> id, sycl::range<2> grid_range, std::size_t iteration,
+            std::size_t subiteration, TimeDependentValue tdv)
+        : id(id), iteration(iteration), subiteration(subiteration), grid_range(grid_range),
+          time_dependent_value(tdv), internal() {}
 
     /**
      * \brief Create a new stencil with the given contents.
@@ -73,8 +75,10 @@ class Stencil {
      * \param tdv The time-dependent value for this iteration.
      * \param raw An array of cells, which is copied into the stencil object.
      */
-    Stencil(sycl::id<2> id, sycl::range<2> grid_range, std::size_t iteration, std::size_t subiteration, TimeDependentValue tdv, Cell raw[diameter][diameter])
-        : id(id), iteration(iteration), subiteration(subiteration), grid_range(grid_range), time_dependent_value(tdv), internal() {
+    Stencil(sycl::id<2> id, sycl::range<2> grid_range, std::size_t iteration,
+            std::size_t subiteration, TimeDependentValue tdv, Cell raw[diameter][diameter])
+        : id(id), iteration(iteration), subiteration(subiteration), grid_range(grid_range),
+          time_dependent_value(tdv), internal() {
 #pragma unroll
         for (std::size_t r = 0; r < diameter; r++) {
 #pragma unroll
@@ -90,7 +94,9 @@ class Stencil {
       public:
         StencilSubscript(Stencil const &stencil, index_t r) : stencil(stencil), r(r) {}
 
-        Cell const &operator[](index_t c) const { return stencil[sycl::id<2>(r + stencil_radius, c + stencil_radius)]; }
+        Cell const &operator[](index_t c) const {
+            return stencil[sycl::id<2>(r + stencil_radius, c + stencil_radius)];
+        }
 
       private:
         Stencil const &stencil;
