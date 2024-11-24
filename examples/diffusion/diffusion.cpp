@@ -1,5 +1,6 @@
 #include <StencilStream/BaseTransitionFunction.hpp>
 #include <StencilStream/cpu/StencilUpdate.hpp>
+#include <StencilStream/gpu/StencilUpdate.hpp>
 #include <StencilStream/monotile/StencilUpdate.hpp>
 #include <sycl/ext/intel/fpga_extensions.hpp>
 #include "CL/sycl.hpp"
@@ -15,6 +16,8 @@ using wall_clock_t = std::chrono::high_resolution_clock;
 using namespace stencil;
 #if defined(STENCILSTREAM_BACKEND_CPU)
 using namespace stencil::cpu;
+#elif (STENCILSTREAM_BACKEND_GPU)
+using namespace stencil::gpu;
 #else
 using namespace stencil::monotile;
 #endif
@@ -215,6 +218,8 @@ int main(int argc, char **argv)
 
 #if defined(STENCILSTREAM_TARGET_FPGA)
     sycl::device device(sycl::ext::intel::fpga_selector_v);
+#elif defined(STENCILSTREAM_TARGET_GPU)
+    sycl::device device(sycl::gpu_selector_v);
 #else
     sycl::device device;
 #endif

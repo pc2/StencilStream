@@ -46,6 +46,15 @@ target_link_libraries(StencilStream_CPU INTERFACE StencilStream_Base)
 target_compile_definitions(StencilStream_CPU INTERFACE STENCILSTREAM_BACKEND_CPU=1)
 target_compile_definitions(StencilStream_CPU INTERFACE STENCILSTREAM_TARGET_CPU=1)
 
+# Target for GPU backend
+
+add_library(StencilStream_GPU INTERFACE)
+target_link_libraries(StencilStream_GPU INTERFACE StencilStream_Base)
+target_compile_definitions(StencilStream_GPU INTERFACE STENCILSTREAM_BACKEND_GPU=1)
+target_compile_definitions(StencilStream_GPU INTERFACE STENCILSTREAM_TARGET_GPU=1)
+target_compile_options(StencilStream_GPU INTERFACE -fsycl-targets=nvptx64-nvidia-cuda-sm_50
+)
+
 # Base target for FPGA-based backends
 
 add_library(StencilStream_FPGABase INTERFACE)
