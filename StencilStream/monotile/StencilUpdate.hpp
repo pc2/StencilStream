@@ -231,7 +231,8 @@ class StencilUpdateKernel {
                         // anyways, so this is safe.
                         if (mask_i < TransFunc::stencil_radius) {
                             v_halo_mask[mask_i] =
-                                r[i_processing_element] - TransFunc::stencil_radius + mask_i >= 0;
+                                r[i_processing_element] >=
+                                std::ptrdiff_t(TransFunc::stencil_radius - mask_i);
                         } else if (mask_i == TransFunc::stencil_radius) {
                             v_halo_mask[mask_i] = true;
                         } else {

@@ -35,7 +35,7 @@ constexpr std::size_t my_vector_length = 4;
 
 void test_monotile_kernel(std::size_t grid_height, std::size_t grid_width,
                           std::size_t iteration_offset, std::size_t target_i_iteration) {
-    using TransFunc = FPGATransFunc<stencil_radius>;
+    using TransFunc = HostTransFunc<stencil_radius>;
     using in_pipe =
         HostPipe<class MonotileExecutionKernelInPipeID, std::array<Cell, my_vector_length>>;
     using out_pipe =
@@ -52,7 +52,8 @@ void test_monotile_kernel(std::size_t grid_height, std::size_t grid_width,
         for (std::size_t c = 0; c < grid_width; c += my_vector_length) {
             std::array<Cell, my_vector_length> vector;
             for (std::size_t i_cell = 0; i_cell < my_vector_length; i_cell++) {
-                vector[i_cell] = Cell{int(r), int(c), int(iteration_offset), 0, CellStatus::Normal};
+                vector[i_cell] =
+                    Cell{int(r), int(c + i_cell), int(iteration_offset), 0, CellStatus::Normal};
             }
             in_pipe::write(vector);
         }
