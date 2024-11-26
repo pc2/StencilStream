@@ -31,61 +31,51 @@ using namespace sycl;
 using namespace stencil;
 using namespace stencil::monotile;
 
+constexpr std::size_t my_vector_length = 4;
+
 void test_monotile_kernel(std::size_t grid_height, std::size_t grid_width,
                           std::size_t iteration_offset, std::size_t target_i_iteration) {
     using TransFunc = FPGATransFunc<stencil_radius>;
-    using in_pipe = sycl::pipe<class MonotileExecutionKernelInPipeID, std::array<Cell, 1>>;
-    using out_pipe = sycl::pipe<class MonotileExecutionKernelOutPipeID, std::array<Cell, 1>>;
+    using in_pipe =
+        HostPipe<class MonotileExecutionKernelInPipeID, std::array<Cell, my_vector_length>>;
+    using out_pipe =
+        HostPipe<class MonotileExecutionKernelOutPipeID, std::array<Cell, my_vector_length>>;
     using GlobalState = tdv::single_pass::InlineStrategy::GlobalState<TransFunc, 1>;
     using KernelArgument = typename GlobalState::KernelArgument;
     using TestExecutionKernel =
-        StencilUpdateKernel<TransFunc, KernelArgument, n_processing_elements, 1, tile_height,
-                            tile_width, in_pipe, out_pipe>;
+        StencilUpdateKernel<TransFunc, KernelArgument, n_processing_elements, my_vector_length,
+                            tile_height, tile_width, in_pipe, out_pipe>;
 
     sycl::queue working_queue;
 
-    working_queue.submit([&](sycl::handler &cgh) {
-        cgh.single_task([=]() {
-            for (std::size_t r = 0; r < grid_height; r++) {
-                for (std::size_t c = 0; c < grid_width; c++) {
-                    in_pipe::write(
-                        {Cell{int(r), int(c), int(iteration_offset), 0, CellStatus::Normal}});
-                }
+    for (std::size_t r = 0; r < grid_height; r++) {
+        for (std::size_t c = 0; c < grid_width; c += my_vector_length) {
+            std::array<Cell, my_vector_length> vector;
+            for (std::size_t i_cell = 0; i_cell < my_vector_length; i_cell++) {
+                vector[i_cell] = Cell{int(r), int(c), int(iteration_offset), 0, CellStatus::Normal};
             }
-        });
-    });
+            in_pipe::write(vector);
+        }
+    }
 
     GlobalState global_state(TransFunc(), iteration_offset, target_i_iteration);
-    working_queue.submit([&](sycl::handler &cgh) {
-        KernelArgument kernel_argument(global_state, cgh, iteration_offset, target_i_iteration);
+    KernelArgument kernel_argument(global_state, iteration_offset);
 
-        cgh.single_task(TestExecutionKernel(TransFunc(), iteration_offset, target_i_iteration,
-                                            grid_height, grid_width, Cell::halo(),
-                                            kernel_argument));
-    });
+    TestExecutionKernel kernel(TransFunc(), iteration_offset, target_i_iteration, grid_height,
+                               grid_width, Cell::halo(), kernel_argument);
+    kernel();
 
-    buffer<Cell, 2> output_buffer(range<2>(grid_height, grid_width));
-
-    working_queue.submit([&](sycl::handler &cgh) {
-        accessor output_buffer_ac(output_buffer, cgh, write_only);
-        cgh.single_task([=]() {
-            for (std::size_t r = 0; r < grid_height; r++) {
-                for (std::size_t c = 0; c < grid_width; c++) {
-                    output_buffer_ac[r][c] = out_pipe::read()[0];
-                }
-            }
-        });
-    });
-
-    host_accessor output_buffer_ac(output_buffer, read_only);
     for (std::size_t r = 0; r < grid_height; r++) {
-        for (std::size_t c = 0; c < grid_width; c++) {
-            Cell cell = output_buffer_ac[r][c];
-            REQUIRE(cell.r == r);
-            REQUIRE(cell.c == c);
-            REQUIRE(cell.i_iteration == target_i_iteration);
-            REQUIRE(cell.i_subiteration == 0);
-            REQUIRE(cell.status == CellStatus::Normal);
+        for (std::size_t c = 0; c < grid_width; c += my_vector_length) {
+            std::array<Cell, my_vector_length> vector = out_pipe::read();
+            for (std::size_t i_cell = 0; i_cell < my_vector_length; i_cell++) {
+                Cell cell = vector[i_cell];
+                REQUIRE(cell.r == r);
+                REQUIRE(cell.c == c + i_cell);
+                REQUIRE(cell.i_iteration == target_i_iteration);
+                REQUIRE(cell.i_subiteration == 0);
+                REQUIRE(cell.status == CellStatus::Normal);
+            }
         }
     }
 }
