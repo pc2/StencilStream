@@ -53,14 +53,14 @@ static_assert(n_processing_elements % 2 == 0);
 constexpr size_t iters_per_pass = n_processing_elements / 2;
 
 /* stencil parameters */
-constexpr size_t tile_height = 512;
+constexpr size_t tile_width = 512;
 
 #if defined(STENCILSTREAM_BACKEND_TILING)
 // tiling, make tile as wide as possible.
-constexpr size_t tile_width = 1 << 16;
+constexpr size_t tile_height = 1 << 16;
 #else
 // monotile and CPU. More than a quadratic tile doesn't make sense.
-constexpr size_t tile_width = tile_height;
+constexpr size_t tile_height = tile_width;
 #endif
 
 constexpr size_t max_n_rings = 15;

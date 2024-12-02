@@ -61,7 +61,7 @@ if reference_output_directory === nothing
 else
     figure_height = 1000
 end
-fig = Figure(resolution=(1500, figure_height))
+fig = Figure(size=(1500, figure_height))
 
 temp_map = @lift(temps[:,:,$index])
 min_temp = minimum(temps)
