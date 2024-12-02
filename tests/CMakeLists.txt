@@ -29,5 +29,3 @@ set(UNIT_TEST_SOURCES
 
 add_executable(unit_test ${UNIT_TEST_SOURCES})
 target_link_libraries(unit_test PRIVATE Catch2::Catch2WithMain StencilStream_CPU)
-target_compile_options(unit_test PRIVATE -fsanitize=address -fno-omit-frame-pointer)
-target_link_options(unit_test PRIVATE -fsanitize=address -fno-omit-frame-pointer)

@@ -31,8 +31,7 @@ using namespace sycl;
 using namespace stencil;
 using namespace stencil::monotile;
 
-constexpr std::size_t my_vector_length = 4;
-
+template <std::size_t my_vector_length>
 void test_monotile_kernel(std::size_t grid_height, std::size_t grid_width,
                           std::size_t iteration_offset, std::size_t target_i_iteration) {
     using TransFunc = HostTransFunc<stencil_radius>;
@@ -70,6 +69,9 @@ void test_monotile_kernel(std::size_t grid_height, std::size_t grid_width,
         for (std::size_t c = 0; c < grid_width; c += my_vector_length) {
             std::array<Cell, my_vector_length> vector = out_pipe::read();
             for (std::size_t i_cell = 0; i_cell < my_vector_length; i_cell++) {
+                if (c + i_cell >= grid_width) {
+                    break;
+                }
                 Cell cell = vector[i_cell];
                 REQUIRE(cell.r == r);
                 REQUIRE(cell.c == c + i_cell);
@@ -82,25 +84,43 @@ void test_monotile_kernel(std::size_t grid_height, std::size_t grid_width,
 }
 
 TEST_CASE("monotile::StencilUpdateKernel", "[monotile::StencilUpdateKernel]") {
-    test_monotile_kernel(tile_height, tile_width, 0, iters_per_pass);
-}
+    std::size_t n_steps = (std::log2(tile_height) - 1) * (std::log2(tile_width) - 1) * (iters_per_pass - 1);
+    double progress = 0.0;
+    double progress_per_step = 80 / double(n_steps);
 
-TEST_CASE("monotile::StencilUpdateKernel (partial tile)", "[monotile::StencilUpdateKernel]") {
-    test_monotile_kernel(tile_height / 2, tile_width / 2, 0, iters_per_pass);
-}
+    for (std::size_t grid_height = stencil_radius; grid_height <= tile_height; grid_height *= 2) {
+        for (std::size_t grid_width = stencil_radius; grid_width <= tile_width; grid_width *= 2) {
+            for (std::size_t iters = 1; iters <= iters_per_pass; iters++) {
+                test_monotile_kernel<1>(grid_height, grid_width, 0, iters);
+                test_monotile_kernel<1>(grid_height, grid_width, iters_per_pass, iters_per_pass + iters);
 
-TEST_CASE("monotile::StencilUpdateKernel (partial pipeline)", "[monotile::StencilUpdateKernel]") {
-    static_assert(iters_per_pass != 1);
-    test_monotile_kernel(tile_height, tile_width, 0, iters_per_pass - 1);
-}
+                test_monotile_kernel<4>(grid_height, grid_width, 0, iters);
+                test_monotile_kernel<4>(grid_height, grid_width, iters_per_pass, iters_per_pass + iters);
 
-TEST_CASE("monotile::StencilUpdateKernel (noop)", "[monotile::StencilUpdateKernel]") {
-    test_monotile_kernel(tile_height, tile_width, 0, 0);
-}
+                if (grid_height > stencil_radius) {
+                    test_monotile_kernel<4>(grid_height-1, grid_width, 0, iters);
+                    test_monotile_kernel<4>(grid_height-1, grid_width, iters_per_pass, iters_per_pass + iters);
+                }
 
-TEST_CASE("monotile::StencilUpdateKernel (incomplete pipeline, offset != 0)",
-          "[monotile::StencilUpdateKernel]") {
-    test_monotile_kernel(tile_height, tile_width, iters_per_pass / 2, iters_per_pass);
+                if (grid_width > stencil_radius) {
+                    test_monotile_kernel<4>(grid_height, grid_width-1, 0, iters);
+                    test_monotile_kernel<4>(grid_height, grid_width-1, iters_per_pass, iters_per_pass + iters);
+                }
+
+                if (grid_height > stencil_radius && grid_width > stencil_radius) {
+                    test_monotile_kernel<4>(grid_height-1, grid_width-1, 0, iters);
+                    test_monotile_kernel<4>(grid_height-1, grid_width-1, iters_per_pass, iters_per_pass + iters);
+                }
+
+                if (std::ceil(progress) < std::ceil(progress + progress_per_step)) {
+                    std::cout << "#";
+                    std::flush(std::cout);
+                }
+                progress += progress_per_step;
+            }
+        }
+    }
+    std::cout << std::endl;
 }
 
 template <typename TDVStrategy> void test_monotile_update() {

@@ -121,8 +121,9 @@ class StencilUpdateKernel {
         : trans_func(trans_func), i_iteration(i_iteration), target_i_iteration(target_i_iteration),
           grid_height(grid_height), grid_width(grid_width), halo_value(halo_value),
           tdv_kernel_argument(tdv_kernel_argument) {
-        assert(grid_width <= max_grid_width);
-        assert(grid_height <= max_grid_height);
+        assert(stencil_radius <= grid_width && grid_width <= max_grid_width);
+        assert(stencil_radius <= grid_height && grid_height <= max_grid_height);
+        assert(i_iteration < target_i_iteration);
     }
 
     /**
