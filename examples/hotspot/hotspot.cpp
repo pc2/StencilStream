@@ -93,8 +93,9 @@ struct HotspotKernel : public BaseTransitionFunction {
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
 const size_t max_grid_height = 1024;
 const size_t max_grid_width = 1024;
-const size_t n_processing_elements = 28;
-using StencilUpdate = monotile::StencilUpdate<HotspotKernel, n_processing_elements, 4,
+const size_t n_processing_elements = 65;
+const size_t vector_length = 8;
+using StencilUpdate = monotile::StencilUpdate<HotspotKernel, n_processing_elements, vector_length,
                                               max_grid_height, max_grid_width>;
 using Grid = monotile::Grid<HotspotCell>;
 
