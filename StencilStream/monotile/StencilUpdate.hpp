@@ -346,8 +346,7 @@ class StencilUpdateKernel {
 template <concepts::TransitionFunction F, std::size_t n_processing_elements = 1,
           std::size_t max_grid_height = 1024, std::size_t max_grid_width = 1024,
           tdv::single_pass::Strategy<F, n_processing_elements> TDVStrategy =
-              tdv::single_pass::InlineStrategy,
-          std::size_t word_size = 64>
+              tdv::single_pass::InlineStrategy>
 class StencilUpdate {
   private:
     using Cell = F::Cell;
@@ -355,7 +354,7 @@ class StencilUpdate {
 
   public:
     /// \brief Shorthand for the used and supported grid type.
-    using GridImpl = Grid<Cell, word_size>;
+    using GridImpl = Grid<Cell>;
 
     /**
      * \brief Parameters for the stencil updater.

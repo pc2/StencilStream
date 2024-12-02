@@ -84,32 +84,39 @@ void test_monotile_kernel(std::size_t grid_height, std::size_t grid_width,
 }
 
 TEST_CASE("monotile::StencilUpdateKernel", "[monotile::StencilUpdateKernel]") {
-    std::size_t n_steps = (std::log2(tile_height) - 1) * (std::log2(tile_width) - 1) * (iters_per_pass - 1);
+    std::size_t n_steps =
+        (std::log2(tile_height) - 1) * (std::log2(tile_width) - 1) * (iters_per_pass - 1);
     double progress = 0.0;
     double progress_per_step = 80 / double(n_steps);
+    std::cout << "Progress monotile::StencilUpdateKernel: ";
 
     for (std::size_t grid_height = stencil_radius; grid_height <= tile_height; grid_height *= 2) {
         for (std::size_t grid_width = stencil_radius; grid_width <= tile_width; grid_width *= 2) {
             for (std::size_t iters = 1; iters <= iters_per_pass; iters++) {
                 test_monotile_kernel<1>(grid_height, grid_width, 0, iters);
-                test_monotile_kernel<1>(grid_height, grid_width, iters_per_pass, iters_per_pass + iters);
+                test_monotile_kernel<1>(grid_height, grid_width, iters_per_pass,
+                                        iters_per_pass + iters);
 
                 test_monotile_kernel<4>(grid_height, grid_width, 0, iters);
-                test_monotile_kernel<4>(grid_height, grid_width, iters_per_pass, iters_per_pass + iters);
+                test_monotile_kernel<4>(grid_height, grid_width, iters_per_pass,
+                                        iters_per_pass + iters);
 
                 if (grid_height > stencil_radius) {
-                    test_monotile_kernel<4>(grid_height-1, grid_width, 0, iters);
-                    test_monotile_kernel<4>(grid_height-1, grid_width, iters_per_pass, iters_per_pass + iters);
+                    test_monotile_kernel<4>(grid_height - 1, grid_width, 0, iters);
+                    test_monotile_kernel<4>(grid_height - 1, grid_width, iters_per_pass,
+                                            iters_per_pass + iters);
                 }
 
                 if (grid_width > stencil_radius) {
-                    test_monotile_kernel<4>(grid_height, grid_width-1, 0, iters);
-                    test_monotile_kernel<4>(grid_height, grid_width-1, iters_per_pass, iters_per_pass + iters);
+                    test_monotile_kernel<4>(grid_height, grid_width - 1, 0, iters);
+                    test_monotile_kernel<4>(grid_height, grid_width - 1, iters_per_pass,
+                                            iters_per_pass + iters);
                 }
 
                 if (grid_height > stencil_radius && grid_width > stencil_radius) {
-                    test_monotile_kernel<4>(grid_height-1, grid_width-1, 0, iters);
-                    test_monotile_kernel<4>(grid_height-1, grid_width-1, iters_per_pass, iters_per_pass + iters);
+                    test_monotile_kernel<4>(grid_height - 1, grid_width - 1, 0, iters);
+                    test_monotile_kernel<4>(grid_height - 1, grid_width - 1, iters_per_pass,
+                                            iters_per_pass + iters);
                 }
 
                 if (std::ceil(progress) < std::ceil(progress + progress_per_step)) {

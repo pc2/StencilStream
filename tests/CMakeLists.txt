@@ -21,11 +21,11 @@ set(UNIT_TEST_SOURCES
     #Stencil.cpp
     #cpu/Grid.cpp
     #cpu/StencilUpdate.cpp
-    #monotile/Grid.cpp
+    monotile/Grid.cpp
     monotile/StencilUpdate.cpp
     #tiling/Grid.cpp
     #tiling/StencilUpdate.cpp
 )
 
 add_executable(unit_test ${UNIT_TEST_SOURCES})
-target_link_libraries(unit_test PRIVATE Catch2::Catch2WithMain StencilStream_CPU)
+target_link_libraries(unit_test PRIVATE Catch2::Catch2WithMain StencilStream_MonotileEmulator)

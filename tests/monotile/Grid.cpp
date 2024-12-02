@@ -26,7 +26,7 @@ using namespace stencil::monotile;
 using namespace sycl;
 using namespace std;
 
-using TestGrid = Grid<sycl::id<2>, 64>;
+using TestGrid = Grid<sycl::id<2>>;
 
 // Assert that the monotile grid fulfills the grid concept.
 static_assert(concepts::Grid<TestGrid, sycl::id<2>>);
@@ -47,12 +47,13 @@ TEST_CASE("monotile::Grid::make_similar", "[monotile::Grid]") {
     grid_test::test_make_similar<TestGrid>(tile_height, tile_width);
 }
 
-TEST_CASE("monotile::Grid::submit_read", "[monotile::Grid]") {
-    TestGrid in_grid(tile_height, tile_width);
+template <std::size_t my_vector_length>
+void test_monotile_grid_submit_read(std::size_t grid_height, std::size_t grid_width) {
+    TestGrid in_grid(grid_height, grid_width);
     {
         TestGrid::GridAccessor<access::mode::read_write> in_grid_ac(in_grid);
-        for (std::size_t r = 0; r < tile_height; r++) {
-            for (std::size_t c = 0; c < tile_width; c++) {
+        for (std::size_t r = 0; r < grid_height; r++) {
+            for (std::size_t c = 0; c < grid_width; c++) {
                 in_grid_ac[r][c] = sycl::id<2>(r, c);
             }
         }
@@ -60,51 +61,101 @@ TEST_CASE("monotile::Grid::submit_read", "[monotile::Grid]") {
 
     sycl::queue queue;
 
-    using in_pipe = sycl::pipe<class monotile_grid_submit_read_test_id, sycl::id<2>>;
-    in_grid.template submit_read<in_pipe, tile_height * tile_width>(queue);
+    using in_pipe = sycl::pipe<class monotile_grid_submit_read_test_id,
+                               std::array<sycl::id<2>, my_vector_length>>;
+    in_grid.template submit_read<in_pipe, my_vector_length, tile_height, tile_width>(queue);
 
-    buffer<sycl::id<2>, 2> out_buffer = range<2>(tile_height, tile_width);
+    buffer<sycl::id<2>, 2> out_buffer = range<2>(grid_height, grid_width);
     queue.submit([&](handler &cgh) {
         accessor out_ac(out_buffer, cgh, sycl::write_only);
 
-        cgh.single_task<class monotile_grid_submit_read_test_kernel>([=]() {
-            for (std::size_t r = 0; r < tile_height; r++) {
-                for (std::size_t c = 0; c < tile_width; c++) {
-                    out_ac[r][c] = in_pipe::read();
+        cgh.single_task([=]() {
+            for (std::size_t r = 0; r < grid_height; r++) {
+                for (std::size_t c = 0; c < grid_width; c += my_vector_length) {
+                    std::array<sycl::id<2>, my_vector_length> vector = in_pipe::read();
+#pragma unroll
+                    for (std::size_t i_cell = 0; i_cell < my_vector_length; i_cell++) {
+                        if (c + i_cell < grid_width) {
+                            out_ac[r][c + i_cell] = vector[i_cell];
+                        }
+                    }
                 }
             }
         });
     });
 
     host_accessor out_buffer_ac(out_buffer, sycl::read_only);
-    for (std::size_t r = 0; r < tile_height; r++) {
-        for (std::size_t c = 0; c < tile_width; c++) {
+    for (std::size_t r = 0; r < grid_height; r++) {
+        for (std::size_t c = 0; c < grid_width; c += my_vector_length) {
             REQUIRE(out_buffer_ac[r][c] == sycl::id<2>(r, c));
         }
     }
 }
 
-TEST_CASE("monotile::Grid::submit_write", "[monotile::Grid]") {
-    using out_pipe = sycl::pipe<class monotile_grid_submit_write_test_id, sycl::id<2>>;
+TEST_CASE("monotile::Grid::submit_read", "[monotile::Grid]") {
+    test_monotile_grid_submit_read<1>(tile_height, tile_width);
+    test_monotile_grid_submit_read<2>(tile_height, tile_width);
+    test_monotile_grid_submit_read<4>(tile_height, tile_width);
+
+    test_monotile_grid_submit_read<1>(tile_height - 1, tile_width);
+    test_monotile_grid_submit_read<2>(tile_height - 1, tile_width);
+    test_monotile_grid_submit_read<4>(tile_height - 1, tile_width);
+
+    test_monotile_grid_submit_read<1>(tile_height, tile_width - 1);
+    test_monotile_grid_submit_read<2>(tile_height, tile_width - 1);
+    test_monotile_grid_submit_read<4>(tile_height, tile_width - 1);
+
+    test_monotile_grid_submit_read<1>(tile_height - 1, tile_width - 1);
+    test_monotile_grid_submit_read<2>(tile_height - 1, tile_width - 1);
+    test_monotile_grid_submit_read<4>(tile_height - 1, tile_width - 1);
+}
+
+template <std::size_t my_vector_length>
+void test_monotile_grid_submit_write(std::size_t grid_height, std::size_t grid_width) {
+    using out_pipe = sycl::pipe<class monotile_grid_submit_write_test_id,
+                                std::array<sycl::id<2>, my_vector_length>>;
 
     sycl::queue queue;
     queue.submit([&](sycl::handler &cgh) {
-        cgh.single_task<class monotile_grid_submit_write_test_kernel>([=]() {
-            for (std::size_t r = 0; r < tile_height; r++) {
-                for (std::size_t c = 0; c < tile_width; c++) {
-                    out_pipe::write(sycl::id<2>(r, c));
+        cgh.single_task([=]() {
+            for (std::size_t r = 0; r < grid_height; r++) {
+                for (std::size_t c = 0; c < grid_width; c += my_vector_length) {
+                    std::array<sycl::id<2>, my_vector_length> vector;
+#pragma unroll
+                    for (std::size_t i_cell = 0; i_cell < my_vector_length; i_cell++) {
+                        vector[i_cell] = sycl::id<2>(r, c + i_cell);
+                    }
+                    out_pipe::write(vector);
                 }
             }
         });
     });
 
-    TestGrid grid(tile_height, tile_width);
-    grid.template submit_write<out_pipe, tile_height * tile_width>(queue);
+    TestGrid grid(grid_height, grid_width);
+    grid.template submit_write<out_pipe, my_vector_length, tile_height, tile_width>(queue);
 
     TestGrid::GridAccessor<access::mode::read_write> out_ac(grid);
-    for (std::size_t r = 0; r < tile_height; r++) {
-        for (std::size_t c = 0; c < tile_width; c++) {
+    for (std::size_t r = 0; r < grid_height; r++) {
+        for (std::size_t c = 0; c < grid_width; c++) {
             REQUIRE(out_ac[r][c] == sycl::id<2>(r, c));
         }
     }
+}
+
+TEST_CASE("monotile::Grid::submit_write", "[monotile::Grid]") {
+    test_monotile_grid_submit_write<1>(tile_height, tile_width);
+    test_monotile_grid_submit_write<2>(tile_height, tile_width);
+    test_monotile_grid_submit_write<4>(tile_height, tile_width);
+
+    test_monotile_grid_submit_write<1>(tile_height - 1, tile_width);
+    test_monotile_grid_submit_write<2>(tile_height - 1, tile_width);
+    test_monotile_grid_submit_write<4>(tile_height - 1, tile_width);
+
+    test_monotile_grid_submit_write<1>(tile_height, tile_width - 1);
+    test_monotile_grid_submit_write<2>(tile_height, tile_width - 1);
+    test_monotile_grid_submit_write<4>(tile_height, tile_width - 1);
+
+    test_monotile_grid_submit_write<1>(tile_height - 1, tile_width - 1);
+    test_monotile_grid_submit_write<2>(tile_height - 1, tile_width - 1);
+    test_monotile_grid_submit_write<4>(tile_height - 1, tile_width - 1);
 }
