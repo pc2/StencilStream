@@ -76,11 +76,11 @@ class StencilUpdateKernel {
 
     // Round up the stencil buffer lead to the next integer multiple of the vector length.
     static constexpr std::size_t vect_stencil_buffer_lead =
-        int_ceil_div(stencil_radius, vector_length);
+        int_ceil_div(TransFunc::stencil_radius, vector_length);
     static constexpr std::size_t stencil_buffer_lead = vect_stencil_buffer_lead * vector_length;
-    static constexpr std::size_t stencil_buffer_height = 2 * stencil_radius + 1;
+    static constexpr std::size_t stencil_buffer_height = 2 * TransFunc::stencil_radius + 1;
     static constexpr std::size_t stencil_buffer_width =
-        stencil_radius + vector_length + stencil_buffer_lead;
+        TransFunc::stencil_radius + vector_length + stencil_buffer_lead;
 
     static constexpr std::size_t calc_pipeline_latency(std::size_t grid_width) {
         std::size_t vect_grid_width = int_ceil_div(grid_width, vector_length);
@@ -121,8 +121,8 @@ class StencilUpdateKernel {
         : trans_func(trans_func), i_iteration(i_iteration), target_i_iteration(target_i_iteration),
           grid_height(grid_height), grid_width(grid_width), halo_value(halo_value),
           tdv_kernel_argument(tdv_kernel_argument) {
-        assert(stencil_radius <= grid_width && grid_width <= max_grid_width);
-        assert(stencil_radius <= grid_height && grid_height <= max_grid_height);
+        assert(TransFunc::stencil_radius <= grid_width && grid_width <= max_grid_width);
+        assert(TransFunc::stencil_radius <= grid_height && grid_height <= max_grid_height);
         assert(i_iteration < target_i_iteration);
     }
 
@@ -206,8 +206,8 @@ class StencilUpdateKernel {
                     for (std::size_t i_vector_cell = 0; i_vector_cell < vector_length;
                          i_vector_cell++) {
                         stencil_buffer[i_processing_element][cache_r]
-                                      [stencil_radius + stencil_buffer_lead + i_vector_cell] =
-                                          new_vect[i_vector_cell];
+                                      [TransFunc::stencil_radius + stencil_buffer_lead +
+                                       i_vector_cell] = new_vect[i_vector_cell];
                     }
 
                     if (cache_r > 0) {
@@ -243,12 +243,12 @@ class StencilUpdateKernel {
                         }
                     }
 
-                    bool h_halo_mask[2 * stencil_radius + vector_length];
+                    bool h_halo_mask[2 * TransFunc::stencil_radius + vector_length];
 #pragma unroll
-                    for (std::size_t mask_i = 0; mask_i < 2 * stencil_radius + vector_length;
-                         mask_i++) {
-                        std::ptrdiff_t c =
-                            vect_c[i_processing_element] * vector_length - stencil_radius + mask_i;
+                    for (std::size_t mask_i = 0;
+                         mask_i < 2 * TransFunc::stencil_radius + vector_length; mask_i++) {
+                        std::ptrdiff_t c = vect_c[i_processing_element] * vector_length -
+                                           TransFunc::stencil_radius + mask_i;
                         h_halo_mask[mask_i] = c >= 0 && c < grid_width;
                     }
 
@@ -264,9 +264,10 @@ class StencilUpdateKernel {
                                             i_processing_element % TransFunc::n_subiterations, tdv);
 
 #pragma unroll
-                        for (std::size_t cell_r = 0; cell_r < 2 * stencil_radius + 1; cell_r++) {
+                        for (std::size_t cell_r = 0; cell_r < 2 * TransFunc::stencil_radius + 1;
+                             cell_r++) {
 #pragma unroll
-                            for (std::size_t cell_c = 0; cell_c < 2 * stencil_radius + 1;
+                            for (std::size_t cell_c = 0; cell_c < 2 * TransFunc::stencil_radius + 1;
                                  cell_c++) {
                                 if (v_halo_mask[cell_r] && h_halo_mask[cell_c + i_vector_cell]) {
                                     stencil[sycl::id<2>(cell_r, cell_c)] =

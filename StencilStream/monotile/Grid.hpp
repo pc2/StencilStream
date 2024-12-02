@@ -256,17 +256,16 @@ template <class Cell> class Grid {
 
         return queue.submit([&](sycl::handler &cgh) {
             sycl::accessor tile_ac(tile_buffer, cgh, sycl::read_only);
+            uindex_r_t grid_height = tile_ac.get_range()[0];
+            uindex_c_t grid_width = tile_ac.get_range()[1];
 
             cgh.single_task([=]() {
-                [[intel::loop_coalesce(2)]] for (uindex_r_t r = 0; r < tile_ac.get_range()[0];
-                                                 r++) {
-                    for (uindex_c_t c = 0; c < tile_ac.get_range()[1]; c += vector_length) {
+                [[intel::loop_coalesce(2)]] for (uindex_r_t r = 0; r < grid_height; r++) {
+                    for (uindex_c_t c = 0; c < grid_width; c += vector_length) {
                         std::array<Cell, vector_length> vector;
 #pragma unroll
                         for (uindex_cell_t i_cell = 0; i_cell < vector_length; i_cell++) {
-                            if (c + i_cell < tile_ac.get_range()[1]) {
-                                vector[i_cell] = tile_ac[r][size_t(c + i_cell)];
-                            }
+                            vector[i_cell] = tile_ac[r][c + i_cell];
                         }
 
                         in_pipe::write(vector);
@@ -306,18 +305,17 @@ template <class Cell> class Grid {
 
         return queue.submit([&](sycl::handler &cgh) {
             sycl::accessor tile_ac(tile_buffer, cgh, sycl::write_only);
+            uindex_r_t grid_height = tile_ac.get_range()[0];
+            uindex_c_t grid_width = tile_ac.get_range()[1];
 
             cgh.single_task([=]() {
-                [[intel::loop_coalesce(2)]] for (uindex_r_t r = 0; r < tile_ac.get_range()[0];
-                                                 r++) {
-                    for (uindex_c_t c = 0; c < tile_ac.get_range()[1]; c += vector_length) {
+                [[intel::loop_coalesce(2)]] for (uindex_r_t r = 0; r < grid_height; r++) {
+                    for (uindex_c_t c = 0; c < grid_width; c += vector_length) {
                         std::array<Cell, vector_length> vector = out_pipe::read();
 
 #pragma unroll
                         for (uindex_cell_t i_cell = 0; i_cell < vector_length; i_cell++) {
-                            if (c + i_cell < tile_ac.get_range()[1]) {
-                                tile_ac[r][size_t(c + i_cell)] = vector[i_cell];
-                            }
+                            tile_ac[r][c + i_cell] = vector[i_cell];
                         }
                     }
                 }
