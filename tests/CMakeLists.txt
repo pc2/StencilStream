@@ -14,18 +14,16 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
-add_compile_definitions(STENCIL_INDEX_WIDTH=32)
-
 set(UNIT_TEST_SOURCES
-    #HostPipe.cpp
-    #Stencil.cpp
-    #cpu/Grid.cpp
-    #cpu/StencilUpdate.cpp
+    HostPipe.cpp
+    Stencil.cpp
+    cpu/Grid.cpp
+    cpu/StencilUpdate.cpp
     monotile/Grid.cpp
     monotile/StencilUpdate.cpp
-    #tiling/Grid.cpp
-    #tiling/StencilUpdate.cpp
+    tiling/Grid.cpp
+    tiling/StencilUpdate.cpp
 )
 
 add_executable(unit_test ${UNIT_TEST_SOURCES})
-target_link_libraries(unit_test PRIVATE Catch2::Catch2WithMain StencilStream_MonotileEmulator)
+target_link_libraries(unit_test PRIVATE Catch2::Catch2WithMain StencilStream_MonotileEmulator StencilStream_TilingEmulator)

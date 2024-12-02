@@ -344,7 +344,8 @@ class StencilUpdateKernel {
  * DDR-based systems, this should be 512 bits, or 64 bytes.
  */
 template <concepts::TransitionFunction F, std::size_t n_processing_elements = 1,
-          std::size_t max_grid_height = 1024, std::size_t max_grid_width = 1024,
+          std::size_t vector_length = 1, std::size_t max_grid_height = 1024,
+          std::size_t max_grid_width = 1024,
           tdv::single_pass::Strategy<F, n_processing_elements> TDVStrategy =
               tdv::single_pass::InlineStrategy>
 class StencilUpdate {
@@ -446,16 +447,16 @@ class StencilUpdate {
         if (source_grid.get_grid_width() > max_grid_width) {
             throw std::range_error("The grid is too wide for the stencil update kernel.");
         }
-        using in_pipe = sycl::pipe<class monotile_in_pipe, std::array<Cell, 1>>;
-        using out_pipe = sycl::pipe<class monotile_out_pipe, std::array<Cell, 1>>;
+        using in_pipe = sycl::pipe<class monotile_in_pipe, std::array<Cell, vector_length>>;
+        using out_pipe = sycl::pipe<class monotile_out_pipe, std::array<Cell, vector_length>>;
 
         constexpr std::size_t iters_per_pass = n_processing_elements / F::n_subiterations;
 
         using TDVGlobalState = TDVStrategy::template GlobalState<F, iters_per_pass>;
         using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
         using ExecutionKernelImpl =
-            StencilUpdateKernel<F, TDVKernelArgument, n_processing_elements, 1, max_grid_height,
-                                max_grid_width, in_pipe, out_pipe>;
+            StencilUpdateKernel<F, TDVKernelArgument, n_processing_elements, vector_length,
+                                max_grid_height, max_grid_width, in_pipe, out_pipe>;
 
         sycl::queue input_kernel_queue =
             sycl::queue(params.device, {sycl::property::queue::in_order{}});
@@ -480,8 +481,9 @@ class StencilUpdate {
         std::size_t target_n_iterations = params.iteration_offset + params.n_iterations;
         for (std::size_t i = params.iteration_offset; i < target_n_iterations;
              i += iters_per_pass) {
-            pass_source->template submit_read<in_pipe, max_grid_height * max_grid_width>(
-                input_kernel_queue);
+            pass_source
+                ->template submit_read<in_pipe, vector_length, max_grid_height, max_grid_width>(
+                    input_kernel_queue);
             std::size_t iters_in_this_pass = std::min(iters_per_pass, target_n_iterations - i);
 
             sycl::event work_event = update_kernel_queue.submit([&](sycl::handler &cgh) {
@@ -495,8 +497,9 @@ class StencilUpdate {
                 work_events.push_back(work_event);
             }
 
-            pass_target->template submit_write<out_pipe, max_grid_height * max_grid_width>(
-                output_kernel_queue);
+            pass_target
+                ->template submit_write<out_pipe, vector_length, max_grid_height, max_grid_width>(
+                    output_kernel_queue);
 
             if (i == params.iteration_offset) {
                 pass_source = &swap_grid_b;
