@@ -48,12 +48,12 @@ target_compile_definitions(StencilStream_CPU INTERFACE STENCILSTREAM_TARGET_CPU=
 
 # Target for GPU backend
 
-add_library(StencilStream_GPU INTERFACE)
-target_link_libraries(StencilStream_GPU INTERFACE StencilStream_Base)
-target_compile_definitions(StencilStream_GPU INTERFACE STENCILSTREAM_BACKEND_GPU=1)
-target_compile_definitions(StencilStream_GPU INTERFACE STENCILSTREAM_TARGET_GPU=1)
-target_compile_options(StencilStream_GPU INTERFACE -fsycl-targets=nvptx64-nvidia-cuda-sm_50
-)
+add_library(StencilStream_CUDA INTERFACE)
+target_link_libraries(StencilStream_CUDA INTERFACE StencilStream_Base)
+target_compile_definitions(StencilStream_CUDA INTERFACE STENCILSTREAM_BACKEND_CUDA=1)
+target_compile_definitions(StencilStream_CUDA INTERFACE STENCILSTREAM_TARGET_CUDA=1)
+target_compile_options(StencilStream_CUDA INTERFACE -fsycl-targets=nvptx64-nvidia-cuda -Xsycl-target-backend=nvptx64-nvidia-cuda --offload-arch=sm_80)
+target_link_options(StencilStream_CUDA INTERFACE -fsycl-targets=nvptx64-nvidia-cuda -Xsycl-target-backend=nvptx64-nvidia-cuda --offload-arch=sm_80)
 
 # Base target for FPGA-based backends
 
