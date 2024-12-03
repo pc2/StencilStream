@@ -187,6 +187,8 @@ int main(int argc, char **argv) {
 
 #if defined(STENCILSTREAM_TARGET_FPGA)
   sycl::device device(sycl::ext::intel::fpga_selector_v);
+#elif defined(STENCILSTREAM_TARGET_CUDA)
+  sycl::device device(sycl::gpu_selector_v);
 #else
   sycl::device device;
 #endif
@@ -198,7 +200,7 @@ int main(int argc, char **argv) {
       .n_iterations = parameters.n_timesteps(),
       .device = device,
       .blocking = true,  // enable blocking for meaningful walltime measurements
-#if !defined(STENCILSTREAM_BACKEND_CPU)
+#if !defined(STENCILSTREAM_BACKEND_CPU) && !defined(STENCILSTREAM_BACKEND_CUDA)
       .profiling = true,  // enable additional profiling for FPGA targets
 #endif
   });
@@ -222,7 +224,7 @@ int main(int argc, char **argv) {
 
   std::cout << "Simulation complete!" << std::endl;
   std::cout << "Walltime: " << simulation.get_walltime() << " s" << std::endl;
-#if !defined(STENCILSTREAM_BACKEND_CPU) || (STENCILSTREAM_BACKEND_CUDA)
+#if !defined(STENCILSTREAM_BACKEND_CPU) && !defined(STENCILSTREAM_BACKEND_CUDA)
   // Print pure kernel runtime for FPGA targets
   std::cout << "Kernel Runtime: " << simulation.get_kernel_runtime() << " s"
             << std::endl;
