@@ -18,7 +18,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "Index.hpp"
 #include <numeric>
 
 namespace stencil {
@@ -31,7 +30,7 @@ namespace stencil {
  * the total number of cells divided by the number of cells in a word, plus one additional word if
  * the word length doesn't divide the total number of cells.
  */
-inline constexpr uindex_t n_cells_to_n_words(uindex_t n_cells, uindex_t word_length) {
+inline constexpr std::size_t n_cells_to_n_words(std::size_t n_cells, std::size_t word_length) {
     return n_cells / word_length + (n_cells % word_length == 0 ? 0 : 1);
 }
 

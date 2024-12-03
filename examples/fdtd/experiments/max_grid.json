@@ -16,7 +16,7 @@
     },
     "cavity_rings": [
         {
-            "width": 800e-9,
+            "radius": 800e-9,
             "mu_r": 11.56,
             "eps_r": 1.0,
             "sigma": 0.0

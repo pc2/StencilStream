@@ -16,19 +16,19 @@
     },
     "cavity_rings": [
         {
-            "width": 400e-9,
+            "radius": 400e-9,
             "mu_r": 11.56,
             "eps_r": 1.0,
             "sigma": 0.0
         },
         {
-            "width": 50e-9,
+            "radius": 50e-9,
             "mu_r": 20.0,
             "eps_r": 20.0,
             "sigma": 0.0
         },
         {
-            "width": 350e-9,
+            "radius": 350e-9,
             "mu_r": 11.56,
             "eps_r": 1.0,
             "sigma": 0.0

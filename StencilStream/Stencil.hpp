@@ -18,11 +18,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "GenericID.hpp"
 #include "Helpers.hpp"
-#include "Index.hpp"
 #include <bit>
 #include <sycl/ext/intel/ac_types/ac_int.hpp>
+#include <sycl/id.hpp>
+#include <sycl/range.hpp>
 #include <variant>
 
 namespace stencil {
@@ -43,27 +43,13 @@ namespace stencil {
  * direction from the central cell. \tparam TimeDependentValue The type of values provided by the
  * TDV system.
  */
-template <typename Cell, uindex_t stencil_radius, typename TimeDependentValue = std::monostate>
+template <typename Cell, std::size_t stencil_radius, typename TimeDependentValue = std::monostate>
     requires std::semiregular<Cell> && (stencil_radius >= 1)
 class Stencil {
   public:
     /// \brief The diameter (aka width and height) of the stencil buffer.
-    static constexpr uindex_t diameter = 2 * stencil_radius + 1;
-
-    /// \brief The number of bits necessary to express column and row indices in the stencil.
-    static constexpr unsigned long bits_stencil = std::bit_width(diameter);
-
-    /// \brief A signed index type for column and row indices in this stencil.
-    using index_stencil_t = ac_int<bits_stencil, true>;
-
-    /// \brief An unsigned index type for column and row indices in this stencil.
-    using uindex_stencil_t = ac_int<bits_stencil, false>;
-
-    /// \brief A signed, two-dimensional index to address cells in this stencil.
-    using StencilID = GenericID<index_stencil_t>;
-
-    /// \brief An unsigned, two-dimensional index to address cells in this stencil.
-    using StencilUID = GenericID<uindex_stencil_t>;
+    static constexpr std::size_t diameter = 2 * stencil_radius + 1;
+    static_assert(diameter <= std::numeric_limits<int>::max());
 
     /**
      * \brief Create a new stencil with an uninitialized buffer.
@@ -74,8 +60,8 @@ class Stencil {
      * \param subiteration The present sub-iteration index of the cells in the stencil.
      * \param tdv The time-dependent value for this iteration.
      */
-    Stencil(ID id, UID grid_range, uindex_t iteration, uindex_t subiteration,
-            TimeDependentValue tdv)
+    Stencil(sycl::id<2> id, sycl::range<2> grid_range, std::size_t iteration,
+            std::size_t subiteration, TimeDependentValue tdv)
         : id(id), iteration(iteration), subiteration(subiteration), grid_range(grid_range),
           time_dependent_value(tdv), internal() {}
 
@@ -89,53 +75,39 @@ class Stencil {
      * \param tdv The time-dependent value for this iteration.
      * \param raw An array of cells, which is copied into the stencil object.
      */
-    Stencil(ID id, UID grid_range, uindex_t iteration, uindex_t subiteration,
-            TimeDependentValue tdv, Cell raw[diameter][diameter])
+    Stencil(sycl::id<2> id, sycl::range<2> grid_range, std::size_t iteration,
+            std::size_t subiteration, TimeDependentValue tdv, Cell raw[diameter][diameter])
         : id(id), iteration(iteration), subiteration(subiteration), grid_range(grid_range),
           time_dependent_value(tdv), internal() {
 #pragma unroll
-        for (uindex_t c = 0; c < diameter; c++) {
+        for (std::size_t r = 0; r < diameter; r++) {
 #pragma unroll
-            for (uindex_t r = 0; r < diameter; r++) {
-                internal[c][r] = raw[c][r];
+            for (std::size_t c = 0; c < diameter; c++) {
+                internal[r][c] = raw[r][c];
             }
         }
     }
 
-    /**
-     * \brief Access a cell in the stencil.
-     *
-     * Since the indices in `id` are signed, the origin of this index operator is the central cell.
-     */
-    Cell const &operator[](ID id) const {
-        return internal[id.c + stencil_radius][id.r + stencil_radius];
-    }
+    template <std::signed_integral index_t>
+        requires(stencil_radius <= std::numeric_limits<index_t>::max())
+    class StencilSubscript {
+      public:
+        StencilSubscript(Stencil const &stencil, index_t r) : stencil(stencil), r(r) {}
 
-    /**
-     * \brief Access a cell in the stencil.
-     *
-     * Since the indices in `id` are signed, the origin of this index operator is the central cell.
-     */
-    Cell &operator[](ID id) { return internal[id.c + stencil_radius][id.r + stencil_radius]; }
+        Cell const &operator[](index_t c) const {
+            return stencil[sycl::id<2>(r + stencil_radius, c + stencil_radius)];
+        }
 
-    /**
-     * \brief Access a cell in the stencil.
-     *
-     * Since the indices in `id` are signed, the origin of this index operator is the central cell.
-     */
-    Cell const &operator[](StencilID id) const {
-        return internal[id.c + index_stencil_t(stencil_radius)]
-                       [id.r + index_stencil_t(stencil_radius)];
-    }
+      private:
+        Stencil const &stencil;
+        index_t r;
+    };
 
-    /**
-     * \brief Access a cell in the stencil.
-     *
-     * Since the indices in `id` are signed, the origin of this index operator is the central cell.
-     */
-    Cell &operator[](StencilID id) {
-        return internal[id.c + index_stencil_t(stencil_radius)]
-                       [id.r + index_stencil_t(stencil_radius)];
+    template <std::signed_integral index_t>
+    StencilSubscript<index_t> operator[](index_t r) const
+        requires(stencil_radius <= std::numeric_limits<index_t>::max())
+    {
+        return StencilSubscript<index_t>(*this, r);
     }
 
     /**
@@ -144,7 +116,7 @@ class Stencil {
      * Since the indices in `id` are unsigned, the origin of this index operator is the
      * north-western corner.
      */
-    Cell const &operator[](UID id) const { return internal[id.c][id.r]; }
+    Cell const &operator[](sycl::id<2> id) const { return internal[id[0]][id[1]]; }
 
     /**
      * \brief Access a cell in the stencil.
@@ -152,35 +124,19 @@ class Stencil {
      * Since the indices in `id` are unsigned, the origin of this index operator is the
      * north-western corner.
      */
-    Cell &operator[](UID id) { return internal[id.c][id.r]; }
-
-    /**
-     * \brief Access a cell in the stencil.
-     *
-     * Since the indices in `id` are unsigned, the origin of this index operator is the
-     * north-western corner.
-     */
-    Cell const &operator[](StencilUID id) const { return internal[id.c][id.r]; }
-
-    /**
-     * \brief Access a cell in the stencil.
-     *
-     * Since the indices in `id` are unsigned, the origin of this index operator is the
-     * north-western corner.
-     */
-    Cell &operator[](StencilUID id) { return internal[id.c][id.r]; }
+    Cell &operator[](sycl::id<2> id) { return internal[id[0]][id[1]]; }
 
     /// \brief The position of the central cell in the global grid.
-    const ID id;
+    const sycl::id<2> id;
 
     /// \brief The present iteration index of the cells in the stencil.
-    const uindex_t iteration;
+    const std::size_t iteration;
 
     /// \brief The present sub-iteration index of the cells in the stencil.
-    const uindex_t subiteration;
+    const std::size_t subiteration;
 
     /// \brief The range of the underlying grid.
-    const UID grid_range;
+    const sycl::range<2> grid_range;
 
     /// \brief The time-dependent value for this iteration.
     const TimeDependentValue time_dependent_value;

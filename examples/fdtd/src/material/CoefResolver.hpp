@@ -35,7 +35,7 @@ class CoefResolver {
             };
         }
 
-        static MaterialCell from_parameters(Parameters const &parameters, uindex_t ring_index) {
+        static MaterialCell from_parameters(Parameters const &parameters, size_t ring_index) {
             if (ring_index >= parameters.rings.size()) {
                 return MaterialCell{Cell::halo(), CoefMaterial::perfect_metal()};
             } else {
@@ -49,7 +49,7 @@ class CoefResolver {
     CoefResolver(Parameters const &parameters) {}
 
     CoefMaterial get_material_coefficients(Stencil<MaterialCell, 1, float> const &stencil,
-                                           index_t distance_score) const {
-        return stencil[ID(0, 0)].coefficients;
+                                           float distance_score) const {
+        return stencil[0][0].coefficients;
     }
 };

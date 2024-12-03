@@ -37,4 +37,6 @@ TEST_CASE("cpu::StencilUpdate", "[cpu::StencilUpdate]") {
     test_stencil_update<GridImpl, StencilUpdateImpl>(64, 64, 0, 1);
     test_stencil_update<GridImpl, StencilUpdateImpl>(64, 64, 0, 1);
     test_stencil_update<GridImpl, StencilUpdateImpl>(64, 64, 32, 64);
+    test_stencil_update<GridImpl, StencilUpdateImpl>(32, 64, 0, 1);
+    test_stencil_update<GridImpl, StencilUpdateImpl>(64, 32, 0, 1);
 }

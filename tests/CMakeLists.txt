@@ -25,7 +25,6 @@ set(UNIT_TEST_SOURCES
     monotile/StencilUpdate.cpp
     tiling/Grid.cpp
     tiling/StencilUpdate.cpp
-    constraint_test.cpp
 )
 
 add_executable(unit_test ${UNIT_TEST_SOURCES})

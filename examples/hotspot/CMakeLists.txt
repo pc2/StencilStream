@@ -11,9 +11,6 @@ add_executable(hotspot_openmp hotspot_openmp.cpp)
 target_compile_options(hotspot_openmp PUBLIC -g -fopenmp -O2)
 target_link_options(hotspot_openmp PUBLIC -g -fopenmp -O2)
 
-# Global settings
-add_compile_definitions(STENCIL_INDEX_WIDTH=32)
-
 # Pure CPU-based executable
 add_executable(hotspot_cpu hotspot.cpp)
 target_link_libraries(hotspot_cpu PUBLIC StencilStream_CPU)
