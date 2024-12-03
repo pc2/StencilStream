@@ -10,6 +10,10 @@
 add_executable(conway_cpu conway.cpp)
 target_link_libraries(conway_cpu PUBLIC StencilStream_CPU)
 
+# Pure CPU-based executable
+add_executable(conway_cuda conway.cpp)
+target_link_libraries(conway_cuda PUBLIC StencilStream_CUDA)
+
 # The hardware usage report
 add_executable(conway_hw_report conway.cpp)
 target_link_libraries(conway_hw_report PUBLIC StencilStream_MonotileReport)
