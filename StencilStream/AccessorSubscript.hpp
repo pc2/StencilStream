@@ -18,7 +18,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "Index.hpp"
 #include <CL/sycl.hpp>
 
 namespace stencil {
@@ -26,7 +25,7 @@ namespace stencil {
  * @brief A helper class to support the double-subscript idiom for
  * \ref stencil::concepts::GridAccessor "GridAccessors"
  *
- * This class is used to support expressions like `accessor[i_column][i_row]`. Each subscript except
+ * This class is used to support expressions like `accessor[i_row][i_column]`. Each subscript except
  * the last one creates an object of this class, which stores the index of the subscript as well as
  * all previous indices to form a so-called "prefix." When the last subscript is called, the index
  * is added to the prefix to yield the complete, multi-dimensional index. Then, the last subscript
@@ -45,11 +44,11 @@ namespace stencil {
  * operator[] returns another \ref AccessorSubscript or the final cell reference.
  */
 template <typename Cell, typename Accessor, sycl::access::mode access_mode,
-          uindex_t current_subdim = 0>
+          std::size_t current_subdim = 0>
 class AccessorSubscript {
   public:
     /// \brief The number of dimensions in the accessed grid.
-    static constexpr uindex_t dimensions = Accessor::dimensions;
+    static constexpr std::size_t dimensions = Accessor::dimensions;
 
     /**
      * \brief Instantiate a new accessor subscript object with the given index as the prefix.
@@ -61,7 +60,7 @@ class AccessorSubscript {
      * \param ac The accessor to redirect to.
      * \param i The index of the previous subscript. It will be used as a prefix.
      */
-    AccessorSubscript(Accessor &ac, uindex_t i)
+    AccessorSubscript(Accessor &ac, std::size_t i)
         requires(current_subdim == 0)
         : ac(ac), id_prefix() {
         id_prefix[current_subdim] = i;
@@ -77,7 +76,7 @@ class AccessorSubscript {
      * \param id_prefix The previous prefix
      * \param i The new index to add to the prefix.
      */
-    AccessorSubscript(Accessor &ac, sycl::id<dimensions> id_prefix, uindex_t i)
+    AccessorSubscript(Accessor &ac, sycl::id<dimensions> id_prefix, std::size_t i)
         : ac(ac), id_prefix(id_prefix) {
         id_prefix[current_subdim] = i;
     }
@@ -93,7 +92,7 @@ class AccessorSubscript {
      *
      * \return A subscript object for the following dimensions.
      */
-    AccessorSubscript<Cell, Accessor, access_mode, current_subdim + 1> operator[](uindex_t i)
+    AccessorSubscript<Cell, Accessor, access_mode, current_subdim + 1> operator[](std::size_t i)
         requires(current_subdim < dimensions - 2)
     {
         return AccessorSubscript(ac, id_prefix, i);
@@ -110,7 +109,7 @@ class AccessorSubscript {
      *
      * \return A constant reference to the indexed cell.
      */
-    Cell const &operator[](uindex_t i)
+    Cell const &operator[](std::size_t i)
         requires(current_subdim == dimensions - 2 && access_mode == sycl::access::mode::read)
     {
         sycl::id<dimensions> id = id_prefix;
@@ -128,7 +127,7 @@ class AccessorSubscript {
      *
      * \return A reference to the indexed cell.
      */
-    Cell &operator[](uindex_t i)
+    Cell &operator[](std::size_t i)
         requires(current_subdim == dimensions - 2 && access_mode != sycl::access::mode::read)
     {
         sycl::id<dimensions> id = id_prefix;

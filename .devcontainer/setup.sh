@@ -10,7 +10,7 @@ echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt
 # Updating package index, upgrading, and installing required packages
 sudo apt update || exit 1
 sudo apt upgrade -y || exit 1
-sudo apt install -y intel-basekit-2024.2 libboost-dev cmake doxygen graphviz clang || exit 1
+sudo apt install -y intel-basekit-2024.2 cmake doxygen graphviz clang || exit 1
 echo "source /opt/intel/oneapi/setvars.sh" >> ~/.bash_profile
 
 # Installing Julia & instantiating the project

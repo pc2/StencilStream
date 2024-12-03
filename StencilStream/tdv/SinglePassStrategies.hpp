@@ -38,19 +38,19 @@ namespace single_pass {
  *
  * The required methods are:
  *
- * * `TDV get_time_dependent_value(uindex_t i) const`: Return the time-dependent value for the
+ * * `TDV get_time_dependent_value(std::size_t i) const`: Return the time-dependent value for the
  * pass-local iteration `i`. This is the current iteration minus the iteration index offset of the
  * current pass. The type `TDV` has to be the same as `TransFunc::TimeDependentValue`.
  *
  * \tparam TransFunc The transition function that contains the TDV definition.
  */
 template <typename T, typename TransFunc>
-concept LocalState =
-    stencil::concepts::TransitionFunction<TransFunc> && requires(T const &local_state, uindex_t i) {
-        {
-            local_state.get_time_dependent_value(i)
-        } -> std::same_as<typename TransFunc::TimeDependentValue>;
-    };
+concept LocalState = stencil::concepts::TransitionFunction<TransFunc> &&
+                     requires(T const &local_state, std::size_t i) {
+                         {
+                             local_state.get_time_dependent_value(i)
+                         } -> std::same_as<typename TransFunc::TimeDependentValue>;
+                     };
 
 /**
  * \brief The requirements for a TDV kernel argument.
@@ -82,11 +82,11 @@ concept KernelArgument = stencil::concepts::TransitionFunction<TransFunc> &&
  * the iteration offset and number of iterations of this pass.
  */
 template <typename T, typename TransFunc>
-concept GlobalState =
-    stencil::concepts::TransitionFunction<TransFunc> &&
-    std::constructible_from<T, TransFunc, uindex_t, uindex_t> &&
-    KernelArgument<typename T::KernelArgument, TransFunc> &&
-    std::constructible_from<typename T::KernelArgument, T &, sycl::handler &, uindex_t, uindex_t>;
+concept GlobalState = stencil::concepts::TransitionFunction<TransFunc> &&
+                      std::constructible_from<T, TransFunc, std::size_t, std::size_t> &&
+                      KernelArgument<typename T::KernelArgument, TransFunc> &&
+                      std::constructible_from<typename T::KernelArgument, T &, sycl::handler &,
+                                              std::size_t, std::size_t>;
 
 /**
  * \brief Requirements for a TDV implementation strategy.
@@ -95,7 +95,7 @@ concept GlobalState =
  * "GlobalState", which is instantiated with the transition function and the maximal number of
  * iterations that are computed in one pass.
  */
-template <typename T, typename TransFunc, uindex_t max_n_iterations>
+template <typename T, typename TransFunc, std::size_t max_n_iterations>
 concept Strategy =
     stencil::concepts::TransitionFunction<TransFunc> &&
     GlobalState<typename T::template GlobalState<TransFunc, max_n_iterations>, TransFunc>;
@@ -112,27 +112,27 @@ concept Strategy =
  * function.
  */
 struct InlineStrategy {
-    template <stencil::concepts::TransitionFunction TransFunc, uindex_t max_n_iterations>
+    template <stencil::concepts::TransitionFunction TransFunc, std::size_t max_n_iterations>
     struct GlobalState {
         using TDV = typename TransFunc::TimeDependentValue;
 
-        GlobalState(TransFunc trans_func, uindex_t iteration_offset, uindex_t n_iterations)
+        GlobalState(TransFunc trans_func, std::size_t iteration_offset, std::size_t n_iterations)
             : trans_func(trans_func) {}
 
         struct KernelArgument {
-            KernelArgument(GlobalState &global_state, sycl::handler &cgh, uindex_t iteration_offset,
-                           uindex_t n_iterations)
+            KernelArgument(GlobalState &global_state, sycl::handler &cgh,
+                           std::size_t iteration_offset, std::size_t n_iterations)
                 : trans_func(global_state.trans_func), iteration_offset(iteration_offset) {}
 
             using LocalState = KernelArgument;
 
-            TDV get_time_dependent_value(uindex_t i_iteration) const {
+            TDV get_time_dependent_value(std::size_t i_iteration) const {
                 return trans_func.get_time_dependent_value(iteration_offset + i_iteration);
             }
 
           private:
             TransFunc trans_func;
-            uindex_t iteration_offset;
+            std::size_t iteration_offset;
         };
 
       private:
@@ -150,27 +150,27 @@ struct InlineStrategy {
  * function, the local state may be implemented in registers or with on-chip memory.
  */
 struct PrecomputeOnDeviceStrategy {
-    template <stencil::concepts::TransitionFunction TransFunc, uindex_t max_n_iterations>
+    template <stencil::concepts::TransitionFunction TransFunc, std::size_t max_n_iterations>
     struct GlobalState {
         using TDV = typename TransFunc::TimeDependentValue;
 
-        GlobalState(TransFunc trans_func, uindex_t iteration_offset, uindex_t n_iterations)
+        GlobalState(TransFunc trans_func, std::size_t iteration_offset, std::size_t n_iterations)
             : trans_func(trans_func) {}
 
         struct KernelArgument {
-            KernelArgument(GlobalState &global_state, sycl::handler &cgh, uindex_t iteration_offset,
-                           uindex_t n_iterations)
+            KernelArgument(GlobalState &global_state, sycl::handler &cgh,
+                           std::size_t iteration_offset, std::size_t n_iterations)
                 : trans_func(global_state.trans_func), iteration_offset(iteration_offset) {}
 
             struct LocalState {
                 LocalState(KernelArgument const &kernel_argument) : values() {
-                    for (uindex_t i = 0; i < max_n_iterations; i++) {
+                    for (std::size_t i = 0; i < max_n_iterations; i++) {
                         values[i] = kernel_argument.trans_func.get_time_dependent_value(
                             kernel_argument.iteration_offset + i);
                     }
                 }
 
-                TDV get_time_dependent_value(uindex_t i_iteration) const {
+                TDV get_time_dependent_value(std::size_t i_iteration) const {
                     return values[i_iteration];
                 }
 
@@ -180,7 +180,7 @@ struct PrecomputeOnDeviceStrategy {
 
           private:
             TransFunc trans_func;
-            uindex_t iteration_offset;
+            std::size_t iteration_offset;
         };
 
       private:
@@ -198,16 +198,16 @@ struct PrecomputeOnDeviceStrategy {
  * memory.
  */
 struct PrecomputeOnHostStrategy {
-    template <stencil::concepts::TransitionFunction TransFunc, uindex_t max_n_iterations>
+    template <stencil::concepts::TransitionFunction TransFunc, std::size_t max_n_iterations>
     class GlobalState {
       public:
         using TDV = typename TransFunc::TimeDependentValue;
 
-        GlobalState(TransFunc function, uindex_t iteration_offset, uindex_t n_iterations)
+        GlobalState(TransFunc function, std::size_t iteration_offset, std::size_t n_iterations)
             : function(function), iteration_offset(iteration_offset),
               value_buffer(sycl::range<1>(n_iterations)) {
             sycl::host_accessor ac(value_buffer, sycl::read_write);
-            for (uindex_t i = 0; i < n_iterations; i++) {
+            for (std::size_t i = 0; i < n_iterations; i++) {
                 ac[i] = function.get_time_dependent_value(iteration_offset + i);
             }
         }
@@ -217,8 +217,8 @@ struct PrecomputeOnHostStrategy {
               value_buffer(other.value_buffer) {}
 
         struct KernelArgument {
-            KernelArgument(GlobalState &global_state, sycl::handler &cgh, uindex_t i_iteration,
-                           uindex_t n_iterations)
+            KernelArgument(GlobalState &global_state, sycl::handler &cgh, std::size_t i_iteration,
+                           std::size_t n_iterations)
                 : ac() {
                 assert(n_iterations <= max_n_iterations);
                 assert(i_iteration >= global_state.iteration_offset);
@@ -233,14 +233,14 @@ struct PrecomputeOnHostStrategy {
 
             struct LocalState {
                 LocalState(KernelArgument const &kernel_argument) : values() {
-                    uindex_t n_values =
-                        std::min(max_n_iterations, uindex_t(kernel_argument.ac.get_range()[0]));
+                    std::size_t n_values =
+                        std::min(max_n_iterations, std::size_t(kernel_argument.ac.get_range()[0]));
 
-                    for (uindex_t i = 0; i < n_values; i++)
+                    for (std::size_t i = 0; i < n_values; i++)
                         values[i] = kernel_argument.ac[i];
                 }
 
-                TDV get_time_dependent_value(uindex_t i) const { return values[i]; }
+                TDV get_time_dependent_value(std::size_t i) const { return values[i]; }
 
               private:
                 TDV values[max_n_iterations];
@@ -252,7 +252,7 @@ struct PrecomputeOnHostStrategy {
 
       private:
         TransFunc function;
-        uindex_t iteration_offset;
+        std::size_t iteration_offset;
         sycl::buffer<TDV, 1> value_buffer;
     };
 };

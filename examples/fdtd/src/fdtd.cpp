@@ -49,12 +49,12 @@ using TDVStrategy = tdv::single_pass::PrecomputeOnHostStrategy;
     #include <StencilStream/monotile/StencilUpdate.hpp>
 
 using Grid = monotile::Grid<CellImpl>;
-using StencilUpdate = monotile::StencilUpdate<KernelImpl, n_processing_elements, tile_width,
-                                              tile_height, TDVStrategy>;
+using StencilUpdate = monotile::StencilUpdate<KernelImpl, n_processing_elements, tile_height,
+                                              tile_width, TDVStrategy>;
 #elif defined(STENCILSTREAM_BACKEND_TILING)
     #include <StencilStream/tiling/StencilUpdate.hpp>
 using StencilUpdate =
-    tiling::StencilUpdate<KernelImpl, n_processing_elements, tile_width, tile_height, TDVStrategy>;
+    tiling::StencilUpdate<KernelImpl, n_processing_elements, tile_height, tile_width, TDVStrategy>;
 using Grid = StencilUpdate::GridImpl;
 #elif defined(STENCILSTREAM_BACKEND_CPU)
     #include <StencilStream/cpu/StencilUpdate.hpp>
@@ -80,7 +80,7 @@ enum class CellField {
     HZ_SUM,
 };
 
-void save_frame(Grid frame_buffer, uindex_t iteration_index, CellField field,
+void save_frame(Grid frame_buffer, size_t iteration_index, CellField field,
                 Parameters const &parameters) {
     Grid::GridAccessor<access::mode::read> frame(frame_buffer);
 
@@ -105,20 +105,20 @@ void save_frame(Grid frame_buffer, uindex_t iteration_index, CellField field,
     frame_path << "." << iteration_index << ".csv";
     std::ofstream out(frame_path.str());
 
-    for (uindex_t r = 0; r < parameters.grid_range()[1]; r++) {
-        for (uindex_t c = 0; c < parameters.grid_range()[0]; c++) {
+    for (size_t r = 0; r < parameters.grid_range()[1]; r++) {
+        for (size_t c = 0; c < parameters.grid_range()[0]; c++) {
             switch (field) {
             case CellField::EX:
-                out << frame[c][r].cell.ex;
+                out << frame[r][c].cell.ex;
                 break;
             case CellField::EY:
-                out << frame[c][r].cell.ey;
+                out << frame[r][c].cell.ey;
                 break;
             case CellField::HZ:
-                out << frame[c][r].cell.hz;
+                out << frame[r][c].cell.hz;
                 break;
             case CellField::HZ_SUM:
-                out << frame[c][r].cell.hz_sum;
+                out << frame[r][c].cell.hz_sum;
                 break;
             default:
                 break;
@@ -151,22 +151,22 @@ int main(int argc, char **argv) {
     Grid grid(parameters.grid_range());
     {
         Grid::GridAccessor<access::mode::read_write> init_ac(grid);
-        for (uindex_t c = 0; c < parameters.grid_range()[0]; c++) {
-            for (uindex_t r = 0; r < parameters.grid_range()[1]; r++) {
-                float a = float(c) - float(parameters.grid_range()[0]) / 2.0;
-                float b = float(r) - float(parameters.grid_range()[1]) / 2.0;
+        for (size_t r = 0; r < parameters.grid_range()[1]; r++) {
+            for (size_t c = 0; c < parameters.grid_range()[0]; c++) {
+                float a = float(r) - float(parameters.grid_range()[0]) / 2.0;
+                float b = float(c) - float(parameters.grid_range()[1]) / 2.0;
                 float distance = parameters.dx * sqrt(a * a + b * b);
 
                 float radius = 0.0;
-                for (uindex_t i = 0; i <= parameters.rings.size(); i++) {
+                for (size_t i = 0; i <= parameters.rings.size(); i++) {
                     if (i < parameters.rings.size()) {
-                        radius += parameters.rings[i].width;
+                        radius += parameters.rings[i].radius;
                         if (distance < radius) {
-                            init_ac[c][r] = CellImpl::from_parameters(parameters, i);
+                            init_ac[r][c] = CellImpl::from_parameters(parameters, i);
                             break;
                         }
                     } else {
-                        init_ac[c][r] = CellImpl::from_parameters(parameters, i);
+                        init_ac[r][c] = CellImpl::from_parameters(parameters, i);
                     }
                 }
             }
@@ -188,15 +188,15 @@ int main(int argc, char **argv) {
 #endif
     });
 
-    uindex_t n_timesteps = parameters.n_timesteps();
-    uindex_t last_saved_iteration = 0;
+    size_t n_timesteps = parameters.n_timesteps();
+    size_t last_saved_iteration = 0;
 
     std::cout << "Simulating..." << std::endl;
 
     if (parameters.n_snap_timesteps().has_value()) {
-        uindex_t n_snap_timesteps = parameters.n_snap_timesteps().value();
+        size_t n_snap_timesteps = parameters.n_snap_timesteps().value();
         simulation.get_params().n_iterations = n_snap_timesteps;
-        for (uindex_t &i = simulation.get_params().iteration_offset; i < parameters.n_timesteps();
+        for (size_t &i = simulation.get_params().iteration_offset; i < parameters.n_timesteps();
              i += n_snap_timesteps) {
             grid = simulation(grid);
             save_frame(grid, i + n_snap_timesteps, CellField::HZ, parameters);
