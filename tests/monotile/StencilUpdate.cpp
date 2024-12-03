@@ -130,10 +130,10 @@ TEST_CASE("monotile::StencilUpdateKernel", "[monotile::StencilUpdateKernel]") {
     std::cout << std::endl;
 }
 
-template <typename TDVStrategy> void test_monotile_update() {
-    using StencilUpdateImpl = StencilUpdate<FPGATransFunc<1>, n_processing_elements, 1, tile_height,
-                                            tile_width, TDVStrategy>;
-    using GridImpl = Grid<Cell>;
+template <typename TDVStrategy, std::size_t my_vector_length> void test_monotile_update() {
+    using StencilUpdateImpl = StencilUpdate<FPGATransFunc<1>, n_processing_elements,
+                                            my_vector_length, tile_height, tile_width, TDVStrategy>;
+    using GridImpl = StencilUpdateImpl::GridImpl;
     static_assert(concepts::StencilUpdate<StencilUpdateImpl, FPGATransFunc<1>, GridImpl>);
 
     for (std::size_t grid_height = tile_height / 2; grid_height <= tile_height; grid_height *= 2) {
@@ -153,7 +153,11 @@ template <typename TDVStrategy> void test_monotile_update() {
 }
 
 TEST_CASE("monotile::StencilUpdate", "[monotile::StencilUpdate]") {
-    test_monotile_update<tdv::single_pass::InlineStrategy>();
-    test_monotile_update<tdv::single_pass::PrecomputeOnDeviceStrategy>();
-    test_monotile_update<tdv::single_pass::PrecomputeOnHostStrategy>();
+    test_monotile_update<tdv::single_pass::InlineStrategy, 1>();
+    test_monotile_update<tdv::single_pass::PrecomputeOnDeviceStrategy, 1>();
+    test_monotile_update<tdv::single_pass::PrecomputeOnHostStrategy, 1>();
+
+    test_monotile_update<tdv::single_pass::InlineStrategy, 4>();
+    test_monotile_update<tdv::single_pass::PrecomputeOnDeviceStrategy, 4>();
+    test_monotile_update<tdv::single_pass::PrecomputeOnHostStrategy, 4>();
 }

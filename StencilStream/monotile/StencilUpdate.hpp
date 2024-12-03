@@ -356,7 +356,7 @@ class StencilUpdate {
 
   public:
     /// \brief Shorthand for the used and supported grid type.
-    using GridImpl = Grid<Cell>;
+    using GridImpl = Grid<Cell, vector_length>;
 
     /**
      * \brief Parameters for the stencil updater.
@@ -482,9 +482,8 @@ class StencilUpdate {
         std::size_t target_n_iterations = params.iteration_offset + params.n_iterations;
         for (std::size_t i = params.iteration_offset; i < target_n_iterations;
              i += iters_per_pass) {
-            pass_source
-                ->template submit_read<in_pipe, vector_length, max_grid_height, max_grid_width>(
-                    input_kernel_queue);
+            pass_source->template submit_read<in_pipe, max_grid_height, max_grid_width>(
+                input_kernel_queue);
             std::size_t iters_in_this_pass = std::min(iters_per_pass, target_n_iterations - i);
 
             sycl::event work_event = update_kernel_queue.submit([&](sycl::handler &cgh) {
@@ -498,9 +497,8 @@ class StencilUpdate {
                 work_events.push_back(work_event);
             }
 
-            pass_target
-                ->template submit_write<out_pipe, vector_length, max_grid_height, max_grid_width>(
-                    output_kernel_queue);
+            pass_target->template submit_write<out_pipe, max_grid_height, max_grid_width>(
+                output_kernel_queue);
 
             if (i == params.iteration_offset) {
                 pass_source = &swap_grid_b;

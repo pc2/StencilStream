@@ -39,7 +39,8 @@ constexpr float sqrt_2 = 1.4142135623730951;
 constexpr float pi = 3.1415926535897932384626433;
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
-constexpr size_t n_processing_elements = 200;
+constexpr size_t n_processing_elements = 100;
+constexpr size_t vector_length = 2;
 
 #elif defined(STENCILSTREAM_BACKEND_TILING)
 constexpr size_t n_processing_elements = 190;

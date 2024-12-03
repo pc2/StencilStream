@@ -26,32 +26,33 @@ using namespace stencil::monotile;
 using namespace sycl;
 using namespace std;
 
-using TestGrid = Grid<sycl::id<2>>;
-
 // Assert that the monotile grid fulfills the grid concept.
-static_assert(concepts::Grid<TestGrid, sycl::id<2>>);
+static_assert(concepts::Grid<Grid<sycl::id<2>>, sycl::id<2>>);
 
 TEST_CASE("monotile::Grid::Grid", "[monotile::Grid]") {
-    grid_test::test_constructors<TestGrid>(tile_height, tile_width);
+    grid_test::test_constructors<Grid<sycl::id<2>>>(tile_height, tile_width);
 }
 
 TEST_CASE("monotile::Grid::copy_from_buffer", "[monotile::Grid]") {
-    grid_test::test_copy_from_buffer<TestGrid>(tile_height, tile_width);
+    grid_test::test_copy_from_buffer<Grid<sycl::id<2>>>(tile_height, tile_width);
 }
 
 TEST_CASE("monotile::Grid::copy_to_buffer", "[monotile::Grid]") {
-    grid_test::test_copy_to_buffer<TestGrid>(tile_height, tile_width);
+    grid_test::test_copy_to_buffer<Grid<sycl::id<2>>>(tile_height, tile_width);
 }
 
 TEST_CASE("monotile::Grid::make_similar", "[monotile::Grid]") {
-    grid_test::test_make_similar<TestGrid>(tile_height, tile_width);
+    grid_test::test_make_similar<Grid<sycl::id<2>>>(tile_height, tile_width);
 }
 
 template <std::size_t my_vector_length>
 void test_monotile_grid_submit_read(std::size_t grid_height, std::size_t grid_width) {
+    using TestGrid = monotile::Grid<sycl::id<2>, my_vector_length>;
+
     TestGrid in_grid(grid_height, grid_width);
     {
-        TestGrid::GridAccessor<access::mode::read_write> in_grid_ac(in_grid);
+        using GridAccessor = TestGrid::template GridAccessor<access::mode::read_write>;
+        GridAccessor in_grid_ac(in_grid);
         for (std::size_t r = 0; r < grid_height; r++) {
             for (std::size_t c = 0; c < grid_width; c++) {
                 in_grid_ac[r][c] = sycl::id<2>(r, c);
@@ -63,7 +64,7 @@ void test_monotile_grid_submit_read(std::size_t grid_height, std::size_t grid_wi
 
     using in_pipe = sycl::pipe<class monotile_grid_submit_read_test_id,
                                std::array<sycl::id<2>, my_vector_length>>;
-    in_grid.template submit_read<in_pipe, my_vector_length, tile_height, tile_width>(queue);
+    in_grid.template submit_read<in_pipe, tile_height, tile_width>(queue);
 
     buffer<sycl::id<2>, 2> out_buffer = range<2>(grid_height, grid_width);
     queue.submit([&](handler &cgh) {
@@ -112,6 +113,7 @@ TEST_CASE("monotile::Grid::submit_read", "[monotile::Grid]") {
 
 template <std::size_t my_vector_length>
 void test_monotile_grid_submit_write(std::size_t grid_height, std::size_t grid_width) {
+    using TestGrid = monotile::Grid<sycl::id<2>, my_vector_length>;
     using out_pipe = sycl::pipe<class monotile_grid_submit_write_test_id,
                                 std::array<sycl::id<2>, my_vector_length>>;
 
@@ -132,9 +134,10 @@ void test_monotile_grid_submit_write(std::size_t grid_height, std::size_t grid_w
     });
 
     TestGrid grid(grid_height, grid_width);
-    grid.template submit_write<out_pipe, my_vector_length, tile_height, tile_width>(queue);
+    grid.template submit_write<out_pipe, tile_height, tile_width>(queue);
 
-    TestGrid::GridAccessor<access::mode::read_write> out_ac(grid);
+    using GridAccessor = TestGrid::template GridAccessor<access::mode::read_write>;
+    GridAccessor out_ac(grid);
     for (std::size_t r = 0; r < grid_height; r++) {
         for (std::size_t c = 0; c < grid_width; c++) {
             REQUIRE(out_ac[r][c] == sycl::id<2>(r, c));

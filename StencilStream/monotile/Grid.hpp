@@ -55,7 +55,7 @@ namespace monotile {
  * \tparam word_size The word size of the memory system, in bytes. This is used to optimize the
  * kernels submitted by \ref submit_read and \ref submit_write.
  */
-template <class Cell> class Grid {
+template <class Cell, std::size_t vector_length = 1> class Grid {
   public:
     /**
      * \brief The number of dimensions of the grid.
@@ -63,6 +63,8 @@ template <class Cell> class Grid {
      * May be changed in the future when other dimensions are supported.
      */
     static constexpr std::size_t dimensions = 2;
+
+    using CellVector = Padded<std::array<Cell, vector_length>>;
 
     /**
      * \brief Create a new, uninitialized grid with the given dimensions.
@@ -72,7 +74,8 @@ template <class Cell> class Grid {
      * \param grid_width The width, or number of columns, of the new grid.
      */
     Grid(std::size_t grid_height, std::size_t grid_width)
-        : tile_buffer(sycl::range<2>(grid_height, grid_width)) {}
+        : tile_buffer(sycl::range<2>(grid_height, int_ceil_div(grid_width, vector_length))),
+          grid_range(grid_height, grid_width) {}
 
     /**
      * \brief Create a new, uninitialized grid with the given dimensions.
@@ -80,7 +83,9 @@ template <class Cell> class Grid {
      * \param range The range of the new grid. The first index will be the width and the second
      * index will be the height of the grid.
      */
-    Grid(sycl::range<2> range) : tile_buffer(range) {}
+    Grid(sycl::range<2> range)
+        : tile_buffer(sycl::range<2>(range[0], int_ceil_div(range[1], vector_length))),
+          grid_range(range) {}
 
     /**
      * \brief Create a new grid with the same size and contents as the given SYCL buffer.
@@ -90,7 +95,10 @@ template <class Cell> class Grid {
      *
      * \param buffer The buffer with the contents of the new grid.
      */
-    Grid(sycl::buffer<Cell, 2> buffer) : tile_buffer(buffer.get_range()) {
+    Grid(sycl::buffer<Cell, 2> buffer)
+        : tile_buffer(sycl::range<2>(buffer.get_range()[0],
+                                     int_ceil_div(buffer.get_range()[1], vector_length))),
+          grid_range(buffer.get_range()) {
         copy_from_buffer(buffer);
     }
 
@@ -103,22 +111,25 @@ template <class Cell> class Grid {
      *
      * \param other_grid The other grid the new grid should reference.
      */
-    Grid(Grid const &other_grid) : tile_buffer(other_grid.tile_buffer) {}
+    Grid(Grid const &other_grid)
+        : tile_buffer(other_grid.tile_buffer), grid_range(other_grid.grid_range) {}
 
     /**
      * \brief Create an new, uninitialized grid with the same size as the current one.
      */
-    Grid make_similar() const { return Grid(tile_buffer.get_range()); }
+    Grid make_similar() const { return Grid(grid_range); }
 
     /**
      * \brief Return the height, or number of rows, of the grid.
      */
-    std::size_t get_grid_height() const { return tile_buffer.get_range()[0]; }
+    std::size_t get_grid_height() const { return grid_range[0]; }
 
     /**
      * \brief Return the width, or number of columns, of the grid.
      */
-    std::size_t get_grid_width() const { return tile_buffer.get_range()[1]; }
+    std::size_t get_grid_width() const { return grid_range[1]; }
+
+    sycl::range<2> get_grid_range() const { return grid_range; }
 
     /**
      * \brief An accessor for the monotile grid.
@@ -131,7 +142,7 @@ template <class Cell> class Grid {
      */
     template <sycl::access::mode access_mode = sycl::access::mode::read_write> class GridAccessor {
       private:
-        using accessor_t = sycl::host_accessor<Cell, 2, access_mode>;
+        using accessor_t = sycl::host_accessor<CellVector, 2, access_mode>;
 
       public:
         /**
@@ -169,7 +180,7 @@ template <class Cell> class Grid {
         Cell const &operator[](sycl::id<2> id)
             requires(access_mode == sycl::access::mode::read)
         {
-            return ac[id];
+            return ac[id[0]][id[1] / vector_length].value[id[1] % vector_length];
         }
 
         /**
@@ -181,7 +192,7 @@ template <class Cell> class Grid {
         Cell &operator[](sycl::id<2> id)
             requires(access_mode != sycl::access::mode::read)
         {
-            return ac[id];
+            return ac[id[0]][id[1] / vector_length].value[id[1] % vector_length];
         }
 
       private:
@@ -199,13 +210,18 @@ template <class Cell> class Grid {
      * \throws std::range_error The size of the buffer does not match the grid.
      */
     void copy_from_buffer(sycl::buffer<Cell, 2> input_buffer) {
-        if (input_buffer.get_range() != tile_buffer.get_range()) {
+        assert(tile_buffer.get_range()[1] == int_ceil_div(grid_range[1], vector_length));
+        if (input_buffer.get_range() != grid_range) {
             throw std::range_error("The target buffer has not the same size as the grid");
         }
 
         sycl::host_accessor in_ac(input_buffer, sycl::read_only);
         sycl::host_accessor tile_ac(tile_buffer, sycl::read_write);
-        std::memcpy(tile_ac.get_pointer(), in_ac.get_pointer(), in_ac.byte_size());
+        for (std::size_t r = 0; r < grid_range[0]; r++) {
+            for (std::size_t c = 0; c < grid_range[1]; c++) {
+                tile_ac[r][c / vector_length].value[c % vector_length] = in_ac[r][c];
+            }
+        }
     }
 
     /**
@@ -218,13 +234,18 @@ template <class Cell> class Grid {
      * \throws std::range_error The size of the buffer does not match the grid.
      */
     void copy_to_buffer(sycl::buffer<Cell, 2> output_buffer) {
-        if (output_buffer.get_range() != output_buffer.get_range()) {
+        assert(tile_buffer.get_range()[1] == int_ceil_div(grid_range[1], vector_length));
+        if (output_buffer.get_range() != grid_range) {
             throw std::range_error("The target buffer has not the same size as the grid");
         }
 
         sycl::host_accessor tile_ac(tile_buffer, sycl::read_only);
         sycl::host_accessor out_ac(output_buffer, sycl::write_only);
-        std::memcpy(out_ac.get_pointer(), tile_ac.get_pointer(), tile_ac.byte_size());
+        for (std::size_t r = 0; r < grid_range[0]; r++) {
+            for (std::size_t c = 0; c < grid_range[1]; c++) {
+                out_ac[r][c] = tile_ac[r][c / vector_length].value[c % vector_length];
+            }
+        }
     }
 
     /**
@@ -243,31 +264,28 @@ template <class Cell> class Grid {
      *
      * \returns The event object of the submitted kernel.
      */
-    template <typename in_pipe, std::size_t vector_length = 1,
+    template <typename in_pipe,
               std::size_t max_grid_height = std::numeric_limits<std::size_t>::max(),
               std::size_t max_grid_width = std::numeric_limits<std::size_t>::max()>
     sycl::event submit_read(sycl::queue queue) {
+        constexpr std::size_t max_vect_grid_width = int_ceil_div(max_grid_width, vector_length);
+
         using uindex_r_t = ac_int<std::bit_width(max_grid_height), false>;
-        using uindex_c_t = ac_int<std::bit_width(max_grid_width), false>;
+        using uindex_vect_c_t = ac_int<std::bit_width(max_vect_grid_width), false>;
         using uindex_cell_t = ac_int<std::bit_width(vector_length), false>;
 
         assert(tile_buffer.get_range()[0] <= max_grid_height);
-        assert(tile_buffer.get_range()[1] <= max_grid_width);
+        assert(tile_buffer.get_range()[1] <= max_vect_grid_width);
 
         return queue.submit([&](sycl::handler &cgh) {
             sycl::accessor tile_ac(tile_buffer, cgh, sycl::read_only);
             uindex_r_t grid_height = tile_ac.get_range()[0];
-            uindex_c_t grid_width = tile_ac.get_range()[1];
+            uindex_vect_c_t vect_grid_width = tile_ac.get_range()[1];
 
             cgh.single_task([=]() {
                 [[intel::loop_coalesce(2)]] for (uindex_r_t r = 0; r < grid_height; r++) {
-                    for (uindex_c_t c = 0; c < grid_width; c += vector_length) {
-                        std::array<Cell, vector_length> vector;
-#pragma unroll
-                        for (uindex_cell_t i_cell = 0; i_cell < vector_length; i_cell++) {
-                            vector[i_cell] = tile_ac[r][c + i_cell];
-                        }
-
+                    for (uindex_vect_c_t vect_c = 0; vect_c < vect_grid_width; vect_c++) {
+                        std::array<Cell, vector_length> vector = tile_ac[r][vect_c].value;
                         in_pipe::write(vector);
                     }
                 }
@@ -292,31 +310,29 @@ template <class Cell> class Grid {
      *
      * \returns The event object of the submitted kernel.
      */
-    template <typename out_pipe, std::size_t vector_length = 1,
+    template <typename out_pipe,
               std::size_t max_grid_height = std::numeric_limits<std::size_t>::max(),
               std::size_t max_grid_width = std::numeric_limits<std::size_t>::max()>
     sycl::event submit_write(sycl::queue queue) {
+        constexpr std::size_t max_vect_grid_width = int_ceil_div(max_grid_width, vector_length);
+
         using uindex_r_t = ac_int<std::bit_width(max_grid_height), false>;
-        using uindex_c_t = ac_int<std::bit_width(max_grid_width), false>;
+        using uindex_vect_c_t = ac_int<std::bit_width(max_vect_grid_width), false>;
         using uindex_cell_t = ac_int<std::bit_width(vector_length), false>;
 
         assert(tile_buffer.get_range()[0] <= max_grid_height);
-        assert(tile_buffer.get_range()[1] <= max_grid_width);
+        assert(tile_buffer.get_range()[1] <= max_vect_grid_width);
 
         return queue.submit([&](sycl::handler &cgh) {
             sycl::accessor tile_ac(tile_buffer, cgh, sycl::write_only);
             uindex_r_t grid_height = tile_ac.get_range()[0];
-            uindex_c_t grid_width = tile_ac.get_range()[1];
+            uindex_vect_c_t vect_grid_width = tile_ac.get_range()[1];
 
             cgh.single_task([=]() {
                 [[intel::loop_coalesce(2)]] for (uindex_r_t r = 0; r < grid_height; r++) {
-                    for (uindex_c_t c = 0; c < grid_width; c += vector_length) {
+                    for (uindex_vect_c_t vect_c = 0; vect_c < vect_grid_width; vect_c++) {
                         std::array<Cell, vector_length> vector = out_pipe::read();
-
-#pragma unroll
-                        for (uindex_cell_t i_cell = 0; i_cell < vector_length; i_cell++) {
-                            tile_ac[r][c + i_cell] = vector[i_cell];
-                        }
+                        tile_ac[r][vect_c].value = vector;
                     }
                 }
             });
@@ -324,7 +340,8 @@ template <class Cell> class Grid {
     }
 
   private:
-    sycl::buffer<Cell, 2> tile_buffer;
+    sycl::buffer<CellVector, 2> tile_buffer;
+    sycl::range<2> grid_range;
 };
 } // namespace monotile
 } // namespace stencil
