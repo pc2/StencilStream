@@ -77,6 +77,9 @@ unit test:
         - cmake ..
         - make unit_test -j16
         - ./tests/unit_test
+    artifacts:
+        paths:
+            - Manifest.toml
 
 # ==========
 # Convection
