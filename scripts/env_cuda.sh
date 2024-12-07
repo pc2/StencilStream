@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
 module reset
-ml fpga devel compiler
-ml intel/oneapi-llvm
-ml system/CUDA/12.6.0
-ml devel/Boost/1.83.0-GCC-13.2.0
-ml devel/CMake/3.29.3-GCCcore-13.3.0
+ml lang fpga devel system intel/oneapi/23.2.0 CMake/3.22.1-GCCcore-11.2.0 CUDA/12.6.0
 icpx --version
