@@ -18,6 +18,12 @@ We have implemented multiple example applications. One is a simple sketch to sho
 
 Our implementation of Conway's Game of Life is found in the subfolder [examples/conway](examples/conway/). It reads in the current state of a grid from standard-in, computes a requested number of iterations, and then writes it out again.
 
+### diffusion
+
+This implementation simulates heat diffusion and can be found in the subfolder [eamples/diffusion](examples/diffusion). The example begins by generating a grid of a specified size, determined by command-line inputs, with a circular region whose diameter is one-sixth of the grid's total size. Additionally, two opposite sides of the grid are set to cold and hot temperatures, respectively.
+
+![A video showing heat diffusion, computed by the diffusion app](docs/diffusion-animation.mp4)
+
 ### HotSpot
 
 This our implementation of the HotSpot benchmark from the [Rodinia Benchmark Suite](https://rodinia.cs.virginia.edu/doku.php?id=start0), found in the subfolder [examples/hotspot](examples/hotspot/). It achieves an arithmetic throughput of more than 1 TFLOPS on a Bittware 520N accelerator using an Intel Stratic 10 X 2800 FPGA.
