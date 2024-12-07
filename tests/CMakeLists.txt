@@ -21,6 +21,8 @@ set(UNIT_TEST_SOURCES
     Stencil.cpp
     cpu/Grid.cpp
     cpu/StencilUpdate.cpp
+    cuda/Grid.cpp
+    cuda/StencilUpdate.cpp
     monotile/Grid.cpp
     monotile/StencilUpdate.cpp
     tiling/Grid.cpp
