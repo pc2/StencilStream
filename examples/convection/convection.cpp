@@ -55,25 +55,23 @@ struct ThermalConvectionCell {
     }
 };
 
-#define ALL(FIELD) (stencil[ID(0, 0)].FIELD)
-#define INN(FIELD) (stencil[ID(1, 1)].FIELD)
-#define D_XA(FIELD) (stencil[ID(1, 0)].FIELD - stencil[ID(0, 0)].FIELD)
-#define D_YA(FIELD) (stencil[ID(0, 1)].FIELD - stencil[ID(0, 0)].FIELD)
-#define D_XI(FIELD) (stencil[ID(1, 1)].FIELD - stencil[ID(0, 1)].FIELD)
-#define D_YI(FIELD) (stencil[ID(1, 1)].FIELD - stencil[ID(1, 0)].FIELD)
+#define ALL(FIELD) (stencil[0][0].FIELD)
+#define INN(FIELD) (stencil[1][1].FIELD)
+#define D_XA(FIELD) (stencil[1][0].FIELD - stencil[0][0].FIELD)
+#define D_YA(FIELD) (stencil[0][1].FIELD - stencil[0][0].FIELD)
+#define D_XI(FIELD) (stencil[1][1].FIELD - stencil[0][1].FIELD)
+#define D_YI(FIELD) (stencil[1][1].FIELD - stencil[1][0].FIELD)
 #define AV(FIELD)                                                                                  \
-    ((stencil[ID(0, 0)].FIELD + stencil[ID(1, 0)].FIELD + stencil[ID(0, 1)].FIELD +                \
-      stencil[ID(1, 1)].FIELD) *                                                                   \
-     0.25)
-#define AV_YI(FIELD) ((stencil[ID(1, 0)].FIELD + stencil[ID(1, 1)].FIELD) * 0.5)
+    ((stencil[0][0].FIELD + stencil[1][0].FIELD + stencil[0][1].FIELD + stencil[1][1].FIELD) * 0.25)
+#define AV_YI(FIELD) ((stencil[1][0].FIELD + stencil[1][1].FIELD) * 0.5)
 
 class PseudoTransientKernel : public BaseTransitionFunction {
   public:
     using Cell = ThermalConvectionCell;
 
-    static constexpr uindex_t n_subiterations = 3;
+    static constexpr size_t n_subiterations = 3;
 
-    uindex_t nx, ny;
+    size_t nx, ny;
     double roh0_g_alpha;
     double delta_eta_delta_T;
     double eta0;
@@ -86,23 +84,23 @@ class PseudoTransientKernel : public BaseTransitionFunction {
     double DcT;
 
     Cell operator()(Stencil<Cell, 1> const &stencil) const {
-        Cell new_cell = stencil[ID(0, 0)];
-        uindex_t c = stencil.id.c;
-        uindex_t r = stencil.id.r;
+        Cell new_cell = stencil[0][0];
+        size_t x = stencil.id[0];
+        size_t y = stencil.id[1];
 
         if (stencil.subiteration == 0) {
             // assign!(ErrV, Vy)
-            if (c < nx && r < ny + 1) {
+            if (x < nx && y < ny + 1) {
                 new_cell.ErrV = ALL(Vy);
             }
 
             // assign!(ErrP, Pt)
-            if (c < nx && r < ny) {
+            if (x < nx && y < ny) {
                 new_cell.ErrP = ALL(Pt);
             }
 
             // compute_1!(...)
-            if (c < nx && r < ny) {
+            if (x < nx && y < ny) {
                 double delta_V = D_XA(Vx) / dx + D_YA(Vy) / dy;
                 double eta = eta0 * (1.0 - delta_eta_delta_T * (ALL(T) + deltaT / 2.0));
 
@@ -113,29 +111,28 @@ class PseudoTransientKernel : public BaseTransitionFunction {
                 // did not make a noticeable difference, which is why I'm using new_cell.eta here.
                 new_cell.tau_yy = 2.0 * eta * (D_YA(Vy) / dy - (1.0 / 3.0) * delta_V);
 
-                if (c < nx - 1 && r < ny - 1) {
+                if (x < nx - 1 && y < ny - 1) {
                     new_cell.sigma_xy = eta * (D_YI(Vx) / dy + D_XI(Vy) / dx);
                 }
             }
 
         } else if (stencil.subiteration == 1) {
             // compute_2!(...) and update_V!(...)
-            if (c >= 1 && r >= 1) {
-                if (c < (nx + 1) - 1 && r < ny - 1) {
+            if (x >= 1 && y >= 1) {
+                if (x < (nx + 1) - 1 && y < ny - 1) {
                     double Rx = 1.0 / rho *
-                                ((stencil[ID(0, 0)].tau_xx - stencil[ID(-1, 0)].tau_xx) / dx +
-                                 (stencil[ID(-1, 0)].sigma_xy - stencil[ID(-1, -1)].sigma_xy) / dy -
-                                 (stencil[ID(0, 0)].Pt - stencil[ID(-1, 0)].Pt) / dx);
+                                ((stencil[0][0].tau_xx - stencil[-1][0].tau_xx) / dx +
+                                 (stencil[-1][0].sigma_xy - stencil[-1][-1].sigma_xy) / dy -
+                                 (stencil[0][0].Pt - stencil[-1][0].Pt) / dx);
                     new_cell.dVxd_tau = dampX * ALL(dVxd_tau) + Rx * delta_tau_iter;
                     new_cell.Vx = ALL(Vx) + new_cell.dVxd_tau * delta_tau_iter;
                 }
-                if (c < nx - 1 && r < (ny + 1) - 1) {
-                    double Ry =
-                        1.0 / rho *
-                        ((stencil[ID(0, 0)].tau_yy - stencil[ID(0, -1)].tau_yy) / dy +
-                         (stencil[ID(0, -1)].sigma_xy - stencil[ID(-1, -1)].sigma_xy) / dx -
-                         (stencil[ID(0, 0)].Pt - stencil[ID(0, -1)].Pt) / dy +
-                         roh0_g_alpha * ((stencil[ID(0, -1)].T + stencil[ID(0, 0)].T) * 0.5));
+                if (x < nx - 1 && y < (ny + 1) - 1) {
+                    double Ry = 1.0 / rho *
+                                ((stencil[0][0].tau_yy - stencil[0][-1].tau_yy) / dy +
+                                 (stencil[0][-1].sigma_xy - stencil[-1][-1].sigma_xy) / dx -
+                                 (stencil[0][0].Pt - stencil[0][-1].Pt) / dy +
+                                 roh0_g_alpha * ((stencil[0][-1].T + stencil[0][0].T) * 0.5));
                     new_cell.dVyd_tau = dampY * ALL(dVyd_tau) + Ry * delta_tau_iter;
                     new_cell.Vy = ALL(Vy) + new_cell.dVyd_tau * delta_tau_iter;
                 }
@@ -143,32 +140,32 @@ class PseudoTransientKernel : public BaseTransitionFunction {
 
         } else if (stencil.subiteration == 2) {
             // bc_y!(Vx)
-            if (c < nx + 1 && r < ny) {
-                if (r == 0) {
-                    new_cell.Vx = stencil[ID(0, 1)].Vx;
+            if (x < nx + 1 && y < ny) {
+                if (y == 0) {
+                    new_cell.Vx = stencil[0][1].Vx;
                 }
-                if (r == ny - 1) {
-                    new_cell.Vx = stencil[ID(0, -1)].Vx;
+                if (y == ny - 1) {
+                    new_cell.Vx = stencil[0][-1].Vx;
                 }
             }
 
             // bc_x!(Vy)
-            if (c < nx && r < ny + 1) {
-                if (c == 0) {
-                    new_cell.Vy = stencil[ID(1, 0)].Vy;
+            if (x < nx && y < ny + 1) {
+                if (x == 0) {
+                    new_cell.Vy = stencil[1][0].Vy;
                 }
-                if (c == nx - 1) {
-                    new_cell.Vy = stencil[ID(-1, 0)].Vy;
+                if (x == nx - 1) {
+                    new_cell.Vy = stencil[-1][0].Vy;
                 }
             }
 
             // compute_error!(ErrV, Vy)
-            if (c < nx && r < ny + 1) {
+            if (x < nx && y < ny + 1) {
                 new_cell.ErrV = ALL(ErrV) - new_cell.Vy;
             }
 
             // compute_error!(ErrP, Pt)
-            if (c < nx && r < ny) {
+            if (x < nx && y < ny) {
                 new_cell.ErrP = ALL(ErrP) - ALL(Pt);
             }
         }
@@ -181,45 +178,41 @@ class ThermalSolverKernel : public BaseTransitionFunction {
   public:
     using Cell = ThermalConvectionCell;
 
-    static constexpr uindex_t n_subiterations = 2;
+    static constexpr size_t n_subiterations = 2;
 
-    uindex_t nx, ny;
+    size_t nx, ny;
     double dx, dy, dt;
     double DcT;
 
     Cell operator()(Stencil<Cell, 1> const &stencil) const {
-        Cell new_cell = stencil[ID(0, 0)];
-        uindex_t c = stencil.id.c;
-        uindex_t r = stencil.id.r;
+        Cell new_cell = stencil[0][0];
+        size_t x = stencil.id[0];
+        size_t y = stencil.id[1];
 
         if (stencil.subiteration == 0) {
-            if (c > 0 && r > 0 && c < nx - 1 && r < ny - 1) {
+            if (x > 0 && y > 0 && x < nx - 1 && y < ny - 1) {
                 // We only need qTx and qTy in this iteration, so I'm moving them here.
-                double qTx_top_left = -DcT * (stencil[ID(0, 0)].T - stencil[ID(-1, 0)].T) / dx;
-                double qTx_top = -DcT * (stencil[ID(1, 0)].T - stencil[ID(0, 0)].T) / dx;
+                double qTx_top_left = -DcT * (stencil[0][0].T - stencil[-1][0].T) / dx;
+                double qTx_top = -DcT * (stencil[1][0].T - stencil[0][0].T) / dx;
 
-                double qTy_top_left = -DcT * (stencil[ID(0, 0)].T - stencil[ID(0, -1)].T) / dy;
-                double qTy_left = -DcT * (stencil[ID(0, 1)].T - stencil[ID(0, 0)].T) / dy;
+                double qTy_top_left = -DcT * (stencil[0][0].T - stencil[0][-1].T) / dy;
+                double qTy_left = -DcT * (stencil[0][1].T - stencil[0][0].T) / dy;
 
                 // advect_T!(...)
                 // The indices in advect_T are shifted by -1 since the computation of T only uses
                 // dT_dt from the (-1, -1) cell.
                 double dT_dt = -((qTx_top - qTx_top_left) / dx + (qTy_left - qTy_top_left) / dy);
-                if (stencil[ID(0, 0)].Vx > 0) {
-                    dT_dt -=
-                        stencil[ID(0, 0)].Vx * (stencil[ID(0, 0)].T - stencil[ID(-1, 0)].T) / dx;
+                if (stencil[0][0].Vx > 0) {
+                    dT_dt -= stencil[0][0].Vx * (stencil[0][0].T - stencil[-1][0].T) / dx;
                 }
-                if (stencil[ID(1, 0)].Vx < 0) {
-                    dT_dt -=
-                        stencil[ID(1, 0)].Vx * (stencil[ID(1, 0)].T - stencil[ID(0, 0)].T) / dx;
+                if (stencil[1][0].Vx < 0) {
+                    dT_dt -= stencil[1][0].Vx * (stencil[1][0].T - stencil[0][0].T) / dx;
                 }
-                if (stencil[ID(0, 0)].Vy > 0) {
-                    dT_dt -=
-                        stencil[ID(0, 0)].Vy * (stencil[ID(0, 0)].T - stencil[ID(0, -1)].T) / dy;
+                if (stencil[0][0].Vy > 0) {
+                    dT_dt -= stencil[0][0].Vy * (stencil[0][0].T - stencil[0][-1].T) / dy;
                 }
-                if (stencil[ID(0, 1)].Vy < 0) {
-                    dT_dt -=
-                        stencil[ID(0, 1)].Vy * (stencil[ID(0, 1)].T - stencil[ID(0, 0)].T) / dy;
+                if (stencil[0][1].Vy < 0) {
+                    dT_dt -= stencil[0][1].Vy * (stencil[0][1].T - stencil[0][0].T) / dy;
                 }
 
                 // compute_qT!(...)
@@ -228,11 +221,11 @@ class ThermalSolverKernel : public BaseTransitionFunction {
 
         } else if (stencil.subiteration == 1) {
             // no_fluxY_T!(...)
-            if (c == nx - 1 && r < ny) {
-                new_cell.T = stencil[ID(-1, 0)].T;
+            if (x == nx - 1 && y < ny) {
+                new_cell.T = stencil[-1][0].T;
             }
-            if (c == 0 && r < ny) {
-                new_cell.T = stencil[ID(1, 0)].T;
+            if (x == 0 && y < ny) {
+                new_cell.T = stencil[1][0].T;
             }
         }
 
@@ -246,15 +239,16 @@ using PseudoTransientUpdate = cpu::StencilUpdate<PseudoTransientKernel>;
 using ThermalSolverUpdate = cpu::StencilUpdate<ThermalSolverKernel>;
 
 #else
-constexpr uindex_t max_grid_width = 1 << 16;
-constexpr uindex_t max_grid_height = 512;
+//
+constexpr size_t max_nx = 1 << 16;
+constexpr size_t max_ny = 512;
 using Grid = monotile::Grid<ThermalConvectionCell>;
 using PseudoTransientUpdate =
     monotile::StencilUpdate<PseudoTransientKernel, PseudoTransientKernel::n_subiterations * 8,
-                            max_grid_width, max_grid_height>;
+                            max_nx, max_ny>;
 using ThermalSolverUpdate =
-    monotile::StencilUpdate<ThermalSolverKernel, ThermalSolverKernel::n_subiterations,
-                            max_grid_width, max_grid_height>;
+    monotile::StencilUpdate<ThermalSolverKernel, ThermalSolverKernel::n_subiterations, max_nx,
+                            max_ny>;
 
 #endif
 
@@ -313,15 +307,24 @@ int main(int argc, char **argv) {
     double delta_eta_delta_T = 1e-10 / deltaT; // viscosity's temperature dependence
 
     // Numerics
-    uindex_t res = experiment.at("res");
-    uindex_t nx = res * lx - 1;
-    uindex_t ny = res * ly - 1;                  // numerical grid resolutions
-    uindex_t iterMax = experiment.at("iterMax"); // maximal number of pseudo-transient iterations
-    uindex_t nt = experiment.at("nt");           // total number of timesteps
-    uindex_t nout = experiment.at("nout");       // frequency of plotting
-    uindex_t nerr = experiment.at("nerr");       // frequency of error checking
-    double epsilon = experiment.at("epsilon");   // nonlinear absolute tolerence
-    double dmp = experiment.at("dmp");           // damping paramter
+    size_t res = experiment.at("res");
+    size_t nx = res * lx - 1;
+    size_t ny = res * ly - 1;                  // numerical grid resolutions
+    size_t iterMax = experiment.at("iterMax"); // maximal number of pseudo-transient iterations
+    size_t nt = experiment.at("nt");           // total number of timesteps
+    size_t nout = experiment.at("nout");       // frequency of plotting
+    size_t nerr = experiment.at("nerr");       // frequency of error checking
+    double epsilon = experiment.at("epsilon"); // nonlinear absolute tolerence
+    double dmp = experiment.at("dmp");         // damping paramter
+
+#if defined(STENCILSTREAM_BACKEND_MONOTILE)
+    if (nx > max_nx || ny > max_ny) {
+        std::cerr << "The grid is too large for the synthesized accelerator. Required size: " << nx
+                  << "x" << ny << " cells. Maximal size: " << max_nx << "x" << max_ny << " cells!"
+                  << std::endl;
+        return 1;
+    }
+#endif
 
     // Derived numerics
     double dx = lx / (nx - 1);
@@ -368,8 +371,8 @@ int main(int argc, char **argv) {
     Grid grid(nx + 1, ny + 1);
     {
         Grid::GridAccessor<sycl::access::mode::read_write> ac(grid);
-        for (uint32_t x = 0; x < nx + 1; x++) {
-            for (uint32_t y = 0; y < ny + 1; y++) {
+        for (size_t x = 0; x < nx + 1; x++) {
+            for (size_t y = 0; y < ny + 1; y++) {
                 ThermalConvectionCell cell = ThermalConvectionCell::halo_value();
                 if (y == 0) {
                     cell.T = deltaT / 2.0;
@@ -387,11 +390,11 @@ int main(int argc, char **argv) {
     // Starting iteration with one and using an inclusive upper bound to stay compatible with the
     // reference.
     auto computation_start = std::chrono::system_clock::now();
-    for (uint32_t it = 1; it <= nt; it++) {
+    for (size_t it = 1; it <= nt; it++) {
         double errV = 2 * epsilon;
         double errP = 2 * epsilon;
         double max_ErrV, max_ErrP, max_Vx, max_Vy, max_Pt;
-        uindex_t iter;
+        size_t iter;
 
         auto transients_start = std::chrono::high_resolution_clock::now();
         for (iter = 0; iter < iterMax && (errV > epsilon || errP > epsilon); iter += nerr) {
@@ -401,8 +404,8 @@ int main(int argc, char **argv) {
                 -std::numeric_limits<double>::infinity();
             {
                 Grid::GridAccessor<sycl::access::mode::read> ac(grid);
-                for (uint32_t x = 0; x < nx + 1; x++) {
-                    for (uint32_t y = 0; y < ny + 1; y++) {
+                for (size_t x = 0; x < nx + 1; x++) {
+                    for (size_t y = 0; y < ny + 1; y++) {
                         auto cell = ac[x][y];
                         if (x < nx && y < ny + 1 && std::abs(cell.ErrV) > max_ErrV) {
                             max_ErrV = std::abs(cell.ErrV);
@@ -431,7 +434,7 @@ int main(int argc, char **argv) {
             std::chrono::duration_cast<std::chrono::duration<double>>(transients_end -
                                                                       transients_start);
 
-        printf("it = %d (iter = %d, time = %e), errV=%1.3e, errP=%1.3e \n", it, iter,
+        printf("it = %zu (iter = %zu, time = %e), errV=%1.3e, errP=%1.3e \n", it, iter,
                transients_computation_time.count(), errV, errP);
 
         double dt_adv = std::min(dx / max_Vx, dy / max_Vy) / 2.1;
@@ -452,10 +455,10 @@ int main(int argc, char **argv) {
             std::ofstream out_file(output_file_path);
             {
                 Grid::GridAccessor<sycl::access::mode::read> ac(grid);
-                for (uindex_t c = 0; c < nx; c++) {
-                    for (uindex_t r = 0; r < ny; r++) {
-                        out_file << ac[c][r].T;
-                        if (r != ny - 1) {
+                for (size_t x = 0; x < nx; x++) {
+                    for (size_t y = 0; y < ny; y++) {
+                        out_file << ac[x][y].T;
+                        if (y != ny - 1) {
                             out_file << ",";
                         }
                     }

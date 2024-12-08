@@ -18,7 +18,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../Index.hpp"
 #include <memory>
 
 namespace stencil {
@@ -35,9 +34,9 @@ namespace cpu {
  *
  * ```
  * Grid::GridAccessor<sycl::access::mode::read_write> accessor(grid);
- * for (uindex_t c = 0; c < grid.get_grid_width(); c++) {
- *     for (uindex_t r = 0; r < grid.get_grid_height(); r++) {
- *         accessor[c][r] = foo(c, r);
+ * for (std::size_t r = 0; r < grid.get_grid_height(); r++) {
+ *     for (std::size_t c = 0; c < grid.get_grid_width(); c++) {
+ *         accessor[r][c] = foo(r, c);
  *     }
  * }
  * ```
@@ -55,22 +54,22 @@ template <typename Cell> class Grid {
      *
      * May be changed in the future when other dimensions are supported.
      */
-    static constexpr uindex_t dimensions = 2;
+    static constexpr std::size_t dimensions = 2;
 
     /**
      * \brief Create a new, uninitialized grid with the given dimensions.
-     *
-     * \param c The width, or number of columns, of the new grid.
      *
      * \param r The height, or number of rows, of the new grid.
+     *
+     * \param c The width, or number of columns, of the new grid.
      */
-    Grid(uindex_t c, uindex_t r) : buffer(sycl::range<2>(c, r)) {}
+    Grid(std::size_t r, std::size_t c) : buffer(sycl::range<2>(r, c)) {}
 
     /**
      * \brief Create a new, uninitialized grid with the given dimensions.
      *
-     * \param range The range of the new grid. The first index will be the width and the second
-     * index will be the height of the grid.
+     * \param range The range of the new grid. The first index will be the height and the second
+     * index will be the width of the grid.
      */
     Grid(sycl::range<2> range) : buffer(range) {}
 
@@ -154,19 +153,19 @@ template <typename Cell> class Grid {
     };
 
     /**
-     * \brief Return the width, or number of columns, of the grid.
-     */
-    uindex_t get_grid_width() const { return buffer.get_range()[0]; }
-
-    /**
      * \brief Return the height, or number of rows, of the grid.
      */
-    uindex_t get_grid_height() const { return buffer.get_range()[1]; }
+    std::size_t get_grid_height() const { return buffer.get_range()[0]; }
+
+    /**
+     * \brief Return the width, or number of columns, of the grid.
+     */
+    std::size_t get_grid_width() const { return buffer.get_range()[1]; }
 
     /**
      * \brief Create an new, uninitialized grid with the same size as the current one.
      */
-    Grid make_similar() const { return Grid(get_grid_width(), get_grid_height()); }
+    Grid make_similar() const { return Grid(buffer.get_range()); }
 
     sycl::buffer<Cell, 2> &get_buffer() { return buffer; }
 

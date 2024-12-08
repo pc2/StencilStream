@@ -21,10 +21,10 @@
  * SOFTWARE.
  */
 #pragma once
-#include "Index.hpp"
 #include "Stencil.hpp"
 
 #include <concepts>
+#include <sycl.hpp>
 #include <type_traits>
 
 namespace stencil {
@@ -46,15 +46,15 @@ namespace concepts {
  * `get_time_dependent_value` method. It must also be semiregular.
  *
  * The required constants are:
- * * `uindex_t stencil_radius`: The radius of the stencil. It must be greater than or equal to 1.
- * * `uindex_t n_subiterations`: The number of sub-iterations of the transition function. It must be
- * greater than or equal to 1.
+ * * `std::size_t stencil_radius`: The radius of the stencil. It must be greater than or equal to 1.
+ * * `std::size_t n_subiterations`: The number of sub-iterations of the transition function. It must
+ * be greater than or equal to 1.
  *
  * The required methods are:
  * * `Cell operator()(Stencil<Cell, stencil_radius> const&stencil) const`: Compute the next
  * iteration of the stencil's central cell. This method must be pure, i.e. it must not modify either
  * the stencil's or the transition function's state.
- * * `TimeDependentValue get_time_dependent_value(uindex_t i_iteration) const`: Compute the
+ * * `TimeDependentValue get_time_dependent_value(std::size_t i_iteration) const`: Compute the
  * time-dependent value for the given iteration. This method must be pure, i.e. it must not modify
  * the transition function's state.
  */
@@ -62,15 +62,15 @@ template <typename T>
 concept TransitionFunction =
     std::semiregular<typename T::Cell> && std::copyable<typename T::TimeDependentValue> &&
 
-    std::same_as<decltype(T::stencil_radius), const uindex_t> && (T::stencil_radius >= 1) &&
-    std::same_as<decltype(T::n_subiterations), const uindex_t> && (T::n_subiterations >= 1) &&
+    std::same_as<decltype(T::stencil_radius), const std::size_t> && (T::stencil_radius >= 1) &&
+    std::same_as<decltype(T::n_subiterations), const std::size_t> && (T::n_subiterations >= 1) &&
 
     requires(T const &trans_func,
              Stencil<typename T::Cell, T::stencil_radius, typename T::TimeDependentValue> const
                  &stencil) {
         { trans_func(stencil) } -> std::same_as<typename T::Cell>;
     } &&
-    requires(T const &trans_func, uindex_t i_iteration) {
+    requires(T const &trans_func, std::size_t i_iteration) {
         {
             trans_func.get_time_dependent_value(i_iteration)
         } -> std::same_as<typename T::TimeDependentValue>;
@@ -80,12 +80,12 @@ concept TransitionFunction =
  * \brief An accessor for a two-dimensional grid.
  *
  * It must provide access either via a `sycl::id<2>` object or via two consecutive accesses with
- * `uindex_t`s.
+ * `std::size_t`s.
  */
 template <typename Accessor, typename Cell>
-concept GridAccessor = requires(Accessor ac, uindex_t c, uindex_t r) {
-    { ac[sycl::id<2>(c, r)] } -> std::same_as<Cell &>;
-    { ac[c][r] } -> std::same_as<Cell &>;
+concept GridAccessor = requires(Accessor ac, std::size_t r, std::size_t c) {
+    { ac[sycl::id<2>(r, c)] } -> std::same_as<Cell &>;
+    { ac[r][c] } -> std::same_as<Cell &>;
 };
 
 /**
@@ -97,7 +97,7 @@ concept GridAccessor = requires(Accessor ac, uindex_t c, uindex_t r) {
  * instance of `sycl::access::mode`, fulfills the \ref stencil::concepts::GridAccessor
  * "GridAccessor" concept. Apart from this, each grid class must implement the following methods:
  *
- * * `Grid(uindex_t c, uindex_t r)`: Create a new grid with `c` columns and `r` rows.
+ * * `Grid(std::size_t c, std::size_t r)`: Create a new grid with `c` columns and `r` rows.
  * * `Grid(sycl::range<2> range)`: Create new grid with `range[0]` columns and `range[1]` rows.
  * * `Grid(sycl::buffer<Cell, 2> buffer)`: Create new grid and copy the contents of the `buffer`
  * into the grid.
@@ -105,26 +105,27 @@ concept GridAccessor = requires(Accessor ac, uindex_t c, uindex_t r) {
  * the grid.
  * * `void copy_to_buffer(sycl::buffer<Cell, 2> buffer)`: Copy the contents of the grid into the
  * `buffer`.
- * * `uindex_t get_grid_width()`: Get the number of columns in the grid.
- * * `uindex_t get_grid_height()`: Get the number of rows in the grid.
+ * * `std::size_t get_grid_width()`: Get the number of columns in the grid.
+ * * `std::size_t get_grid_height()`: Get the number of rows in the grid.
  * * `Grid make_similar()`: Create a new grid with the same number of rows and columns as this grid.
  *
  * Newly created grids may be uninitialized.
  */
 template <typename G, typename Cell>
-concept Grid = requires(G &grid, sycl::buffer<Cell, 2> buffer, uindex_t c, uindex_t r, Cell cell) {
-    { G(c, r) } -> std::same_as<G>;
-    { G(sycl::range<2>(c, r)) } -> std::same_as<G>;
-    { G(buffer) } -> std::same_as<G>;
-    { grid.copy_from_buffer(buffer) } -> std::same_as<void>;
-    { grid.copy_to_buffer(buffer) } -> std::same_as<void>;
-    { grid.get_grid_width() } -> std::convertible_to<uindex_t>;
-    { grid.get_grid_height() } -> std::convertible_to<uindex_t>;
-    { grid.make_similar() } -> std::same_as<G>;
-    {
-        typename G::template GridAccessor<sycl::access::mode::read_write>(grid)
-    } -> GridAccessor<Cell>;
-};
+concept Grid =
+    requires(G &grid, sycl::buffer<Cell, 2> buffer, std::size_t r, std::size_t c, Cell cell) {
+        { G(r, c) } -> std::same_as<G>;
+        { G(sycl::range<2>(r, c)) } -> std::same_as<G>;
+        { G(buffer) } -> std::same_as<G>;
+        { grid.copy_from_buffer(buffer) } -> std::same_as<void>;
+        { grid.copy_to_buffer(buffer) } -> std::same_as<void>;
+        { grid.get_grid_height() } -> std::convertible_to<std::size_t>;
+        { grid.get_grid_width() } -> std::convertible_to<std::size_t>;
+        { grid.make_similar() } -> std::same_as<G>;
+        {
+            typename G::template GridAccessor<sycl::access::mode::read_write>(grid)
+        } -> GridAccessor<Cell>;
+    };
 
 /**
  * \brief A grid updater that repeatedly applies stencil updates to each cell.
@@ -140,8 +141,8 @@ concept Grid = requires(G &grid, sycl::buffer<Cell, 2> buffer, uindex_t c, uinde
  * needed.
  * * `TF transition_function`: The transition function instance to use.
  * * `TF::Cell halo_value = TF::Cell()`: The default value for cells outside of the actual grid.
- * * `uindex_t iteration_offset = 0`: The starting iteration index of the input grid.
- * * `uindex_t n_iterations = 0`: The number of iterations to compute. The iteration index of the
+ * * `std::size_t iteration_offset = 0`: The starting iteration index of the input grid.
+ * * `std::size_t n_iterations = 0`: The number of iterations to compute. The iteration index of the
  * output grid will be `iteration_offset + n_iterations`.
  * * `sycl::device device = sycl::device()`: The SYCL device to use for computations.
  *
@@ -164,8 +165,8 @@ concept StencilUpdate =
     requires(typename SU::Params params) {
         { params.transition_function } -> std::same_as<TF &>;
         { params.halo_value } -> std::same_as<typename TF::Cell &>;
-        { params.iteration_offset } -> std::same_as<uindex_t &>;
-        { params.n_iterations } -> std::same_as<uindex_t &>;
+        { params.iteration_offset } -> std::same_as<std::size_t &>;
+        { params.n_iterations } -> std::same_as<std::size_t &>;
         { params.device } -> std::same_as<sycl::device &>;
     } && TransitionFunction<TF> && Grid<G, typename TF::Cell> &&
     (std::is_class<typename SU::Params>::value);

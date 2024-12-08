@@ -97,16 +97,16 @@ measured_flops(info::BenchmarkInformation) = measured_throughput(info) * info.op
 
 function model_runtime(info::BenchmarkInformation)
     if info.variant == :monotile
-        cu_latency = info.n_grid_rows + 1
+        cu_latency = info.n_grid_cols + 1
         pipeline_latency = info.n_cus * cu_latency
         n_loop_iterations = pipeline_latency + (info.n_grid_rows * info.n_grid_cols)
         n_cycles_per_pass = n_loop_iterations + info.loop_latency
     elseif info.variant == :tiling
         n_cycles_per_pass = 0
-        for tile_col in 1:ceil(info.n_grid_cols / info.n_tile_cols)
-            for tile_row in 1:ceil(info.n_grid_rows / info.n_tile_rows)
-                tile_section_width = min(info.n_tile_cols, info.n_grid_cols - (tile_col - 1) * info.n_tile_cols)
+        for tile_row in 1:ceil(info.n_grid_rows / info.n_tile_rows)
+            for tile_col in 1:ceil(info.n_grid_cols / info.n_tile_cols)
                 tile_section_height = min(info.n_tile_rows, info.n_grid_rows - (tile_row - 1) * info.n_tile_rows)
+                tile_section_width = min(info.n_tile_cols, info.n_grid_cols - (tile_col - 1) * info.n_tile_cols)
                 n_loop_iterations_per_tile = (tile_section_width + 2info.n_cus) * (tile_section_height + 2info.n_cus)
                 n_cycles_per_pass += info.loop_latency + n_loop_iterations_per_tile
             end

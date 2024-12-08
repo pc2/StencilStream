@@ -77,6 +77,9 @@ unit test:
         - cmake ..
         - make unit_test -j16
         - ./tests/unit_test
+    artifacts:
+        paths:
+            - Manifest.toml
 
 # ==========
 # Convection
@@ -174,15 +177,15 @@ fdtd (monotile) synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:30:00
     script:
         - cd examples/fdtd
         - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/${STST_EXECUTABLE} ${STST_VARIANT}
-        - ./scripts/plot_frames.jl frames .
+        - ./scripts/plot_frames.jl frames out/
     artifacts:
         paths:
-            - examples/fdtd/*.csv
-            - examples/fdtd/*.png
+            - examples/fdtd/out/*.csv
+            - examples/fdtd/out/*.png
             - examples/fdtd/metrics.*.json
 
 fdtd (monotile) benchmark:

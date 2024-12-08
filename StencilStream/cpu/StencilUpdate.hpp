@@ -67,12 +67,12 @@ template <concepts::TransitionFunction F> class StencilUpdate {
          * This offset will be added to the "actual" iteration index. This way, simulations can
          * "resume" with the next timestep if the intermediate grid has been evaluated by the host.
          */
-        uindex_t iteration_offset = 0;
+        std::size_t iteration_offset = 0;
 
         /**
          * \brief The number of iterations to compute.
          */
-        uindex_t n_iterations = 1;
+        std::size_t n_iterations = 1;
 
         /**
          * \brief The device to use for computations.
@@ -115,8 +115,8 @@ template <concepts::TransitionFunction F> class StencilUpdate {
         sycl::queue queue(params.device);
         auto walltime_start = std::chrono::high_resolution_clock::now();
 
-        for (uindex_t i_iter = 0; i_iter < params.n_iterations; i_iter++) {
-            for (uindex_t i_subiter = 0; i_subiter < F::n_subiterations; i_subiter++) {
+        for (std::size_t i_iter = 0; i_iter < params.n_iterations; i_iter++) {
+            for (std::size_t i_subiter = 0; i_subiter < F::n_subiterations; i_subiter++) {
                 run_iter(queue, pass_source, pass_target, params.iteration_offset + i_iter,
                          i_subiter);
                 if (i_iter == 0 && i_subiter == 0) {
@@ -136,7 +136,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
         std::chrono::duration<double> walltime = walltime_end - walltime_start;
         this->walltime += walltime.count();
         n_processed_cells +=
-            params.n_iterations * source_grid.get_grid_width() * source_grid.get_grid_height();
+            params.n_iterations * source_grid.get_grid_height() * source_grid.get_grid_width();
 
         return *pass_source;
     }
@@ -155,7 +155,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
      * the number of computed iterations. This will also be accumulated across multiple calls to
      * \ref operator()().
      */
-    uindex_t get_n_processed_cells() const { return n_processed_cells; }
+    std::size_t get_n_processed_cells() const { return n_processed_cells; }
 
     /**
      * \brief Return the accumulated runtime of the updater, measured from the host side.
@@ -182,31 +182,36 @@ template <concepts::TransitionFunction F> class StencilUpdate {
      *
      * \param i_subiter The index of the sub-iteration to compute.
      */
-    void run_iter(sycl::queue queue, GridImpl *pass_source, GridImpl *pass_target, uindex_t i_iter,
-                  uindex_t i_subiter) {
+    void run_iter(sycl::queue queue, GridImpl *pass_source, GridImpl *pass_target,
+                  std::size_t i_iter, std::size_t i_subiter) {
         using TDV = typename F::TimeDependentValue;
         using StencilImpl = Stencil<Cell, F::stencil_radius, TDV>;
 
         queue.submit([&](sycl::handler &cgh) {
             sycl::accessor source_ac(pass_source->get_buffer(), cgh, sycl::read_only);
             sycl::accessor target_ac(pass_target->get_buffer(), cgh, sycl::write_only);
-            index_t grid_width = source_ac.get_range()[0];
-            index_t grid_height = source_ac.get_range()[1];
-            index_t stencil_radius = index_t(F::stencil_radius);
+            std::size_t grid_height = source_ac.get_range()[0];
+            std::size_t grid_width = source_ac.get_range()[1];
             Cell halo_value = params.halo_value;
             F transition_function = params.transition_function;
             TDV tdv = transition_function.get_time_dependent_value(i_iter);
 
             auto kernel = [=](sycl::id<2> id) {
-                StencilImpl stencil(ID(id[0], id[1]), UID(grid_width, grid_height), i_iter,
-                                    i_subiter, tdv);
+                StencilImpl stencil(id, source_ac.get_range(), i_iter, i_subiter, tdv);
 
-                for (index_t rel_c = -stencil_radius; rel_c <= stencil_radius; rel_c++) {
-                    for (index_t rel_r = -stencil_radius; rel_r <= stencil_radius; rel_r++) {
-                        index_t c = rel_c + id[0];
-                        index_t r = rel_r + id[1];
-                        bool within_grid = c >= 0 && r >= 0 && c < grid_width && r < grid_height;
-                        stencil[ID(rel_c, rel_r)] = (within_grid) ? source_ac[c][r] : halo_value;
+                for (std::size_t rel_r = 0; rel_r < 2 * F::stencil_radius + 1; rel_r++) {
+                    for (std::size_t rel_c = 0; rel_c < 2 * F::stencil_radius + 1; rel_c++) {
+                        Cell cell;
+                        if (id[0] + rel_r >= F::stencil_radius &&
+                            id[1] + rel_c >= F::stencil_radius &&
+                            id[0] + rel_r < grid_height + F::stencil_radius &&
+                            id[1] + rel_c < grid_width + F::stencil_radius) {
+                            cell = source_ac[id[0] + rel_r - F::stencil_radius]
+                                            [id[1] + rel_c - F::stencil_radius];
+                        } else {
+                            cell = halo_value;
+                        }
+                        stencil[sycl::id<2>(rel_r, rel_c)] = cell;
                     }
                 }
 
@@ -218,7 +223,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
     }
 
     Params params;
-    uindex_t n_processed_cells;
+    std::size_t n_processed_cells;
     double walltime;
 };
 } // namespace cpu

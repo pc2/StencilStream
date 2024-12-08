@@ -20,29 +20,27 @@
 #include "HostPipe.hpp"
 #include <catch2/catch_all.hpp>
 
-using namespace stencil;
-
 TEST_CASE("HostPipe (normal)", "[HostPipe]") {
-    using MyPipe = HostPipe<class MyPipeID, uindex_t>;
-    for (uindex_t i = 0; i < 256; i++) {
+    using MyPipe = HostPipe<class MyPipeID, std::size_t>;
+    for (std::size_t i = 0; i < 256; i++) {
         MyPipe::write(i);
     }
-    for (uindex_t i = 0; i < 256; i++) {
+    for (std::size_t i = 0; i < 256; i++) {
         REQUIRE(MyPipe::read() == i);
     }
     REQUIRE(MyPipe::empty());
 }
 
 TEST_CASE("HostPipe (separated pipes)", "[HostPipe]") {
-    using PipeA = HostPipe<class PipeAID, index_t>;
-    using PipeB = HostPipe<class PipeBID, index_t>;
+    using PipeA = HostPipe<class PipeAID, int>;
+    using PipeB = HostPipe<class PipeBID, int>;
 
-    for (index_t i = 0; i < 256; i++) {
+    for (int i = 0; i < 256; i++) {
         PipeA::write(i);
         PipeB::write(-1 * i);
     }
 
-    for (index_t i = 0; i < 256; i++) {
+    for (int i = 0; i < 256; i++) {
         REQUIRE(PipeA::read() == i);
         REQUIRE(PipeB::read() == -1 * i);
     }
@@ -52,12 +50,12 @@ TEST_CASE("HostPipe (separated pipes)", "[HostPipe]") {
 }
 
 TEST_CASE("HostPipe (continous read/write)", "[HostPipe]") {
-    using PipeC = HostPipe<class PipeCID, uindex_t>;
+    using PipeC = HostPipe<class PipeCID, std::size_t>;
 
     PipeC::write(0);
     PipeC::write(1);
 
-    for (uindex_t i = 0; i < 256; i++) {
+    for (std::size_t i = 0; i < 256; i++) {
         REQUIRE(PipeC::read() == i);
         PipeC::write(i + 2);
     }

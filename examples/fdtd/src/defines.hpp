@@ -19,7 +19,6 @@
  */
 #pragma once
 #include <CL/sycl.hpp>
-#include <StencilStream/Index.hpp>
 #include <cmath>
 #include <optional>
 #include <sycl/ext/intel/ac_types/ac_int.hpp>
@@ -27,7 +26,6 @@
 
 using namespace std;
 using namespace sycl;
-using namespace stencil;
 
 //////////////////////////////////////////////
 // Needed physical constants for simulation //
@@ -41,30 +39,30 @@ constexpr float sqrt_2 = 1.4142135623730951;
 constexpr float pi = 3.1415926535897932384626433;
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
-constexpr uindex_t n_processing_elements = 200;
+constexpr size_t n_processing_elements = 200;
 
 #elif defined(STENCILSTREAM_BACKEND_TILING)
-constexpr uindex_t n_processing_elements = 190;
+constexpr size_t n_processing_elements = 190;
 
 #elif defined(STENCILSTREAM_BACKEND_CPU)
-constexpr uindex_t n_processing_elements = 2;
+constexpr size_t n_processing_elements = 2;
 
 #endif
 
 static_assert(n_processing_elements % 2 == 0);
-constexpr uindex_t iters_per_pass = n_processing_elements / 2;
+constexpr size_t iters_per_pass = n_processing_elements / 2;
 
 /* stencil parameters */
-constexpr uindex_t tile_height = 512;
+constexpr size_t tile_width = 512;
 
 #if defined(STENCILSTREAM_BACKEND_TILING)
 // tiling, make tile as wide as possible.
-constexpr uindex_t tile_width = 1 << 16;
+constexpr size_t tile_height = 1 << 16;
 #else
 // monotile and CPU. More than a quadratic tile doesn't make sense.
-constexpr uindex_t tile_width = tile_height;
+constexpr size_t tile_height = tile_width;
 #endif
 
-constexpr uindex_t max_n_rings = 15;
-constexpr uindex_t bits_max_n_rings = std::bit_width(max_n_rings + 1);
+constexpr size_t max_n_rings = 15;
+constexpr size_t bits_max_n_rings = std::bit_width(max_n_rings + 1);
 using uindex_ring_t = ac_int<bits_max_n_rings, false>;
