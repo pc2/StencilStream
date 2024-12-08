@@ -1,24 +1,21 @@
 /*
- * Copyright © 2020-2024 Jan-Oliver Opdenhövel, Paderborn Center for Parallel
- * Computing, Paderborn University
+ * Copyright © 2020-2024 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
+ * University
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the “Software”), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the “Software”), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <StencilStream/BaseTransitionFunction.hpp>
 #include <chrono>
@@ -93,21 +90,7 @@ struct HotspotKernel : public BaseTransitionFunction {
 
         return vec(new_temp, power);
     }
-
-    if (r == 0) {
-        top = old;
-    } else if (r == height - 1) {
-        bottom = old;
-    }
-
-    // As in the OpenCL version of the rodinia "hotspot" benchmark.
-    FLOAT new_temp = old + Cap_1 * (power + (bottom + top - 2.f * old) * Ry_1 +
-                                    (right + left - 2.f * old) * Rx_1 + (amb_temp - old) * Rz_1);
-
-    return vec(new_temp, power);
-}
-}
-;
+};
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
 const size_t max_grid_height = 1024;
@@ -140,26 +123,6 @@ void write_output(Grid vect, string file, bool binary) {
         out = fstream(file, out.out | out.trunc | out.binary);
     } else {
         out = fstream(file, out.out | out.trunc);
-    }
-
-    if (!out.is_open()) {
-        throw std::runtime_error("The file was not opened\n");
-    }
-
-    uindex_t n_columns = vect.get_grid_width();
-    uindex_t n_rows = vect.get_grid_height();
-    Grid::GridAccessor<access::mode::read> vect_ac(vect);
-
-    int i = 0;
-    for (index_t r = 0; r < n_rows; r++) {
-        for (index_t c = 0; c < n_columns; c++) {
-            if (binary) {
-                out.write((char *)&vect_ac[c][r][0], sizeof(float));
-            } else {
-                out << i << "\t" << vect_ac[c][r][0] << std::endl;
-            }
-            i++;
-        }
     }
 
     if (!out.is_open()) {
@@ -210,33 +173,26 @@ Grid read_input(string temp_file, string power_file, size_t n_rows, size_t n_col
                 vect_ac[r][c] = HotspotCell(tmp_temp, tmp_power);
             }
         }
-        vect_ac[c][r] = HotspotCell(tmp_temp, tmp_power);
     }
-}
-}
 
-temp.close();
-power.close();
-return vect;
+    temp.close();
+    power.close();
+    return vect;
 }
 
 void usage(int argc, char **argv) {
     std::cerr << "Usage: " << argv[0]
-              << "  <grid_rows> <grid_cols> <sim_time> <temp_file> <power_file> "
-                 "<output_file>"
+              << "  <grid_rows> <grid_cols> <sim_time> <temp_file> <power_file> <output_file>"
               << std::endl;
     std::cerr << "    <grid_rows>      - number of rows in the grid (positive integer)"
               << std::endl;
-    std::cerr << "    <grid_cols>      - number of columns in the grid (positive "
-                 "integer)"
+    std::cerr << "    <grid_cols>      - number of columns in the grid (positive integer)"
               << std::endl;
     std::cerr << "    <sim_time>       - number of iterations (positive integer)" << std::endl;
-    std::cerr << "    <temp_file>      - name of the file containing the initial "
-                 "temperature "
+    std::cerr << "    <temp_file>      - name of the file containing the initial temperature "
                  "values of each cell"
               << std::endl;
-    std::cerr << "    <power_file>     - name of the file containing the "
-                 "dissipated power values "
+    std::cerr << "    <power_file>     - name of the file containing the dissipated power values "
                  "of each cell"
               << std::endl;
     std::cerr << "    <output_file>    - name of the output file" << std::endl;
