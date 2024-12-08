@@ -43,7 +43,7 @@ target_link_libraries(StencilStream_CPU INTERFACE StencilStream_Base)
 target_compile_definitions(StencilStream_CPU INTERFACE STENCILSTREAM_BACKEND_CPU=1)
 target_compile_definitions(StencilStream_CPU INTERFACE STENCILSTREAM_TARGET_CPU=1)
 
-# Target for GPU backend
+# Target for CUDA backend
 
 add_library(StencilStream_CUDA INTERFACE)
 target_link_libraries(StencilStream_CUDA INTERFACE StencilStream_Base)

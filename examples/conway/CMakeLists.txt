@@ -10,7 +10,7 @@
 add_executable(conway_cpu conway.cpp)
 target_link_libraries(conway_cpu PUBLIC StencilStream_CPU)
 
-# Pure CPU-based executable
+# Pure CUDA-based executable
 add_executable(conway_cuda conway.cpp)
 target_link_libraries(conway_cuda PUBLIC StencilStream_CUDA)
 
