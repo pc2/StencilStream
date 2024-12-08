@@ -52,7 +52,7 @@ constexpr size_t n_processing_elements = 190;
 constexpr size_t n_processing_elements = 2;
 
 #elif defined(STENCILSTREAM_BACKEND_CUDA)
-constexpr uindex_t n_processing_elements = 2;
+constexpr size_t n_processing_elements = 2;
 #endif
 
 static_assert(n_processing_elements % 2 == 0);

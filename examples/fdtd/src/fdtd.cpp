@@ -1,29 +1,25 @@
 /*
- * Copyright © 2020-2024 Jan-Oliver Opdenhövel, Paderborn Center for Parallel
- * Computing, Paderborn University
+ * Copyright © 2020-2024 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
+ * University
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the “Software”), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the “Software”), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "Kernel.hpp"
 #include <deque>
 #include <sycl/ext/intel/fpga_extensions.hpp>
-
-#include "Kernel.hpp"
 
 #if MATERIAL == 0
     #include "material/CoefResolver.hpp"
@@ -163,7 +159,7 @@ int main(int argc, char **argv) {
             for (size_t c = 0; c < parameters.grid_range()[0]; c++) {
                 float a = float(r) - float(parameters.grid_range()[0]) / 2.0;
                 float b = float(c) - float(parameters.grid_range()[1]) / 2.0;
-                float distance = parameters.dx * sqrt(a * a + b * b);
+                float distance = parameters.dx * std::sqrt(a * a + b * b);
 
                 float radius = 0.0;
                 for (size_t i = 0; i <= parameters.rings.size(); i++) {
@@ -179,63 +175,53 @@ int main(int argc, char **argv) {
                 }
             }
         }
-        else {
-            init_ac[c][r] = CellImpl::from_parameters(parameters, i);
-        }
     }
-}
-}
-}
 
 #if defined(STENCILSTREAM_TARGET_FPGA)
-sycl::device device(sycl::ext::intel::fpga_selector_v);
+    sycl::device device(sycl::ext::intel::fpga_selector_v);
 #elif defined(STENCILSTREAM_TARGET_CUDA)
-sycl::device device(sycl::gpu_selector_v);
+    sycl::device device(sycl::gpu_selector_v);
 #else
-sycl::device device;
+    sycl::device device;
 #endif
 
-StencilUpdate simulation({
-    .transition_function = KernelImpl(parameters, mat_resolver),
-    .halo_value = CellImpl::halo(),
-    .iteration_offset = 0,
-    .n_iterations = parameters.n_timesteps(),
-    .device = device,
-    .blocking = true, // enable blocking for meaningful walltime measurements
+    StencilUpdate simulation({
+        .transition_function = KernelImpl(parameters, mat_resolver),
+        .halo_value = CellImpl::halo(),
+        .iteration_offset = 0,
+        .n_iterations = parameters.n_timesteps(),
+        .device = device,
+        .blocking = true, // enable blocking for meaningful walltime measurements
 #if !defined(STENCILSTREAM_BACKEND_CPU) && !defined(STENCILSTREAM_BACKEND_CUDA)
-    .profiling = true, // enable additional profiling for FPGA targets
+        .profiling = true, // enable additional profiling for FPGA targets
 #endif
-});
+    });
 
-size_t n_timesteps = parameters.n_timesteps();
-size_t last_saved_iteration = 0;
+    size_t n_timesteps = parameters.n_timesteps();
+    size_t last_saved_iteration = 0;
 
-std::cout << "Simulating..." << std::endl;
+    std::cout << "Simulating..." << std::endl;
 
-if (parameters.n_snap_timesteps().has_value()) {
-    size_t n_snap_timesteps = parameters.n_snap_timesteps().value();
-    simulation.get_params().n_iterations = n_snap_timesteps;
-    for (size_t &i = simulation.get_params().iteration_offset; i < parameters.n_timesteps();
-         i += n_snap_timesteps) {
+    if (parameters.n_snap_timesteps().has_value()) {
+        size_t n_snap_timesteps = parameters.n_snap_timesteps().value();
+        simulation.get_params().n_iterations = n_snap_timesteps;
+        for (size_t &i = simulation.get_params().iteration_offset; i < parameters.n_timesteps();
+             i += n_snap_timesteps) {
+            grid = simulation(grid);
+            save_frame(grid, i + n_snap_timesteps, CellField::HZ, parameters);
+        }
+    } else {
         grid = simulation(grid);
-        save_frame(grid, i + n_snap_timesteps, CellField::HZ, parameters);
     }
-} else {
-    grid = simulation(grid);
-}
-}
-else {
-    grid = simulation(grid);
-}
 
-std::cout << "Simulation complete!" << std::endl;
-std::cout << "Walltime: " << simulation.get_walltime() << " s" << std::endl;
+    std::cout << "Simulation complete!" << std::endl;
+    std::cout << "Walltime: " << simulation.get_walltime() << " s" << std::endl;
 #if !defined(STENCILSTREAM_BACKEND_CPU) && !defined(STENCILSTREAM_BACKEND_CUDA)
-// Print pure kernel runtime for FPGA targets
-std::cout << "Kernel Runtime: " << simulation.get_kernel_runtime() << " s" << std::endl;
+    // Print pure kernel runtime for FPGA targets
+    std::cout << "Kernel Runtime: " << simulation.get_kernel_runtime() << " s" << std::endl;
 #endif
 
-save_frame(grid, n_timesteps, CellField::HZ_SUM, parameters);
+    save_frame(grid, n_timesteps, CellField::HZ_SUM, parameters);
 
-return 0;
+    return 0;
 }
