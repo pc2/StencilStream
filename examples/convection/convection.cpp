@@ -1,24 +1,21 @@
 /*
- * Copyright © 2020-2024 Jan-Oliver Opdenhövel, Paderborn Center for Parallel
- * Computing, Paderborn University
+ * Copyright © 2020-2024 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
+ * University
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the “Software”), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ * associated documentation files (the “Software”), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #if defined(STENCILSTREAM_BACKEND_CPU)
     #include <StencilStream/cpu/StencilUpdate.hpp>
@@ -27,7 +24,6 @@
 #else
     #include <StencilStream/monotile/StencilUpdate.hpp>
 #endif
-
 #include <StencilStream/BaseTransitionFunction.hpp>
 #include <chrono>
 #include <filesystem>
@@ -112,10 +108,9 @@ class PseudoTransientKernel : public BaseTransitionFunction {
 
                 new_cell.Pt = ALL(Pt) - delta_tau_iter / beta * delta_V;
                 new_cell.tau_xx = 2.0 * eta * (D_XA(Vx) / dx - (1.0 / 3.0) * delta_V);
-                // The original implementation uses @av(eta) here, which would actually
-                // mean that this computation should be moved one subiteration back.
-                // However, using @all(eta) did not make a noticeable difference, which
-                // is why I'm using new_cell.eta here.
+                // The original implementation uses @av(eta) here, which would actually mean that
+                // this computation should be moved one subiteration back. However, using @all(eta)
+                // did not make a noticeable difference, which is why I'm using new_cell.eta here.
                 new_cell.tau_yy = 2.0 * eta * (D_YA(Vy) / dy - (1.0 / 3.0) * delta_V);
 
                 if (x < nx - 1 && y < ny - 1) {
@@ -206,8 +201,8 @@ class ThermalSolverKernel : public BaseTransitionFunction {
                 double qTy_left = -DcT * (stencil[0][1].T - stencil[0][0].T) / dy;
 
                 // advect_T!(...)
-                // The indices in advect_T are shifted by -1 since the computation of T
-                // only uses dT_dt from the (-1, -1) cell.
+                // The indices in advect_T are shifted by -1 since the computation of T only uses
+                // dT_dt from the (-1, -1) cell.
                 double dT_dt = -((qTx_top - qTx_top_left) / dx + (qTy_left - qTy_top_left) / dy);
                 if (stencil[0][0].Vx > 0) {
                     dT_dt -= stencil[0][0].Vx * (stencil[0][0].T - stencil[-1][0].T) / dx;
@@ -331,10 +326,9 @@ int main(int argc, char **argv) {
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
     if (nx > max_nx || ny > max_ny) {
-        std::cerr << "The grid is too large for the synthesized accelerator. "
-                     "Required size: "
-                  << nx << "x" << ny << " cells. Maximal size: " << max_nx << "x" << max_ny
-                  << " cells!" << std::endl;
+        std::cerr << "The grid is too large for the synthesized accelerator. Required size: " << nx
+                  << "x" << ny << " cells. Maximal size: " << max_nx << "x" << max_ny << " cells!"
+                  << std::endl;
         return 1;
     }
 #endif
@@ -400,8 +394,8 @@ int main(int argc, char **argv) {
         }
     }
 
-    // Starting iteration with one and using an inclusive upper bound to stay
-    // compatible with the reference.
+    // Starting iteration with one and using an inclusive upper bound to stay compatible with the
+    // reference.
     auto computation_start = std::chrono::system_clock::now();
     for (size_t it = 1; it <= nt; it++) {
         double errV = 2 * epsilon;
