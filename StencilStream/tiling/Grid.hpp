@@ -165,9 +165,7 @@ class Grid {
          *
          * \returns A constant reference to the indexed cell.
          */
-        Cell const &operator[](sycl::id<2> id)
-            requires(access_mode == sycl::access::mode::read)
-        {
+        Cell const &operator[](sycl::id<2> id) requires(access_mode == sycl::access::mode::read) {
             return accessor[id];
         }
 
@@ -179,9 +177,7 @@ class Grid {
          *
          * \returns A reference to the indexed cell.
          */
-        Cell &operator[](sycl::id<2> id)
-            requires(access_mode != sycl::access::mode::read)
-        {
+        Cell &operator[](sycl::id<2> id) requires(access_mode != sycl::access::mode::read) {
             return accessor[id];
         }
 
@@ -337,7 +333,7 @@ class Grid {
                         } else {
                             value = halo_value;
                         }
-                        in_pipe::write(value);
+                        in_pipe::write({value});
                     }
                 }
             });
@@ -401,7 +397,7 @@ class Grid {
                                                  local_r++) {
                     for (uindex_c_t local_c = 0; local_c < end_local_c; local_c++) {
                         grid_ac[r_offset + std::size_t(local_r)][c_offset + std::size_t(local_c)] =
-                            out_pipe::read();
+                            out_pipe::read()[0];
                     }
                 }
             });
