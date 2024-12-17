@@ -47,16 +47,12 @@ constexpr size_t n_processing_elements = 200;
 
 #elif defined(STENCILSTREAM_BACKEND_TILING)
 constexpr size_t n_processing_elements = 190;
-
-#elif defined(STENCILSTREAM_BACKEND_CPU)
-constexpr size_t n_processing_elements = 2;
-
-#elif defined(STENCILSTREAM_BACKEND_CUDA)
-constexpr size_t n_processing_elements = 2;
 #endif
 
+#if defined(STENCILSTREAM_BACKEND_MONOTILE) || defined(STENCILSTREAM_BACKEND_TILING)
 static_assert(n_processing_elements % 2 == 0);
 constexpr size_t iters_per_pass = n_processing_elements / 2;
+#endif
 
 /* stencil parameters */
 constexpr size_t tile_width = 512;
