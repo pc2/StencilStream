@@ -275,7 +275,7 @@ int main(int argc, char **argv) {
         .n_iterations = sim_time,
         .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
-#if !defined(STENCILSTREAM_BACKEND_CPU) && !defined(STENCILSTREAM_BACKEND_CUDA)
+#if defined(STENCILSTREAM_BACKEND_MONOTILE) || defined(STENCILSTREAM_BACKEND_TILING)
         .profiling = true, // enable additional profiling for FPGA targets
 #endif
     });
@@ -284,7 +284,7 @@ int main(int argc, char **argv) {
 
     std::cout << "Ending simulation" << std::endl;
     std::cout << "Walltime: " << update.get_walltime() << " s" << std::endl;
-#if !defined(STENCILSTREAM_BACKEND_CPU) && !defined(STENCILSTREAM_BACKEND_CUDA)
+#if defined(STENCILSTREAM_BACKEND_MONOTILE) || defined(STENCILSTREAM_BACKEND_TILING)
     // Print pure kernel runtime for FPGA targets
     std::cout << "Kernel Runtime: " << update.get_kernel_runtime() << " s" << std::endl;
 #endif
