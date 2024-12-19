@@ -20,8 +20,10 @@
 #pragma once
 #include "../AccessorSubscript.hpp"
 #include "../Concepts.hpp"
+#include <cmath>
 #include <memory>
 #include <numeric>
+#include <sycl/ext/intel/ac_types/ac_int.hpp>
 #include <vector>
 
 namespace stencil {

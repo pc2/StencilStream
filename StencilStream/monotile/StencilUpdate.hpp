@@ -278,10 +278,11 @@ class StencilUpdateKernel {
                                           [TransFunc::stencil_radius];
                 }
 
-                c[i_processing_element] += 1;
-                if (c[i_processing_element] == grid_width) {
+                if (c[i_processing_element] == grid_width - 1) {
                     c[i_processing_element] = 0;
                     r[i_processing_element] += 1;
+                } else {
+                    c[i_processing_element] += 1;
                 }
             }
 
@@ -452,7 +453,7 @@ class StencilUpdate {
             sycl::queue(params.device, {sycl::property::queue::in_order{}});
 
         sycl::queue update_kernel_queue =
-            sycl::queue(params.device, {cl::sycl::property::queue::enable_profiling{},
+            sycl::queue(params.device, {sycl::property::queue::enable_profiling{},
                                         sycl::property::queue::in_order{}});
 
         GridImpl swap_grid_a = source_grid.make_similar();
@@ -529,12 +530,11 @@ class StencilUpdate {
         for (sycl::event work_event : work_events) {
             const double timesteps_per_second = 1000000000.0;
             double start =
-                double(work_event
-                           .get_profiling_info<cl::sycl::info::event_profiling::command_start>()) /
+                double(
+                    work_event.get_profiling_info<sycl::info::event_profiling::command_start>()) /
                 timesteps_per_second;
             double end =
-                double(
-                    work_event.get_profiling_info<cl::sycl::info::event_profiling::command_end>()) /
+                double(work_event.get_profiling_info<sycl::info::event_profiling::command_end>()) /
                 timesteps_per_second;
             kernel_runtime += end - start;
         }

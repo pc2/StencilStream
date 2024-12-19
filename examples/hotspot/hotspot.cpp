@@ -93,7 +93,7 @@ struct HotspotKernel : public BaseTransitionFunction {
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
 const size_t max_grid_height = 1024;
 const size_t max_grid_width = 1024;
-const size_t n_processing_elements = 280;
+const size_t n_processing_elements = 50; // 100, 2, 280
 using StencilUpdate =
     monotile::StencilUpdate<HotspotKernel, n_processing_elements, max_grid_width, max_grid_height>;
 using Grid = monotile::Grid<HotspotCell>;
@@ -101,7 +101,7 @@ using Grid = monotile::Grid<HotspotCell>;
 #elif defined(STENCILSTREAM_BACKEND_TILING)
 const size_t tile_height = 1 << 16;
 const size_t tile_width = 1024;
-const size_t n_processing_elements = 200;
+const size_t n_processing_elements = 50; // 100, 2, 200
 using StencilUpdate =
     tiling::StencilUpdate<HotspotKernel, n_processing_elements, tile_height, tile_width>;
 using Grid = StencilUpdate::GridImpl;
@@ -264,10 +264,12 @@ int main(int argc, char **argv) {
     StencilUpdate update({
         .transition_function =
             HotspotKernel{.Rx_1 = Rx_1, .Ry_1 = Ry_1, .Rz_1 = Rz_1, .Cap_1 = Cap_1},
-        .halo_value = HotspotCell(0.0, 0.0), .n_iterations = sim_time, .device = device,
+        .halo_value = HotspotCell(0.0, 0.0),
+        .n_iterations = sim_time,
+        .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
 #if !defined(STENCILSTREAM_BACKEND_CPU)
-            .profiling = true, // enable additional profiling for FPGA targets
+        .profiling = true, // enable additional profiling for FPGA targets
 #endif
     });
 

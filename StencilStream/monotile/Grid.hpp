@@ -20,6 +20,8 @@
 #pragma once
 #include "../AccessorSubscript.hpp"
 #include "../Concepts.hpp"
+#include <cmath>
+#include <sycl/ext/intel/ac_types/ac_int.hpp>
 
 namespace stencil {
 namespace monotile {

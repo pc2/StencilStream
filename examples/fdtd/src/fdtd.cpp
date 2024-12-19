@@ -62,11 +62,11 @@ using Grid = cpu::Grid<CellImpl>;
 using StencilUpdate = cpu::StencilUpdate<KernelImpl>;
 #endif
 
-auto exception_handler = [](cl::sycl::exception_list exceptions) {
+auto exception_handler = [](sycl::exception_list exceptions) {
     for (std::exception_ptr const &e : exceptions) {
         try {
             std::rethrow_exception(e);
-        } catch (cl::sycl::exception const &e) {
+        } catch (sycl::exception const &e) {
             std::cout << "Caught asynchronous SYCL exception:\n" << e.what() << "\n";
             std::terminate();
         }
@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
             for (size_t c = 0; c < parameters.grid_range()[0]; c++) {
                 float a = float(r) - float(parameters.grid_range()[0]) / 2.0;
                 float b = float(c) - float(parameters.grid_range()[1]) / 2.0;
-                float distance = parameters.dx * sqrt(a * a + b * b);
+                float distance = parameters.dx * std::sqrt(a * a + b * b);
 
                 float radius = 0.0;
                 for (size_t i = 0; i <= parameters.rings.size(); i++) {
@@ -180,11 +180,14 @@ int main(int argc, char **argv) {
 #endif
 
     StencilUpdate simulation({
-        .transition_function = KernelImpl(parameters, mat_resolver), .halo_value = CellImpl::halo(),
-        .iteration_offset = 0, .n_iterations = parameters.n_timesteps(), .device = device,
+        .transition_function = KernelImpl(parameters, mat_resolver),
+        .halo_value = CellImpl::halo(),
+        .iteration_offset = 0,
+        .n_iterations = parameters.n_timesteps(),
+        .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
 #if !defined(STENCILSTREAM_BACKEND_CPU)
-            .profiling = true, // enable additional profiling for FPGA targets
+        .profiling = true, // enable additional profiling for FPGA targets
 #endif
     });
 
