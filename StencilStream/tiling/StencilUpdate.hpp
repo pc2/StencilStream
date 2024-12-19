@@ -158,8 +158,16 @@ class StencilUpdateKernel {
         uindex_1d_t input_tile_section_height = output_tile_section_height + 2 * halo_radius;
         uindex_1d_t input_tile_section_width = output_tile_section_width + 2 * halo_radius;
 
-        [[intel::loop_coalesce(2)]] for (uindex_1d_t input_tile_r = 0;
-                                         input_tile_r < input_tile_section_height; input_tile_r++) {
+        /*
+         * OneAPI 2024.1 and newer finds a WAR memory dependency on the cache that it can't resolve
+         * on its own. For this, we have to declare that the distance between a read and a write is
+         * at least two iterations. For the tiling architecture, this is always the case since the
+         * minimal input tile section width is three (1 left halo column, 1 output tile column, 1
+         * right halo column). Thus, using the ivdep attribute is safe here.
+         */
+        [[intel::loop_coalesce(2),
+          intel::ivdep(cache, 2)]] for (uindex_1d_t input_tile_r = 0;
+                                        input_tile_r < input_tile_section_height; input_tile_r++) {
             for (uindex_1d_t input_tile_c = 0; input_tile_c < input_tile_section_width;
                  input_tile_c++) {
                 [[intel::fpga_register]] Cell carry = in_pipe::read();
