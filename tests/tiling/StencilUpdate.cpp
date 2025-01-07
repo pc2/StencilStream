@@ -23,7 +23,6 @@
 #include "../HostPipe.hpp"
 #include "../StencilUpdateTest.hpp"
 #include "../TransFuncs.hpp"
-#include "../constants.hpp"
 #include <StencilStream/BaseTransitionFunction.hpp>
 #include <StencilStream/tiling/StencilUpdate.hpp>
 #include <catch2/catch_all.hpp>
@@ -32,33 +31,62 @@ using namespace sycl;
 using namespace stencil;
 using namespace stencil::tiling;
 
-template <
-    tdv::single_pass::Strategy<FPGATransFunc<stencil_radius>, n_processing_elements> TDVStrategy>
-void test_tiling_kernel_with_strategy(std::size_t grid_height, std::size_t grid_width,
-                                      std::size_t iteration_offset,
-                                      std::size_t target_i_iteration) {
+template <std::size_t stencil_radius, std::size_t n_processing_elements, std::size_t vector_length,
+          std::size_t tile_height, std::size_t tile_width>
+void test_tiling_kernel(std::size_t grid_height, std::size_t grid_width, std::size_t tile_r,
+                        std::size_t tile_c, std::size_t iteration_offset,
+                        std::size_t target_i_iteration) {
     using TransFunc = FPGATransFunc<stencil_radius>;
-    using in_pipe = sycl::pipe<class TilingExecutionKernelInPipeID, std::array<Cell, 1>>;
-    using out_pipe = sycl::pipe<class TilingExecutionKernelOutPipeID, std::array<Cell, 1>>;
-    using TDVGlobalState = TDVStrategy::template GlobalState<TransFunc, n_processing_elements>;
+    using CellVector = std::array<typename TransFunc::Cell, vector_length>;
+    using in_pipe = sycl::pipe<class TilingExecutionKernelInPipeID, CellVector>;
+    using out_pipe = sycl::pipe<class TilingExecutionKernelOutPipeID, CellVector>;
+    using TDVGlobalState =
+        tdv::single_pass::InlineStrategy::template GlobalState<TransFunc, n_processing_elements>;
     using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
     using TestExecutionKernel =
-        StencilUpdateKernel<TransFunc, TDVKernelArgument, n_processing_elements, 1, tile_height,
-                            tile_width, in_pipe, out_pipe>;
+        StencilUpdateKernel<TransFunc, TDVKernelArgument, n_processing_elements, vector_length,
+                            tile_height, tile_width, in_pipe, out_pipe>;
+
+    constexpr std::size_t iters_per_pass = n_processing_elements / TransFunc::n_subiterations;
+    constexpr std::size_t stencil_buffer_lead =
+        int_ceil_div(stencil_radius, vector_length) * vector_length;
+    constexpr std::size_t halo_height = stencil_radius * n_processing_elements;
+    constexpr std::size_t halo_width = stencil_buffer_lead * n_processing_elements;
+    // Tile width has to be multiple of vector length.
+    constexpr std::size_t vect_tile_width = tile_width / vector_length;
+
+    std::size_t output_tile_section_height =
+        std::min(tile_height, grid_height - tile_r * tile_height);
+    std::size_t vect_output_tile_section_width =
+        std::min(vect_tile_width, int_ceil_div(grid_width - tile_c * tile_width, vector_length));
 
     sycl::queue working_queue;
 
     working_queue.submit([&](sycl::handler &cgh) {
+        // Using negative numbers here to make life easier.
+        int start_row = tile_r * tile_height - halo_height;
+        int end_row = start_row + output_tile_section_height + 2 * halo_height;
+        int vect_start_column = tile_c * vect_tile_width - (halo_width / vector_length);
+        int vect_end_column =
+            vect_start_column + vect_output_tile_section_width + 2 * (halo_width / vector_length);
+
         cgh.single_task([=]() {
-            for (std::size_t r = 0; r < 2 * halo_radius + grid_height; r++) {
-                for (std::size_t c = 0; c < 2 * halo_radius + grid_width; c++) {
-                    if (r >= halo_radius && r < grid_height + halo_radius && c >= halo_radius &&
-                        c < grid_width + halo_radius) {
-                        in_pipe::write({Cell{int(r - halo_radius), int(c - halo_radius),
-                                             int(iteration_offset), 0, CellStatus::Normal}});
-                    } else {
-                        in_pipe::write({Cell::halo()});
+            for (int r = start_row; r < end_row; r++) {
+                for (int vect_c = vect_start_column; vect_c < vect_end_column; vect_c++) {
+                    CellVector input_vector;
+
+#pragma unroll
+                    for (int i_cell = 0; i_cell < vector_length; i_cell++) {
+                        int c = vect_c * vector_length + i_cell;
+                        if (r >= 0 && c >= 0 && r < grid_height && c < grid_width) {
+                            input_vector[i_cell] =
+                                Cell{r, c, int(iteration_offset), 0, CellStatus::Normal};
+                        } else {
+                            input_vector[i_cell] = Cell::halo();
+                        }
                     }
+
+                    in_pipe::write(input_vector);
                 }
             }
         });
@@ -67,145 +95,109 @@ void test_tiling_kernel_with_strategy(std::size_t grid_height, std::size_t grid_
     TDVGlobalState global_state(TransFunc(), iteration_offset, target_i_iteration);
     working_queue.submit([&](sycl::handler &cgh) {
         TDVKernelArgument kernel_argument(global_state, cgh, iteration_offset, target_i_iteration);
-        TestExecutionKernel kernel(TransFunc(), iteration_offset, target_i_iteration, 0, 0,
-                                   grid_height, grid_width, Cell::halo(), kernel_argument);
+        TestExecutionKernel kernel(TransFunc(), iteration_offset, target_i_iteration,
+                                   tile_r * tile_height, tile_c * tile_width, grid_height,
+                                   grid_width, Cell::halo(), kernel_argument);
         cgh.single_task(kernel);
     });
 
-    buffer<Cell, 2> output_buffer(range<2>(grid_height, grid_width));
+    buffer<CellVector, 2> output_buffer(
+        range<2>(output_tile_section_height, vect_output_tile_section_width));
 
     working_queue.submit([&](sycl::handler &cgh) {
         accessor output_buffer_ac(output_buffer, cgh, read_write);
         cgh.single_task([=]() {
-            for (std::size_t r = 0; r < grid_height; r++) {
-                for (std::size_t c = 0; c < grid_width; c++) {
-                    output_buffer_ac[r][c] = out_pipe::read()[0];
+            for (std::size_t r = 0; r < output_buffer_ac.get_range()[0]; r++) {
+                for (std::size_t vect_c = 0; vect_c < output_buffer_ac.get_range()[1]; vect_c++) {
+                    output_buffer_ac[r][vect_c] = out_pipe::read();
                 }
             }
         });
     });
 
     host_accessor output_buffer_ac(output_buffer, read_only);
-    for (std::size_t r = 0; r < grid_height; r++) {
-        for (std::size_t c = 0; c < grid_width; c++) {
-            Cell cell = output_buffer_ac[r][c];
-            REQUIRE(cell.r == r);
-            REQUIRE(cell.c == c);
-            REQUIRE(cell.i_iteration == target_i_iteration);
-            REQUIRE(cell.i_subiteration == 0);
-            REQUIRE(cell.status == CellStatus::Normal);
+    for (std::size_t local_r = 0; local_r < output_buffer_ac.get_range()[0]; local_r++) {
+        for (std::size_t vect_local_c = 0; vect_local_c < output_buffer_ac.get_range()[1];
+             vect_local_c++) {
+            for (std::size_t i_cell = 0; i_cell < vector_length; i_cell++) {
+                std::size_t r = tile_r * tile_height + local_r;
+                std::size_t c = tile_c * tile_width + vect_local_c * vector_length + i_cell;
+
+                Cell cell = output_buffer_ac[local_r][vect_local_c][i_cell];
+                if (c < grid_width) {
+                    REQUIRE(cell.r == r);
+                    REQUIRE(cell.c == c);
+                    REQUIRE(cell.status == CellStatus::Normal);
+                    REQUIRE(cell.i_iteration == target_i_iteration);
+                    REQUIRE(cell.i_subiteration == 0);
+                } else {
+                    REQUIRE(cell.r == 0);
+                    REQUIRE(cell.c == 0);
+                    REQUIRE(cell.status == CellStatus::Halo);
+                    REQUIRE(cell.i_iteration == 0);
+                    REQUIRE(cell.i_subiteration == 0);
+                }
+            }
         }
     }
 }
 
-void test_tiling_kernel(std::size_t grid_height, std::size_t grid_width,
-                        std::size_t iteration_offset, std::size_t target_i_iteration) {
-    test_tiling_kernel_with_strategy<tdv::single_pass::InlineStrategy>(
-        tile_height, tile_width, iteration_offset, target_i_iteration);
-    test_tiling_kernel_with_strategy<tdv::single_pass::PrecomputeOnDeviceStrategy>(
-        tile_height, tile_width, iteration_offset, target_i_iteration);
-    test_tiling_kernel_with_strategy<tdv::single_pass::PrecomputeOnHostStrategy>(
-        tile_height, tile_width, iteration_offset, target_i_iteration);
+template <std::size_t stencil_radius, std::size_t n_processing_elements, std::size_t vector_length,
+          std::size_t tile_height, std::size_t tile_width>
+void test_tiling_kernel_on_grid() {
+    auto test_tiling_kernel_impl = &test_tiling_kernel<stencil_radius, n_processing_elements,
+                                                       vector_length, tile_height, tile_width>;
+    constexpr std::size_t iters_per_pass = n_processing_elements / 2;
+
+    // All possible tile types (corner, border, core tiles), where each tile is completely filled.
+    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 0, 0, 0, iters_per_pass);
+    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 0, 1, 0, iters_per_pass);
+    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 0, 2, 0, iters_per_pass);
+    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 1, 0, 0, iters_per_pass);
+    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 1, 1, 0, iters_per_pass);
+    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 1, 2, 0, iters_per_pass);
+    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 2, 0, 0, iters_per_pass);
+    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 2, 1, 0, iters_per_pass);
+    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 2, 2, 0, iters_per_pass);
+
+    // Missing bottom row.
+    test_tiling_kernel_impl(tile_height - 1, tile_width, 0, 0, 0, iters_per_pass);
+    // Missing right column.
+    test_tiling_kernel_impl(tile_height, tile_width - 1, 0, 0, 0, iters_per_pass);
+    // Both missing bottom row and right column.
+    test_tiling_kernel_impl(tile_height - 1, tile_width - 1, 0, 0, 0, iters_per_pass);
+
+    // Only a single iteration.
+    test_tiling_kernel_impl(tile_height, tile_width, 0, 0, 0, 1);
+    // Second pass.
+    test_tiling_kernel_impl(tile_height, tile_width, 0, 0, iters_per_pass, 2 * iters_per_pass);
+    // A single iteration for the second pass.
+    test_tiling_kernel_impl(tile_height, tile_width, 0, 0, iters_per_pass, iters_per_pass + 1);
 }
 
 TEST_CASE("tiling::StencilUpdateKernel", "[tiling::StencilUpdateKernel]") {
-    test_tiling_kernel(tile_height, tile_width, 0, iters_per_pass);
+    // Radius of 1, two PEs (1x), no vectorization
+    test_tiling_kernel_on_grid<1, 2, 1, 32, 16>();
+    // Radius of 1, four PEs (2x), no vectorization
+    test_tiling_kernel_on_grid<1, 4, 1, 32, 16>();
+    // Radius of 1, eight PEs (4x), no vectorization
+    test_tiling_kernel_on_grid<1, 8, 1, 32, 16>();
+
+    // Radius of 1, two PEs (1x), 2x vectorization
+    test_tiling_kernel_on_grid<1, 2, 2, 32, 16>();
+    // Radius of 1, four PEs (2x), 2x vectorization
+    test_tiling_kernel_on_grid<1, 4, 2, 32, 16>();
+    // Radius of 1, eight PEs (4x), 2x vectorization
+    test_tiling_kernel_on_grid<1, 8, 2, 32, 16>();
+
+    // Radius of 1, two PEs (1x), 4x vectorization
+    test_tiling_kernel_on_grid<1, 2, 4, 32, 16>();
+    // Radius of 1, four PEs (2x), 4x vectorization
+    test_tiling_kernel_on_grid<1, 4, 4, 32, 16>();
+    // Radius of 1, eight PEs (4x), 4x vectorization
+    test_tiling_kernel_on_grid<1, 8, 4, 32, 16>();
 }
 
-TEST_CASE("tiling::StencilUpdateKernel (partial tile)", "[tiling::StencilUpdateKernel]") {
-    test_tiling_kernel(tile_height, tile_width / 2, 0, iters_per_pass);
-}
-
-TEST_CASE("tiling::StencilUpdateKernel (partial pipeline)", "[tiling::StencilUpdateKernel]") {
-    static_assert(iters_per_pass != 1);
-    test_tiling_kernel(tile_height, tile_width, 0, iters_per_pass - 1);
-}
-
-TEST_CASE("tiling::StencilUpdateKernel (iteration offset)", "[tiling::StencilUpdateKernel]") {
-    test_tiling_kernel(tile_height, tile_width, iters_per_pass, 2 * iters_per_pass);
-}
-
-TEST_CASE("tiling::StencilUpdateKernel (iteration offset, partial pipeline)",
-          "[tiling::StencilUpdateKernel]") {
-    static_assert(iters_per_pass != 1);
-    test_tiling_kernel(tile_height, tile_width, iters_per_pass, 2 * iters_per_pass - 1);
-}
-
-struct HaloHandlingKernel : public BaseTransitionFunction {
-    using Cell = bool;
-
-    bool operator()(Stencil<bool, 1> const &stencil) const {
-        sycl::id<2> idx = stencil.id;
-        bool is_valid = true;
-        if (idx[0] == 0) {
-            is_valid &= stencil[-1][-1] && stencil[-1][0] && stencil[-1][1];
-        } else if (idx[0] == tile_height - 1) {
-            is_valid &= stencil[1][-1] && stencil[1][0] && stencil[1][1];
-        }
-
-        if (idx[1] == 0) {
-            is_valid &= stencil[-1][-1] && stencil[0][-1] && stencil[1][-1];
-        } else if (idx[1] == tile_width - 1) {
-            is_valid &= stencil[-1][1] && stencil[0][1] && stencil[1][1];
-        }
-
-        return is_valid;
-    }
-};
-
-TEST_CASE("Halo values inside the pipeline are handled correctly",
-          "[tiling::StencilUpdateKernel]") {
-    using in_pipe = sycl::pipe<class HaloValueTestInPipeID, std::array<bool, 1>>;
-    using out_pipe = sycl::pipe<class HaloValueTestOutPipeID, std::array<bool, 1>>;
-    using TDVGlobalState =
-        tdv::single_pass::InlineStrategy::template GlobalState<HaloHandlingKernel,
-                                                               n_processing_elements>;
-    using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
-    using TestExecutionKernel =
-        StencilUpdateKernel<HaloHandlingKernel, TDVKernelArgument, n_processing_elements, 1,
-                            tile_height, tile_width, in_pipe, out_pipe>;
-
-    sycl::queue working_queue;
-
-    std::size_t halo_radius = n_processing_elements;
-
-    working_queue.submit([&](sycl::handler &cgh) {
-        cgh.single_task([=]() {
-            for (std::size_t r = 0; r < 2 * halo_radius + tile_height; r++) {
-                for (std::size_t c = 0; c < 2 * halo_radius + tile_width; c++) {
-                    in_pipe::write({false});
-                }
-            }
-        });
-    });
-
-    TDVGlobalState global_state(HaloHandlingKernel(), 0, iters_per_pass);
-    working_queue.submit([&](sycl::handler &cgh) {
-        TDVKernelArgument kernel_argument(global_state, cgh, 0, iters_per_pass);
-        TestExecutionKernel kernel(HaloHandlingKernel(), 0, iters_per_pass, 0, 0, tile_height,
-                                   tile_width, true, kernel_argument);
-        cgh.single_task(kernel);
-    });
-
-    sycl::buffer<bool, 2> is_correct(sycl::range<2>(tile_height, tile_width));
-    working_queue.submit([&](sycl::handler &cgh) {
-        sycl::accessor is_correct_ac(is_correct, cgh);
-        cgh.single_task([=]() {
-            for (std::size_t r = 0; r < tile_height; r++) {
-                for (std::size_t c = 0; c < tile_width; c++) {
-                    is_correct_ac[r][c] = out_pipe::read()[0];
-                }
-            }
-        });
-    });
-
-    sycl::host_accessor is_correct_ac(is_correct);
-    for (std::size_t r = 0; r < tile_height; r++) {
-        for (std::size_t c = 0; c < tile_width; c++) {
-            REQUIRE(is_correct_ac[r][c]);
-        }
-    }
-}
 /*
 using StencilUpdateImpl =
     StencilUpdate<FPGATransFunc<1>, n_processing_elements, tile_height, tile_width>;
