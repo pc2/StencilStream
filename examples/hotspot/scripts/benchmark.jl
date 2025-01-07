@@ -1,4 +1,4 @@
-#!/usr/bin/env -S julia --project=../..
+#!/usr/bin/env -S julia --project
 include("../../../scripts/benchmark-common.jl")
 using DelimitedFiles
 using Statistics

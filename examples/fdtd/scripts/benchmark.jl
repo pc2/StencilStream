@@ -1,4 +1,4 @@
-#!/usr/bin/env -S julia --project=../..
+#!/usr/bin/env -S julia --project
 include("../../../scripts/benchmark-common.jl")
 
 const N_SUBITERATIONS = 2
