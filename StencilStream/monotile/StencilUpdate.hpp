@@ -132,6 +132,7 @@ class StencilUpdateKernel {
         : trans_func(trans_func), i_iteration(i_iteration), target_i_iteration(target_i_iteration),
           grid_height(grid_height), grid_width(grid_width), halo_value(halo_value),
           tdv_kernel_argument(tdv_kernel_argument) {
+        assert(grid_width >= 2);
         assert(TransFunc::stencil_radius <= grid_width && grid_width <= max_grid_width);
         assert(TransFunc::stencil_radius <= grid_height && grid_height <= max_grid_height);
         assert(i_iteration < target_i_iteration);
@@ -176,6 +177,14 @@ class StencilUpdateKernel {
         [[intel::fpga_register]] Cell stencil_buffer[n_processing_elements][stencil_buffer_height]
                                                     [stencil_buffer_width];
 
+
+        /*
+         * OneAPI 2024.1 and newer finds a WAR memory dependency on the cache that it can't resolve
+         * on its own. This issue is resolved by declaring that the distance between a read and a
+         * write to the same memory location is at least two. This is ensured by requiring a minimal
+         * grid width of two.
+         */
+        [[intel::ivdep(2, cache)]]
         for (uindex_step_t i = 0; i < calc_n_steps<uindex_step_t>(grid_height, grid_width); i++) {
             CellVector carry;
             if (i < uindex_r_t(grid_height) * vect_grid_width) {
@@ -442,6 +451,10 @@ class StencilUpdate {
      * complete. Otherwise, it will return as soon as all kernels are submitted.
      */
     GridImpl operator()(GridImpl &source_grid) {
+        if (source_grid.get_grid_width() < 2) {
+            throw std::range_error("The grid is too narrow. The monotile backend can only process "
+                                   "grids with at least two columns.");
+        }
         if (source_grid.get_grid_height() > max_grid_height) {
             throw std::range_error("The grid is too tall for the stencil update kernel.");
         }
