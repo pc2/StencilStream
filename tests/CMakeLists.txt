@@ -21,7 +21,7 @@ set(UNIT_TEST_SOURCES
     cpu/StencilUpdate.cpp
     monotile/Grid.cpp
     monotile/StencilUpdate.cpp
-    #tiling/Grid.cpp
+    tiling/Grid.cpp
     tiling/StencilUpdate.cpp
 )
 
