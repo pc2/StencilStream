@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
             for (size_t c = 0; c < parameters.grid_range()[0]; c++) {
                 float a = float(r) - float(parameters.grid_range()[0]) / 2.0;
                 float b = float(c) - float(parameters.grid_range()[1]) / 2.0;
-                float distance = parameters.dx * sqrt(a * a + b * b);
+                float distance = parameters.dx * std::sqrt(a * a + b * b);
 
                 float radius = 0.0;
                 for (size_t i = 0; i <= parameters.rings.size(); i++) {
