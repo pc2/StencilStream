@@ -102,9 +102,10 @@ using Grid = monotile::Grid<HotspotCell, vector_length>;
 #elif defined(STENCILSTREAM_BACKEND_TILING)
 const size_t tile_height = 1 << 16;
 const size_t tile_width = 1024;
-const size_t n_processing_elements = 200;
-using StencilUpdate =
-    tiling::StencilUpdate<HotspotKernel, n_processing_elements, tile_height, tile_width>;
+const size_t n_processing_elements = 25;
+const size_t vector_length = 8;
+using StencilUpdate = tiling::StencilUpdate<HotspotKernel, n_processing_elements, vector_length,
+                                            tile_height, tile_width>;
 using Grid = StencilUpdate::GridImpl;
 
 #elif defined(STENCILSTREAM_BACKEND_CPU)

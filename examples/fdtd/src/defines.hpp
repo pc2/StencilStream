@@ -43,7 +43,8 @@ constexpr size_t n_processing_elements = 100;
 constexpr size_t vector_length = 2;
 
 #elif defined(STENCILSTREAM_BACKEND_TILING)
-constexpr size_t n_processing_elements = 190;
+constexpr size_t n_processing_elements = 100;
+constexpr size_t vector_length = 2;
 
 #elif defined(STENCILSTREAM_BACKEND_CPU)
 constexpr size_t n_processing_elements = 2;

@@ -207,53 +207,57 @@ TEST_CASE("tiling::StencilUpdate", "[tiling::StencilUpdate]") {
 
     using StencilUpdateVect1Impl =
         StencilUpdate<FPGATransFunc<1>, n_processing_elements, 1, tile_height, tile_width>;
+    using GridVect1Impl = Grid<FPGATransFunc<1>::Cell, 1>;
+
     using StencilUpdateVect2Impl =
         StencilUpdate<FPGATransFunc<1>, n_processing_elements, 2, tile_height, tile_width>;
+    using GridVect2Impl = Grid<FPGATransFunc<1>::Cell, 2>;
+
     using StencilUpdateVect4Impl =
         StencilUpdate<FPGATransFunc<1>, n_processing_elements, 4, tile_height, tile_width>;
-    using GridImpl = Grid<FPGATransFunc<1>::Cell>;
+    using GridVect4Impl = Grid<FPGATransFunc<1>::Cell, 4>;
 
-    static_assert(concepts::StencilUpdate<StencilUpdateVect1Impl, FPGATransFunc<1>, GridImpl>);
-    static_assert(concepts::StencilUpdate<StencilUpdateVect2Impl, FPGATransFunc<1>, GridImpl>);
-    static_assert(concepts::StencilUpdate<StencilUpdateVect4Impl, FPGATransFunc<1>, GridImpl>);
+    static_assert(concepts::StencilUpdate<StencilUpdateVect1Impl, FPGATransFunc<1>, GridVect1Impl>);
+    static_assert(concepts::StencilUpdate<StencilUpdateVect2Impl, FPGATransFunc<1>, GridVect2Impl>);
+    static_assert(concepts::StencilUpdate<StencilUpdateVect4Impl, FPGATransFunc<1>, GridVect4Impl>);
 
     for (std::size_t i_grid_height = 0; i_grid_height < 3; i_grid_height++) {
         for (std::size_t i_grid_width = 0; i_grid_width < 3; i_grid_width++) {
             std::size_t grid_height = (1 + i_grid_height) * (tile_height / 2);
             std::size_t grid_width = (1 + i_grid_width) * (tile_width / 2);
 
-            test_stencil_update<GridImpl, StencilUpdateVect1Impl>(grid_height, grid_width, 0,
-                                                                  iters_per_pass);
-            test_stencil_update<GridImpl, StencilUpdateVect1Impl>(grid_height, grid_width, 1,
-                                                                  iters_per_pass);
-            test_stencil_update<GridImpl, StencilUpdateVect1Impl>(grid_height, grid_width, 0,
-                                                                  iters_per_pass + 1);
-            test_stencil_update<GridImpl, StencilUpdateVect1Impl>(grid_height - 1, grid_width, 0,
-                                                                  iters_per_pass + 1);
-            test_stencil_update<GridImpl, StencilUpdateVect1Impl>(grid_height, grid_width - 1, 0,
-                                                                  iters_per_pass + 1);
+            test_stencil_update<GridVect1Impl, StencilUpdateVect1Impl>(grid_height, grid_width, 0,
+                                                                       iters_per_pass);
+            test_stencil_update<GridVect1Impl, StencilUpdateVect1Impl>(grid_height, grid_width, 1,
+                                                                       iters_per_pass);
+            test_stencil_update<GridVect1Impl, StencilUpdateVect1Impl>(grid_height, grid_width, 0,
+                                                                       iters_per_pass + 1);
+            test_stencil_update<GridVect1Impl, StencilUpdateVect1Impl>(grid_height - 1, grid_width,
+                                                                       0, iters_per_pass + 1);
+            test_stencil_update<GridVect1Impl, StencilUpdateVect1Impl>(grid_height, grid_width - 1,
+                                                                       0, iters_per_pass + 1);
 
-            test_stencil_update<GridImpl, StencilUpdateVect2Impl>(grid_height, grid_width, 0,
-                                                                  iters_per_pass);
-            test_stencil_update<GridImpl, StencilUpdateVect2Impl>(grid_height, grid_width, 1,
-                                                                  iters_per_pass);
-            test_stencil_update<GridImpl, StencilUpdateVect2Impl>(grid_height, grid_width, 0,
-                                                                  iters_per_pass + 1);
-            test_stencil_update<GridImpl, StencilUpdateVect2Impl>(grid_height - 1, grid_width, 0,
-                                                                  iters_per_pass + 1);
-            test_stencil_update<GridImpl, StencilUpdateVect2Impl>(grid_height, grid_width - 1, 0,
-                                                                  iters_per_pass + 1);
+            test_stencil_update<GridVect2Impl, StencilUpdateVect2Impl>(grid_height, grid_width, 0,
+                                                                       iters_per_pass);
+            test_stencil_update<GridVect2Impl, StencilUpdateVect2Impl>(grid_height, grid_width, 1,
+                                                                       iters_per_pass);
+            test_stencil_update<GridVect2Impl, StencilUpdateVect2Impl>(grid_height, grid_width, 0,
+                                                                       iters_per_pass + 1);
+            test_stencil_update<GridVect2Impl, StencilUpdateVect2Impl>(grid_height - 1, grid_width,
+                                                                       0, iters_per_pass + 1);
+            test_stencil_update<GridVect2Impl, StencilUpdateVect2Impl>(grid_height, grid_width - 1,
+                                                                       0, iters_per_pass + 1);
 
-            test_stencil_update<GridImpl, StencilUpdateVect4Impl>(grid_height, grid_width, 0,
-                                                                  iters_per_pass);
-            test_stencil_update<GridImpl, StencilUpdateVect4Impl>(grid_height, grid_width, 1,
-                                                                  iters_per_pass);
-            test_stencil_update<GridImpl, StencilUpdateVect4Impl>(grid_height, grid_width, 0,
-                                                                  iters_per_pass + 1);
-            test_stencil_update<GridImpl, StencilUpdateVect4Impl>(grid_height - 1, grid_width, 0,
-                                                                  iters_per_pass + 1);
-            test_stencil_update<GridImpl, StencilUpdateVect4Impl>(grid_height, grid_width - 1, 0,
-                                                                  iters_per_pass + 1);
+            test_stencil_update<GridVect4Impl, StencilUpdateVect4Impl>(grid_height, grid_width, 0,
+                                                                       iters_per_pass);
+            test_stencil_update<GridVect4Impl, StencilUpdateVect4Impl>(grid_height, grid_width, 1,
+                                                                       iters_per_pass);
+            test_stencil_update<GridVect4Impl, StencilUpdateVect4Impl>(grid_height, grid_width, 0,
+                                                                       iters_per_pass + 1);
+            test_stencil_update<GridVect4Impl, StencilUpdateVect4Impl>(grid_height - 1, grid_width,
+                                                                       0, iters_per_pass + 1);
+            test_stencil_update<GridVect4Impl, StencilUpdateVect4Impl>(grid_height, grid_width - 1,
+                                                                       0, iters_per_pass + 1);
         }
     }
 }

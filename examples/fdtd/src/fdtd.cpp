@@ -53,8 +53,8 @@ using StencilUpdate = monotile::StencilUpdate<KernelImpl, n_processing_elements,
                                               tile_height, tile_width, TDVStrategy>;
 #elif defined(STENCILSTREAM_BACKEND_TILING)
     #include <StencilStream/tiling/StencilUpdate.hpp>
-using StencilUpdate =
-    tiling::StencilUpdate<KernelImpl, n_processing_elements, tile_height, tile_width, TDVStrategy>;
+using StencilUpdate = tiling::StencilUpdate<KernelImpl, n_processing_elements, vector_length,
+                                            tile_height, tile_width, TDVStrategy>;
 using Grid = StencilUpdate::GridImpl;
 #elif defined(STENCILSTREAM_BACKEND_CPU)
     #include <StencilStream/cpu/StencilUpdate.hpp>

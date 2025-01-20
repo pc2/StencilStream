@@ -128,13 +128,9 @@ class StencilUpdateKernel {
         assert(grid_c_offset % output_tile_width == 0);
     }
 
-    static constexpr std::size_t get_halo_height() {
-        return halo_height;
-    }
+    static constexpr std::size_t get_halo_height() { return halo_height; }
 
-    static constexpr std::size_t get_halo_width() {
-        return halo_width;
-    }
+    static constexpr std::size_t get_halo_width() { return halo_width; }
 
     /**
      * \brief Execute the configured operations.
@@ -333,8 +329,9 @@ class StencilUpdateKernel {
  * \tparam TDVStrategy (Optimization parameter) The precomputation strategy for the time-dependent
  * value system (\ref page-tdv "See guide").
  */
-template <concepts::TransitionFunction F, std::size_t n_processing_elements = 1, std::size_t vector_length = 1,
-          std::size_t tile_height = 1024, std::size_t tile_width = 1024,
+template <concepts::TransitionFunction F, std::size_t n_processing_elements = 1,
+          std::size_t vector_length = 1, std::size_t tile_height = 1024,
+          std::size_t tile_width = 1024,
           tdv::single_pass::Strategy<F, n_processing_elements> TDVStrategy =
               tdv::single_pass::InlineStrategy>
 class StencilUpdate {
@@ -347,7 +344,7 @@ class StencilUpdate {
     /**
      * \brief A shorthand for the used and supported grid type.
      */
-    using GridImpl = Grid<Cell>;
+    using GridImpl = Grid<Cell, vector_length>;
 
     /**
      * \brief Parameters for the stencil updater.
@@ -436,8 +433,8 @@ class StencilUpdate {
         using in_pipe = sycl::pipe<class tiling_in_pipe, std::array<Cell, vector_length>>;
         using out_pipe = sycl::pipe<class tiling_out_pipe, std::array<Cell, vector_length>>;
         using ExecutionKernelImpl =
-            StencilUpdateKernel<F, TDVKernelArgument, n_processing_elements, vector_length, tile_height,
-                                tile_width, in_pipe, out_pipe>;
+            StencilUpdateKernel<F, TDVKernelArgument, n_processing_elements, vector_length,
+                                tile_height, tile_width, in_pipe, out_pipe>;
         constexpr std::size_t halo_height = ExecutionKernelImpl::get_halo_height();
         constexpr std::size_t halo_width = ExecutionKernelImpl::get_halo_width();
 
@@ -476,9 +473,9 @@ class StencilUpdate {
 
             for (std::size_t i_tile_r = 0; i_tile_r < tile_range[0]; i_tile_r++) {
                 for (std::size_t i_tile_c = 0; i_tile_c < tile_range[1]; i_tile_c++) {
-                    pass_source
-                        ->template submit_read<in_pipe, vector_length, tile_height, tile_width, halo_height, halo_width>(
-                            input_kernel_queue, i_tile_r, i_tile_c, params.halo_value);
+                    pass_source->template submit_read<in_pipe, tile_height, tile_width, halo_height,
+                                                      halo_width>(input_kernel_queue, i_tile_r,
+                                                                  i_tile_c, params.halo_value);
 
                     auto work_event = working_queue.submit([&](sycl::handler &cgh) {
                         TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i,
@@ -496,9 +493,8 @@ class StencilUpdate {
                         work_events.push_back(work_event);
                     }
 
-                    pass_target
-                        ->template submit_write<out_pipe, vector_length, tile_height, tile_width>(
-                            output_kernel_queue, i_tile_r, i_tile_c);
+                    pass_target->template submit_write<out_pipe, tile_height, tile_width>(
+                        output_kernel_queue, i_tile_r, i_tile_c);
                 }
             }
 

@@ -32,29 +32,29 @@ using namespace std;
 const std::size_t add_grid_height = grid_height + 1;
 const std::size_t add_grid_width = grid_width + 1;
 
-using TestGrid = Grid<sycl::id<2>>;
-
 // Assert that the tiled grid fulfills the grid concept.
-static_assert(concepts::Grid<TestGrid, sycl::id<2>>);
+static_assert(concepts::Grid<Grid<sycl::id<2>, 1>, sycl::id<2>>);
 
 TEST_CASE("tiling::Grid::Grid", "[tiling::Grid]") {
-    grid_test::test_constructors<TestGrid>(add_grid_height, add_grid_width);
+    grid_test::test_constructors<Grid<sycl::id<2>, 1>>(add_grid_height, add_grid_width);
 }
 
 TEST_CASE("tiling::Grid::copy_from_buffer", "[tiling::Grid]") {
-    grid_test::test_copy_from_buffer<TestGrid>(add_grid_height, add_grid_width);
+    grid_test::test_copy_from_buffer<Grid<sycl::id<2>, 1>>(add_grid_height, add_grid_width);
 }
 
 TEST_CASE("tiling::Grid::copy_to_buffer", "[tiling::Grid]") {
-    grid_test::test_copy_to_buffer<TestGrid>(add_grid_height, add_grid_width);
+    grid_test::test_copy_to_buffer<Grid<sycl::id<2>, 1>>(add_grid_height, add_grid_width);
 }
 
 TEST_CASE("tiling::Grid::make_similar", "[tiling::Grid]") {
-    grid_test::test_make_similar<TestGrid>(add_grid_height, add_grid_width);
+    grid_test::test_make_similar<Grid<sycl::id<2>, 1>>(add_grid_height, add_grid_width);
 }
 
 template <std::size_t vector_length, std::size_t halo_height, std::size_t halo_width>
 void test_tiling_submit_read(std::size_t grid_height, std::size_t grid_width) {
+    using TestGrid = Grid<sycl::id<2>, vector_length>;
+
     TestGrid grid(grid_height, grid_width);
     {
         using GridAccessor = TestGrid::template GridAccessor<access::mode::read_write>;
@@ -70,15 +70,14 @@ void test_tiling_submit_read(std::size_t grid_height, std::size_t grid_width) {
         sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
     sycl::queue working_queue = sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
 
-    sycl::range<2> tile_range = grid.get_tile_range<tile_height, tile_width>();
+    sycl::range<2> tile_range = grid.get_tile_range(tile_height, tile_width);
     for (std::size_t tile_r = 0; tile_r < tile_range[0]; tile_r++) {
         for (std::size_t tile_c = 0; tile_c < tile_range[1]; tile_c++) {
             using in_pipe = sycl::pipe<class tiled_grid_submit_read_test_id,
                                        std::array<sycl::id<2>, vector_length>>;
 
-            grid.template submit_read<in_pipe, vector_length, tile_height, tile_width, halo_height,
-                                      halo_width>(input_kernel_queue, tile_r, tile_c,
-                                                  sycl::id<2>(-1, -1));
+            grid.template submit_read<in_pipe, tile_height, tile_width, halo_height, halo_width>(
+                input_kernel_queue, tile_r, tile_c, sycl::id<2>(-1, -1));
 
             int output_tile_height = std::min(tile_height, grid_height - tile_r * tile_height);
             int input_tile_height = output_tile_height + 2 * halo_height;
@@ -140,6 +139,8 @@ TEST_CASE("tiling::Grid::submit_read", "[tiling::Grid]") {
 }
 
 template <std::size_t vector_length> void test_tiling_submit_write() {
+    using TestGrid = Grid<sycl::id<2>, vector_length>;
+
     using out_pipe =
         sycl::pipe<class tiled_grid_submit_write_test_id, std::array<sycl::id<2>, vector_length>>;
 
@@ -178,8 +179,8 @@ template <std::size_t vector_length> void test_tiling_submit_write() {
                 });
             });
 
-            grid.template submit_write<out_pipe, vector_length, tile_height, tile_width>(
-                output_kernel_queue, tile_r, tile_c);
+            grid.template submit_write<out_pipe, tile_height, tile_width>(output_kernel_queue,
+                                                                          tile_r, tile_c);
         }
     }
 
