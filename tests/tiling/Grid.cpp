@@ -139,43 +139,62 @@ TEST_CASE("tiling::Grid::submit_read", "[tiling::Grid]") {
     test_tiling_submit_read<4, 1, 4>(tile_height - 1, tile_width - 1);
 }
 
-TEST_CASE("tiling::Grid::submit_write", "[tiling::Grid]") {
-    using out_pipe = sycl::pipe<class tiled_grid_submit_write_test_id, std::array<sycl::id<2>, 1>>;
+template <std::size_t vector_length> void test_tiling_submit_write() {
+    using out_pipe =
+        sycl::pipe<class tiled_grid_submit_write_test_id, std::array<sycl::id<2>, vector_length>>;
 
     sycl::queue output_kernel_queue =
         sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
     sycl::queue working_queue = sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
 
-    TestGrid grid(3 * tile_height, 3 * tile_width);
+    std::size_t grid_height = 3 * tile_height - 1;
+    std::size_t grid_width = 3 * tile_width - 1;
+
+    TestGrid grid(grid_height, grid_width);
 
     for (std::size_t tile_r = 0; tile_r < 3; tile_r++) {
         for (std::size_t tile_c = 0; tile_c < 3; tile_c++) {
             working_queue.submit([&](sycl::handler &cgh) {
                 std::size_t r_start = tile_r * tile_height;
-                std::size_t r_end = (tile_r + 1) * tile_height;
-                std::size_t c_start = tile_c * tile_width;
-                std::size_t c_end = (tile_c + 1) * tile_width;
+                std::size_t r_end = r_start + std::min(tile_height, grid_height - r_start);
+                std::size_t vect_c_start = (tile_c * tile_width) / vector_length;
+                std::size_t vect_c_end =
+                    vect_c_start +
+                    int_ceil_div(std::min(tile_width, grid_width - tile_c * tile_width),
+                                 vector_length);
 
-                cgh.single_task<class tiled_grid_submit_write_test_kernel>([=]() {
+                cgh.single_task([=]() {
                     for (std::size_t r = r_start; r < r_end; r++) {
-                        for (std::size_t c = c_start; c < c_end; c++) {
-                            out_pipe::write({sycl::id<2>(r, c)});
+                        for (std::size_t vect_c = vect_c_start; vect_c < vect_c_end; vect_c++) {
+                            std::array<sycl::id<2>, vector_length> out_vector;
+#pragma unroll
+                            for (std::size_t cell_i = 0; cell_i < vector_length; cell_i++) {
+                                out_vector[cell_i] =
+                                    sycl::id<2>(r, vect_c * vector_length + cell_i);
+                            }
+                            out_pipe::write(out_vector);
                         }
                     }
                 });
             });
 
-            grid.template submit_write<out_pipe, 1, tile_height, tile_width>(output_kernel_queue,
-                                                                             tile_r, tile_c);
+            grid.template submit_write<out_pipe, vector_length, tile_height, tile_width>(
+                output_kernel_queue, tile_r, tile_c);
         }
     }
 
     using GridAccessor = TestGrid::template GridAccessor<access::mode::read_write>;
     GridAccessor out_ac(grid);
-    for (std::size_t r = 0; r < 3 * tile_height; r++) {
-        for (std::size_t c = 0; c < 3 * tile_width; c++) {
+    for (std::size_t r = 0; r < grid_height; r++) {
+        for (std::size_t c = 0; c < grid_width; c++) {
             REQUIRE(out_ac[r][c][0] == r);
             REQUIRE(out_ac[r][c][1] == c);
         }
     }
+}
+
+TEST_CASE("tiling::Grid::submit_write", "[tiling::Grid]") {
+    test_tiling_submit_write<1>();
+    test_tiling_submit_write<2>();
+    test_tiling_submit_write<4>();
 }

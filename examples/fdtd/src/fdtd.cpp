@@ -180,11 +180,14 @@ int main(int argc, char **argv) {
 #endif
 
     StencilUpdate simulation({
-        .transition_function = KernelImpl(parameters, mat_resolver), .halo_value = CellImpl::halo(),
-        .iteration_offset = 0, .n_iterations = parameters.n_timesteps(), .device = device,
+        .transition_function = KernelImpl(parameters, mat_resolver),
+        .halo_value = CellImpl::halo(),
+        .iteration_offset = 0,
+        .n_iterations = parameters.n_timesteps(),
+        .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
 #if !defined(STENCILSTREAM_BACKEND_CPU)
-            .profiling = true, // enable additional profiling for FPGA targets
+        .profiling = true, // enable additional profiling for FPGA targets
 #endif
     });
 

@@ -411,17 +411,21 @@ template <typename Cell> class Grid {
                     uindex_r_t(std::min(grid_height - tile_r * tile_height, tile_height));
 
                 std::size_t c_offset = tile_c * tile_width;
-                uindex_c_t end_local_c =
-                    uindex_c_t(std::min(grid_width - tile_c * tile_width, tile_width));
+                uindex_c_t end_vect_local_c = uindex_c_t(int_ceil_div(
+                    std::min(grid_width - tile_c * tile_width, tile_width), vector_length));
 
                 [[intel::loop_coalesce(2)]] for (uindex_r_t local_r = 0; local_r < end_local_r;
                                                  local_r++) {
-                    for (uindex_c_t local_c = 0; local_c < end_local_c; local_c += vector_length) {
+                    for (uindex_c_t vect_local_c = 0; vect_local_c < end_vect_local_c;
+                         vect_local_c++) {
                         std::array<Cell, vector_length> cell_vector = out_pipe::read();
+                        std::size_t r = r_offset + std::size_t(local_r);
+                        std::size_t c = c_offset + std::size_t(vect_local_c) * vector_length;
 #pragma unroll
                         for (std::size_t i_cell = 0; i_cell < vector_length; i_cell++) {
-                            grid_ac[r_offset + std::size_t(local_r)]
-                                   [c_offset + std::size_t(local_c) + i_cell] = cell_vector[i_cell];
+                            if (c + i_cell < grid_width) {
+                                grid_ac[r][c + i_cell] = cell_vector[i_cell];
+                            }
                         }
                     }
                 }
