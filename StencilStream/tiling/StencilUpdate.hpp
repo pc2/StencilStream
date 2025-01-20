@@ -145,9 +145,9 @@ class StencilUpdateKernel {
          * optimizes them away.
          */
         [[intel::fpga_memory,
-          intel::numbanks(2 * std::bit_ceil(n_processing_elements))]] Padded<Cell>
-            cache[2][max_input_tile_width][std::bit_ceil(n_processing_elements)]
-                 [stencil_diameter - 1];
+          intel::numbanks(
+              2 * std::bit_ceil(n_processing_elements))]] std::array<Cell, stencil_diameter - 1>
+            cache[2][max_input_tile_width][std::bit_ceil(n_processing_elements)];
         [[intel::fpga_register]] Cell stencil_buffer[n_processing_elements][stencil_diameter]
                                                     [stencil_diameter];
 
@@ -206,6 +206,9 @@ class StencilUpdateKernel {
 
                     // Update the stencil buffer and cache with previous cache contents and the new
                     // input cell.
+                    std::array<Cell, stencil_diameter - 1> in_cache_word =
+                        cache[input_tile_r[0]][input_tile_c][i_processing_element];
+                    std::array<Cell, stencil_diameter - 1> out_cache_word;
 #pragma unroll
                     for (uindex_stencil_t cache_r = 0; cache_r < uindex_stencil_t(stencil_diameter);
                          cache_r++) {
@@ -217,19 +220,16 @@ class StencilUpdateKernel {
 
                             new_value = is_halo ? halo_value : carry;
                         } else {
-                            new_value =
-                                cache[input_tile_r[0]][input_tile_c][i_processing_element][cache_r]
-                                    .value;
+                            new_value = in_cache_word[cache_r];
                         }
 
                         stencil_buffer[i_processing_element][cache_r][stencil_diameter - 1] =
                             new_value;
                         if (cache_r > 0) {
-                            cache[(~input_tile_r)[0]][input_tile_c][i_processing_element]
-                                 [cache_r - 1]
-                                     .value = new_value;
+                            out_cache_word[cache_r - 1] = new_value;
                         }
                     }
+                    cache[(~input_tile_r)[0]][input_tile_c][i_processing_element] = out_cache_word;
 
                     std::size_t pe_iteration =
                         i_iteration +

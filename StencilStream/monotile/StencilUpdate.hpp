@@ -171,8 +171,9 @@ class StencilUpdateKernel {
          * optimizes them away.
          */
         [[intel::fpga_memory,
-          intel::numbanks(2 * std::bit_ceil(n_processing_elements))]] Padded<Cell>
-            cache[2][max_grid_width][std::bit_ceil(n_processing_elements)][stencil_diameter - 1];
+          intel::numbanks(
+              2 * std::bit_ceil(n_processing_elements))]] std::array<Cell, stencil_diameter - 1>
+            cache[2][max_grid_width][std::bit_ceil(n_processing_elements)];
         [[intel::fpga_register]] Cell stencil_buffer[n_processing_elements][stencil_diameter]
                                                     [stencil_diameter];
 
@@ -209,6 +210,10 @@ class StencilUpdateKernel {
 
                 // Update the stencil buffer and cache with previous cache contents and the new
                 // input cell.
+                std::array<Cell, stencil_diameter - 1> in_cache_word =
+                    cache[r[i_processing_element][0]][c[i_processing_element]]
+                         [i_processing_element];
+                std::array<Cell, stencil_diameter - 1> out_cache_word;
 #pragma unroll
                 for (uindex_stencil_t cache_r = 0; cache_r < uindex_stencil_t(stencil_diameter);
                      cache_r++) {
@@ -216,18 +221,16 @@ class StencilUpdateKernel {
                     if (cache_r == uindex_stencil_t(stencil_diameter - 1)) {
                         new_value = carry;
                     } else {
-                        new_value = cache[r[i_processing_element][0]][c[i_processing_element]]
-                                         [i_processing_element][cache_r]
-                                             .value;
+                        new_value = in_cache_word[cache_r];
                     }
 
                     stencil_buffer[i_processing_element][cache_r][stencil_diameter - 1] = new_value;
                     if (cache_r > 0) {
-                        cache[(~r[i_processing_element])[0]][c[i_processing_element]]
-                             [i_processing_element][cache_r - 1]
-                                 .value = new_value;
+                        out_cache_word[cache_r - 1] = new_value;
                     }
                 }
+                cache[(~r[i_processing_element])[0]][c[i_processing_element]]
+                     [i_processing_element] = out_cache_word;
 
                 uindex_1d_t pe_iteration = i_processing_element / TransFunc::n_subiterations;
 
