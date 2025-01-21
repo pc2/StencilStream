@@ -7,7 +7,7 @@ using CairoMakie
 function parse_report_js(path)
     fields = Dict{String,Any}()
     for line in readlines(path)
-        if occursin("fileNDJSON", line)
+        if occursin("fileNDJSON", line) || occursin("fileNDJSON", line)
             continue # Avoiding to load all source files. They're too big for REs.
         end
 
@@ -30,7 +30,12 @@ function load_report_details(report_path)
     end
 
     quartus_data = parse_report_js("$report_path/resources/quartus_data.js")
-    parse(Float32, quartus_data["quartusNDJSON"][1]["quartusFitClockSummary"]["nodes"][1]["kernel clock"]) * 1e6
+    # Checking whether this is an >=25.0.0 report.
+    if "quartusNDJSON" ∈ keys(quartus_data)
+        parse(Float32, quartus_data["quartusNDJSON"][1]["quartusFitClockSummary"]["nodes"][1]["kernel clock"]) * 1e6
+    else
+        parse(Float32, quartus_data["quartusJSON"]["quartusFitClockSummary"]["nodes"][1]["kernel clock"]) * 1e6
+    end
 end
 
 struct BenchmarkInformation
