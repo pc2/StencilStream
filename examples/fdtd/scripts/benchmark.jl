@@ -2,8 +2,9 @@
 include("../../../scripts/benchmark-common.jl")
 
 const N_SUBITERATIONS = 2
-const N_TILING_CUS = 190
-const N_MONOTILE_CUS = 200
+const N_TILING_CUS = 100
+const N_MONOTILE_CUS = 100
+const VECTOR_LENGTH = 2
 const OPERATIONS_PER_CELL = 8 + (6 + 4 + 2 + 2 + 2) # Including all paths, excluding source wave computation
 const CELL_SIZE = 4 * (4 + 4) # bytes, including material coefficients
 const MONO_TILE_HEIGHT = 512
@@ -64,6 +65,7 @@ function max_perf_benchmark(exe, variant, f, loop_latency)
         OPERATIONS_PER_CELL,
         variant,
         n_cus,
+        VECTOR_LENGTH,
         tile_height,
         tile_width,
         f,
@@ -150,6 +152,7 @@ function scaling_benchmark(exe, variant, f, loop_latency)
                     OPERATIONS_PER_CELL,
                     variant,
                     n_cus,
+                    VECTOR_LENGTH,
                     tile_height,
                     tile_width,
                     f,

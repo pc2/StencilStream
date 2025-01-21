@@ -2,8 +2,9 @@
 include("../../../scripts/benchmark-common.jl")
 
 const N_SUBITERATIONS = 3
-const N_REPLICATIONS = 8
+const N_REPLICATIONS = 7
 const N_CUS = N_SUBITERATIONS * N_REPLICATIONS
+const VECTOR_LENGTH = 1
 const OPERATIONS_PER_CELL = (5 + 5 + 3 + 6 + 6 + 6) + (10 + 3 + 2 + 14 + 3 + 2) + 2
 const CELL_SIZE = 88 # bytes
 const TILE_NX = 2^16
@@ -70,6 +71,7 @@ function default_benchmark()
             OPERATIONS_PER_CELL,
             :monotile,
             N_CUS,
+            VECTOR_LENGTH,
             TILE_NX,
             TILE_NY,
             f,

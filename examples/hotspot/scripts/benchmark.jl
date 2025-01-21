@@ -5,8 +5,9 @@ using Statistics
 
 const OPERATIONS_PER_CELL = 15
 const CELL_SIZE = 8 # bytes
-const N_MONOTILE_CUS = 280
-const N_TILING_CUS = 200
+const N_MONOTILE_CUS = 35
+const N_TILING_CUS = 20
+const VECTOR_LENGTH = 8
 const MONO_TILE_HEIGHT = 1024
 const TILING_TILE_HEIGHT = 2^16
 const TILE_WIDTH = 1024
@@ -30,7 +31,7 @@ function max_perf_benchmark(exec, variant, f, loop_latency)
         n_cus = N_MONOTILE_CUS
         grid_height = MONO_TILE_HEIGHT
         grid_width = TILE_WIDTH
-        n_iters = 1_000n_cus
+        n_iters = 10_000n_cus
         n_samples = 10
     elseif variant == :tiling
         n_cus = N_TILING_CUS
@@ -79,6 +80,7 @@ function max_perf_benchmark(exec, variant, f, loop_latency)
         OPERATIONS_PER_CELL,
         variant,
         n_cus,
+        VECTOR_LENGTH,
         tile_height,
         TILE_WIDTH,
         f,
@@ -145,6 +147,7 @@ function scaling_benchmark(exec, variant, f, loop_latency)
                 OPERATIONS_PER_CELL,
                 variant,
                 (variant == :monotile) ? N_MONOTILE_CUS : N_TILING_CUS,
+                VECTOR_LENGTH,
                 (variant == :monotile) ? MONO_TILE_HEIGHT : TILING_TILE_HEIGHT,
                 TILE_WIDTH,
                 f,
