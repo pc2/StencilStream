@@ -6,7 +6,7 @@ using Statistics
 const OPERATIONS_PER_CELL = 15
 const CELL_SIZE = 8 # bytes
 const N_MONOTILE_CUS = 35
-const N_TILING_CUS = 20
+const N_TILING_CUS = 25
 const VECTOR_LENGTH = 8
 const MONO_TILE_HEIGHT = 1024
 const TILING_TILE_HEIGHT = 2^16
