@@ -18,7 +18,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "../GridTest.hpp"
-#include "../constants.hpp"
 #include <CL/sycl.hpp>
 #include <StencilStream/tiling/Grid.hpp>
 #include <catch2/catch_all.hpp>
@@ -29,31 +28,31 @@ using namespace stencil::tiling;
 using namespace sycl;
 using namespace std;
 
-const std::size_t add_grid_height = grid_height + 1;
-const std::size_t add_grid_width = grid_width + 1;
-
 // Assert that the tiled grid fulfills the grid concept.
 static_assert(concepts::Grid<Grid<sycl::id<2>, 1>, sycl::id<2>>);
 
+// Using an arbitrary, but non-quadratic and non-power-of-two grid size for testing.
+// This should catch most of the nasties.
 TEST_CASE("tiling::Grid::Grid", "[tiling::Grid]") {
-    grid_test::test_constructors<Grid<sycl::id<2>, 1>>(add_grid_height, add_grid_width);
+    grid_test::test_constructors<Grid<sycl::id<2>, 1>>(129, 65);
 }
 
 TEST_CASE("tiling::Grid::copy_from_buffer", "[tiling::Grid]") {
-    grid_test::test_copy_from_buffer<Grid<sycl::id<2>, 1>>(add_grid_height, add_grid_width);
+    grid_test::test_copy_from_buffer<Grid<sycl::id<2>, 1>>(129, 65);
 }
 
 TEST_CASE("tiling::Grid::copy_to_buffer", "[tiling::Grid]") {
-    grid_test::test_copy_to_buffer<Grid<sycl::id<2>, 1>>(add_grid_height, add_grid_width);
+    grid_test::test_copy_to_buffer<Grid<sycl::id<2>, 1>>(129, 65);
 }
 
 TEST_CASE("tiling::Grid::make_similar", "[tiling::Grid]") {
-    grid_test::test_make_similar<Grid<sycl::id<2>, 1>>(add_grid_height, add_grid_width);
+    grid_test::test_make_similar<Grid<sycl::id<2>, 1>>(129, 65);
 }
 
-template <std::size_t vector_length, std::size_t halo_height, std::size_t halo_width>
+template <std::size_t spatial_parallelism, std::size_t tile_height, std::size_t tile_width,
+          std::size_t halo_height, std::size_t halo_width>
 void test_tiling_submit_read(std::size_t grid_height, std::size_t grid_width) {
-    using TestGrid = Grid<sycl::id<2>, vector_length>;
+    using TestGrid = Grid<sycl::id<2>, spatial_parallelism>;
 
     TestGrid grid(grid_height, grid_width);
     {
@@ -74,7 +73,7 @@ void test_tiling_submit_read(std::size_t grid_height, std::size_t grid_width) {
     for (std::size_t tile_r = 0; tile_r < tile_range[0]; tile_r++) {
         for (std::size_t tile_c = 0; tile_c < tile_range[1]; tile_c++) {
             using in_pipe = sycl::pipe<class tiled_grid_submit_read_test_id,
-                                       std::array<sycl::id<2>, vector_length>>;
+                                       std::array<sycl::id<2>, spatial_parallelism>>;
 
             grid.template submit_read<in_pipe, tile_height, tile_width, halo_height, halo_width>(
                 input_kernel_queue, tile_r, tile_c, sycl::id<2>(-1, -1));
@@ -84,8 +83,8 @@ void test_tiling_submit_read(std::size_t grid_height, std::size_t grid_width) {
             int row_offset = tile_r * tile_height - halo_height;
 
             int vect_output_tile_width = int_ceil_div<int>(
-                std::min(tile_width, grid_width - tile_c * tile_width), vector_length);
-            int output_tile_width = vect_output_tile_width * vector_length;
+                std::min(tile_width, grid_width - tile_c * tile_width), spatial_parallelism);
+            int output_tile_width = vect_output_tile_width * spatial_parallelism;
             int input_tile_width = output_tile_width + 2 * halo_width;
             int column_offset = tile_c * tile_width - halo_width;
 
@@ -97,10 +96,11 @@ void test_tiling_submit_read(std::size_t grid_height, std::size_t grid_width) {
                 cgh.single_task([=]() {
                     for (int local_r = 0; local_r < input_tile_height; local_r++) {
                         for (int local_c = 0; local_c < input_tile_width;
-                             local_c += vector_length) {
-                            std::array<sycl::id<2>, vector_length> read_vector = in_pipe::read();
+                             local_c += spatial_parallelism) {
+                            std::array<sycl::id<2>, spatial_parallelism> read_vector =
+                                in_pipe::read();
 #pragma unroll
-                            for (int i_cell = 0; i_cell < vector_length; i_cell++) {
+                            for (int i_cell = 0; i_cell < spatial_parallelism; i_cell++) {
                                 out_ac[local_r][local_c + i_cell] = read_vector[i_cell];
                             }
                         }
@@ -128,21 +128,25 @@ void test_tiling_submit_read(std::size_t grid_height, std::size_t grid_width) {
 }
 
 TEST_CASE("tiling::Grid::submit_read", "[tiling::Grid]") {
-    test_tiling_submit_read<1, 1, 1>(3 * tile_height, 3 * tile_width);
-    test_tiling_submit_read<1, 1, 1>(tile_height - 1, tile_width - 1);
+    constexpr std::size_t tile_height = 64;
+    constexpr std::size_t tile_width = 32;
 
-    test_tiling_submit_read<2, 1, 2>(3 * tile_height, 3 * tile_width);
-    test_tiling_submit_read<2, 1, 2>(tile_height - 1, tile_width - 1);
+    test_tiling_submit_read<1, tile_height, tile_width, 1, 1>(3 * tile_height, 3 * tile_width);
+    test_tiling_submit_read<1, tile_height, tile_width, 1, 1>(tile_height - 1, tile_width - 1);
 
-    test_tiling_submit_read<4, 1, 4>(3 * tile_height, 3 * tile_width);
-    test_tiling_submit_read<4, 1, 4>(tile_height - 1, tile_width - 1);
+    test_tiling_submit_read<2, tile_height, tile_width, 1, 2>(3 * tile_height, 3 * tile_width);
+    test_tiling_submit_read<2, tile_height, tile_width, 1, 2>(tile_height - 1, tile_width - 1);
+
+    test_tiling_submit_read<4, tile_height, tile_width, 1, 4>(3 * tile_height, 3 * tile_width);
+    test_tiling_submit_read<4, tile_height, tile_width, 1, 4>(tile_height - 1, tile_width - 1);
 }
 
-template <std::size_t vector_length> void test_tiling_submit_write() {
-    using TestGrid = Grid<sycl::id<2>, vector_length>;
+template <std::size_t spatial_parallelism, std::size_t tile_height, std::size_t tile_width>
+void test_tiling_submit_write() {
+    using TestGrid = Grid<sycl::id<2>, spatial_parallelism>;
 
-    using out_pipe =
-        sycl::pipe<class tiled_grid_submit_write_test_id, std::array<sycl::id<2>, vector_length>>;
+    using out_pipe = sycl::pipe<class tiled_grid_submit_write_test_id,
+                                std::array<sycl::id<2>, spatial_parallelism>>;
 
     sycl::queue output_kernel_queue =
         sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
@@ -158,20 +162,20 @@ template <std::size_t vector_length> void test_tiling_submit_write() {
             working_queue.submit([&](sycl::handler &cgh) {
                 std::size_t r_start = tile_r * tile_height;
                 std::size_t r_end = r_start + std::min(tile_height, grid_height - r_start);
-                std::size_t vect_c_start = (tile_c * tile_width) / vector_length;
+                std::size_t vect_c_start = (tile_c * tile_width) / spatial_parallelism;
                 std::size_t vect_c_end =
                     vect_c_start +
                     int_ceil_div(std::min(tile_width, grid_width - tile_c * tile_width),
-                                 vector_length);
+                                 spatial_parallelism);
 
                 cgh.single_task([=]() {
                     for (std::size_t r = r_start; r < r_end; r++) {
                         for (std::size_t vect_c = vect_c_start; vect_c < vect_c_end; vect_c++) {
-                            std::array<sycl::id<2>, vector_length> out_vector;
+                            std::array<sycl::id<2>, spatial_parallelism> out_vector;
 #pragma unroll
-                            for (std::size_t cell_i = 0; cell_i < vector_length; cell_i++) {
+                            for (std::size_t cell_i = 0; cell_i < spatial_parallelism; cell_i++) {
                                 out_vector[cell_i] =
-                                    sycl::id<2>(r, vect_c * vector_length + cell_i);
+                                    sycl::id<2>(r, vect_c * spatial_parallelism + cell_i);
                             }
                             out_pipe::write(out_vector);
                         }
@@ -195,7 +199,10 @@ template <std::size_t vector_length> void test_tiling_submit_write() {
 }
 
 TEST_CASE("tiling::Grid::submit_write", "[tiling::Grid]") {
-    test_tiling_submit_write<1>();
-    test_tiling_submit_write<2>();
-    test_tiling_submit_write<4>();
+    constexpr std::size_t tile_height = 64;
+    constexpr std::size_t tile_width = 32;
+
+    test_tiling_submit_write<1, tile_height, tile_width>();
+    test_tiling_submit_write<2, tile_height, tile_width>();
+    test_tiling_submit_write<4, tile_height, tile_width>();
 }

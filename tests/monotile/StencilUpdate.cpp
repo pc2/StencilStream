@@ -23,7 +23,6 @@
 #include "../HostPipe.hpp"
 #include "../StencilUpdateTest.hpp"
 #include "../TransFuncs.hpp"
-#include "../constants.hpp"
 #include <StencilStream/monotile/StencilUpdate.hpp>
 #include <catch2/catch_all.hpp>
 
@@ -31,26 +30,31 @@ using namespace sycl;
 using namespace stencil;
 using namespace stencil::monotile;
 
-template <std::size_t my_vector_length>
+constexpr std::size_t stencil_radius = 2;
+constexpr std::size_t tile_height = 64;
+constexpr std::size_t tile_width = 32;
+constexpr std::size_t temporal_parallelism = 2;
+using TransFunc = HostTransFunc<stencil_radius>;
+
+template <std::size_t spatial_parallelism>
 void test_monotile_kernel(std::size_t grid_height, std::size_t grid_width,
                           std::size_t iteration_offset, std::size_t target_i_iteration) {
-    using TransFunc = HostTransFunc<stencil_radius>;
     using in_pipe =
-        HostPipe<class MonotileExecutionKernelInPipeID, std::array<Cell, my_vector_length>>;
+        HostPipe<class MonotileExecutionKernelInPipeID, std::array<Cell, spatial_parallelism>>;
     using out_pipe =
-        HostPipe<class MonotileExecutionKernelOutPipeID, std::array<Cell, my_vector_length>>;
+        HostPipe<class MonotileExecutionKernelOutPipeID, std::array<Cell, spatial_parallelism>>;
     using GlobalState = tdv::single_pass::InlineStrategy::GlobalState<TransFunc, 1>;
     using KernelArgument = typename GlobalState::KernelArgument;
     using TestExecutionKernel =
-        StencilUpdateKernel<TransFunc, KernelArgument, n_processing_elements, my_vector_length,
+        StencilUpdateKernel<TransFunc, KernelArgument, temporal_parallelism, spatial_parallelism,
                             tile_height, tile_width, in_pipe, out_pipe>;
 
     sycl::queue working_queue;
 
     for (std::size_t r = 0; r < grid_height; r++) {
-        for (std::size_t c = 0; c < grid_width; c += my_vector_length) {
-            std::array<Cell, my_vector_length> vector;
-            for (std::size_t i_cell = 0; i_cell < my_vector_length; i_cell++) {
+        for (std::size_t c = 0; c < grid_width; c += spatial_parallelism) {
+            std::array<Cell, spatial_parallelism> vector;
+            for (std::size_t i_cell = 0; i_cell < spatial_parallelism; i_cell++) {
                 vector[i_cell] =
                     Cell{int(r), int(c + i_cell), int(iteration_offset), 0, CellStatus::Normal};
             }
@@ -66,9 +70,9 @@ void test_monotile_kernel(std::size_t grid_height, std::size_t grid_width,
     kernel();
 
     for (std::size_t r = 0; r < grid_height; r++) {
-        for (std::size_t c = 0; c < grid_width; c += my_vector_length) {
-            std::array<Cell, my_vector_length> vector = out_pipe::read();
-            for (std::size_t i_cell = 0; i_cell < my_vector_length; i_cell++) {
+        for (std::size_t c = 0; c < grid_width; c += spatial_parallelism) {
+            std::array<Cell, spatial_parallelism> vector = out_pipe::read();
+            for (std::size_t i_cell = 0; i_cell < spatial_parallelism; i_cell++) {
                 if (c + i_cell >= grid_width) {
                     break;
                 }
@@ -84,39 +88,40 @@ void test_monotile_kernel(std::size_t grid_height, std::size_t grid_width,
 }
 
 TEST_CASE("monotile::StencilUpdateKernel", "[monotile::StencilUpdateKernel]") {
+    std::size_t n_processing_elements = temporal_parallelism * TransFunc::n_subiterations;
     std::size_t n_steps =
-        (std::log2(tile_height) - 1) * (std::log2(tile_width) - 1) * (iters_per_pass - 1);
+        (std::log2(tile_height) - 1) * (std::log2(tile_width) - 1) * (n_processing_elements - 1);
     double progress = 0.0;
     double progress_per_step = 80 / double(n_steps);
     std::cout << "Progress monotile::StencilUpdateKernel: ";
 
     for (std::size_t grid_height = stencil_radius; grid_height <= tile_height; grid_height *= 2) {
         for (std::size_t grid_width = stencil_radius; grid_width <= tile_width; grid_width *= 2) {
-            for (std::size_t iters = 1; iters <= iters_per_pass; iters++) {
+            for (std::size_t iters = 1; iters <= temporal_parallelism; iters++) {
                 test_monotile_kernel<1>(grid_height, grid_width, 0, iters);
-                test_monotile_kernel<1>(grid_height, grid_width, iters_per_pass,
-                                        iters_per_pass + iters);
+                test_monotile_kernel<1>(grid_height, grid_width, temporal_parallelism,
+                                        temporal_parallelism + iters);
 
                 test_monotile_kernel<4>(grid_height, grid_width, 0, iters);
-                test_monotile_kernel<4>(grid_height, grid_width, iters_per_pass,
-                                        iters_per_pass + iters);
+                test_monotile_kernel<4>(grid_height, grid_width, temporal_parallelism,
+                                        temporal_parallelism + iters);
 
                 if (grid_height > stencil_radius) {
                     test_monotile_kernel<4>(grid_height - 1, grid_width, 0, iters);
-                    test_monotile_kernel<4>(grid_height - 1, grid_width, iters_per_pass,
-                                            iters_per_pass + iters);
+                    test_monotile_kernel<4>(grid_height - 1, grid_width, temporal_parallelism,
+                                            temporal_parallelism + iters);
                 }
 
                 if (grid_width > stencil_radius) {
                     test_monotile_kernel<4>(grid_height, grid_width - 1, 0, iters);
-                    test_monotile_kernel<4>(grid_height, grid_width - 1, iters_per_pass,
-                                            iters_per_pass + iters);
+                    test_monotile_kernel<4>(grid_height, grid_width - 1, temporal_parallelism,
+                                            temporal_parallelism + iters);
                 }
 
                 if (grid_height > stencil_radius && grid_width > stencil_radius) {
                     test_monotile_kernel<4>(grid_height - 1, grid_width - 1, 0, iters);
-                    test_monotile_kernel<4>(grid_height - 1, grid_width - 1, iters_per_pass,
-                                            iters_per_pass + iters);
+                    test_monotile_kernel<4>(grid_height - 1, grid_width - 1, temporal_parallelism,
+                                            temporal_parallelism + iters);
                 }
 
                 if (std::ceil(progress) < std::ceil(progress + progress_per_step)) {
@@ -130,24 +135,25 @@ TEST_CASE("monotile::StencilUpdateKernel", "[monotile::StencilUpdateKernel]") {
     std::cout << std::endl;
 }
 
-template <typename TDVStrategy, std::size_t my_vector_length> void test_monotile_update() {
-    using StencilUpdateImpl = StencilUpdate<FPGATransFunc<1>, n_processing_elements,
-                                            my_vector_length, tile_height, tile_width, TDVStrategy>;
+template <typename TDVStrategy, std::size_t spatial_parallelism> void test_monotile_update() {
+    using StencilUpdateImpl =
+        StencilUpdate<FPGATransFunc<1>, temporal_parallelism, spatial_parallelism, tile_height,
+                      tile_width, TDVStrategy>;
     using GridImpl = StencilUpdateImpl::GridImpl;
     static_assert(concepts::StencilUpdate<StencilUpdateImpl, FPGATransFunc<1>, GridImpl>);
 
     for (std::size_t grid_height = tile_height / 2; grid_height <= tile_height; grid_height *= 2) {
         for (std::size_t grid_width = tile_width / 2; grid_width <= tile_width; grid_width *= 2) {
             test_stencil_update<GridImpl, StencilUpdateImpl>(grid_height, grid_width, 0,
-                                                             iters_per_pass);
+                                                             temporal_parallelism);
             test_stencil_update<GridImpl, StencilUpdateImpl>(grid_height, grid_width, 1,
-                                                             iters_per_pass);
+                                                             temporal_parallelism);
             test_stencil_update<GridImpl, StencilUpdateImpl>(grid_height, grid_width, 0,
-                                                             iters_per_pass + 1);
+                                                             temporal_parallelism + 1);
             test_stencil_update<GridImpl, StencilUpdateImpl>(grid_height - 1, grid_width, 0,
-                                                             iters_per_pass + 1);
+                                                             temporal_parallelism + 1);
             test_stencil_update<GridImpl, StencilUpdateImpl>(grid_height, grid_width - 1, 0,
-                                                             iters_per_pass + 1);
+                                                             temporal_parallelism + 1);
         }
     }
 }

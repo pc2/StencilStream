@@ -59,16 +59,10 @@ namespace tiling {
  *
  * \tparam Cell The cell type to store.
  *
- * \tparam tile_height The height of a grid tile. This has to match the tile height of the used \ref
- * StencilUpdate class instance.
- *
- * \tparam tile_width The width of a grid tile. This has to match the tile width of the used \ref
- * StencilUpdate class instance.
- *
- * \tparam halo_radius The halo radius required for input tiles. This has to be the number of PEs in
- * a \ref StencilUpdate times the stencil radius of the implemented transition function.
+ * \tparam spatial_parallelism The number of cells to load and store in parallel. Has to match the
+ * `spatial_parallelism` parameter for a \ref StencilUpdate instance.
  */
-template <typename Cell, std::size_t vector_length> class Grid {
+template <typename Cell, std::size_t spatial_parallelism> class Grid {
   public:
     /**
      * \brief The number of dimensions of the grid.
@@ -85,7 +79,7 @@ template <typename Cell, std::size_t vector_length> class Grid {
      * \param grid_width The width, or number of columns, of the new grid.
      */
     Grid(std::size_t grid_height, std::size_t grid_width)
-        : grid_buffer(sycl::range<2>(grid_height, int_ceil_div(grid_width, vector_length))),
+        : grid_buffer(sycl::range<2>(grid_height, int_ceil_div(grid_width, spatial_parallelism))),
           grid_range(grid_height, grid_width) {}
 
     /**
@@ -95,7 +89,7 @@ template <typename Cell, std::size_t vector_length> class Grid {
      * index will be the width of the grid.
      */
     Grid(sycl::range<2> range)
-        : grid_buffer(sycl::range<2>(range[0], int_ceil_div(range[1], vector_length))),
+        : grid_buffer(sycl::range<2>(range[0], int_ceil_div(range[1], spatial_parallelism))),
           grid_range(range) {}
 
     /**
@@ -107,8 +101,9 @@ template <typename Cell, std::size_t vector_length> class Grid {
      * \param input_buffer The buffer with the contents of the new grid.
      */
     Grid(sycl::buffer<Cell, 2> input_buffer)
-        : grid_buffer(sycl::range<2>(input_buffer.get_range()[0],
-                                     int_ceil_div(input_buffer.get_range()[1], vector_length))),
+        : grid_buffer(
+              sycl::range<2>(input_buffer.get_range()[0],
+                             int_ceil_div(input_buffer.get_range()[1], spatial_parallelism))),
           grid_range(input_buffer.get_range()) {
         copy_from_buffer(input_buffer);
     }
@@ -171,7 +166,7 @@ template <typename Cell, std::size_t vector_length> class Grid {
         Cell const &operator[](sycl::id<2> id)
             requires(access_mode == sycl::access::mode::read)
         {
-            return accessor[id[0]][id[1] / vector_length][id[1] % vector_length];
+            return accessor[id[0]][id[1] / spatial_parallelism][id[1] % spatial_parallelism];
         }
 
         /**
@@ -185,11 +180,11 @@ template <typename Cell, std::size_t vector_length> class Grid {
         Cell &operator[](sycl::id<2> id)
             requires(access_mode != sycl::access::mode::read)
         {
-            return accessor[id[0]][id[1] / vector_length][id[1] % vector_length];
+            return accessor[id[0]][id[1] / spatial_parallelism][id[1] % spatial_parallelism];
         }
 
       private:
-        sycl::host_accessor<std::array<Cell, vector_length>, 2, access_mode> accessor;
+        sycl::host_accessor<std::array<Cell, spatial_parallelism>, 2, access_mode> accessor;
     };
 
     /**
@@ -211,7 +206,7 @@ template <typename Cell, std::size_t vector_length> class Grid {
         sycl::host_accessor input_ac{input_buffer, sycl::read_only};
         for (std::size_t r = 0; r < get_grid_height(); r++) {
             for (std::size_t c = 0; c < get_grid_width(); c++) {
-                grid_ac[r][c / vector_length][c % vector_length] = input_ac[r][c];
+                grid_ac[r][c / spatial_parallelism][c % spatial_parallelism] = input_ac[r][c];
             }
         }
     }
@@ -234,7 +229,7 @@ template <typename Cell, std::size_t vector_length> class Grid {
         sycl::host_accessor output_ac{output_buffer, sycl::write_only};
         for (std::size_t r = 0; r < get_grid_height(); r++) {
             for (std::size_t c = 0; c < get_grid_width(); c++) {
-                output_ac[r][c] = grid_ac[r][c / vector_length][c % vector_length];
+                output_ac[r][c] = grid_ac[r][c / spatial_parallelism][c % spatial_parallelism];
             }
         }
     }
@@ -307,8 +302,8 @@ template <typename Cell, std::size_t vector_length> class Grid {
     sycl::event submit_read(sycl::queue &queue, std::size_t tile_r, std::size_t tile_c,
                             Cell halo_value) {
         static_assert(2 * halo_height < tile_height && 2 * halo_width < tile_width);
-        static_assert(halo_width % vector_length == 0);
-        static_assert(tile_width % vector_length == 0);
+        static_assert(halo_width % spatial_parallelism == 0);
+        static_assert(tile_width % spatial_parallelism == 0);
 
         sycl::range<2> tile_range = get_tile_range(tile_height, tile_width);
         std::size_t grid_height = this->get_grid_height();
@@ -332,13 +327,14 @@ template <typename Cell, std::size_t vector_length> class Grid {
                     std::min(tile_height, grid_height - tile_r * tile_height);
                 uindex_r_t input_tile_height = output_tile_height + 2 * halo_height;
 
-                uindex_c_t vect_halo_width = halo_width / vector_length;
-                std::size_t vect_grid_width = int_ceil_div(grid_width, vector_length);
-                std::ptrdiff_t vect_c_offset = (tile_c * tile_width - halo_width) / vector_length;
+                uindex_c_t vect_halo_width = halo_width / spatial_parallelism;
+                std::size_t vect_grid_width = int_ceil_div(grid_width, spatial_parallelism);
+                std::ptrdiff_t vect_c_offset =
+                    (tile_c * tile_width - halo_width) / spatial_parallelism;
                 uindex_c_t output_tile_width =
                     std::min(tile_width, grid_width - tile_c * tile_width);
                 uindex_c_t vect_output_tile_width =
-                    int_ceil_div<std::size_t>(output_tile_width, vector_length);
+                    int_ceil_div<std::size_t>(output_tile_width, spatial_parallelism);
                 uindex_c_t vect_input_tile_width = vect_output_tile_width + 2 * vect_halo_width;
 
                 bool is_left_border_tile = tile_c == 0;
@@ -361,20 +357,21 @@ template <typename Cell, std::size_t vector_length> class Grid {
                         is_halo_vector |=
                             is_bottom_border_tile && local_r >= (output_tile_height + halo_height);
 
-                        std::array<Cell, vector_length> value_vector;
+                        std::array<Cell, spatial_parallelism> value_vector;
                         if (is_halo_vector) {
 #pragma unroll
-                            for (std::size_t i_cell = 0; i_cell < vector_length; i_cell++) {
+                            for (std::size_t i_cell = 0; i_cell < spatial_parallelism; i_cell++) {
                                 value_vector[i_cell] = halo_value;
                             }
                         } else {
                             value_vector = grid_ac[r][vect_c];
 #pragma unroll
-                            for (std::size_t i_cell = 0; i_cell < vector_length; i_cell++) {
+                            for (std::size_t i_cell = 0; i_cell < spatial_parallelism; i_cell++) {
                                 // Additional masking of halo cells if the right-most vector is
                                 // incomplete.
-                                if (is_right_border_tile && vect_local_c * vector_length + i_cell >=
-                                                                output_tile_width + halo_width) {
+                                if (is_right_border_tile &&
+                                    vect_local_c * spatial_parallelism + i_cell >=
+                                        output_tile_width + halo_width) {
                                     value_vector[i_cell] = halo_value;
                                 }
                             }
@@ -417,7 +414,7 @@ template <typename Cell, std::size_t vector_length> class Grid {
      */
     template <typename out_pipe, std::size_t tile_height, std::size_t tile_width>
     sycl::event submit_write(sycl::queue queue, std::size_t tile_r, std::size_t tile_c) {
-        static_assert(tile_width % vector_length == 0);
+        static_assert(tile_width % spatial_parallelism == 0);
 
         if (tile_r >= get_tile_range(tile_height, tile_width)[0] ||
             tile_c >= get_tile_range(tile_height, tile_width)[1]) {
@@ -439,15 +436,15 @@ template <typename Cell, std::size_t vector_length> class Grid {
                 uindex_r_t end_local_r =
                     uindex_r_t(std::min(grid_height - tile_r * tile_height, tile_height));
 
-                std::size_t vect_c_offset = tile_c * tile_width / vector_length;
+                std::size_t vect_c_offset = tile_c * tile_width / spatial_parallelism;
                 uindex_c_t end_vect_local_c = uindex_c_t(int_ceil_div(
-                    std::min(grid_width - tile_c * tile_width, tile_width), vector_length));
+                    std::min(grid_width - tile_c * tile_width, tile_width), spatial_parallelism));
 
                 [[intel::loop_coalesce(2)]] for (uindex_r_t local_r = 0; local_r < end_local_r;
                                                  local_r++) {
                     for (uindex_c_t vect_local_c = 0; vect_local_c < end_vect_local_c;
                          vect_local_c++) {
-                        std::array<Cell, vector_length> cell_vector = out_pipe::read();
+                        std::array<Cell, spatial_parallelism> cell_vector = out_pipe::read();
                         std::size_t r = r_offset + std::size_t(local_r);
                         std::size_t vect_c = vect_c_offset + std::size_t(vect_local_c);
                         grid_ac[r][vect_c] = cell_vector;
@@ -458,7 +455,7 @@ template <typename Cell, std::size_t vector_length> class Grid {
     }
 
   private:
-    sycl::buffer<std::array<Cell, vector_length>, 2> grid_buffer;
+    sycl::buffer<std::array<Cell, spatial_parallelism>, 2> grid_buffer;
     sycl::range<2> grid_range;
 };
 

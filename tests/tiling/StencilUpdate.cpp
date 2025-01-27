@@ -31,34 +31,34 @@ using namespace sycl;
 using namespace stencil;
 using namespace stencil::tiling;
 
-template <std::size_t stencil_radius, std::size_t n_processing_elements, std::size_t vector_length,
-          std::size_t tile_height, std::size_t tile_width>
+template <std::size_t stencil_radius, std::size_t temporal_parallelism,
+          std::size_t spatial_parallelism, std::size_t tile_height, std::size_t tile_width>
 void test_tiling_kernel(std::size_t grid_height, std::size_t grid_width, std::size_t tile_r,
                         std::size_t tile_c, std::size_t iteration_offset,
                         std::size_t target_i_iteration) {
     using TransFunc = FPGATransFunc<stencil_radius>;
-    using CellVector = std::array<typename TransFunc::Cell, vector_length>;
+    using CellVector = std::array<typename TransFunc::Cell, spatial_parallelism>;
     using in_pipe = sycl::pipe<class TilingExecutionKernelInPipeID, CellVector>;
     using out_pipe = sycl::pipe<class TilingExecutionKernelOutPipeID, CellVector>;
     using TDVGlobalState =
-        tdv::single_pass::InlineStrategy::template GlobalState<TransFunc, n_processing_elements>;
+        tdv::single_pass::InlineStrategy::template GlobalState<TransFunc, temporal_parallelism>;
     using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
     using TestExecutionKernel =
-        StencilUpdateKernel<TransFunc, TDVKernelArgument, n_processing_elements, vector_length,
+        StencilUpdateKernel<TransFunc, TDVKernelArgument, temporal_parallelism, spatial_parallelism,
                             tile_height, tile_width, in_pipe, out_pipe>;
 
-    constexpr std::size_t iters_per_pass = n_processing_elements / TransFunc::n_subiterations;
+    constexpr std::size_t n_processing_elements = temporal_parallelism * TransFunc::n_subiterations;
     constexpr std::size_t stencil_buffer_lead =
-        int_ceil_div(stencil_radius, vector_length) * vector_length;
+        int_ceil_div(stencil_radius, spatial_parallelism) * spatial_parallelism;
     constexpr std::size_t halo_height = stencil_radius * n_processing_elements;
     constexpr std::size_t halo_width = stencil_buffer_lead * n_processing_elements;
     // Tile width has to be multiple of vector length.
-    constexpr std::size_t vect_tile_width = tile_width / vector_length;
+    constexpr std::size_t vect_tile_width = tile_width / spatial_parallelism;
 
     std::size_t output_tile_section_height =
         std::min(tile_height, grid_height - tile_r * tile_height);
-    std::size_t vect_output_tile_section_width =
-        std::min(vect_tile_width, int_ceil_div(grid_width - tile_c * tile_width, vector_length));
+    std::size_t vect_output_tile_section_width = std::min(
+        vect_tile_width, int_ceil_div(grid_width - tile_c * tile_width, spatial_parallelism));
 
     sycl::queue working_queue;
 
@@ -66,9 +66,9 @@ void test_tiling_kernel(std::size_t grid_height, std::size_t grid_width, std::si
         // Using negative numbers here to make life easier.
         int start_row = tile_r * tile_height - halo_height;
         int end_row = start_row + output_tile_section_height + 2 * halo_height;
-        int vect_start_column = tile_c * vect_tile_width - (halo_width / vector_length);
-        int vect_end_column =
-            vect_start_column + vect_output_tile_section_width + 2 * (halo_width / vector_length);
+        int vect_start_column = tile_c * vect_tile_width - (halo_width / spatial_parallelism);
+        int vect_end_column = vect_start_column + vect_output_tile_section_width +
+                              2 * (halo_width / spatial_parallelism);
 
         cgh.single_task([=]() {
             for (int r = start_row; r < end_row; r++) {
@@ -76,8 +76,8 @@ void test_tiling_kernel(std::size_t grid_height, std::size_t grid_width, std::si
                     CellVector input_vector;
 
 #pragma unroll
-                    for (int i_cell = 0; i_cell < vector_length; i_cell++) {
-                        int c = vect_c * vector_length + i_cell;
+                    for (int i_cell = 0; i_cell < spatial_parallelism; i_cell++) {
+                        int c = vect_c * spatial_parallelism + i_cell;
                         if (r >= 0 && c >= 0 && r < grid_height && c < grid_width) {
                             input_vector[i_cell] =
                                 Cell{r, c, int(iteration_offset), 0, CellStatus::Normal};
@@ -119,9 +119,9 @@ void test_tiling_kernel(std::size_t grid_height, std::size_t grid_width, std::si
     for (std::size_t local_r = 0; local_r < output_buffer_ac.get_range()[0]; local_r++) {
         for (std::size_t vect_local_c = 0; vect_local_c < output_buffer_ac.get_range()[1];
              vect_local_c++) {
-            for (std::size_t i_cell = 0; i_cell < vector_length; i_cell++) {
+            for (std::size_t i_cell = 0; i_cell < spatial_parallelism; i_cell++) {
                 std::size_t r = tile_r * tile_height + local_r;
-                std::size_t c = tile_c * tile_width + vect_local_c * vector_length + i_cell;
+                std::size_t c = tile_c * tile_width + vect_local_c * spatial_parallelism + i_cell;
 
                 Cell cell = output_buffer_ac[local_r][vect_local_c][i_cell];
                 if (c < grid_width) {
@@ -142,37 +142,39 @@ void test_tiling_kernel(std::size_t grid_height, std::size_t grid_width, std::si
     }
 }
 
-template <std::size_t stencil_radius, std::size_t n_processing_elements, std::size_t vector_length,
-          std::size_t tile_height, std::size_t tile_width>
+template <std::size_t stencil_radius, std::size_t temporal_parallelism,
+          std::size_t spatial_parallelism, std::size_t tile_height, std::size_t tile_width>
 void test_tiling_kernel_on_grid() {
-    auto test_tiling_kernel_impl = &test_tiling_kernel<stencil_radius, n_processing_elements,
-                                                       vector_length, tile_height, tile_width>;
-    constexpr std::size_t iters_per_pass = n_processing_elements / 2;
+    auto test_tiling_kernel_impl =
+        &test_tiling_kernel<stencil_radius, temporal_parallelism, spatial_parallelism, tile_height,
+                            tile_width>;
 
     // All possible tile types (corner, border, core tiles), where each tile is completely filled.
-    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 0, 0, 0, iters_per_pass);
-    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 0, 1, 0, iters_per_pass);
-    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 0, 2, 0, iters_per_pass);
-    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 1, 0, 0, iters_per_pass);
-    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 1, 1, 0, iters_per_pass);
-    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 1, 2, 0, iters_per_pass);
-    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 2, 0, 0, iters_per_pass);
-    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 2, 1, 0, iters_per_pass);
-    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 2, 2, 0, iters_per_pass);
+    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 0, 0, 0, temporal_parallelism);
+    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 0, 1, 0, temporal_parallelism);
+    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 0, 2, 0, temporal_parallelism);
+    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 1, 0, 0, temporal_parallelism);
+    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 1, 1, 0, temporal_parallelism);
+    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 1, 2, 0, temporal_parallelism);
+    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 2, 0, 0, temporal_parallelism);
+    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 2, 1, 0, temporal_parallelism);
+    test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 2, 2, 0, temporal_parallelism);
 
     // Missing bottom row.
-    test_tiling_kernel_impl(tile_height - 1, tile_width, 0, 0, 0, iters_per_pass);
+    test_tiling_kernel_impl(tile_height - 1, tile_width, 0, 0, 0, temporal_parallelism);
     // Missing right column.
-    test_tiling_kernel_impl(tile_height, tile_width - 1, 0, 0, 0, iters_per_pass);
+    test_tiling_kernel_impl(tile_height, tile_width - 1, 0, 0, 0, temporal_parallelism);
     // Both missing bottom row and right column.
-    test_tiling_kernel_impl(tile_height - 1, tile_width - 1, 0, 0, 0, iters_per_pass);
+    test_tiling_kernel_impl(tile_height - 1, tile_width - 1, 0, 0, 0, temporal_parallelism);
 
     // Only a single iteration.
     test_tiling_kernel_impl(tile_height, tile_width, 0, 0, 0, 1);
     // Second pass.
-    test_tiling_kernel_impl(tile_height, tile_width, 0, 0, iters_per_pass, 2 * iters_per_pass);
+    test_tiling_kernel_impl(tile_height, tile_width, 0, 0, temporal_parallelism,
+                            2 * temporal_parallelism);
     // A single iteration for the second pass.
-    test_tiling_kernel_impl(tile_height, tile_width, 0, 0, iters_per_pass, iters_per_pass + 1);
+    test_tiling_kernel_impl(tile_height, tile_width, 0, 0, temporal_parallelism,
+                            temporal_parallelism + 1);
 }
 
 TEST_CASE("tiling::StencilUpdateKernel", "[tiling::StencilUpdateKernel]") {
@@ -199,22 +201,20 @@ TEST_CASE("tiling::StencilUpdateKernel", "[tiling::StencilUpdateKernel]") {
 }
 
 TEST_CASE("tiling::StencilUpdate", "[tiling::StencilUpdate]") {
-    constexpr std::size_t n_processing_elements = 4;
-    constexpr std::size_t iters_per_pass =
-        n_processing_elements * FPGATransFunc<1>::n_subiterations;
+    constexpr std::size_t temporal_parallelism = 2;
     constexpr std::size_t tile_height = 128;
     constexpr std::size_t tile_width = 64;
 
     using StencilUpdateVect1Impl =
-        StencilUpdate<FPGATransFunc<1>, n_processing_elements, 1, tile_height, tile_width>;
+        StencilUpdate<FPGATransFunc<1>, temporal_parallelism, 1, tile_height, tile_width>;
     using GridVect1Impl = Grid<FPGATransFunc<1>::Cell, 1>;
 
     using StencilUpdateVect2Impl =
-        StencilUpdate<FPGATransFunc<1>, n_processing_elements, 2, tile_height, tile_width>;
+        StencilUpdate<FPGATransFunc<1>, temporal_parallelism, 2, tile_height, tile_width>;
     using GridVect2Impl = Grid<FPGATransFunc<1>::Cell, 2>;
 
     using StencilUpdateVect4Impl =
-        StencilUpdate<FPGATransFunc<1>, n_processing_elements, 4, tile_height, tile_width>;
+        StencilUpdate<FPGATransFunc<1>, temporal_parallelism, 4, tile_height, tile_width>;
     using GridVect4Impl = Grid<FPGATransFunc<1>::Cell, 4>;
 
     static_assert(concepts::StencilUpdate<StencilUpdateVect1Impl, FPGATransFunc<1>, GridVect1Impl>);
@@ -227,37 +227,37 @@ TEST_CASE("tiling::StencilUpdate", "[tiling::StencilUpdate]") {
             std::size_t grid_width = (1 + i_grid_width) * (tile_width / 2);
 
             test_stencil_update<GridVect1Impl, StencilUpdateVect1Impl>(grid_height, grid_width, 0,
-                                                                       iters_per_pass);
+                                                                       temporal_parallelism);
             test_stencil_update<GridVect1Impl, StencilUpdateVect1Impl>(grid_height, grid_width, 1,
-                                                                       iters_per_pass);
+                                                                       temporal_parallelism);
             test_stencil_update<GridVect1Impl, StencilUpdateVect1Impl>(grid_height, grid_width, 0,
-                                                                       iters_per_pass + 1);
+                                                                       temporal_parallelism + 1);
             test_stencil_update<GridVect1Impl, StencilUpdateVect1Impl>(grid_height - 1, grid_width,
-                                                                       0, iters_per_pass + 1);
+                                                                       0, temporal_parallelism + 1);
             test_stencil_update<GridVect1Impl, StencilUpdateVect1Impl>(grid_height, grid_width - 1,
-                                                                       0, iters_per_pass + 1);
+                                                                       0, temporal_parallelism + 1);
 
             test_stencil_update<GridVect2Impl, StencilUpdateVect2Impl>(grid_height, grid_width, 0,
-                                                                       iters_per_pass);
+                                                                       temporal_parallelism);
             test_stencil_update<GridVect2Impl, StencilUpdateVect2Impl>(grid_height, grid_width, 1,
-                                                                       iters_per_pass);
+                                                                       temporal_parallelism);
             test_stencil_update<GridVect2Impl, StencilUpdateVect2Impl>(grid_height, grid_width, 0,
-                                                                       iters_per_pass + 1);
+                                                                       temporal_parallelism + 1);
             test_stencil_update<GridVect2Impl, StencilUpdateVect2Impl>(grid_height - 1, grid_width,
-                                                                       0, iters_per_pass + 1);
+                                                                       0, temporal_parallelism + 1);
             test_stencil_update<GridVect2Impl, StencilUpdateVect2Impl>(grid_height, grid_width - 1,
-                                                                       0, iters_per_pass + 1);
+                                                                       0, temporal_parallelism + 1);
 
             test_stencil_update<GridVect4Impl, StencilUpdateVect4Impl>(grid_height, grid_width, 0,
-                                                                       iters_per_pass);
+                                                                       temporal_parallelism);
             test_stencil_update<GridVect4Impl, StencilUpdateVect4Impl>(grid_height, grid_width, 1,
-                                                                       iters_per_pass);
+                                                                       temporal_parallelism);
             test_stencil_update<GridVect4Impl, StencilUpdateVect4Impl>(grid_height, grid_width, 0,
-                                                                       iters_per_pass + 1);
+                                                                       temporal_parallelism + 1);
             test_stencil_update<GridVect4Impl, StencilUpdateVect4Impl>(grid_height - 1, grid_width,
-                                                                       0, iters_per_pass + 1);
+                                                                       0, temporal_parallelism + 1);
             test_stencil_update<GridVect4Impl, StencilUpdateVect4Impl>(grid_height, grid_width - 1,
-                                                                       0, iters_per_pass + 1);
+                                                                       0, temporal_parallelism + 1);
         }
     }
 }

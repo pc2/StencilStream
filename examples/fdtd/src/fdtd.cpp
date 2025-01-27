@@ -48,12 +48,12 @@ using TDVStrategy = tdv::single_pass::PrecomputeOnHostStrategy;
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
     #include <StencilStream/monotile/StencilUpdate.hpp>
 
-using Grid = monotile::Grid<CellImpl, vector_length>;
-using StencilUpdate = monotile::StencilUpdate<KernelImpl, n_processing_elements, vector_length,
+using Grid = monotile::Grid<CellImpl, spatial_parallelism>;
+using StencilUpdate = monotile::StencilUpdate<KernelImpl, temporal_parallelism, spatial_parallelism,
                                               tile_height, tile_width, TDVStrategy>;
 #elif defined(STENCILSTREAM_BACKEND_TILING)
     #include <StencilStream/tiling/StencilUpdate.hpp>
-using StencilUpdate = tiling::StencilUpdate<KernelImpl, n_processing_elements, vector_length,
+using StencilUpdate = tiling::StencilUpdate<KernelImpl, temporal_parallelism, spatial_parallelism,
                                             tile_height, tile_width, TDVStrategy>;
 using Grid = StencilUpdate::GridImpl;
 #elif defined(STENCILSTREAM_BACKEND_CPU)

@@ -18,7 +18,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "constants.hpp"
 #include <StencilStream/Concepts.hpp>
 #include <catch2/catch_all.hpp>
 
@@ -29,9 +28,9 @@ void test_constructors(std::size_t grid_height, std::size_t grid_width) {
     REQUIRE(grid.get_grid_height() == 1);
     REQUIRE(grid.get_grid_width() == 1);
 
-    grid = G(tile_height, tile_width);
-    REQUIRE(grid.get_grid_height() == tile_height);
-    REQUIRE(grid.get_grid_width() == tile_width);
+    grid = G(grid_height / 2, grid_width / 2);
+    REQUIRE(grid.get_grid_height() == grid_height / 2);
+    REQUIRE(grid.get_grid_width() == grid_width / 2);
 
     grid = G(grid_height, grid_width);
     REQUIRE(grid.get_grid_height() == grid_height);

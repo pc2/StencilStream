@@ -239,17 +239,14 @@ using PseudoTransientUpdate = cpu::StencilUpdate<PseudoTransientKernel>;
 using ThermalSolverUpdate = cpu::StencilUpdate<ThermalSolverKernel>;
 
 #else
-//
 constexpr size_t max_nx = 1 << 16;
 constexpr size_t max_ny = 512;
-constexpr size_t vector_length = 1;
-using Grid = monotile::Grid<ThermalConvectionCell, vector_length>;
+constexpr size_t spatial_parallelism = 1;
+using Grid = monotile::Grid<ThermalConvectionCell, spatial_parallelism>;
 using PseudoTransientUpdate =
-    monotile::StencilUpdate<PseudoTransientKernel, PseudoTransientKernel::n_subiterations * 7,
-                            vector_length, max_nx, max_ny>;
+    monotile::StencilUpdate<PseudoTransientKernel, 7, spatial_parallelism, max_nx, max_ny>;
 using ThermalSolverUpdate =
-    monotile::StencilUpdate<ThermalSolverKernel, ThermalSolverKernel::n_subiterations,
-                            vector_length, max_nx, max_ny>;
+    monotile::StencilUpdate<ThermalSolverKernel, 1, spatial_parallelism, max_nx, max_ny>;
 
 #endif
 
