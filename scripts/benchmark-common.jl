@@ -53,8 +53,8 @@ struct BenchmarkInformation
 
     # Implementation parameters
     variant::Symbol
-    n_cus::Int
-    vector_length::Int
+    temporal_parallelism::Int
+    spatial_parallelism::Int
     n_tile_rows::Int
     n_tile_cols::Int
 
@@ -68,14 +68,14 @@ end
 
 grid_size(info::BenchmarkInformation) = info.n_grid_rows * info.n_grid_cols
 workload(info::BenchmarkInformation) = grid_size(info) * info.n_iters
-n_passes(info::BenchmarkInformation) = ceil(info.n_iters * info.n_subiters / info.n_cus)
-padded_cell_size(info::BenchmarkInformation) = 2^ceil(log2(info.cell_size))
+n_passes(info::BenchmarkInformation) = ceil(info.n_iters / info.temporal_parallelism)
+n_cus(info::BenchmarkInformation) = info.spatial_parallelism * info.n_subiters
 max_cell_rate(info::BenchmarkInformation) = ceil(padded_cell_size(info) / 64)
 
-halo_height(info::BenchmarkInformation) = (info.variant == :tiling) ? info.n_cus : 0
-halo_width(info::BenchmarkInformation) = (info.variant == :tiling) ? info.vector_length * info.n_cus : 0
-n_grid_col_vects(info::BenchmarkInformation) = ceil(info.n_grid_cols / info.vector_length)
-n_tile_col_vects(info::BenchmarkInformation) = info.n_tile_cols / info.vector_length
+halo_height(info::BenchmarkInformation) = (info.variant == :tiling) ? n_cus(info) : 0
+halo_width(info::BenchmarkInformation) = (info.variant == :tiling) ? info.spatial_parallelism * n_cus(info) : 0
+n_grid_col_vects(info::BenchmarkInformation) = ceil(info.n_grid_cols / info.spatial_parallelism)
+n_tile_col_vects(info::BenchmarkInformation) = info.n_tile_cols / info.spatial_parallelism
 
 function transfered_cells(info::BenchmarkInformation)
     if info.variant == :monotile
@@ -98,13 +98,14 @@ function transfered_cells(info::BenchmarkInformation)
 end
 
 measured_throughput(info::BenchmarkInformation) = workload(info) / info.runtime
-measured_mem_throughput(info::BenchmarkInformation) = transfered_cells(info) * padded_cell_size(info) / info.runtime
+# TODO: Correctly model the transfered data.
+measured_mem_throughput(info::BenchmarkInformation) = transfered_cells(info) * info.cell_size / info.runtime
 measured_flops(info::BenchmarkInformation) = measured_throughput(info) * info.ops_per_cell
 
 function model_runtime(info::BenchmarkInformation)
     if info.variant == :monotile
         cu_latency = n_grid_col_vects(info) + 1
-        pipeline_latency = info.n_cus * cu_latency
+        pipeline_latency = n_cus(info) * cu_latency
         n_loop_iterations = pipeline_latency + (info.n_grid_rows * n_grid_col_vects(info))
         n_cycles_per_pass = n_loop_iterations + info.loop_latency
     elseif info.variant == :tiling
@@ -113,7 +114,7 @@ function model_runtime(info::BenchmarkInformation)
             for tile_col in 1:ceil(info.n_grid_cols / info.n_tile_cols)
                 tile_section_height = min(info.n_tile_rows, info.n_grid_rows - (tile_row - 1) * info.n_tile_rows)
                 tile_section_width = min(n_tile_col_vects(info), n_grid_col_vects(info) - (tile_col - 1) * n_tile_col_vects(info))
-                n_loop_iterations_per_tile = (tile_section_width + 2info.n_cus) * (tile_section_height + 2info.n_cus)
+                n_loop_iterations_per_tile = (tile_section_width + 2n_cus(info)) * (tile_section_height + 2n_cus(info))
                 n_cycles_per_pass += info.loop_latency + n_loop_iterations_per_tile
             end
         end
@@ -124,7 +125,7 @@ function model_runtime(info::BenchmarkInformation)
     return n_passes(info) * max_cell_rate(info) * n_cycles_per_pass / info.f
 end
 model_throughput(info::BenchmarkInformation) = workload(info) / model_runtime(info)
-max_execute_throughput(info::BenchmarkInformation) = (info.n_cus * info.vector_length * info.f) / info.n_subiters
+max_execute_throughput(info::BenchmarkInformation) = info.spatial_parallelism * info.temporal_parallelism * info.f
 
 model_accurracy(info::BenchmarkInformation) = model_throughput(info) / measured_throughput(info)
 occupancy(info::BenchmarkInformation) = measured_throughput(info) / max_execute_throughput(info)
