@@ -69,8 +69,7 @@ end
 grid_size(info::BenchmarkInformation) = info.n_grid_rows * info.n_grid_cols
 workload(info::BenchmarkInformation) = grid_size(info) * info.n_iters
 n_passes(info::BenchmarkInformation) = ceil(info.n_iters / info.temporal_parallelism)
-n_cus(info::BenchmarkInformation) = info.spatial_parallelism * info.n_subiters
-max_cell_rate(info::BenchmarkInformation) = ceil(padded_cell_size(info) / 64)
+n_cus(info::BenchmarkInformation) = info.temporal_parallelism * info.n_subiters
 
 halo_height(info::BenchmarkInformation) = (info.variant == :tiling) ? n_cus(info) : 0
 halo_width(info::BenchmarkInformation) = (info.variant == :tiling) ? info.spatial_parallelism * n_cus(info) : 0
@@ -122,7 +121,7 @@ function model_runtime(info::BenchmarkInformation)
         throw(KeyError(info.variant))
     end
 
-    return n_passes(info) * max_cell_rate(info) * n_cycles_per_pass / info.f
+    return n_passes(info) * n_cycles_per_pass / info.f
 end
 model_throughput(info::BenchmarkInformation) = workload(info) / model_runtime(info)
 max_execute_throughput(info::BenchmarkInformation) = info.spatial_parallelism * info.temporal_parallelism * info.f

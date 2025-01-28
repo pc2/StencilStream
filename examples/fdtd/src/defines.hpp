@@ -38,7 +38,12 @@ constexpr float sqrt_2 = 1.4142135623730951;
 
 constexpr float pi = 3.1415926535897932384626433;
 
+#if defined(STENCILSTREAM_BACKEND_TILING)
+constexpr size_t temporal_parallelism = 47;
+#else
 constexpr size_t temporal_parallelism = 50;
+#endif
+
 constexpr size_t spatial_parallelism = 2;
 
 /* stencil parameters */
