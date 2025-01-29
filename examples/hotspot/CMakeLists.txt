@@ -37,7 +37,7 @@ target_link_libraries(hotspot_tiling_report PUBLIC StencilStream_TilingReport)
 
 # Setting seeds for hardware synthesis.
 foreach(TARGET hotspot_tiling hotspot_tiling_report)
-    target_link_options(${TARGET} PUBLIC -Xsseed=1)
+    target_link_options(${TARGET} PUBLIC -Xsseed=2)
 endforeach()
 
 # Adding a custom target for all Hotspot reports
