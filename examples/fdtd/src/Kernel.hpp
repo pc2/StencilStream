@@ -57,8 +57,7 @@ template <typename MaterialResolver> class Kernel {
     float get_time_dependent_value(size_t i_iteration) const {
         float current_time = i_iteration * dt;
         float wave_progress = (current_time - t_0) / tau;
-        return cl::sycl::cos(omega * current_time) *
-               cl::sycl::exp(-1 * wave_progress * wave_progress);
+        return sycl::cos(omega * current_time) * sycl::exp(-1 * wave_progress * wave_progress);
     }
 
     Cell operator()(Stencil<Cell, 1, float> const &stencil) const {

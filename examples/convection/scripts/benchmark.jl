@@ -1,4 +1,4 @@
-#!/usr/bin/env -S julia --project=../..
+#!/usr/bin/env -S julia --project
 include("../../../scripts/benchmark-common.jl")
 
 const N_SUBITERATIONS = 3
@@ -44,7 +44,7 @@ end
 function default_benchmark()
     exe = ARGS[2]
     report_path = exe * ".prj/reports"
-    f, loop_latency = load_report_details(report_path)
+    f = load_report_details(report_path)
 
     experiment_path = "experiments/max-res-default.json"
     experiment_data = JSON.parsefile(experiment_path)
@@ -73,7 +73,6 @@ function default_benchmark()
             TILE_NX,
             TILE_NY,
             f,
-            loop_latency,
             pseudo_transient_runtimes.runtime[best_performing_invocation]
         )
 

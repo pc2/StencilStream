@@ -18,10 +18,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include <CL/sycl.hpp>
 #include <cmath>
 #include <optional>
 #include <sycl/ext/intel/ac_types/ac_int.hpp>
+#include <sycl/sycl.hpp>
 #include <unistd.h>
 
 using namespace std;

@@ -21,9 +21,9 @@
  * SOFTWARE.
  */
 #pragma once
-#include <CL/sycl.hpp>
 #include <StencilStream/Stencil.hpp>
 #include <catch2/catch_all.hpp>
+#include <sycl/sycl.hpp>
 
 enum class CellStatus {
     Normal,

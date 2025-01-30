@@ -135,6 +135,7 @@ class StencilUpdateKernel {
         : trans_func(trans_func), i_iteration(i_iteration), target_i_iteration(target_i_iteration),
           grid_height(grid_height), grid_width(grid_width), halo_value(halo_value),
           tdv_kernel_argument(tdv_kernel_argument) {
+        assert(grid_width >= 2);
         assert(grid_width <= max_grid_width);
         assert(grid_height <= max_grid_height);
     }
@@ -170,15 +171,23 @@ class StencilUpdateKernel {
          * optimizes them away.
          */
         [[intel::fpga_memory,
-          intel::numbanks(2 * std::bit_ceil(n_processing_elements))]] Padded<Cell>
-            cache[2][max_grid_width][std::bit_ceil(n_processing_elements)][stencil_diameter - 1];
+          intel::numbanks(
+              2 * std::bit_ceil(n_processing_elements))]] std::array<Cell, stencil_diameter - 1>
+            cache[2][max_grid_width][std::bit_ceil(n_processing_elements)];
         [[intel::fpga_register]] Cell stencil_buffer[n_processing_elements][stencil_diameter]
                                                     [stencil_diameter];
 
         bool all_pes_enabled = target_i_iteration - i_iteration > iters_per_pass;
         uindex_pes_t n_iterations = target_i_iteration - i_iteration;
         uindex_step_t n_steps = calc_n_steps(grid_height, grid_width);
-        for (uindex_step_t i = 0; i < n_steps; i++) {
+
+        /*
+         * OneAPI 2024.1 and newer finds a WAR memory dependency on the cache that it can't resolve
+         * on its own. This issue is resolved by declaring that the distance between a read and a
+         * write to the same memory location is at least two. This is ensured by requiring a minimal
+         * grid width of two.
+         */
+        [[intel::ivdep(cache, 2)]] for (uindex_step_t i = 0; i < n_steps; i++) {
             Cell carry;
             if (i < grid_height * grid_width) {
                 carry = in_pipe::read();
@@ -201,6 +210,10 @@ class StencilUpdateKernel {
 
                 // Update the stencil buffer and cache with previous cache contents and the new
                 // input cell.
+                std::array<Cell, stencil_diameter - 1> in_cache_word =
+                    cache[r[i_processing_element][0]][c[i_processing_element]]
+                         [i_processing_element];
+                std::array<Cell, stencil_diameter - 1> out_cache_word;
 #pragma unroll
                 for (uindex_stencil_t cache_r = 0; cache_r < uindex_stencil_t(stencil_diameter);
                      cache_r++) {
@@ -208,18 +221,16 @@ class StencilUpdateKernel {
                     if (cache_r == uindex_stencil_t(stencil_diameter - 1)) {
                         new_value = carry;
                     } else {
-                        new_value = cache[r[i_processing_element][0]][c[i_processing_element]]
-                                         [i_processing_element][cache_r]
-                                             .value;
+                        new_value = in_cache_word[cache_r];
                     }
 
                     stencil_buffer[i_processing_element][cache_r][stencil_diameter - 1] = new_value;
                     if (cache_r > 0) {
-                        cache[(~r[i_processing_element])[0]][c[i_processing_element]]
-                             [i_processing_element][cache_r - 1]
-                                 .value = new_value;
+                        out_cache_word[cache_r - 1] = new_value;
                     }
                 }
+                cache[(~r[i_processing_element])[0]][c[i_processing_element]]
+                     [i_processing_element] = out_cache_word;
 
                 uindex_1d_t pe_iteration = i_processing_element / TransFunc::n_subiterations;
 
@@ -278,10 +289,11 @@ class StencilUpdateKernel {
                                           [TransFunc::stencil_radius];
                 }
 
-                c[i_processing_element] += 1;
-                if (c[i_processing_element] == grid_width) {
+                if (c[i_processing_element] == grid_width - 1) {
                     c[i_processing_element] = 0;
                     r[i_processing_element] += 1;
+                } else {
+                    c[i_processing_element] += 1;
                 }
             }
 
@@ -429,6 +441,10 @@ class StencilUpdate {
      * complete. Otherwise, it will return as soon as all kernels are submitted.
      */
     GridImpl operator()(GridImpl &source_grid) {
+        if (source_grid.get_grid_width() < 2) {
+            throw std::range_error("The grid is too narrow. The monotile backend can only process "
+                                   "grids with at least two columns.");
+        }
         if (source_grid.get_grid_height() > max_grid_height) {
             throw std::range_error("The grid is too tall for the stencil update kernel.");
         }
@@ -452,7 +468,7 @@ class StencilUpdate {
             sycl::queue(params.device, {sycl::property::queue::in_order{}});
 
         sycl::queue update_kernel_queue =
-            sycl::queue(params.device, {cl::sycl::property::queue::enable_profiling{},
+            sycl::queue(params.device, {sycl::property::queue::enable_profiling{},
                                         sycl::property::queue::in_order{}});
 
         GridImpl swap_grid_a = source_grid.make_similar();
@@ -529,12 +545,11 @@ class StencilUpdate {
         for (sycl::event work_event : work_events) {
             const double timesteps_per_second = 1000000000.0;
             double start =
-                double(work_event
-                           .get_profiling_info<cl::sycl::info::event_profiling::command_start>()) /
+                double(
+                    work_event.get_profiling_info<sycl::info::event_profiling::command_start>()) /
                 timesteps_per_second;
             double end =
-                double(
-                    work_event.get_profiling_info<cl::sycl::info::event_profiling::command_end>()) /
+                double(work_event.get_profiling_info<sycl::info::event_profiling::command_end>()) /
                 timesteps_per_second;
             kernel_runtime += end - start;
         }

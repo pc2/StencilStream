@@ -20,7 +20,6 @@
 #pragma once
 #include "Helpers.hpp"
 #include <bit>
-#include <sycl/ext/intel/ac_types/ac_int.hpp>
 #include <sycl/id.hpp>
 #include <sycl/range.hpp>
 #include <variant>
