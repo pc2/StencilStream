@@ -18,6 +18,7 @@ target_link_libraries(hotspot_cpu PUBLIC StencilStream_CPU)
 # Monotile versions
 add_executable(hotspot_mono hotspot.cpp)
 target_link_libraries(hotspot_mono PUBLIC StencilStream_Monotile)
+target_link_options(hotspot_mono PUBLIC -Xsseed=2)
 
 add_executable(hotspot_mono_emu hotspot.cpp)
 target_link_libraries(hotspot_mono_emu PUBLIC StencilStream_MonotileEmulator)

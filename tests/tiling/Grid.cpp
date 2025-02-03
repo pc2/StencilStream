@@ -21,6 +21,7 @@
 #include <CL/sycl.hpp>
 #include <StencilStream/tiling/Grid.hpp>
 #include <catch2/catch_all.hpp>
+#include <sycl/sycl.hpp>
 #include <unordered_set>
 
 using namespace stencil;

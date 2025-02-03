@@ -7,11 +7,11 @@ using CairoMakie
 function parse_report_js(path)
     fields = Dict{String,Any}()
     for line in readlines(path)
-        if occursin("fileJSON", line)
+        if occursin("fileNDJSON", line) || occursin("fileNDJSON", line)
             continue # Avoiding to load all source files. They're too big for REs.
         end
 
-        matched_line = match(r"var (.+)=(\{.+\});$", line)
+        matched_line = match(r"var (.+)=(.+);$", line)
         if matched_line === nothing
             continue
         end
@@ -26,18 +26,16 @@ end
 function load_report_details(report_path)
     if !isdir(report_path)
         println(stderr, "Could not find synthesis report, using stand-in numbers for testing")
-        return 350e6, 2000
+        return 350e6
     end
 
     quartus_data = parse_report_js("$report_path/resources/quartus_data.js")
-    f = parse(Float32, quartus_data["quartusJSON"]["quartusFitClockSummary"]["nodes"][1]["kernel clock fmax"]) * 1e6
-
-    report_data = parse_report_js("$report_path/resources/report_data.js")
-    kernels = report_data["loop_attrJSON"]["nodes"]
-    loops = Iterators.flatmap(kernel -> kernel["children"], kernels)
-    loop_latency = sum(Iterators.map(loop -> parse(Float32, loop["lt"]), loops))
-
-    return f, loop_latency
+    # Checking whether this is an >=25.0.0 report.
+    if "quartusNDJSON" ∈ keys(quartus_data)
+        parse(Float32, quartus_data["quartusNDJSON"][1]["quartusFitClockSummary"]["nodes"][1]["kernel clock"]) * 1e6
+    else
+        parse(Float32, quartus_data["quartusJSON"]["quartusFitClockSummary"]["nodes"][1]["kernel clock"]) * 1e6
+    end
 end
 
 struct BenchmarkInformation
@@ -60,7 +58,6 @@ struct BenchmarkInformation
 
     # Synthesis results
     f::Float64
-    loop_latency::Int
 
     # Benchmark results
     runtime::Float64
@@ -106,7 +103,7 @@ function model_runtime(info::BenchmarkInformation)
         cu_latency = n_grid_col_vects(info) + 1
         pipeline_latency = n_cus(info) * cu_latency
         n_loop_iterations = pipeline_latency + (info.n_grid_rows * n_grid_col_vects(info))
-        n_cycles_per_pass = n_loop_iterations + info.loop_latency
+        n_cycles_per_pass = n_loop_iterations
     elseif info.variant == :tiling
         n_cycles_per_pass = 0
         for tile_row in 1:ceil(info.n_grid_rows / info.n_tile_rows)
@@ -114,7 +111,7 @@ function model_runtime(info::BenchmarkInformation)
                 tile_section_height = min(info.n_tile_rows, info.n_grid_rows - (tile_row - 1) * info.n_tile_rows)
                 tile_section_width = min(n_tile_col_vects(info), n_grid_col_vects(info) - (tile_col - 1) * n_tile_col_vects(info))
                 n_loop_iterations_per_tile = (tile_section_width + 2n_cus(info)) * (tile_section_height + 2n_cus(info))
-                n_cycles_per_pass += info.loop_latency + n_loop_iterations_per_tile
+                n_cycles_per_pass += n_loop_iterations_per_tile
             end
         end
     else

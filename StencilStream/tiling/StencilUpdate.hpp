@@ -151,9 +151,9 @@ class StencilUpdateKernel {
          * optimizes them away.
          */
         [[intel::fpga_memory,
-          intel::numbanks(2 * std::bit_ceil(n_processing_elements))]] Padded<CellVector>
-            cache[2][vect_input_tile_width][std::bit_ceil(n_processing_elements)]
-                 [stencil_buffer_height - 1];
+          intel::numbanks(
+              2 * std::bit_ceil(n_processing_elements))]] std::array<CellVector, stencil_buffer_height - 1>
+            cache[2][vect_input_tile_width][std::bit_ceil(n_processing_elements)];
         [[intel::fpga_register]] Cell stencil_buffer[n_processing_elements][stencil_buffer_height]
                                                     [stencil_buffer_width];
 
@@ -168,7 +168,15 @@ class StencilUpdateKernel {
         uindex_1d_t vect_input_tile_section_width =
             vect_output_tile_section_width + 2 * vect_halo_width;
 
-        [[intel::loop_coalesce(2)]] for (index_1d_t input_tile_r = 0;
+        /*
+         * OneAPI 2024.1 and newer finds a WAR memory dependency on the cache that it can't resolve
+         * on its own. For this, we have to declare that the distance between a read and a write is
+         * at least two iterations. For the tiling architecture, this is always the case since the
+         * minimal input tile section width is three (1 left halo column, 1 output tile column, 1
+         * right halo column). Thus, using the ivdep attribute is safe here.
+         */
+        [[intel::loop_coalesce(2),
+          intel::ivdep(cache, 2)]] for (index_1d_t input_tile_r = 0;
                                          input_tile_r < input_tile_section_height; input_tile_r++) {
             for (index_1d_t vect_input_tile_c = 0;
                  vect_input_tile_c < vect_input_tile_section_width; vect_input_tile_c++) {
@@ -206,6 +214,9 @@ class StencilUpdateKernel {
 
                     // Update the stencil buffer and cache with previous cache contents and the new
                     // input cell.
+                    [[intel::fpga_register]] std::array<CellVector, stencil_buffer_height - 1> in_cache_word =
+                        cache[input_tile_r[0]][input_tile_c][i_processing_element];
+                    [[intel::fpga_register]] std::array<CellVector, stencil_buffer_height - 1> out_cache_word;
 #pragma unroll
                     for (std::size_t cache_r = 0; cache_r < stencil_buffer_height; cache_r++) {
                         CellVector new_vector;
@@ -227,9 +238,7 @@ class StencilUpdateKernel {
                                 }
                             }
                         } else {
-                            new_vector = cache[input_tile_r[0]][vect_input_tile_c]
-                                              [i_processing_element][cache_r]
-                                                  .value;
+                            new_vector = in_cache_word[cache_r];
                         }
 
 #pragma unroll
@@ -240,11 +249,10 @@ class StencilUpdateKernel {
                         }
 
                         if (cache_r > 0) {
-                            cache[(~input_tile_r)[0]][vect_input_tile_c][i_processing_element]
-                                 [cache_r - 1]
-                                     .value = new_vector;
+                            out_cache_word[cache_r - 1] = new_vector;
                         }
                     }
+                    cache[(~input_tile_r)[0]][input_tile_c][i_processing_element] = out_cache_word;
 
                     std::size_t pe_iteration =
                         i_iteration +
@@ -458,7 +466,7 @@ class StencilUpdate {
         sycl::queue output_kernel_queue =
             sycl::queue(params.device, {sycl::property::queue::in_order{}});
         sycl::queue working_queue =
-            sycl::queue(params.device, {cl::sycl::property::queue::enable_profiling{},
+            sycl::queue(params.device, {sycl::property::queue::enable_profiling{},
                                         sycl::property::queue::in_order{}});
 
         GridImpl swap_grid_a = source_grid.make_similar();
@@ -551,12 +559,11 @@ class StencilUpdate {
         for (sycl::event work_event : work_events) {
             const double timesteps_per_second = 1000000000.0;
             double start =
-                double(work_event
-                           .get_profiling_info<cl::sycl::info::event_profiling::command_start>()) /
+                double(
+                    work_event.get_profiling_info<sycl::info::event_profiling::command_start>()) /
                 timesteps_per_second;
             double end =
-                double(
-                    work_event.get_profiling_info<cl::sycl::info::event_profiling::command_end>()) /
+                double(work_event.get_profiling_info<sycl::info::event_profiling::command_end>()) /
                 timesteps_per_second;
             kernel_runtime += end - start;
         }

@@ -38,7 +38,7 @@ struct RelMaterial {
     float ca(float dx, float dt) const { return (1 - (sigma * dt)) / (1 + (sigma * dt)); }
 
     float cb(float dx, float dt) const {
-        if (cl::sycl::isinf(eps_r)) {
+        if (sycl::isinf(eps_r)) {
             return 0.0;
         } else {
             return (dt / (eps_0 * eps_r * dx)) / (1 + (sigma * dt) / (2 * eps_0 * eps_r));
@@ -48,7 +48,7 @@ struct RelMaterial {
     float da(float dx, float dt) const { return (1 - (sigma * dt)) / (1 + (sigma * dt)); }
 
     float db(float dx, float dt) const {
-        if (cl::sycl::isinf(mu_r)) {
+        if (sycl::isinf(mu_r)) {
             return 0.0;
         } else {
             return (dt / (mu_0 * mu_r * dx)) / (1 + (sigma * dt) / (2 * mu_0 * mu_r));

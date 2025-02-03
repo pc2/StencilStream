@@ -1,4 +1,4 @@
-#!/usr/bin/env -S julia --project=../..
+#!/usr/bin/env -S julia --project
 include("../../../scripts/benchmark-common.jl")
 
 const N_SUBITERATIONS = 2
@@ -10,7 +10,7 @@ const MONO_TILE_HEIGHT = 512
 const TILING_TILE_HEIGHT = 2^16
 const TILE_WIDTH = 512
 
-function max_perf_benchmark(exe, variant, f, loop_latency)
+function max_perf_benchmark(exe, variant, f)
     if variant == :monotile
         experiment_path = "./experiments/full_tile.json"
         tile_height = MONO_TILE_HEIGHT
@@ -66,7 +66,6 @@ function max_perf_benchmark(exe, variant, f, loop_latency)
         tile_height,
         tile_width,
         f,
-        loop_latency,
         mean(kernel_runtimes)
     )
 
@@ -86,7 +85,7 @@ function max_perf_benchmark(exe, variant, f, loop_latency)
     end
 end
 
-function scaling_benchmark(exe, variant, f, loop_latency)
+function scaling_benchmark(exe, variant, f)
     mkpath("out/")
     out_path = "$(variant)_perf.csv"
 
@@ -151,7 +150,6 @@ function scaling_benchmark(exe, variant, f, loop_latency)
                     tile_height,
                     tile_width,
                     f,
-                    loop_latency,
                     kernel_runtime
                 )
 
@@ -175,14 +173,14 @@ end
 
 exe = ARGS[2]
 report_path = exe * ".prj/reports"
-f, loop_latency = load_report_details(report_path)
+f = load_report_details(report_path)
 
 variant = Symbol(ARGS[3])
 
 if ARGS[1] == "max_perf"
-    max_perf_benchmark(exe, variant, f, loop_latency)
+    max_perf_benchmark(exe, variant, f)
 elseif ARGS[1] == "scaling"
-    scaling_benchmark(exe, variant, f, loop_latency)
+    scaling_benchmark(exe, variant, f)
 else
     println(stderr, "Unknown benchmark '$(ARGS[1])'")
     exit(1)
