@@ -176,11 +176,11 @@ class StencilUpdateKernel {
          * minimal input tile section width is three (1 left halo column, 1 output tile column, 1
          * right halo column). Thus, using the ivdep attribute is safe here.
          */
-        [[intel::loop_coalesce(2),
-          intel::ivdep(cache, 2)]] for (index_1d_t input_tile_r = 0;
-                                        input_tile_r < input_tile_section_height; input_tile_r++) {
-            for (index_1d_t vect_input_tile_c = 0;
-                 vect_input_tile_c < vect_input_tile_section_width; vect_input_tile_c++) {
+        [[intel::loop_coalesce(2)]] for (index_1d_t input_tile_r = 0;
+                                         input_tile_r < input_tile_section_height; input_tile_r++) {
+            [[intel::ivdep(cache, 2)]] for (index_1d_t vect_input_tile_c = 0;
+                                            vect_input_tile_c < vect_input_tile_section_width;
+                                            vect_input_tile_c++) {
                 [[intel::fpga_register]] CellVector carry = in_pipe::read();
 
 #pragma unroll
