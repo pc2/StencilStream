@@ -152,7 +152,8 @@ class StencilUpdateKernel {
          */
         [[intel::fpga_memory,
           intel::numbanks(
-              2 * std::bit_ceil(n_processing_elements))]] std::array<CellVector, stencil_buffer_height - 1>
+              2 * std::bit_ceil(
+                      n_processing_elements))]] std::array<CellVector, stencil_buffer_height - 1>
             cache[2][vect_input_tile_width][std::bit_ceil(n_processing_elements)];
         [[intel::fpga_register]] Cell stencil_buffer[n_processing_elements][stencil_buffer_height]
                                                     [stencil_buffer_width];
@@ -177,7 +178,7 @@ class StencilUpdateKernel {
          */
         [[intel::loop_coalesce(2),
           intel::ivdep(cache, 2)]] for (index_1d_t input_tile_r = 0;
-                                         input_tile_r < input_tile_section_height; input_tile_r++) {
+                                        input_tile_r < input_tile_section_height; input_tile_r++) {
             for (index_1d_t vect_input_tile_c = 0;
                  vect_input_tile_c < vect_input_tile_section_width; vect_input_tile_c++) {
                 [[intel::fpga_register]] CellVector carry = in_pipe::read();
@@ -214,9 +215,11 @@ class StencilUpdateKernel {
 
                     // Update the stencil buffer and cache with previous cache contents and the new
                     // input cell.
-                    [[intel::fpga_register]] std::array<CellVector, stencil_buffer_height - 1> in_cache_word =
-                        cache[input_tile_r[0]][input_tile_c][i_processing_element];
-                    [[intel::fpga_register]] std::array<CellVector, stencil_buffer_height - 1> out_cache_word;
+                    [[intel::fpga_register]] std::array<CellVector, stencil_buffer_height - 1>
+                        in_cache_word =
+                            cache[input_tile_r[0]][vect_input_tile_c][i_processing_element];
+                    [[intel::fpga_register]] std::array<CellVector, stencil_buffer_height - 1>
+                        out_cache_word;
 #pragma unroll
                     for (std::size_t cache_r = 0; cache_r < stencil_buffer_height; cache_r++) {
                         CellVector new_vector;
@@ -252,7 +255,8 @@ class StencilUpdateKernel {
                             out_cache_word[cache_r - 1] = new_vector;
                         }
                     }
-                    cache[(~input_tile_r)[0]][input_tile_c][i_processing_element] = out_cache_word;
+                    cache[(~input_tile_r)[0]][vect_input_tile_c][i_processing_element] =
+                        out_cache_word;
 
                     std::size_t pe_iteration =
                         i_iteration +

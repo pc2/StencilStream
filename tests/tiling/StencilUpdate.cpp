@@ -148,7 +148,6 @@ void test_tiling_kernel_on_grid() {
     auto test_tiling_kernel_impl =
         &test_tiling_kernel<stencil_radius, temporal_parallelism, spatial_parallelism, tile_height,
                             tile_width>;
-
     // All possible tile types (corner, border, core tiles), where each tile is completely filled.
     test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 0, 0, 0, temporal_parallelism);
     test_tiling_kernel_impl(3 * tile_height, 3 * tile_width, 0, 1, 0, temporal_parallelism);
