@@ -32,3 +32,8 @@ FetchContent_MakeAvailable(json)
 foreach(TARGET convection convection_cpu convection_emu convection_report)
     target_link_libraries(${TARGET} PRIVATE nlohmann_json::nlohmann_json)
 endforeach()
+
+# Setting seeds for hardware synthesis.
+foreach(TARGET convection convection_report)
+    target_link_options(${TARGET} PUBLIC -Xsseed=1)
+endforeach()
