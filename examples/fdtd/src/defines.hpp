@@ -38,19 +38,13 @@ constexpr float sqrt_2 = 1.4142135623730951;
 
 constexpr float pi = 3.1415926535897932384626433;
 
-#if defined(STENCILSTREAM_BACKEND_MONOTILE)
-constexpr size_t n_processing_elements = 200;
-
-#elif defined(STENCILSTREAM_BACKEND_TILING)
-constexpr size_t n_processing_elements = 190;
-
-#elif defined(STENCILSTREAM_BACKEND_CPU)
-constexpr size_t n_processing_elements = 2;
-
+#if defined(STENCILSTREAM_BACKEND_TILING)
+constexpr size_t temporal_parallelism = 47;
+#else
+constexpr size_t temporal_parallelism = 50;
 #endif
 
-static_assert(n_processing_elements % 2 == 0);
-constexpr size_t iters_per_pass = n_processing_elements / 2;
+constexpr size_t spatial_parallelism = 2;
 
 /* stencil parameters */
 constexpr size_t tile_width = 512;

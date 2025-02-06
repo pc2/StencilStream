@@ -43,8 +43,10 @@ namespace monotile {
  * \tparam TDVKernelArgument The type of parameter for the TDV system that is passed from the host
  * to the kernel.
  *
- * \tparam n_processing_elements The number of processing elements to use. Similar to an unroll
- * factor for a loop.
+ * \tparam temporal_parallelism The number of iterations to compute in parallel. Notice that
+ * subiterations within one iteration are always computed in parallel.
+ *
+ * \tparam spatial_parallelsim The number of cells to update in parallel within one iteration.
  *
  * \tparam max_grid_height The maximum number of rows in the grid. This will define the size of the
  * column buffer.
@@ -58,54 +60,53 @@ namespace monotile {
  */
 template <concepts::TransitionFunction TransFunc,
           tdv::single_pass::KernelArgument<TransFunc> TDVKernelArgument,
-          std::size_t n_processing_elements, std::size_t max_grid_height,
-          std::size_t max_grid_width, typename in_pipe, typename out_pipe>
-    requires(n_processing_elements % TransFunc::n_subiterations == 0)
+          std::size_t temporal_parallelism, std::size_t spatial_parallelism,
+          std::size_t max_grid_height, std::size_t max_grid_width, typename in_pipe,
+          typename out_pipe>
 class StencilUpdateKernel {
   private:
     using Cell = typename TransFunc::Cell;
     using TDV = typename TransFunc::TimeDependentValue;
     using TDVLocalState = typename TDVKernelArgument::LocalState;
     using StencilImpl = Stencil<Cell, TransFunc::stencil_radius, TDV>;
+    using CellVector = std::array<Cell, spatial_parallelism>;
 
-    /**
-     * \brief The height and width of the stencil buffer.
-     */
-    static constexpr std::size_t stencil_diameter = StencilImpl::diameter;
+    static constexpr std::size_t n_processing_elements =
+        temporal_parallelism * TransFunc::n_subiterations;
 
-    static constexpr std::size_t iters_per_pass =
-        n_processing_elements / TransFunc::n_subiterations;
+    static constexpr std::size_t max_vect_grid_width =
+        int_ceil_div(max_grid_width, spatial_parallelism);
 
-    static constexpr std::size_t calc_pipeline_latency(std::size_t grid_width) {
-        return n_processing_elements * TransFunc::stencil_radius * (grid_width + 1);
+    // Round up the stencil buffer lead to the next integer multiple of the vector length.
+    static constexpr std::size_t vect_stencil_buffer_lead =
+        int_ceil_div(TransFunc::stencil_radius, spatial_parallelism);
+    static constexpr std::size_t stencil_buffer_lead =
+        vect_stencil_buffer_lead * spatial_parallelism;
+    static constexpr std::size_t stencil_buffer_height = 2 * TransFunc::stencil_radius + 1;
+    static constexpr std::size_t stencil_buffer_width =
+        TransFunc::stencil_radius + spatial_parallelism + stencil_buffer_lead;
+
+    template <typename T> static constexpr T calc_pipeline_latency(T grid_width) {
+        T vect_grid_width = int_ceil_div<T>(grid_width, spatial_parallelism);
+        return T(n_processing_elements * TransFunc::stencil_radius) * vect_grid_width +
+               T(n_processing_elements * vect_stencil_buffer_lead);
     }
 
-    static constexpr std::size_t calc_n_steps(std::size_t grid_height, std::size_t grid_width) {
-        return grid_height * grid_width + calc_pipeline_latency(grid_width);
+    template <typename T> static constexpr T calc_n_steps(T grid_height, T grid_width) {
+        T vect_grid_width = int_ceil_div<T>(grid_width, spatial_parallelism);
+        return grid_height * vect_grid_width + calc_pipeline_latency<T>(grid_width);
     }
 
-    static constexpr unsigned long bits_stencil = std::bit_width(stencil_diameter);
-    using index_stencil_t = ac_int<bits_stencil, true>;
-    using uindex_stencil_t = ac_int<bits_stencil, false>;
+    using index_r_t = ac_int<std::bit_width(max_grid_height) + 1, true>;
+    using uindex_r_t = ac_int<std::bit_width(max_grid_height), false>;
 
-    static constexpr unsigned long bits_1d =
-        std::bit_width(std::max(max_grid_height, max_grid_width));
-    using index_1d_t = ac_int<bits_1d + 1, true>;
-    using uindex_1d_t = ac_int<bits_1d, false>;
+    using uindex_c_t = ac_int<std::bit_width(max_grid_width), false>;
 
-    static constexpr unsigned long bits_2d = 2 * bits_1d;
-    using index_2d_t = ac_int<bits_2d + 1, true>;
-    using uindex_2d_t = ac_int<bits_2d, false>;
+    using index_vect_c_t = ac_int<std::bit_width(max_vect_grid_width) + 1, true>;
+    using uindex_vect_c_t = ac_int<std::bit_width(max_vect_grid_width), false>;
 
-    static constexpr unsigned long bits_pes =
-        std::max<int>(2, std::bit_width(n_processing_elements));
-    using index_pes_t = ac_int<bits_pes + 1, true>;
-    using uindex_pes_t = ac_int<bits_pes, false>;
-
-    static constexpr unsigned long bits_n_steps =
-        std::bit_width(calc_n_steps(max_grid_height, max_grid_width));
-    using index_step_t = ac_int<bits_n_steps + 1, true>;
-    using uindex_step_t = ac_int<bits_n_steps, false>;
+    using uindex_step_t =
+        ac_int<std::bit_width(calc_n_steps(max_grid_height, max_grid_width)), false>;
 
   public:
     /**
@@ -135,6 +136,9 @@ class StencilUpdateKernel {
         : trans_func(trans_func), i_iteration(i_iteration), target_i_iteration(target_i_iteration),
           grid_height(grid_height), grid_width(grid_width), halo_value(halo_value),
           tdv_kernel_argument(tdv_kernel_argument) {
+        assert(TransFunc::stencil_radius <= grid_width && grid_width <= max_grid_width);
+        assert(TransFunc::stencil_radius <= grid_height && grid_height <= max_grid_height);
+        assert(i_iteration < target_i_iteration);
         assert(grid_width >= 2);
         assert(grid_width <= max_grid_width);
         assert(grid_height <= max_grid_height);
@@ -144,23 +148,25 @@ class StencilUpdateKernel {
      * \brief Execute the kernel.
      */
     void operator()() const {
-        [[intel::fpga_register]] index_1d_t r[n_processing_elements];
-        [[intel::fpga_register]] index_1d_t c[n_processing_elements];
+        uindex_vect_c_t vect_grid_width = int_ceil_div<uindex_c_t>(grid_width, spatial_parallelism);
+
+        [[intel::fpga_register]] index_r_t r[n_processing_elements];
+        [[intel::fpga_register]] uindex_vect_c_t vect_c[n_processing_elements];
         TDVLocalState tdv_local_state(tdv_kernel_argument);
 
         // Initializing (output) column and row counters.
-        index_1d_t prev_r = 0;
-        index_1d_t prev_c = 0;
+        index_r_t prev_r = 0;
+        index_vect_c_t prev_vect_c = 0;
 #pragma unroll
-        for (uindex_pes_t i = 0; i < uindex_pes_t(n_processing_elements); i++) {
-            r[i] = prev_r - TransFunc::stencil_radius;
-            c[i] = prev_c - TransFunc::stencil_radius;
-            if (c[i] < index_pes_t(0)) {
-                c[i] += grid_width;
-                r[i] -= 1;
+        for (std::size_t i = 0; i < n_processing_elements; i++) {
+            prev_r -= TransFunc::stencil_radius;
+            prev_vect_c -= vect_stencil_buffer_lead;
+            if (prev_vect_c < 0) {
+                prev_vect_c += vect_grid_width;
+                prev_r -= 1;
             }
-            prev_r = r[i];
-            prev_c = c[i];
+            r[i] = prev_r;
+            vect_c[i] = prev_vect_c;
         }
 
         /*
@@ -172,13 +178,12 @@ class StencilUpdateKernel {
          */
         [[intel::fpga_memory,
           intel::numbanks(
-              2 * std::bit_ceil(n_processing_elements))]] std::array<Cell, stencil_diameter - 1>
-            cache[2][max_grid_width][std::bit_ceil(n_processing_elements)];
-        [[intel::fpga_register]] Cell stencil_buffer[n_processing_elements][stencil_diameter]
-                                                    [stencil_diameter];
+              2 * std::bit_ceil(
+                      n_processing_elements))]] std::array<CellVector, stencil_buffer_height - 1>
+            cache[2][max_vect_grid_width][std::bit_ceil(n_processing_elements)];
+        [[intel::fpga_register]] Cell stencil_buffer[n_processing_elements][stencil_buffer_height]
+                                                    [stencil_buffer_width];
 
-        bool all_pes_enabled = target_i_iteration - i_iteration > iters_per_pass;
-        uindex_pes_t n_iterations = target_i_iteration - i_iteration;
         uindex_step_t n_steps = calc_n_steps(grid_height, grid_width);
 
         /*
@@ -188,116 +193,132 @@ class StencilUpdateKernel {
          * grid width of two.
          */
         [[intel::ivdep(cache, 2)]] for (uindex_step_t i = 0; i < n_steps; i++) {
-            Cell carry;
-            if (i < grid_height * grid_width) {
+            CellVector carry;
+            if (i < uindex_r_t(grid_height) * vect_grid_width) {
                 carry = in_pipe::read();
             } else {
-                carry = halo_value;
+#pragma unroll
+                for (std::size_t i_cell = 0; i_cell < spatial_parallelism; i_cell++) {
+                    carry[i_cell] = halo_value;
+                }
             }
 
 #pragma unroll
-            for (uindex_pes_t i_processing_element = 0;
-                 i_processing_element < uindex_pes_t(n_processing_elements);
+            for (std::size_t i_processing_element = 0; i_processing_element < n_processing_elements;
                  i_processing_element++) {
 #pragma unroll
-                for (uindex_stencil_t r = 0; r < uindex_stencil_t(stencil_diameter); r++) {
+                for (std::size_t r = 0; r < stencil_buffer_height; r++) {
 #pragma unroll
-                    for (uindex_stencil_t c = 0; c < uindex_stencil_t(stencil_diameter - 1); c++) {
+                    for (std::size_t c = 0; c < stencil_buffer_width - spatial_parallelism; c++) {
                         stencil_buffer[i_processing_element][r][c] =
-                            stencil_buffer[i_processing_element][r][c + 1];
+                            stencil_buffer[i_processing_element][r][c + spatial_parallelism];
                     }
                 }
 
                 // Update the stencil buffer and cache with previous cache contents and the new
                 // input cell.
-                std::array<Cell, stencil_diameter - 1> in_cache_word =
-                    cache[r[i_processing_element][0]][c[i_processing_element]]
-                         [i_processing_element];
-                std::array<Cell, stencil_diameter - 1> out_cache_word;
+                [[intel::fpga_register]] std::array<CellVector, stencil_buffer_height - 1>
+                    in_cache_word = cache[r[i_processing_element][0]][vect_c[i_processing_element]]
+                                         [i_processing_element];
+                [[intel::fpga_register]] std::array<CellVector, stencil_buffer_height - 1>
+                    out_cache_word;
 #pragma unroll
-                for (uindex_stencil_t cache_r = 0; cache_r < uindex_stencil_t(stencil_diameter);
-                     cache_r++) {
-                    Cell new_value;
-                    if (cache_r == uindex_stencil_t(stencil_diameter - 1)) {
-                        new_value = carry;
+                for (std::size_t cache_r = 0; cache_r < stencil_buffer_height; cache_r++) {
+                    CellVector new_vect;
+                    if (cache_r == stencil_buffer_height - 1) {
+                        new_vect = carry;
                     } else {
-                        new_value = in_cache_word[cache_r];
+                        new_vect = in_cache_word[cache_r];
                     }
 
-                    stencil_buffer[i_processing_element][cache_r][stencil_diameter - 1] = new_value;
+#pragma unroll
+                    for (std::size_t i_vector_cell = 0; i_vector_cell < spatial_parallelism;
+                         i_vector_cell++) {
+                        stencil_buffer[i_processing_element][cache_r]
+                                      [TransFunc::stencil_radius + stencil_buffer_lead +
+                                       i_vector_cell] = new_vect[i_vector_cell];
+                    }
+
                     if (cache_r > 0) {
-                        out_cache_word[cache_r - 1] = new_value;
+                        out_cache_word[cache_r - 1] = new_vect;
                     }
                 }
-                cache[(~r[i_processing_element])[0]][c[i_processing_element]]
+                cache[(~r[i_processing_element])[0]][vect_c[i_processing_element]]
                      [i_processing_element] = out_cache_word;
 
-                uindex_1d_t pe_iteration = i_processing_element / TransFunc::n_subiterations;
+                std::size_t pe_iteration = i_processing_element / TransFunc::n_subiterations;
+                std::size_t n_iterations =
+                    std::min(target_i_iteration - i_iteration, temporal_parallelism);
 
-                if (all_pes_enabled || pe_iteration < n_iterations) {
+                if (pe_iteration < n_iterations) {
                     TDV tdv = tdv_local_state.get_time_dependent_value(pe_iteration);
-                    StencilImpl stencil(
-                        sycl::id<2>(r[i_processing_element], c[i_processing_element]),
-                        sycl::range<2>(grid_height, grid_width),
-                        i_iteration + std::size_t(pe_iteration),
-                        i_processing_element % TransFunc::n_subiterations, tdv);
 
-                    bool v_halo_mask[stencil_diameter];
-                    bool h_halo_mask[stencil_diameter];
+                    bool v_halo_mask[stencil_buffer_height];
 #pragma unroll
-                    for (uindex_stencil_t mask_i = 0; mask_i < uindex_stencil_t(stencil_diameter);
-                         mask_i++) {
-                        // These computation assume that the central cell is in the grid. If it's
-                        // not, the resulting value of this processing element will be discarded
-                        // anyways, so this is safe.
-                        if (mask_i < uindex_stencil_t(TransFunc::stencil_radius)) {
-                            v_halo_mask[mask_i] = r[i_processing_element] >=
-                                                  index_1d_t(TransFunc::stencil_radius - mask_i);
-                            h_halo_mask[mask_i] = c[i_processing_element] >=
-                                                  index_1d_t(TransFunc::stencil_radius - mask_i);
-                        } else if (mask_i == uindex_stencil_t(TransFunc::stencil_radius)) {
-                            v_halo_mask[mask_i] = true;
-                            h_halo_mask[mask_i] = true;
-                        } else {
-                            v_halo_mask[mask_i] =
-                                r[i_processing_element] <
-                                grid_height + index_1d_t(TransFunc::stencil_radius - mask_i);
-                            h_halo_mask[mask_i] =
-                                c[i_processing_element] <
-                                grid_width + index_1d_t(TransFunc::stencil_radius - mask_i);
-                        }
+                    for (std::size_t mask_i = 0; mask_i < stencil_buffer_height; mask_i++) {
+                        std::ptrdiff_t cell_r = std::ptrdiff_t(r[i_processing_element]) +
+                                                std::ptrdiff_t(mask_i - TransFunc::stencil_radius);
+                        v_halo_mask[mask_i] = cell_r >= 0 && cell_r < grid_height;
+                    }
+
+                    bool h_halo_mask[2 * TransFunc::stencil_radius + spatial_parallelism];
+#pragma unroll
+                    for (std::size_t mask_i = 0;
+                         mask_i < 2 * TransFunc::stencil_radius + spatial_parallelism; mask_i++) {
+                        std::ptrdiff_t c =
+                            std::ptrdiff_t(vect_c[i_processing_element]) * spatial_parallelism -
+                            TransFunc::stencil_radius + mask_i;
+                        h_halo_mask[mask_i] = c >= 0 && c < grid_width;
                     }
 
 #pragma unroll
-                    for (uindex_stencil_t cell_r = 0; cell_r < uindex_stencil_t(stencil_diameter);
-                         cell_r++) {
+                    for (std::size_t i_vector_cell = 0; i_vector_cell < spatial_parallelism;
+                         i_vector_cell++) {
+                        std::size_t c =
+                            std::size_t(vect_c[i_processing_element]) * spatial_parallelism +
+                            i_vector_cell;
+
+                        StencilImpl stencil(sycl::id<2>(r[i_processing_element], c),
+                                            sycl::range<2>(grid_height, grid_width),
+                                            i_iteration + pe_iteration,
+                                            i_processing_element % TransFunc::n_subiterations, tdv);
+
 #pragma unroll
-                        for (uindex_stencil_t cell_c = 0;
-                             cell_c < uindex_stencil_t(stencil_diameter); cell_c++) {
-                            if (h_halo_mask[cell_c] && v_halo_mask[cell_r]) {
-                                stencil[sycl::id<2>(cell_r, cell_c)] =
-                                    stencil_buffer[i_processing_element][cell_r][cell_c];
-                            } else {
-                                stencil[sycl::id<2>(cell_r, cell_c)] = halo_value;
+                        for (std::size_t cell_r = 0; cell_r < 2 * TransFunc::stencil_radius + 1;
+                             cell_r++) {
+#pragma unroll
+                            for (std::size_t cell_c = 0; cell_c < 2 * TransFunc::stencil_radius + 1;
+                                 cell_c++) {
+                                if (v_halo_mask[cell_r] && h_halo_mask[cell_c + i_vector_cell]) {
+                                    stencil[sycl::id<2>(cell_r, cell_c)] =
+                                        stencil_buffer[i_processing_element][cell_r]
+                                                      [cell_c + i_vector_cell];
+                                } else {
+                                    stencil[sycl::id<2>(cell_r, cell_c)] = halo_value;
+                                }
                             }
                         }
-                    }
 
-                    carry = trans_func(stencil);
+                        carry[i_vector_cell] = trans_func(stencil);
+                    }
                 } else {
-                    carry = stencil_buffer[i_processing_element][TransFunc::stencil_radius]
-                                          [TransFunc::stencil_radius];
+#pragma unroll
+                    for (std::size_t i_vector_cell = 0; i_vector_cell < spatial_parallelism;
+                         i_vector_cell++) {
+                        carry[i_vector_cell] =
+                            stencil_buffer[i_processing_element][TransFunc::stencil_radius]
+                                          [TransFunc::stencil_radius + i_vector_cell];
+                    }
                 }
 
-                if (c[i_processing_element] == grid_width - 1) {
-                    c[i_processing_element] = 0;
+                vect_c[i_processing_element] += 1;
+                if (vect_c[i_processing_element] == vect_grid_width) {
+                    vect_c[i_processing_element] = 0;
                     r[i_processing_element] += 1;
-                } else {
-                    c[i_processing_element] += 1;
                 }
             }
 
-            if (i >= uindex_step_t(calc_pipeline_latency(grid_width))) {
+            if (i >= calc_pipeline_latency<uindex_step_t>(grid_width)) {
                 out_pipe::write(carry);
             }
         }
@@ -307,8 +328,8 @@ class StencilUpdateKernel {
     TransFunc trans_func;
     std::size_t i_iteration;
     std::size_t target_i_iteration;
-    uindex_1d_t grid_height;
-    uindex_1d_t grid_width;
+    std::size_t grid_height;
+    std::size_t grid_width;
     Cell halo_value;
     TDVKernelArgument tdv_kernel_argument;
 };
@@ -323,10 +344,15 @@ class StencilUpdateKernel {
  *
  * \tparam F The transition function to apply to input grids.
  *
- * \tparam n_processing_elements (Optimization parameter) The number of processing elements (PEs) to
- * implement. Increasing the number of PEs leads to a higher performance since more iterations are
- * computed in parallel. However, it will also increase the resource and space usage of the design.
- * Too many PEs might also decrease the clock frequency.
+ * \tparam temporal_parallelism (Optimization parameter) The number of iterations to compute in
+ * parallel. Increasing this parameter leads to a higher performance, but it will also increase the
+ * resource and space usage of the design. Excessive values may also decrease the clock frequency.
+ * Also notice that subiterations within one iteration are always computed in parallel.
+ *
+ * \tparam spatial_parallelism (Optimization parameter) The number of cells to update in parallel
+ * within one iteration. Increasing this parameter leads to a higher performance as long as the
+ * product of the parameter and the size of the cell is below the physical memory word width. Common
+ * values are 512 bits or 64 bytes.
  *
  * \tparam max_grid_height (Optimization parameter) The maximally supported grid height. For best
  * hardware utilization, this should be a power of two. Increase this parameter to the maximum your
@@ -343,11 +369,11 @@ class StencilUpdateKernel {
  * \tparam word_size (Optimization parameter) The width of the global memory channel, in bytes. For
  * DDR-based systems, this should be 512 bits, or 64 bytes.
  */
-template <concepts::TransitionFunction F, std::size_t n_processing_elements = 1,
-          std::size_t max_grid_height = 1024, std::size_t max_grid_width = 1024,
-          tdv::single_pass::Strategy<F, n_processing_elements> TDVStrategy =
-              tdv::single_pass::InlineStrategy,
-          std::size_t word_size = 64>
+template <concepts::TransitionFunction F, std::size_t temporal_parallelism = 1,
+          std::size_t spatial_parallelism = 1, std::size_t max_grid_height = 1024,
+          std::size_t max_grid_width = 1024,
+          tdv::single_pass::Strategy<F, temporal_parallelism> TDVStrategy =
+              tdv::single_pass::InlineStrategy>
 class StencilUpdate {
   private:
     using Cell = F::Cell;
@@ -355,7 +381,7 @@ class StencilUpdate {
 
   public:
     /// \brief Shorthand for the used and supported grid type.
-    using GridImpl = Grid<Cell, word_size>;
+    using GridImpl = Grid<Cell, spatial_parallelism>;
 
     /**
      * \brief Parameters for the stencil updater.
@@ -451,16 +477,14 @@ class StencilUpdate {
         if (source_grid.get_grid_width() > max_grid_width) {
             throw std::range_error("The grid is too wide for the stencil update kernel.");
         }
-        using in_pipe = sycl::pipe<class monotile_in_pipe, Cell>;
-        using out_pipe = sycl::pipe<class monotile_out_pipe, Cell>;
+        using in_pipe = sycl::pipe<class monotile_in_pipe, std::array<Cell, spatial_parallelism>>;
+        using out_pipe = sycl::pipe<class monotile_out_pipe, std::array<Cell, spatial_parallelism>>;
 
-        constexpr std::size_t iters_per_pass = n_processing_elements / F::n_subiterations;
-
-        using TDVGlobalState = TDVStrategy::template GlobalState<F, iters_per_pass>;
+        using TDVGlobalState = TDVStrategy::template GlobalState<F, temporal_parallelism>;
         using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
         using ExecutionKernelImpl =
-            StencilUpdateKernel<F, TDVKernelArgument, n_processing_elements, max_grid_height,
-                                max_grid_width, in_pipe, out_pipe>;
+            StencilUpdateKernel<F, TDVKernelArgument, temporal_parallelism, spatial_parallelism,
+                                max_grid_height, max_grid_width, in_pipe, out_pipe>;
 
         sycl::queue input_kernel_queue =
             sycl::queue(params.device, {sycl::property::queue::in_order{}});
@@ -484,10 +508,11 @@ class StencilUpdate {
 
         std::size_t target_n_iterations = params.iteration_offset + params.n_iterations;
         for (std::size_t i = params.iteration_offset; i < target_n_iterations;
-             i += iters_per_pass) {
-            pass_source->template submit_read<in_pipe, max_grid_height * max_grid_width>(
+             i += temporal_parallelism) {
+            pass_source->template submit_read<in_pipe, max_grid_height, max_grid_width>(
                 input_kernel_queue);
-            std::size_t iters_in_this_pass = std::min(iters_per_pass, target_n_iterations - i);
+            std::size_t iters_in_this_pass =
+                std::min(temporal_parallelism, target_n_iterations - i);
 
             sycl::event work_event = update_kernel_queue.submit([&](sycl::handler &cgh) {
                 TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i, iters_in_this_pass);
@@ -500,7 +525,7 @@ class StencilUpdate {
                 work_events.push_back(work_event);
             }
 
-            pass_target->template submit_write<out_pipe, max_grid_height * max_grid_width>(
+            pass_target->template submit_write<out_pipe, max_grid_height, max_grid_width>(
                 output_kernel_queue);
 
             if (i == params.iteration_offset) {

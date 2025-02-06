@@ -17,13 +17,13 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "constants.hpp"
 #include <StencilStream/Stencil.hpp>
 #include <catch2/catch_all.hpp>
 
 using namespace stencil;
 
-using StencilImpl = Stencil<int, 2>;
+constexpr std::size_t stencil_radius = 2;
+using StencilImpl = Stencil<int, stencil_radius>;
 
 TEST_CASE("Stencil::diameter", "[Stencil]") {
     StencilImpl stencil(sycl::id<2>(0, 0), sycl::range<2>(42, 42), 0, 0, std::monostate());

@@ -66,3 +66,8 @@ foreach(MATERIAL coef lut render)
         endforeach()
     endforeach()
 endforeach()
+
+# Setting seeds for hardware synthesis.
+foreach(TARGET fdtd_coef_device_mono fdtd_coef_device_mono_report)
+    target_link_options(${TARGET} PUBLIC -Xsseed=2)
+endforeach()
