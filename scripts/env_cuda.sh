@@ -1,11 +1,20 @@
 #!/usr/bin/env bash
 module reset
-#ml lang fpga devel system intel/oneapi/25.0.0 CMake/3.29.3-GCCcore-13.3.0 CUDA/12.6.0
 
 ml fpga
-ml intel/oneapi/23.2.0
-ml devel/CMake/3.22.1-GCCcore-11.2.0
+ml lang
+ml intel/oneapi/24.2.1
+ml devel/CMake/3.29.3-GCCcore-13.3.0
 ml system/CUDA/12.6.0
+ml Julia/1.10.4
 
-icpx --version
+echo "Julia depot path: $JULIA_DEPOT_PATH"
+
+if [[ ! -e Manifest.toml ]];
+then
+    julia --project -e "using Pkg; Pkg.instantiate()"
+fi
+
 nvidia-smi
+icpx --version
+julia --version
