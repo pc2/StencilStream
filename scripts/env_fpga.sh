@@ -1,4 +1,3 @@
 #!/usr/bin/env bash
 source scripts/env_base.sh
-module load system/CUDA/12.6.0
-nvidia-smi
+module load bittware/520n/20.4.0_hpc
