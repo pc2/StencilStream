@@ -53,11 +53,11 @@ struct BenchmarkInformation
     variant::Symbol
     temporal_parallelism::Int
     spatial_parallelism::Int
-    n_tile_rows::Int
-    n_tile_cols::Int
+    n_tile_rows::Union{Int, Nothing} # may be nothing for CUDA variant
+    n_tile_cols::Union{Int, Nothing} # may be nothing for CUDA variant
 
     # Synthesis results
-    f::Float64
+    f::Union{Float64, Nothing} # may be nothing for CUDA variant
 
     # Benchmark results
     runtime::Float64
@@ -67,9 +67,10 @@ grid_size(info::BenchmarkInformation) = info.n_grid_rows * info.n_grid_cols
 workload(info::BenchmarkInformation) = grid_size(info) * info.n_iters
 n_passes(info::BenchmarkInformation) = ceil(info.n_iters / info.temporal_parallelism)
 n_cus(info::BenchmarkInformation) = info.temporal_parallelism * info.n_subiters
+n_replications(info::BenchmarkInformation) = n_cus(info) * info.spatial_parallelism
 
-halo_height(info::BenchmarkInformation) = (info.variant == :tiling) ? n_cus(info) : 0
-halo_width(info::BenchmarkInformation) = (info.variant == :tiling) ? info.spatial_parallelism * n_cus(info) : 0
+halo_height(info::BenchmarkInformation) = (info.variant == :tiling) ? n_cus(info) : nothing
+halo_width(info::BenchmarkInformation) = (info.variant == :tiling) ? info.spatial_parallelism * n_cus(info) : nothing
 n_grid_col_vects(info::BenchmarkInformation) = ceil(info.n_grid_cols / info.spatial_parallelism)
 n_tile_col_vects(info::BenchmarkInformation) = info.n_tile_cols / info.spatial_parallelism
 
@@ -88,6 +89,8 @@ function transfered_cells(info::BenchmarkInformation)
             end
         end
         return n_passes(info) * transfered_cells
+    elseif info.variant == :cuda
+        throw("not implemented")
     else
         throw(KeyError(info.variant))
     end
@@ -114,6 +117,8 @@ function model_runtime(info::BenchmarkInformation)
                 n_cycles_per_pass += n_loop_iterations_per_tile
             end
         end
+    elseif info.variant == :cuda
+        throw("not implemented")
     else
         throw(KeyError(info.variant))
     end
@@ -121,10 +126,10 @@ function model_runtime(info::BenchmarkInformation)
     return n_passes(info) * n_cycles_per_pass / info.f
 end
 model_throughput(info::BenchmarkInformation) = workload(info) / model_runtime(info)
-max_execute_throughput(info::BenchmarkInformation) = info.spatial_parallelism * info.temporal_parallelism * info.f
+max_compute_throughput(info::BenchmarkInformation) = info.spatial_parallelism * info.temporal_parallelism * info.f
 
 model_accurracy(info::BenchmarkInformation) = model_throughput(info) / measured_throughput(info)
-occupancy(info::BenchmarkInformation) = measured_throughput(info) / max_execute_throughput(info)
+occupancy(info::BenchmarkInformation) = measured_throughput(info) / max_compute_throughput(info)
 
 function render_model_error(df, file_name)
     fig = Figure(size=(1600, 600))

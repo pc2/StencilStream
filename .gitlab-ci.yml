@@ -11,8 +11,6 @@ variables:
     PACKAGE_REGISTRY_URL: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic
 
 default:
-    before_script:
-        - source scripts/env.sh
     id_tokens:
         CI_JOB_JWT:
             aud: https://git.uni-paderborn.de
@@ -27,9 +25,19 @@ default:
         - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_MERGE_REQUEST_TITLE !~ /^Draft:/ # Run for non-draft merge requests
         - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH # Run on the main branch
 
+.fpga_job:
+    before_script:
+        - source scripts/env_fpga.sh
+
+.cuda_job:
+    before_script:
+        - source scripts/env_cuda.sh
+
 
 .synthesis:
-    extends: .expensive_job
+    extends:
+        - .expensive_job
+        - .fpga_job
     stage: synthesis
     tags:
         - noctua2
@@ -64,8 +72,10 @@ documentation:
         paths:
             - doxygen/html
 
-unit test:
-    extends: .cheap_job
+FPGA/CPU unit test:
+    extends:
+        - .cheap_job
+        - .fpga_job
     stage: preevaluation
     tags:
         - noctua2
@@ -75,8 +85,9 @@ unit test:
         - mkdir -p build
         - cd build
         - cmake ..
-        - make unit_test -j16
-        - ./tests/unit_test
+        - make unit_test_cpu unit_test_fpga -j16
+        - ./tests/unit_test_cpu
+        - ./tests/unit_test_fpga
     artifacts:
         paths:
             - Manifest.toml
@@ -92,7 +103,9 @@ convection synthesis:
         STST_EXECUTABLE: "convection"
 
 convection benchmark:
-    extends: .expensive_job
+    extends:
+        - .expensive_job
+        - .fpga_job
     stage: benchmark
     needs: 
         - convection synthesis
@@ -102,11 +115,11 @@ convection benchmark:
         SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
     script:
         - cd examples/convection
-        - ./scripts/benchmark.jl default ../../build/examples/convection/convection
+        - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection
     artifacts:
         paths:
             - examples/convection/out
-            - examples/convection/metrics.json
+            - examples/convection/metrics.monotile.json
             - examples/convection/pseudo_transient_runtimes.csv
 
 # ==================
@@ -120,7 +133,9 @@ hotspot (monotile) synthesis:
         STST_EXECUTABLE: "hotspot_mono"
 
 .hotspot benchmark:
-    extends: .expensive_job
+    extends:
+        - .expensive_job
+        - .fpga_job
     stage: benchmark
     tags:
         - noctua2
@@ -134,7 +149,6 @@ hotspot (monotile) synthesis:
             - examples/hotspot/metrics.*.json
 
 hotspot (monotile) benchmark:
-    extends: .expensive_job
     extends: .hotspot benchmark
     needs: 
         - hotspot (monotile) synthesis
@@ -172,7 +186,9 @@ fdtd (monotile) synthesis:
         STST_EXECUTABLE: "fdtd_coef_device_mono"
 
 .fdtd benchmark:
-    extends: .expensive_job
+    extends:
+        - .expensive_job
+        - .fpga_job
     stage: benchmark
     tags:
         - noctua2
@@ -214,6 +230,35 @@ fdtd (tiling) benchmark:
         STST_EXECUTABLE: fdtd_coef_device_tiling
         STST_VARIANT: tiling
 
+# ===============
+# CUDA benchmarks
+# ===============
+
+CUDA benchmark:
+    extends:
+        - .cuda_job
+        - .expensive_job
+    stage: benchmark
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A pc2-shks -p gpu --gres=gpu:a100:1 -c 16 --mem 16G --time=01:00:00 --pty bash
+    script:
+        - mkdir -p build
+        - cd build
+        - cmake ..
+        - make unit_test_cuda convection_cuda hotspot_cuda fdtd_coef_device_cuda -j16
+        - ./tests/unit_test_cuda
+        - cd ../examples/convection
+        - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection_cuda cuda
+        - cd ../fdtd
+        - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/fdtd_coef_device_cuda cuda
+        - cd ../hotspot
+        - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/hotspot_cuda cuda
+    artifacts:
+        paths:
+            - examples/*/metrics.cuda.json
+
 # =======
 # Release
 # =======
@@ -227,5 +272,7 @@ release:
         - noctua2
     variables:
         SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -c 8 --mem 2G -t 00:05:00
+    before_script:
+        - source ./scripts/env_base.sh
     script:
         - ./scripts/publish-release.sh

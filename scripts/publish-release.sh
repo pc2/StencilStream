@@ -7,7 +7,7 @@ ml tools release-cli
 git clone git@git.uni-paderborn.de:pc2/sycl-stencil.wiki.git wiki
 cd wiki
 julia --project -e "using Pkg; Pkg.instantiate()"
-for metrics_file in ../examples/*/*.json
+for metrics_file in ../examples/*/metrics.*.json
 do
     ./Performance-tracking/add_data.jl $TAG_NAME $metrics_file
 done

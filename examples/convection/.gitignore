@@ -5,5 +5,5 @@ out
 *.png
 *.gif
 *.mp4
-metrics.json
+metrics.*.json
 profile.*
