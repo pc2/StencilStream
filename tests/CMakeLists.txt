@@ -14,18 +14,33 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
-set(UNIT_TEST_SOURCES
+set(UNIT_TEST_BASE_SOURCES
     HostPipe.cpp
     Stencil.cpp
+)
+
+set(UNIT_TEST_CPU_SOURCES
     cpu/Grid.cpp
     cpu/StencilUpdate.cpp
+)
+
+set(UNIT_TEST_CUDA_SOURCES
     cuda/Grid.cpp
     cuda/StencilUpdate.cpp
+)
+
+set(UNIT_TEST_FPGA_SOURCES
     monotile/Grid.cpp
     monotile/StencilUpdate.cpp
     tiling/Grid.cpp
     tiling/StencilUpdate.cpp
 )
 
-add_executable(unit_test ${UNIT_TEST_SOURCES})
-target_link_libraries(unit_test PRIVATE Catch2::Catch2WithMain StencilStream_MonotileEmulator StencilStream_TilingEmulator)
+add_executable(unit_test_cpu ${UNIT_TEST_BASE_SOURCES} ${UNIT_TEST_CPU_SOURCES})
+target_link_libraries(unit_test_cpu PRIVATE Catch2::Catch2WithMain StencilStream_CPU)
+
+add_executable(unit_test_cuda ${UNIT_TEST_BASE_SOURCES} ${UNIT_TEST_CUDA_SOURCES})
+target_link_libraries(unit_test_cuda PRIVATE Catch2::Catch2WithMain StencilStream_CUDA)
+
+add_executable(unit_test_fpga ${UNIT_TEST_BASE_SOURCES} ${UNIT_TEST_FPGA_SOURCES})
+target_link_libraries(unit_test_fpga PRIVATE Catch2::Catch2WithMain StencilStream_MonotileEmulator StencilStream_TilingEmulator)
