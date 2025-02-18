@@ -21,9 +21,9 @@
  * SOFTWARE.
  */
 #pragma once
-#include <CL/sycl.hpp>
 #include <StencilStream/Stencil.hpp>
 #include <catch2/catch_all.hpp>
+#include <sycl/sycl.hpp>
 
 enum class CellStatus {
     Normal,
@@ -111,8 +111,7 @@ template <std::size_t radius> class HostTransFunc {
     Cell operator()(stencil::Stencil<Cell, radius, std::size_t> const &stencil) const {
         Cell new_cell = stencil[0][0];
 
-        if (stencil.id.r < 0 || stencil.id.c < 0 || stencil.id.r >= stencil.grid_range.r ||
-            stencil.id.c >= stencil.grid_range.c) {
+        if (stencil.id[0] >= stencil.grid_range[0] || stencil.id[1] >= stencil.grid_range[1]) {
             // Things may be weird in this (illegal) situation, we should not do
             // anything with side-effects.
             return new_cell;
@@ -121,10 +120,10 @@ template <std::size_t radius> class HostTransFunc {
         for (int r = -int(radius); r <= int(radius); r++) {
             for (int c = -int(radius); c <= int(radius); c++) {
                 Cell old_cell = stencil[r][c];
-                int cell_r = stencil.id.r + r;
-                int cell_c = stencil.id.c + c;
-                if (cell_r >= 0 && cell_c >= 0 && cell_r < stencil.grid_range.r &&
-                    cell_c < stencil.grid_range.c) {
+                int cell_r = stencil.id[0] + r;
+                int cell_c = stencil.id[1] + c;
+                if (cell_r >= 0 && cell_c >= 0 && cell_r < stencil.grid_range[0] &&
+                    cell_c < stencil.grid_range[1]) {
                     REQUIRE(old_cell.r == cell_r);
                     REQUIRE(old_cell.c == cell_c);
                     REQUIRE(old_cell.i_iteration == stencil.iteration);

@@ -14,8 +14,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
-add_compile_definitions(STENCIL_INDEX_WIDTH=32)
-
 set(UNIT_TEST_SOURCES
     HostPipe.cpp
     Stencil.cpp
@@ -30,4 +28,4 @@ set(UNIT_TEST_SOURCES
 )
 
 add_executable(unit_test ${UNIT_TEST_SOURCES})
-target_link_libraries(unit_test PRIVATE Catch2::Catch2WithMain StencilStream_TilingEmulator StencilStream_MonotileEmulator)
+target_link_libraries(unit_test PRIVATE Catch2::Catch2WithMain StencilStream_MonotileEmulator StencilStream_TilingEmulator)

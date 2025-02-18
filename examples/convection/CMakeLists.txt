@@ -24,11 +24,6 @@ target_link_libraries(convection_emu PUBLIC StencilStream_MonotileEmulator)
 add_executable(convection_report convection.cpp)
 target_link_libraries(convection_report PUBLIC StencilStream_MonotileReport)
 
-# Setting hardware synthesis options
-foreach(TARGET convection convection_report)
-    target_link_options(${TARGET} PUBLIC -Xsseed=63764)
-endforeach()
-
 include(FetchContent)
 FetchContent_Declare(json
     GIT_REPOSITORY https://github.com/nlohmann/json
@@ -39,4 +34,9 @@ FetchContent_MakeAvailable(json)
 # Linking with the JSON library
 foreach(TARGET convection convection_cpu convection_cuda convection_emu convection_report)
     target_link_libraries(${TARGET} PRIVATE nlohmann_json::nlohmann_json)
+endforeach()
+
+# Setting seeds for hardware synthesis.
+foreach(TARGET convection convection_report)
+    target_link_options(${TARGET} PUBLIC -Xsseed=2)
 endforeach()

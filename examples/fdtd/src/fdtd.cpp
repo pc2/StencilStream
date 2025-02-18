@@ -48,13 +48,13 @@ using TDVStrategy = tdv::single_pass::PrecomputeOnHostStrategy;
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
     #include <StencilStream/monotile/StencilUpdate.hpp>
 
-using Grid = monotile::Grid<CellImpl>;
-using StencilUpdate = monotile::StencilUpdate<KernelImpl, n_processing_elements, tile_height,
-                                              tile_width, TDVStrategy>;
+using Grid = monotile::Grid<CellImpl, spatial_parallelism>;
+using StencilUpdate = monotile::StencilUpdate<KernelImpl, temporal_parallelism, spatial_parallelism,
+                                              tile_height, tile_width, TDVStrategy>;
 #elif defined(STENCILSTREAM_BACKEND_TILING)
     #include <StencilStream/tiling/StencilUpdate.hpp>
-using StencilUpdate =
-    tiling::StencilUpdate<KernelImpl, n_processing_elements, tile_height, tile_width, TDVStrategy>;
+using StencilUpdate = tiling::StencilUpdate<KernelImpl, temporal_parallelism, spatial_parallelism,
+                                            tile_height, tile_width, TDVStrategy>;
 using Grid = StencilUpdate::GridImpl;
 #elif defined(STENCILSTREAM_BACKEND_CPU)
     #include <StencilStream/cpu/StencilUpdate.hpp>
@@ -66,11 +66,11 @@ using Grid = cuda::Grid<CellImpl>;
 using StencilUpdate = cuda::StencilUpdate<KernelImpl>;
 #endif
 
-auto exception_handler = [](cl::sycl::exception_list exceptions) {
+auto exception_handler = [](sycl::exception_list exceptions) {
     for (std::exception_ptr const &e : exceptions) {
         try {
             std::rethrow_exception(e);
-        } catch (cl::sycl::exception const &e) {
+        } catch (sycl::exception const &e) {
             std::cout << "Caught asynchronous SYCL exception:\n" << e.what() << "\n";
             std::terminate();
         }

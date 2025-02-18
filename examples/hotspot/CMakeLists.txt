@@ -22,6 +22,7 @@ target_link_libraries(hotspot_cuda PUBLIC StencilStream_CUDA)
 # Monotile versions
 add_executable(hotspot_mono hotspot.cpp)
 target_link_libraries(hotspot_mono PUBLIC StencilStream_Monotile)
+target_link_options(hotspot_mono PUBLIC -Xsseed=2)
 
 add_executable(hotspot_mono_emu hotspot.cpp)
 target_link_libraries(hotspot_mono_emu PUBLIC StencilStream_MonotileEmulator)
@@ -39,9 +40,9 @@ target_link_libraries(hotspot_tiling_emu PUBLIC StencilStream_TilingEmulator)
 add_executable(hotspot_tiling_report hotspot.cpp)
 target_link_libraries(hotspot_tiling_report PUBLIC StencilStream_TilingReport)
 
-# Limiting clock speed and setting the seed for Hotspot Tiling
-foreach(EXECUTABLE hotspot_tiling_report hotspot_tiling)
-    target_link_options(${EXECUTABLE} PUBLIC -Xsclock=300MHz -Xsseed=3)
+# Setting seeds for hardware synthesis.
+foreach(TARGET hotspot_tiling hotspot_tiling_report)
+    target_link_options(${TARGET} PUBLIC -Xsseed=2)
 endforeach()
 
 # Adding a custom target for all Hotspot reports

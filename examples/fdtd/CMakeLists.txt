@@ -62,13 +62,14 @@ foreach(MATERIAL coef lut render)
                 target_link_libraries(${EXECUTABLE} PUBLIC StencilStream_CUDA)
             endif()
 
-            if(${EXECUTOR} MATCHES "(tiling)|(mono)")
-                target_link_options(${EXECUTABLE} PUBLIC -Xsclock=300MHz)
-            endif()
-
             if(${EXECUTOR} MATCHES "report")
                 add_dependencies(fdtd_reports ${EXECUTABLE})
             endif()
         endforeach()
     endforeach()
+endforeach()
+
+# Setting seeds for hardware synthesis.
+foreach(TARGET fdtd_coef_device_mono fdtd_coef_device_mono_report)
+    target_link_options(${TARGET} PUBLIC -Xsseed=2)
 endforeach()

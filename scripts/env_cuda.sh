@@ -4,9 +4,8 @@ module reset
 ml fpga
 ml lang
 ml intel/oneapi/24.2.1
-ml devel/CMake/3.29.3-GCCcore-13.3.0
+ml CMake/3.29.3-GCCcore-13.3.0 Julia/1.10.4
 ml system/CUDA/12.6.0
-ml Julia/1.10.4
 
 echo "Julia depot path: $JULIA_DEPOT_PATH"
 

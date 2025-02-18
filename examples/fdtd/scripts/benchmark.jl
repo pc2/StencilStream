@@ -1,27 +1,25 @@
-#!/usr/bin/env -S julia --project=../..
+#!/usr/bin/env -S julia --project
 include("../../../scripts/benchmark-common.jl")
 
 const N_SUBITERATIONS = 2
-const N_TILING_CUS = 190
-const N_MONOTILE_CUS = 200
+const TEMPORAL_PARALLELISM = 50
+const SPATIAL_PARALLELISM = 2
 const OPERATIONS_PER_CELL = 8 + (6 + 4 + 2 + 2 + 2) # Including all paths, excluding source wave computation
 const CELL_SIZE = 4 * (4 + 4) # bytes, including material coefficients
 const MONO_TILE_HEIGHT = 512
 const TILING_TILE_HEIGHT = 2^16
 const TILE_WIDTH = 512
 
-function max_perf_benchmark(exe, variant, f, loop_latency)
+function max_perf_benchmark(exe, variant, f)
     if variant == :monotile
         experiment_path = "./experiments/full_tile.json"
         tile_height = MONO_TILE_HEIGHT
         tile_width = TILE_WIDTH
-        n_cus = N_MONOTILE_CUS
         n_samples = 10
     elseif variant == :tiling
         experiment_path = "./experiments/max_grid.json"
         tile_height = TILING_TILE_HEIGHT
         tile_width = TILE_WIDTH
-        n_cus = N_TILING_CUS
         n_samples = 1
     end
     out_dir = Base.Filesystem.mkpath("./out/")
@@ -63,17 +61,17 @@ function max_perf_benchmark(exe, variant, f, loop_latency)
         CELL_SIZE,
         OPERATIONS_PER_CELL,
         variant,
-        n_cus,
+        TEMPORAL_PARALLELISM,
+        SPATIAL_PARALLELISM,
         tile_height,
         tile_width,
         f,
-        loop_latency,
         mean(kernel_runtimes)
     )
 
     metrics = Dict(
         "target" => (variant == :monotile) ? "FDTD, Monotile" : "FDTD, Tiling",
-        "n_cus" => n_cus,
+        "n_cus" => TEMPORAL_PARALLELISM * SPATIAL_PARALLELISM,
         "f" => f,
         "occupancy" => occupancy(info),
         "measured" => measured_throughput(info),
@@ -87,7 +85,7 @@ function max_perf_benchmark(exe, variant, f, loop_latency)
     end
 end
 
-function scaling_benchmark(exe, variant, f, loop_latency)
+function scaling_benchmark(exe, variant, f)
     mkpath("out/")
     out_path = "$(variant)_perf.csv"
 
@@ -103,11 +101,9 @@ function scaling_benchmark(exe, variant, f, loop_latency)
     if variant == :monotile
         tile_width = TILE_WIDTH
         tile_height = MONO_TILE_HEIGHT
-        n_cus = N_MONOTILE_CUS
     elseif variant == :tiling
         tile_width = TILE_WIDTH
         tile_height = TILING_TILE_HEIGHT
-        n_cus = N_TILING_CUS
     end
 
     for iteration in 1:3
@@ -149,11 +145,11 @@ function scaling_benchmark(exe, variant, f, loop_latency)
                     CELL_SIZE,
                     OPERATIONS_PER_CELL,
                     variant,
-                    n_cus,
+                    SPATIAL_PARALLELISM,
+                    TEMPORAL_PARALLELISM,
                     tile_height,
                     tile_width,
                     f,
-                    loop_latency,
                     kernel_runtime
                 )
 
@@ -177,14 +173,14 @@ end
 
 exe = ARGS[2]
 report_path = exe * ".prj/reports"
-f, loop_latency = load_report_details(report_path)
+f = load_report_details(report_path)
 
 variant = Symbol(ARGS[3])
 
 if ARGS[1] == "max_perf"
-    max_perf_benchmark(exe, variant, f, loop_latency)
+    max_perf_benchmark(exe, variant, f)
 elseif ARGS[1] == "scaling"
-    scaling_benchmark(exe, variant, f, loop_latency)
+    scaling_benchmark(exe, variant, f)
 else
     println(stderr, "Unknown benchmark '$(ARGS[1])'")
     exit(1)

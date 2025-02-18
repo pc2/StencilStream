@@ -7,11 +7,11 @@ using CairoMakie
 function parse_report_js(path)
     fields = Dict{String,Any}()
     for line in readlines(path)
-        if occursin("fileJSON", line)
+        if occursin("fileNDJSON", line) || occursin("fileNDJSON", line)
             continue # Avoiding to load all source files. They're too big for REs.
         end
 
-        matched_line = match(r"var (.+)=(\{.+\});$", line)
+        matched_line = match(r"var (.+)=(.+);$", line)
         if matched_line === nothing
             continue
         end
@@ -26,18 +26,16 @@ end
 function load_report_details(report_path)
     if !isdir(report_path)
         println(stderr, "Could not find synthesis report, using stand-in numbers for testing")
-        return 350e6, 2000
+        return 350e6
     end
 
     quartus_data = parse_report_js("$report_path/resources/quartus_data.js")
-    f = parse(Float32, quartus_data["quartusJSON"]["quartusFitClockSummary"]["nodes"][1]["kernel clock fmax"]) * 1e6
-
-    report_data = parse_report_js("$report_path/resources/report_data.js")
-    kernels = report_data["loop_attrJSON"]["nodes"]
-    loops = Iterators.flatmap(kernel -> kernel["children"], kernels)
-    loop_latency = sum(Iterators.map(loop -> parse(Float32, loop["lt"]), loops))
-
-    return f, loop_latency
+    # Checking whether this is an >=25.0.0 report.
+    if "quartusNDJSON" ∈ keys(quartus_data)
+        parse(Float32, quartus_data["quartusNDJSON"][1]["quartusFitClockSummary"]["nodes"][1]["kernel clock"]) * 1e6
+    else
+        parse(Float32, quartus_data["quartusJSON"]["quartusFitClockSummary"]["nodes"][1]["kernel clock"]) * 1e6
+    end
 end
 
 struct BenchmarkInformation
@@ -53,13 +51,13 @@ struct BenchmarkInformation
 
     # Implementation parameters
     variant::Symbol
-    n_cus::Int
+    temporal_parallelism::Int
+    spatial_parallelism::Int
     n_tile_rows::Int
     n_tile_cols::Int
 
     # Synthesis results
     f::Float64
-    loop_latency::Int
 
     # Benchmark results
     runtime::Float64
@@ -67,9 +65,13 @@ end
 
 grid_size(info::BenchmarkInformation) = info.n_grid_rows * info.n_grid_cols
 workload(info::BenchmarkInformation) = grid_size(info) * info.n_iters
-n_passes(info::BenchmarkInformation) = ceil(info.n_iters * info.n_subiters / info.n_cus)
-padded_cell_size(info::BenchmarkInformation) = 2^ceil(log2(info.cell_size))
-max_cell_rate(info::BenchmarkInformation) = ceil(padded_cell_size(info) / 64)
+n_passes(info::BenchmarkInformation) = ceil(info.n_iters / info.temporal_parallelism)
+n_cus(info::BenchmarkInformation) = info.temporal_parallelism * info.n_subiters
+
+halo_height(info::BenchmarkInformation) = (info.variant == :tiling) ? n_cus(info) : 0
+halo_width(info::BenchmarkInformation) = (info.variant == :tiling) ? info.spatial_parallelism * n_cus(info) : 0
+n_grid_col_vects(info::BenchmarkInformation) = ceil(info.n_grid_cols / info.spatial_parallelism)
+n_tile_col_vects(info::BenchmarkInformation) = info.n_tile_cols / info.spatial_parallelism
 
 function transfered_cells(info::BenchmarkInformation)
     if info.variant == :monotile
@@ -81,8 +83,8 @@ function transfered_cells(info::BenchmarkInformation)
                 output_tile_height = min(info.n_grid_rows, tile_start_r + info.n_tile_rows) - tile_start_r + 1
                 output_tile_width = min(info.n_grid_cols, tile_start_c + info.n_tile_cols) - tile_start_c + 1
                 transfered_cells +=
-                    (2info.n_cus + output_tile_height) * (2info.n_cus + output_tile_width) +
-                    output_tile_height * output_tile_width
+                    (2halo_height(info) + output_tile_height) * (2halo_width(info) + output_tile_width)
+                transfered_cells += output_tile_height * output_tile_width
             end
         end
         return n_passes(info) * transfered_cells
@@ -92,33 +94,34 @@ function transfered_cells(info::BenchmarkInformation)
 end
 
 measured_throughput(info::BenchmarkInformation) = workload(info) / info.runtime
-measured_mem_throughput(info::BenchmarkInformation) = transfered_cells(info) * padded_cell_size(info) / info.runtime
+# TODO: Correctly model the transfered data.
+measured_mem_throughput(info::BenchmarkInformation) = transfered_cells(info) * info.cell_size / info.runtime
 measured_flops(info::BenchmarkInformation) = measured_throughput(info) * info.ops_per_cell
 
 function model_runtime(info::BenchmarkInformation)
     if info.variant == :monotile
-        cu_latency = info.n_grid_cols + 1
-        pipeline_latency = info.n_cus * cu_latency
-        n_loop_iterations = pipeline_latency + (info.n_grid_rows * info.n_grid_cols)
-        n_cycles_per_pass = n_loop_iterations + info.loop_latency
+        cu_latency = n_grid_col_vects(info) + 1
+        pipeline_latency = n_cus(info) * cu_latency
+        n_loop_iterations = pipeline_latency + (info.n_grid_rows * n_grid_col_vects(info))
+        n_cycles_per_pass = n_loop_iterations
     elseif info.variant == :tiling
         n_cycles_per_pass = 0
         for tile_row in 1:ceil(info.n_grid_rows / info.n_tile_rows)
             for tile_col in 1:ceil(info.n_grid_cols / info.n_tile_cols)
                 tile_section_height = min(info.n_tile_rows, info.n_grid_rows - (tile_row - 1) * info.n_tile_rows)
-                tile_section_width = min(info.n_tile_cols, info.n_grid_cols - (tile_col - 1) * info.n_tile_cols)
-                n_loop_iterations_per_tile = (tile_section_width + 2info.n_cus) * (tile_section_height + 2info.n_cus)
-                n_cycles_per_pass += info.loop_latency + n_loop_iterations_per_tile
+                tile_section_width = min(n_tile_col_vects(info), n_grid_col_vects(info) - (tile_col - 1) * n_tile_col_vects(info))
+                n_loop_iterations_per_tile = (tile_section_width + 2n_cus(info)) * (tile_section_height + 2n_cus(info))
+                n_cycles_per_pass += n_loop_iterations_per_tile
             end
         end
     else
         throw(KeyError(info.variant))
     end
 
-    return n_passes(info) * max_cell_rate(info) * n_cycles_per_pass / info.f
+    return n_passes(info) * n_cycles_per_pass / info.f
 end
 model_throughput(info::BenchmarkInformation) = workload(info) / model_runtime(info)
-max_execute_throughput(info::BenchmarkInformation) = info.n_cus / info.n_subiters * info.f
+max_execute_throughput(info::BenchmarkInformation) = info.spatial_parallelism * info.temporal_parallelism * info.f
 
 model_accurracy(info::BenchmarkInformation) = model_throughput(info) / measured_throughput(info)
 occupancy(info::BenchmarkInformation) = measured_throughput(info) / max_execute_throughput(info)

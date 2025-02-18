@@ -20,6 +20,8 @@
 #pragma once
 #include "../AccessorSubscript.hpp"
 #include "../Concepts.hpp"
+#include <cmath>
+#include <sycl/ext/intel/ac_types/ac_int.hpp>
 
 namespace stencil {
 namespace monotile {
@@ -52,15 +54,10 @@ namespace monotile {
  *
  * \tparam Cell The cell type to store.
  *
- * \tparam word_size The word size of the memory system, in bytes. This is used to optimize the
- * kernels submitted by \ref submit_read and \ref submit_write.
+ * \tparam spatial_parallelism The number of cells to load and store in parallel. Has to match the
+ * `spatial_parallelism` parameter for a \ref StencilUpdate instance.
  */
-template <class Cell, std::size_t word_size = 64> class Grid {
-  private:
-    static constexpr std::size_t word_length =
-        std::lcm(sizeof(Padded<Cell>), word_size) / sizeof(Padded<Cell>);
-    using IOWord = std::array<Padded<Cell>, word_length>;
-
+template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
   public:
     /**
      * \brief The number of dimensions of the grid.
@@ -68,6 +65,8 @@ template <class Cell, std::size_t word_size = 64> class Grid {
      * May be changed in the future when other dimensions are supported.
      */
     static constexpr std::size_t dimensions = 2;
+
+    using CellVector = Padded<std::array<Cell, spatial_parallelism>>;
 
     /**
      * \brief Create a new, uninitialized grid with the given dimensions.
@@ -77,8 +76,8 @@ template <class Cell, std::size_t word_size = 64> class Grid {
      * \param grid_width The width, or number of columns, of the new grid.
      */
     Grid(std::size_t grid_height, std::size_t grid_width)
-        : tile_buffer(sycl::range<1>(n_cells_to_n_words(grid_height * grid_width, word_length))),
-          grid_height(grid_height), grid_width(grid_width) {}
+        : tile_buffer(sycl::range<2>(grid_height, int_ceil_div(grid_width, spatial_parallelism))),
+          grid_range(grid_height, grid_width) {}
 
     /**
      * \brief Create a new, uninitialized grid with the given dimensions.
@@ -87,8 +86,8 @@ template <class Cell, std::size_t word_size = 64> class Grid {
      * index will be the height of the grid.
      */
     Grid(sycl::range<2> range)
-        : tile_buffer(sycl::range<1>(n_cells_to_n_words(range[0] * range[1], word_length))),
-          grid_height(range[0]), grid_width(range[1]) {}
+        : tile_buffer(sycl::range<2>(range[0], int_ceil_div(range[1], spatial_parallelism))),
+          grid_range(range) {}
 
     /**
      * \brief Create a new grid with the same size and contents as the given SYCL buffer.
@@ -99,8 +98,9 @@ template <class Cell, std::size_t word_size = 64> class Grid {
      * \param buffer The buffer with the contents of the new grid.
      */
     Grid(sycl::buffer<Cell, 2> buffer)
-        : tile_buffer(1), grid_height(buffer.get_range()[0]), grid_width(buffer.get_range()[1]) {
-        tile_buffer = sycl::range<1>(n_cells_to_n_words(grid_height * grid_width, word_length));
+        : tile_buffer(sycl::range<2>(buffer.get_range()[0],
+                                     int_ceil_div(buffer.get_range()[1], spatial_parallelism))),
+          grid_range(buffer.get_range()) {
         copy_from_buffer(buffer);
     }
 
@@ -114,23 +114,24 @@ template <class Cell, std::size_t word_size = 64> class Grid {
      * \param other_grid The other grid the new grid should reference.
      */
     Grid(Grid const &other_grid)
-        : tile_buffer(other_grid.tile_buffer), grid_height(other_grid.grid_height),
-          grid_width(other_grid.grid_width) {}
+        : tile_buffer(other_grid.tile_buffer), grid_range(other_grid.grid_range) {}
 
     /**
      * \brief Create an new, uninitialized grid with the same size as the current one.
      */
-    Grid make_similar() const { return Grid(grid_height, grid_width); }
+    Grid make_similar() const { return Grid(grid_range); }
 
     /**
      * \brief Return the height, or number of rows, of the grid.
      */
-    std::size_t get_grid_height() const { return grid_height; }
+    std::size_t get_grid_height() const { return grid_range[0]; }
 
     /**
      * \brief Return the width, or number of columns, of the grid.
      */
-    std::size_t get_grid_width() const { return grid_width; }
+    std::size_t get_grid_width() const { return grid_range[1]; }
+
+    sycl::range<2> get_grid_range() const { return grid_range; }
 
     /**
      * \brief An accessor for the monotile grid.
@@ -143,7 +144,7 @@ template <class Cell, std::size_t word_size = 64> class Grid {
      */
     template <sycl::access::mode access_mode = sycl::access::mode::read_write> class GridAccessor {
       private:
-        using accessor_t = sycl::host_accessor<IOWord, 1, access_mode>;
+        using accessor_t = sycl::host_accessor<CellVector, 2, access_mode>;
 
       public:
         /**
@@ -154,9 +155,7 @@ template <class Cell, std::size_t word_size = 64> class Grid {
         /**
          * \brief Create a new accessor to the given grid.
          */
-        GridAccessor(Grid &grid)
-            : ac(grid.tile_buffer), grid_height(grid.get_grid_height()),
-              grid_width(grid.get_grid_width()) {}
+        GridAccessor(Grid &grid) : ac(grid.tile_buffer) {}
 
         /**
          * \brief Shorthand for the used subscript type.
@@ -183,9 +182,7 @@ template <class Cell, std::size_t word_size = 64> class Grid {
         Cell const &operator[](sycl::id<2> id)
             requires(access_mode == sycl::access::mode::read)
         {
-            std::size_t word_i = (id[0] * grid_width + id[1]) / word_length;
-            std::size_t cell_i = (id[0] * grid_width + id[1]) % word_length;
-            return ac[word_i][cell_i].value;
+            return ac[id[0]][id[1] / spatial_parallelism].value[id[1] % spatial_parallelism];
         }
 
         /**
@@ -197,14 +194,11 @@ template <class Cell, std::size_t word_size = 64> class Grid {
         Cell &operator[](sycl::id<2> id)
             requires(access_mode != sycl::access::mode::read)
         {
-            std::size_t word_i = (id[0] * grid_width + id[1]) / word_length;
-            std::size_t cell_i = (id[0] * grid_width + id[1]) % word_length;
-            return ac[word_i][cell_i].value;
+            return ac[id[0]][id[1] / spatial_parallelism].value[id[1] % spatial_parallelism];
         }
 
       private:
         accessor_t ac;
-        std::size_t grid_height, grid_width;
     };
 
     /**
@@ -218,18 +212,16 @@ template <class Cell, std::size_t word_size = 64> class Grid {
      * \throws std::range_error The size of the buffer does not match the grid.
      */
     void copy_from_buffer(sycl::buffer<Cell, 2> input_buffer) {
-        std::size_t height = this->get_grid_height();
-        std::size_t width = this->get_grid_width();
-
-        if (input_buffer.get_range() != sycl::range<2>(height, width)) {
+        assert(tile_buffer.get_range()[1] == int_ceil_div(grid_range[1], spatial_parallelism));
+        if (input_buffer.get_range() != grid_range) {
             throw std::range_error("The target buffer has not the same size as the grid");
         }
 
         sycl::host_accessor in_ac(input_buffer, sycl::read_only);
-        GridAccessor<sycl::access::mode::read_write> tile_ac(*this);
-        for (std::size_t r = 0; r < height; r++) {
-            for (std::size_t c = 0; c < width; c++) {
-                tile_ac[r][c] = in_ac[r][c];
+        sycl::host_accessor tile_ac(tile_buffer, sycl::read_write);
+        for (std::size_t r = 0; r < grid_range[0]; r++) {
+            for (std::size_t c = 0; c < grid_range[1]; c++) {
+                tile_ac[r][c / spatial_parallelism].value[c % spatial_parallelism] = in_ac[r][c];
             }
         }
     }
@@ -244,18 +236,16 @@ template <class Cell, std::size_t word_size = 64> class Grid {
      * \throws std::range_error The size of the buffer does not match the grid.
      */
     void copy_to_buffer(sycl::buffer<Cell, 2> output_buffer) {
-        std::size_t height = this->get_grid_height();
-        std::size_t width = this->get_grid_width();
-
-        if (output_buffer.get_range() != sycl::range<2>(height, width)) {
+        assert(tile_buffer.get_range()[1] == int_ceil_div(grid_range[1], spatial_parallelism));
+        if (output_buffer.get_range() != grid_range) {
             throw std::range_error("The target buffer has not the same size as the grid");
         }
 
-        GridAccessor<sycl::access::mode::read> in_ac(*this);
+        sycl::host_accessor tile_ac(tile_buffer, sycl::read_only);
         sycl::host_accessor out_ac(output_buffer, sycl::write_only);
-        for (std::size_t r = 0; r < height; r++) {
-            for (std::size_t c = 0; c < width; c++) {
-                out_ac[r][c] = in_ac[r][c];
+        for (std::size_t r = 0; r < grid_range[0]; r++) {
+            for (std::size_t c = 0; c < grid_range[1]; c++) {
+                out_ac[r][c] = tile_ac[r][c / spatial_parallelism].value[c % spatial_parallelism];
             }
         }
     }
@@ -276,31 +266,31 @@ template <class Cell, std::size_t word_size = 64> class Grid {
      *
      * \returns The event object of the submitted kernel.
      */
-    template <typename in_pipe, size_t max_n_cells = std::numeric_limits<size_t>::max()>
+    template <typename in_pipe,
+              std::size_t max_grid_height = std::numeric_limits<std::size_t>::max(),
+              std::size_t max_grid_width = std::numeric_limits<std::size_t>::max()>
     sycl::event submit_read(sycl::queue queue) {
-        using uindex_cell_t = ac_int<std::bit_width(max_n_cells), false>;
-        using uindex_word_t = ac_int<std::bit_width(max_n_cells / word_length + 1), false>;
-        using uindex_subword_t = ac_int<std::bit_width(word_length), false>;
+        constexpr std::size_t max_vect_grid_width =
+            int_ceil_div(max_grid_width, spatial_parallelism);
 
-        assert(grid_height * grid_width <= max_n_cells);
-        uindex_cell_t n_cells = grid_height * grid_width;
+        using uindex_r_t = ac_int<std::bit_width(max_grid_height), false>;
+        using uindex_vect_c_t = ac_int<std::bit_width(max_vect_grid_width), false>;
+        using uindex_cell_t = ac_int<std::bit_width(spatial_parallelism), false>;
+
+        assert(tile_buffer.get_range()[0] <= max_grid_height);
+        assert(tile_buffer.get_range()[1] <= max_vect_grid_width);
 
         return queue.submit([&](sycl::handler &cgh) {
-            sycl::accessor ac(tile_buffer, cgh, sycl::read_only);
+            sycl::accessor tile_ac(tile_buffer, cgh, sycl::read_only);
+            uindex_r_t grid_height = tile_ac.get_range()[0];
+            uindex_vect_c_t vect_grid_width = tile_ac.get_range()[1];
 
             cgh.single_task([=]() {
-                IOWord cache;
-
-                uindex_word_t word_i = 0;
-                uindex_subword_t subword_i = word_length;
-                for (uindex_cell_t i = 0; i < n_cells; i++) {
-                    if (subword_i == uindex_subword_t(word_length)) {
-                        cache = ac[size_t(word_i)];
-                        word_i++;
-                        subword_i = 0;
+                [[intel::loop_coalesce(2)]] for (uindex_r_t r = 0; r < grid_height; r++) {
+                    for (uindex_vect_c_t vect_c = 0; vect_c < vect_grid_width; vect_c++) {
+                        std::array<Cell, spatial_parallelism> vector = tile_ac[r][vect_c].value;
+                        in_pipe::write(vector);
                     }
-                    in_pipe::write(cache[subword_i].value);
-                    subword_i++;
                 }
             });
         });
@@ -323,30 +313,30 @@ template <class Cell, std::size_t word_size = 64> class Grid {
      *
      * \returns The event object of the submitted kernel.
      */
-    template <typename out_pipe, size_t max_n_cells = std::numeric_limits<size_t>::max()>
+    template <typename out_pipe,
+              std::size_t max_grid_height = std::numeric_limits<std::size_t>::max(),
+              std::size_t max_grid_width = std::numeric_limits<std::size_t>::max()>
     sycl::event submit_write(sycl::queue queue) {
-        using uindex_cell_t = ac_int<std::bit_width(max_n_cells), false>;
-        using uindex_word_t = ac_int<std::bit_width(max_n_cells / word_length + 1), false>;
-        using uindex_subword_t = ac_int<std::bit_width(word_length), false>;
+        constexpr std::size_t max_vect_grid_width =
+            int_ceil_div(max_grid_width, spatial_parallelism);
 
-        assert(grid_height * grid_width <= max_n_cells);
-        uindex_cell_t n_cells = grid_height * grid_width;
+        using uindex_r_t = ac_int<std::bit_width(max_grid_height), false>;
+        using uindex_vect_c_t = ac_int<std::bit_width(max_vect_grid_width), false>;
+        using uindex_cell_t = ac_int<std::bit_width(spatial_parallelism), false>;
+
+        assert(tile_buffer.get_range()[0] <= max_grid_height);
+        assert(tile_buffer.get_range()[1] <= max_vect_grid_width);
 
         return queue.submit([&](sycl::handler &cgh) {
-            sycl::accessor ac(tile_buffer, cgh, sycl::write_only);
+            sycl::accessor tile_ac(tile_buffer, cgh, sycl::write_only);
+            uindex_r_t grid_height = tile_ac.get_range()[0];
+            uindex_vect_c_t vect_grid_width = tile_ac.get_range()[1];
 
             cgh.single_task([=]() {
-                IOWord cache;
-
-                uindex_word_t word_i = 0;
-                uindex_subword_t subword_i = 0;
-                for (uindex_cell_t i = 0; i < n_cells; i++) {
-                    cache[subword_i].value = out_pipe::read();
-                    subword_i++;
-                    if (subword_i == uindex_subword_t(word_length) || i == n_cells - 1) {
-                        ac[size_t(word_i)] = cache;
-                        subword_i = 0;
-                        word_i++;
+                [[intel::loop_coalesce(2)]] for (uindex_r_t r = 0; r < grid_height; r++) {
+                    for (uindex_vect_c_t vect_c = 0; vect_c < vect_grid_width; vect_c++) {
+                        std::array<Cell, spatial_parallelism> vector = out_pipe::read();
+                        tile_ac[r][vect_c].value = vector;
                     }
                 }
             });
@@ -354,8 +344,8 @@ template <class Cell, std::size_t word_size = 64> class Grid {
     }
 
   private:
-    sycl::buffer<IOWord, 1> tile_buffer;
-    std::size_t grid_height, grid_width;
+    sycl::buffer<CellVector, 2> tile_buffer;
+    sycl::range<2> grid_range;
 };
 } // namespace monotile
 } // namespace stencil

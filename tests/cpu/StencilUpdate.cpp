@@ -21,7 +21,6 @@
  * SOFTWARE.
  */
 #include "../StencilUpdateTest.hpp"
-#include "../constants.hpp"
 #include <StencilStream/cpu/StencilUpdate.hpp>
 
 using namespace sycl;

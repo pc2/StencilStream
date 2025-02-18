@@ -124,6 +124,9 @@ struct InlineStrategy {
                            std::size_t iteration_offset, std::size_t n_iterations)
                 : trans_func(global_state.trans_func), iteration_offset(iteration_offset) {}
 
+            KernelArgument(GlobalState &global_state, std::size_t iteration_offset)
+                : trans_func(global_state.trans_func), iteration_offset(iteration_offset) {}
+
             using LocalState = KernelArgument;
 
             TDV get_time_dependent_value(std::size_t i_iteration) const {

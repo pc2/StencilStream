@@ -21,12 +21,11 @@
  * SOFTWARE.
  */
 #pragma once
-#include <unistd.h>
-
-#include <CL/sycl.hpp>
 #include <cmath>
 #include <optional>
 #include <sycl/ext/intel/ac_types/ac_int.hpp>
+#include <sycl/sycl.hpp>
+#include <unistd.h>
 
 using namespace std;
 using namespace sycl;
@@ -43,26 +42,18 @@ constexpr float sqrt_2 = 1.4142135623730951;
 constexpr float pi = 3.1415926535897932384626433;
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
-constexpr size_t n_processing_elements = 200;
+constexpr size_t temporal_parallelism = 47;
+constexpr size_t spatial_parallelism = 2;
+constexpr size_t tile_width = 512;
+// monotile and CPU. More than a quadratic tile doesn't make sense.
+constexpr size_t tile_height = tile_width;
 
 #elif defined(STENCILSTREAM_BACKEND_TILING)
 constexpr size_t n_processing_elements = 190;
-#endif
-
-#if defined(STENCILSTREAM_BACKEND_MONOTILE) || defined(STENCILSTREAM_BACKEND_TILING)
-static_assert(n_processing_elements % 2 == 0);
-constexpr size_t iters_per_pass = n_processing_elements / 2;
-#endif
-
-/* stencil parameters */
+constexpr size_t spatial_parallelism = 2;
 constexpr size_t tile_width = 512;
-
-#if defined(STENCILSTREAM_BACKEND_TILING)
 // tiling, make tile as wide as possible.
 constexpr size_t tile_height = 1 << 16;
-#else
-// monotile and CPU. More than a quadratic tile doesn't make sense.
-constexpr size_t tile_height = tile_width;
 #endif
 
 constexpr size_t max_n_rings = 15;

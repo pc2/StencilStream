@@ -18,7 +18,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "../GridTest.hpp"
-#include "../constants.hpp"
 #include <StencilStream/cuda/Grid.hpp>
 
 using namespace stencil;
@@ -29,17 +28,17 @@ using TestGrid = Grid<sycl::id<2>>;
 static_assert(concepts::Grid<TestGrid, sycl::id<2>>);
 
 TEST_CASE("cuda::Grid::Grid", "[cuda::Grid]") {
-    grid_test::test_constructors<TestGrid>(tile_height, tile_width);
+    grid_test::test_constructors<TestGrid>(128, 128);
 }
 
 TEST_CASE("cuda::Grid::copy_from_buffer", "[cuda::Grid]") {
-    grid_test::test_copy_from_buffer<TestGrid>(tile_height, tile_width);
+    grid_test::test_copy_from_buffer<TestGrid>(128, 128);
 }
 
 TEST_CASE("cuda::Grid::copy_to_buffer", "[cuda::Grid]") {
-    grid_test::test_copy_to_buffer<TestGrid>(tile_height, tile_width);
+    grid_test::test_copy_to_buffer<TestGrid>(128, 128);
 }
 
 TEST_CASE("cuda::Grid::make_similar", "[cuda::Grid]") {
-    grid_test::test_make_similar<TestGrid>(tile_height, tile_width);
+    grid_test::test_make_similar<TestGrid>(128, 128);
 }

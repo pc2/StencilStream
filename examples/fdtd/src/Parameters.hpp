@@ -240,14 +240,14 @@ struct Parameters {
     // Omega (?) in Hz.
     float omega() const { return 2.0 * pi * frequency; }
 
-    cl::sycl::range<2> grid_range() const {
+    sycl::range<2> grid_range() const {
         float outer_radius = 0.0;
         for (auto ring : rings) {
             outer_radius += ring.radius;
         }
         size_t width = size_t(std::ceil((2 * outer_radius / dx) + 2));
         size_t height = width;
-        return cl::sycl::range<2>(width, height);
+        return sycl::range<2>(width, height);
     }
 
     void print_configuration() const {

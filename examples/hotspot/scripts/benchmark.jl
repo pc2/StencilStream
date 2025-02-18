@@ -1,12 +1,13 @@
-#!/usr/bin/env -S julia --project=../..
+#!/usr/bin/env -S julia --project
 include("../../../scripts/benchmark-common.jl")
 using DelimitedFiles
 using Statistics
 
 const OPERATIONS_PER_CELL = 15
 const CELL_SIZE = 8 # bytes
-const N_MONOTILE_CUS = 280
-const N_TILING_CUS = 200
+const MONOTILE_TEMPORAL_PARALLELISM = 35
+const TILING_TEMPORAL_PARALLELISM = 25
+const SPATIAL_PARALLELISM = 8
 const MONO_TILE_HEIGHT = 1024
 const TILING_TILE_HEIGHT = 2^16
 const TILE_WIDTH = 1024
@@ -25,18 +26,18 @@ function create_experiment(n_rows, n_columns, temp_file, power_file)
     end
 end
 
-function max_perf_benchmark(exec, variant, f, loop_latency)
+function max_perf_benchmark(exec, variant, f)
     if variant == :monotile
-        n_cus = N_MONOTILE_CUS
+        temporal_parallelism = MONOTILE_TEMPORAL_PARALLELISM
         grid_height = MONO_TILE_HEIGHT
         grid_width = TILE_WIDTH
-        n_iters = 1_000n_cus
+        n_iters = 10_000temporal_parallelism
         n_samples = 10
     elseif variant == :tiling
-        n_cus = N_TILING_CUS
+        temporal_parallelism = TILING_TEMPORAL_PARALLELISM
         grid_height = 16*TILE_WIDTH
         grid_width = 16*TILE_WIDTH
-        n_iters = ceil(1000/n_cus) * n_cus
+        n_iters = ceil(1000/temporal_parallelism) * temporal_parallelism
         n_samples = 3
     end
 
@@ -78,17 +79,17 @@ function max_perf_benchmark(exec, variant, f, loop_latency)
         CELL_SIZE,
         OPERATIONS_PER_CELL,
         variant,
-        n_cus,
+        temporal_parallelism,
+        SPATIAL_PARALLELISM,
         tile_height,
         TILE_WIDTH,
         f,
-        loop_latency,
         runtime
     )
 
     metrics = Dict(
         "target" => (variant == :monotile) ? "Hotspot, Monotile" : "Hotspot, Tiling",
-        "n_cus" => n_cus,
+        "n_cus" => temporal_parallelism * SPATIAL_PARALLELISM,
         "f" => f,
         "occupancy" => occupancy(info),
         "measured" => measured_throughput(info),
@@ -102,7 +103,7 @@ function max_perf_benchmark(exec, variant, f, loop_latency)
     end
 end
 
-function scaling_benchmark(exec, variant, f, loop_latency)
+function scaling_benchmark(exec, variant, f)
     out_path = "$(variant)_perf.csv"
 
     temp_path, temp_io = mktemp()
@@ -144,11 +145,11 @@ function scaling_benchmark(exec, variant, f, loop_latency)
                 CELL_SIZE,
                 OPERATIONS_PER_CELL,
                 variant,
-                (variant == :monotile) ? N_MONOTILE_CUS : N_TILING_CUS,
+                (variant == :monotile) ? MONOTILE_TEMPORAL_PARALLELISM : TILING_TEMPORAL_PARALLELISM,
+                SPATIAL_PARALLELISM,
                 (variant == :monotile) ? MONO_TILE_HEIGHT : TILING_TILE_HEIGHT,
                 TILE_WIDTH,
                 f,
-                loop_latency,
                 kernel_runtime
             )
 
@@ -172,14 +173,14 @@ end
 
 exec = ARGS[2]
 report_path = exec * ".prj/reports"
-f, loop_latency = load_report_details(report_path)
+f = load_report_details(report_path)
 
 variant = Symbol(ARGS[3])
 
 if ARGS[1] == "max_perf"
-    max_perf_benchmark(exec, variant, f, loop_latency)
+    max_perf_benchmark(exec, variant, f)
 elseif ARGS[1] == "scaling"
-    scaling_benchmark(exec, variant, f, loop_latency)
+    scaling_benchmark(exec, variant, f)
 else
     println(stderr, "Unknown benchmark '$(ARGS[1])'")
     exit(1)

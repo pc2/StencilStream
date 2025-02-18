@@ -1,9 +1,9 @@
-#!/usr/bin/env -S julia --project=../..
+#!/usr/bin/env -S julia --project
 include("../../../scripts/benchmark-common.jl")
 
 const N_SUBITERATIONS = 3
-const N_REPLICATIONS = 8
-const N_CUS = N_SUBITERATIONS * N_REPLICATIONS
+const TEMPORAL_PARALLELISM = 7
+const SPATIAL_PARALLELISM = 1
 const OPERATIONS_PER_CELL = (5 + 5 + 3 + 6 + 6 + 6) + (10 + 3 + 2 + 14 + 3 + 2) + 2
 const CELL_SIZE = 88 # bytes
 const TILE_NX = 2^16
@@ -44,7 +44,7 @@ end
 function default_benchmark()
     exe = ARGS[2]
     report_path = exe * ".prj/reports"
-    f, loop_latency = load_report_details(report_path)
+    f = load_report_details(report_path)
 
     experiment_path = "experiments/max-res-default.json"
     experiment_data = JSON.parsefile(experiment_path)
@@ -69,17 +69,17 @@ function default_benchmark()
             CELL_SIZE,
             OPERATIONS_PER_CELL,
             :monotile,
-            N_CUS,
+            TEMPORAL_PARALLELISM,
+            SPATIAL_PARALLELISM,
             TILE_NX,
             TILE_NY,
             f,
-            loop_latency,
             pseudo_transient_runtimes.runtime[best_performing_invocation]
         )
 
         metrics = Dict(
             "target" => "Convection",
-            "n_cus" => N_CUS,
+            "n_cus" => TEMPORAL_PARALLELISM * SPATIAL_PARALLELISM,
             "f" => f,
             "occupancy" => occupancy(info),
             "measured" => measured_throughput(info),
