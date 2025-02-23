@@ -1,8 +1,10 @@
-#include "sycl/sycl.hpp"
-#include <StencilStream/BaseTransitionFunction.hpp>
+#if defined(STENCIL_STREAM_BACKEND_CPU)
 #include <StencilStream/cpu/StencilUpdate.hpp>
+#elif defined(STENCILSTREAM_BACKEND_CUDA)
 #include <StencilStream/cuda/StencilUpdate.hpp>
-#include <sycl/ext/intel/fpga_extensions.hpp>
+#endif
+
+#include <StencilStream/BaseTransitionFunction.hpp>
 
 #include <cassert>
 #include <chrono>
@@ -19,8 +21,6 @@ using namespace stencil;
 using namespace stencil::cpu;
 #elif (STENCILSTREAM_BACKEND_CUDA)
 using namespace stencil::cuda;
-#else
-using namespace stencil::monotile;
 #endif
 
 // Definition of the grid
@@ -192,9 +192,7 @@ int main(int argc, char **argv) {
 
     Grid<double> grid = read(&field, rows, cols);
 
-#if defined(STENCILSTREAM_TARGET_FPGA)
-    sycl::device device(sycl::ext::intel::fpga_selector_v);
-#elif defined(STENCILSTREAM_TARGET_CUDA)
+#if defined(STENCILSTREAM_TARGET_CUDA)
     sycl::device device(sycl::gpu_selector_v);
 #else
     sycl::device device;
