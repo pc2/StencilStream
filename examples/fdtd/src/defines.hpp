@@ -49,7 +49,7 @@ constexpr size_t tile_width = 512;
 constexpr size_t tile_height = tile_width;
 
 #elif defined(STENCILSTREAM_BACKEND_TILING)
-constexpr size_t n_processing_elements = 190;
+constexpr size_t temporal_parallelism = 50;
 constexpr size_t spatial_parallelism = 2;
 constexpr size_t tile_width = 512;
 // tiling, make tile as wide as possible.
