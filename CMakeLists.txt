@@ -25,7 +25,6 @@ if(${MAIN_PROJECT})
     add_subdirectory(examples/conway)
     add_subdirectory(examples/fdtd)
     add_subdirectory(examples/hotspot)
-    add_subdirectory(examples/diffusion)
     add_subdirectory(tests)
 endif()
 
