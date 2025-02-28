@@ -10,10 +10,10 @@ const TILE_HEIGHT = Dict(:monotile => 512, :tiling => 2^16, :cuda => nothing)
 const TILE_WIDTH = Dict(:monotile => 512, :tiling => 512, :cuda => nothing)
 
 function max_perf_benchmark(exe, variant)
-    if variant == :monotile
+    if variant == :monotile || variant == :cuda
         experiment_path = "./experiments/full_tile.json"
         n_samples = 10
-    else
+    elseif variant == :tiling
         experiment_path = "./experiments/max_grid.json"
         n_samples = 2
     end

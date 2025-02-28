@@ -37,7 +37,7 @@ function max_perf_benchmark(exec, variant)
         n_samples = 3
     elseif variant == :cuda
         # TODO: Provide better parameters, maybe unify them.
-        grid_height = grid_width = 16*2^10
+        grid_height = grid_width = 16 * 2^10
         n_iters = 1000
         n_samples = 3
     end

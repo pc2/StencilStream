@@ -115,7 +115,7 @@ convection benchmark:
         SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
     script:
         - cd examples/convection
-        - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection
+        - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection monotile
     artifacts:
         paths:
             - examples/convection/out
@@ -242,7 +242,7 @@ CUDA benchmark:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A pc2-shks -p gpu --gres=gpu:a100:1 -c 16 --mem 16G --time=01:00:00 --pty bash
+        SCHEDULER_PARAMETERS: -A pc2-shks -p gpu --gres=gpu:a100:1 -c 16 --mem 16G --time=01:00:00
     script:
         - mkdir -p build
         - cd build
