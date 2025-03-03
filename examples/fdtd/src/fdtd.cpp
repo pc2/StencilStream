@@ -60,6 +60,10 @@ using Grid = StencilUpdate::GridImpl;
     #include <StencilStream/cpu/StencilUpdate.hpp>
 using Grid = cpu::Grid<CellImpl>;
 using StencilUpdate = cpu::StencilUpdate<KernelImpl>;
+#elif defined(STENCILSTREAM_BACKEND_CUDA)
+    #include <StencilStream/cuda/StencilUpdate.hpp>
+using Grid = cuda::Grid<CellImpl>;
+using StencilUpdate = cuda::StencilUpdate<KernelImpl>;
 #endif
 
 auto exception_handler = [](sycl::exception_list exceptions) {
@@ -175,6 +179,8 @@ int main(int argc, char **argv) {
 
 #if defined(STENCILSTREAM_TARGET_FPGA)
     sycl::device device(sycl::ext::intel::fpga_selector_v);
+#elif defined(STENCILSTREAM_TARGET_CUDA)
+    sycl::device device(sycl::gpu_selector_v);
 #else
     sycl::device device;
 #endif
@@ -186,7 +192,7 @@ int main(int argc, char **argv) {
         .n_iterations = parameters.n_timesteps(),
         .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
-#if !defined(STENCILSTREAM_BACKEND_CPU)
+#if defined(STENCILSTREAM_BACKEND_MONOTILE) || defined(STENCILSTREAM_BACKEND_TILING)
         .profiling = true, // enable additional profiling for FPGA targets
 #endif
     });
@@ -210,7 +216,7 @@ int main(int argc, char **argv) {
 
     std::cout << "Simulation complete!" << std::endl;
     std::cout << "Walltime: " << simulation.get_walltime() << " s" << std::endl;
-#if !defined(STENCILSTREAM_BACKEND_CPU)
+#if defined(STENCILSTREAM_BACKEND_MONOTILE) || defined(STENCILSTREAM_BACKEND_TILING)
     // Print pure kernel runtime for FPGA targets
     std::cout << "Kernel Runtime: " << simulation.get_kernel_runtime() << " s" << std::endl;
 #endif

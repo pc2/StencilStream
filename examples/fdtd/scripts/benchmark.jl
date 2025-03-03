@@ -2,55 +2,53 @@
 include("../../../scripts/benchmark-common.jl")
 
 const N_SUBITERATIONS = 2
-const TEMPORAL_PARALLELISM = 50
-const SPATIAL_PARALLELISM = 2
 const OPERATIONS_PER_CELL = 8 + (6 + 4 + 2 + 2 + 2) # Including all paths, excluding source wave computation
 const CELL_SIZE = 4 * (4 + 4) # bytes, including material coefficients
-const MONO_TILE_HEIGHT = 512
-const TILING_TILE_HEIGHT = 2^16
-const TILE_WIDTH = 512
+const TEMPORAL_PARALLELISM = Dict(:monotile => 50, :tiling => 50, :cuda => 1)
+const SPATIAL_PARALLELISM = Dict(:monotile => 2, :tiling => 2, :cuda => 1)
+const TILE_HEIGHT = Dict(:monotile => 512, :tiling => 2^16, :cuda => nothing)
+const TILE_WIDTH = Dict(:monotile => 512, :tiling => 512, :cuda => nothing)
 
-function max_perf_benchmark(exe, variant, f)
-    if variant == :monotile
+function max_perf_benchmark(exe, variant)
+    if variant == :monotile || variant == :cuda
         experiment_path = "./experiments/full_tile.json"
-        tile_height = MONO_TILE_HEIGHT
-        tile_width = TILE_WIDTH
         n_samples = 10
     elseif variant == :tiling
         experiment_path = "./experiments/max_grid.json"
-        tile_height = TILING_TILE_HEIGHT
-        tile_width = TILE_WIDTH
-        n_samples = 1
+        n_samples = 2
     end
     out_dir = Base.Filesystem.mkpath("./out/")
     command = `$exe -c $experiment_path -o $out_dir`
 
-    kernel_runtimes = Vector()
-    grid_wh = nothing
-    n_timesteps = nothing
+    runtime_name = (variant == :cuda) ? "Walltime" : "Kernel Runtime"
+    runtime_re = Regex("$(runtime_name): ([0-9]+\\.[0-9]+) s")
+
+    # Defining names here so that later definitions won't be dropped.
+    grid_wh = n_timesteps = nothing
+    runtimes = Vector()
 
     for i_sample in 1:n_samples
-        kernel_runtime, grid_wh, n_timesteps = open(command, "r") do process_in
-            kernel_runtime = nothing
+        runtime, grid_wh, n_timesteps = open(command, "r") do process_in
+            runtime = nothing
             grid_wh = nothing
             n_timesteps = nothing
 
             # While any of the metrics is nothing...
-            while any(v -> v === nothing, [kernel_runtime, grid_wh, n_timesteps])
+            while any(v -> v === nothing, [runtime, grid_wh, n_timesteps])
                 line = readline(process_in)
                 println(line)
                 if (m = match(r"grid w/h\s*= ([0-9]+) cells", line)) !== nothing
                     grid_wh = parse(Int, m[1])
                 elseif (m = match(r"n. timesteps\s*= ([0-9]+)", line)) !== nothing
                     n_timesteps = parse(Int, m[1])
-                elseif (m = match(r"Kernel Runtime: ([0-9]+\.[0-9]+) s", line)) !== nothing
-                    kernel_runtime = parse(Float64, m[1])
+                elseif (m = match(runtime_re, line)) !== nothing
+                    runtime = parse(Float64, m[1])
                 end
             end
 
-            kernel_runtime, grid_wh, n_timesteps
+            runtime, grid_wh, n_timesteps
         end
-        push!(kernel_runtimes, kernel_runtime)
+        push!(runtimes, runtime)
     end
 
     info = BenchmarkInformation(
@@ -61,126 +59,50 @@ function max_perf_benchmark(exe, variant, f)
         CELL_SIZE,
         OPERATIONS_PER_CELL,
         variant,
-        TEMPORAL_PARALLELISM,
-        SPATIAL_PARALLELISM,
-        tile_height,
-        tile_width,
-        f,
-        mean(kernel_runtimes)
+        TEMPORAL_PARALLELISM[variant],
+        SPATIAL_PARALLELISM[variant],
+        TILE_HEIGHT[variant],
+        TILE_WIDTH[variant],
+        (variant == :cuda) ? nothing : load_report_details(exe * ".prj/reports"),
+        mean(runtimes)
     )
 
-    metrics = Dict(
-        "target" => (variant == :monotile) ? "FDTD, Monotile" : "FDTD, Tiling",
-        "n_cus" => TEMPORAL_PARALLELISM * SPATIAL_PARALLELISM,
-        "f" => f,
-        "occupancy" => occupancy(info),
-        "measured" => measured_throughput(info),
-        "accuracy" => model_accurracy(info),
-        "FLOPS" => measured_flops(info),
-        "mem_throughput" => measured_mem_throughput(info)
-    )
+    if variant == :cuda
+        metrics = Dict(
+            "target" => "FDTD, CUDA",
+            "measured" => measured_throughput(info),
+            "FLOPS" => measured_flops(info)
+        )
+    else
+        metrics = Dict(
+            "target" => (variant == :monotile) ? "FDTD, Monotile" : "FDTD, Tiling",
+            "n_cus" => n_replications(info),
+            "f" => info.f,
+            "occupancy" => occupancy(info),
+            "measured" => measured_throughput(info),
+            "accuracy" => model_accurracy(info),
+            "FLOPS" => measured_flops(info),
+            "mem_throughput" => measured_mem_throughput(info)
+        )
+    end
 
     open("metrics.$variant.json", "w") do metrics_file
         JSON.print(metrics_file, metrics)
     end
 end
 
-function scaling_benchmark(exe, variant, f)
-    mkpath("out/")
-    out_path = "$(variant)_perf.csv"
-
-    # Run the simulation once to eliminate the FPGA programming from the measured runtime
-    run(`$exe -c ./experiments/default.json -o out/`)
-
-    experiment = JSON.parsefile("experiments/full_tile.json")
-    max_radius = experiment["cavity_rings"][1]["radius"]
-    df = DataFrame(t_max=Float64[], grid_wh=Int64[], n_timesteps=Int64[], kernel_runtime=Float64[], walltime=Float64[], model_runtime=Float64[])
-    experiment_path, experiment_io = mktemp()
-    close(experiment_io)
-
-    if variant == :monotile
-        tile_width = TILE_WIDTH
-        tile_height = MONO_TILE_HEIGHT
-    elseif variant == :tiling
-        tile_width = TILE_WIDTH
-        tile_height = TILING_TILE_HEIGHT
-    end
-
-    for iteration in 1:3
-        for rel_radius in 0.1:0.1:1.0
-            for t_max in 1.0:1.0:30.0
-                experiment["time"]["t_max"] = t_max
-                experiment["cavity_rings"][1]["radius"] = rel_radius * max_radius
-                open(io -> JSON.print(io, experiment), experiment_path, "w")
-
-                kernel_runtime, walltime, grid_wh, n_timesteps = open(`$exe -c $experiment_path -o out/`) do process_in
-                    kernel_runtime = nothing
-                    walltime = nothing
-                    grid_wh = nothing
-                    n_timesteps = nothing
-
-                    # While any of the metrics is nothing...
-                    while any(v -> v === nothing, [kernel_runtime, walltime, grid_wh, n_timesteps])
-                        line = readline(process_in)
-                        println(line)
-                        if (m = match(r"grid w/h      = ([0-9]+) cells", line)) !== nothing
-                            grid_wh = parse(Int, m[1])
-                        elseif (m = match(r"n. timesteps  = ([0-9]+)", line)) !== nothing
-                            n_timesteps = parse(Int, m[1])
-                        elseif (m = match(r"Kernel Runtime: ([0-9]+\.[0-9]+) s", line)) !== nothing
-                            kernel_runtime = parse(Float64, m[1])
-                        elseif (m = match(r"Walltime: ([0-9]+\.[0-9]+) s", line)) !== nothing
-                            walltime = parse(Float64, m[1])
-                        end
-                    end
-
-                    kernel_runtime, walltime, grid_wh, n_timesteps
-                end
-
-                info = BenchmarkInformation(
-                    n_timesteps,
-                    grid_wh,
-                    grid_wh,
-                    N_SUBITERATIONS,
-                    CELL_SIZE,
-                    OPERATIONS_PER_CELL,
-                    variant,
-                    SPATIAL_PARALLELISM,
-                    TEMPORAL_PARALLELISM,
-                    tile_height,
-                    tile_width,
-                    f,
-                    kernel_runtime
-                )
-
-                push!(df, (t_max, grid_wh, n_timesteps, kernel_runtime, walltime, model_runtime(info)))
-                CSV.write(out_path, df)
-            end
-        end
-    end
-
-    render_model_error(df, "$(variant)_relative_model_error.mp4")
-
-    rm(experiment_path)
-end
-
 if size(ARGS) != (3,)
     println(stderr, "Usage: $PROGRAM_FILE <benchmark> <path to executable> <variant>")
-    println(stderr, "Possible benchmarks: max_perf, scaling")
-    println(stderr, "Possible variants: monotile, tiling")
+    println(stderr, "Possible benchmarks: max_perf")
+    println(stderr, "Possible variants: monotile, tiling, cuda")
     exit(1)
 end
 
 exe = ARGS[2]
-report_path = exe * ".prj/reports"
-f = load_report_details(report_path)
-
 variant = Symbol(ARGS[3])
 
 if ARGS[1] == "max_perf"
-    max_perf_benchmark(exe, variant, f)
-elseif ARGS[1] == "scaling"
-    scaling_benchmark(exe, variant, f)
+    max_perf_benchmark(exe, variant)
 else
     println(stderr, "Unknown benchmark '$(ARGS[1])'")
     exit(1)

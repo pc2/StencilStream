@@ -19,6 +19,8 @@
  */
 #if defined(STENCILSTREAM_BACKEND_CPU)
     #include <StencilStream/cpu/StencilUpdate.hpp>
+#elif defined(STENCILSTREAM_BACKEND_CUDA)
+    #include <StencilStream/cuda/StencilUpdate.hpp>
 #else
     #include <StencilStream/monotile/StencilUpdate.hpp>
 #endif
@@ -237,6 +239,11 @@ class ThermalSolverKernel : public BaseTransitionFunction {
 using Grid = cpu::Grid<ThermalConvectionCell>;
 using PseudoTransientUpdate = cpu::StencilUpdate<PseudoTransientKernel>;
 using ThermalSolverUpdate = cpu::StencilUpdate<ThermalSolverKernel>;
+
+#elif defined(STENCILSTREAM_BACKEND_CUDA)
+using Grid = cuda::Grid<ThermalConvectionCell>;
+using PseudoTransientUpdate = cuda::StencilUpdate<PseudoTransientKernel>;
+using ThermalSolverUpdate = cuda::StencilUpdate<ThermalSolverKernel>;
 
 #else
 constexpr size_t max_nx = 1 << 16;

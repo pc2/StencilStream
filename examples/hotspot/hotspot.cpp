@@ -28,6 +28,8 @@
     #include <StencilStream/tiling/StencilUpdate.hpp>
 #elif defined(STENCILSTREAM_BACKEND_CPU)
     #include <StencilStream/cpu/StencilUpdate.hpp>
+#elif defined(STENCILSTREAM_BACKEND_CUDA)
+    #include <StencilStream/cuda/StencilUpdate.hpp>
 #endif
 
 using namespace std;
@@ -112,6 +114,9 @@ using Grid = StencilUpdate::GridImpl;
 using StencilUpdate = cpu::StencilUpdate<HotspotKernel>;
 using Grid = StencilUpdate::GridImpl;
 
+#elif defined(STENCILSTREAM_BACKEND_CUDA)
+using StencilUpdate = cuda::StencilUpdate<HotspotKernel>;
+using Grid = StencilUpdate::GridImpl;
 #endif
 
 void write_output(Grid vect, string file, bool binary) {
@@ -259,6 +264,8 @@ int main(int argc, char **argv) {
 
 #if defined(STENCILSTREAM_TARGET_FPGA)
     sycl::device device(sycl::ext::intel::fpga_selector_v);
+#elif defined(STENCILSTREAM_TARGET_CUDA)
+    sycl::device device(sycl::gpu_selector_v);
 #else
     sycl::device device;
 #endif
@@ -270,7 +277,7 @@ int main(int argc, char **argv) {
         .n_iterations = sim_time,
         .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
-#if !defined(STENCILSTREAM_BACKEND_CPU)
+#if defined(STENCILSTREAM_BACKEND_MONOTILE) || defined(STENCILSTREAM_BACKEND_TILING)
         .profiling = true, // enable additional profiling for FPGA targets
 #endif
     });
@@ -279,7 +286,7 @@ int main(int argc, char **argv) {
 
     std::cout << "Ending simulation" << std::endl;
     std::cout << "Walltime: " << update.get_walltime() << " s" << std::endl;
-#if !defined(STENCILSTREAM_BACKEND_CPU)
+#if defined(STENCILSTREAM_BACKEND_MONOTILE) || defined(STENCILSTREAM_BACKEND_TILING)
     // Print pure kernel runtime for FPGA targets
     std::cout << "Kernel Runtime: " << update.get_kernel_runtime() << " s" << std::endl;
 #endif

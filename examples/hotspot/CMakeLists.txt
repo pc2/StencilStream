@@ -15,6 +15,10 @@ target_link_options(hotspot_openmp PUBLIC -g -fopenmp -O2)
 add_executable(hotspot_cpu hotspot.cpp)
 target_link_libraries(hotspot_cpu PUBLIC StencilStream_CPU)
 
+# Pure CUDA-based executable
+add_executable(hotspot_cuda hotspot.cpp)
+target_link_libraries(hotspot_cuda PUBLIC StencilStream_CUDA)
+
 # Monotile versions
 add_executable(hotspot_mono hotspot.cpp)
 target_link_libraries(hotspot_mono PUBLIC StencilStream_Monotile)
