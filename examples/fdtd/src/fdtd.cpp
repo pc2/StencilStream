@@ -50,7 +50,7 @@ using TDVStrategy = tdv::single_pass::PrecomputeOnHostStrategy;
 
 using Grid = monotile::Grid<CellImpl, spatial_parallelism>;
 using StencilUpdate = monotile::StencilUpdate<KernelImpl, temporal_parallelism, spatial_parallelism,
-                                              tile_height, tile_width, TDVStrategy>;
+                                              tile_height, tile_width, n_kernels, TDVStrategy>;
 #elif defined(STENCILSTREAM_BACKEND_TILING)
     #include <StencilStream/tiling/StencilUpdate.hpp>
 using StencilUpdate = tiling::StencilUpdate<KernelImpl, temporal_parallelism, spatial_parallelism,

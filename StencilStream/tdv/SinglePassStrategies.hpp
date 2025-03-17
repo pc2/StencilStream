@@ -224,20 +224,23 @@ struct PrecomputeOnHostStrategy {
                            std::size_t n_iterations)
                 : ac() {
                 assert(n_iterations <= max_n_iterations);
-                assert(i_iteration >= global_state.iteration_offset);
-                assert(i_iteration + n_iterations <=
-                       global_state.iteration_offset + global_state.value_buffer.get_range()[0]);
+                size_t iteration_offset = global_state.iteration_offset;
+                sycl::buffer value_buffer = global_state.value_buffer;
 
-                sycl::range<1> access_range(n_iterations);
-                sycl::id<1> access_offset(i_iteration - global_state.iteration_offset);
-                ac = sycl::accessor<TDV, 1, sycl::access::mode::read>(
-                    global_state.value_buffer, cgh, access_range, access_offset);
+                size_t i_start =
+                    (i_iteration >= iteration_offset) ? (i_iteration - iteration_offset) : 0;
+                size_t i_end = std::min(value_buffer.get_range()[0], i_start + n_iterations);
+
+                sycl::range<1> access_range(i_end - i_start);
+                sycl::id<1> access_offset(i_start);
+                ac = sycl::accessor<TDV, 1, sycl::access::mode::read>(value_buffer, cgh,
+                                                                      access_range, access_offset);
             }
 
             struct LocalState {
                 LocalState(KernelArgument const &kernel_argument) : values() {
                     std::size_t n_values =
-                        std::min(max_n_iterations, std::size_t(kernel_argument.ac.get_range()[0]));
+                        std::min(max_n_iterations, kernel_argument.ac.get_range()[0]);
 
                     for (std::size_t i = 0; i < n_values; i++)
                         values[i] = kernel_argument.ac[i];

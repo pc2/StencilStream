@@ -33,7 +33,7 @@ using namespace stencil::monotile;
 constexpr std::size_t stencil_radius = 2;
 constexpr std::size_t tile_height = 64;
 constexpr std::size_t tile_width = 32;
-constexpr std::size_t temporal_parallelism = 2;
+constexpr std::size_t temporal_parallelism = 4;
 using TransFunc = HostTransFunc<stencil_radius>;
 
 template <std::size_t spatial_parallelism>
@@ -135,10 +135,11 @@ TEST_CASE("monotile::StencilUpdateKernel", "[monotile::StencilUpdateKernel]") {
     std::cout << std::endl;
 }
 
-template <typename TDVStrategy, std::size_t spatial_parallelism> void test_monotile_update() {
+template <typename TDVStrategy, std::size_t spatial_parallelism, size_t n_kernels>
+void test_monotile_update() {
     using StencilUpdateImpl =
         StencilUpdate<FPGATransFunc<1>, temporal_parallelism, spatial_parallelism, tile_height,
-                      tile_width, TDVStrategy>;
+                      tile_width, n_kernels, TDVStrategy>;
     using GridImpl = StencilUpdateImpl::GridImpl;
     static_assert(concepts::StencilUpdate<StencilUpdateImpl, FPGATransFunc<1>, GridImpl>);
 
@@ -159,11 +160,19 @@ template <typename TDVStrategy, std::size_t spatial_parallelism> void test_monot
 }
 
 TEST_CASE("monotile::StencilUpdate", "[monotile::StencilUpdate]") {
-    test_monotile_update<tdv::single_pass::InlineStrategy, 1>();
-    test_monotile_update<tdv::single_pass::PrecomputeOnDeviceStrategy, 1>();
-    test_monotile_update<tdv::single_pass::PrecomputeOnHostStrategy, 1>();
+    test_monotile_update<tdv::single_pass::InlineStrategy, 1, 1>();
+    test_monotile_update<tdv::single_pass::PrecomputeOnDeviceStrategy, 1, 1>();
+    test_monotile_update<tdv::single_pass::PrecomputeOnHostStrategy, 1, 1>();
 
-    test_monotile_update<tdv::single_pass::InlineStrategy, 4>();
-    test_monotile_update<tdv::single_pass::PrecomputeOnDeviceStrategy, 4>();
-    test_monotile_update<tdv::single_pass::PrecomputeOnHostStrategy, 4>();
+    test_monotile_update<tdv::single_pass::InlineStrategy, 4, 1>();
+    test_monotile_update<tdv::single_pass::PrecomputeOnDeviceStrategy, 4, 1>();
+    test_monotile_update<tdv::single_pass::PrecomputeOnHostStrategy, 4, 1>();
+
+    test_monotile_update<tdv::single_pass::InlineStrategy, 4, 2>();
+    test_monotile_update<tdv::single_pass::PrecomputeOnDeviceStrategy, 4, 2>();
+    test_monotile_update<tdv::single_pass::PrecomputeOnHostStrategy, 4, 2>();
+
+    test_monotile_update<tdv::single_pass::InlineStrategy, 4, 3>();
+    test_monotile_update<tdv::single_pass::PrecomputeOnDeviceStrategy, 4, 3>();
+    test_monotile_update<tdv::single_pass::PrecomputeOnHostStrategy, 4, 3>();
 }

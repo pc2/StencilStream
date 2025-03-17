@@ -23,6 +23,7 @@
 #include "../tdv/SinglePassStrategies.hpp"
 #include "Grid.hpp"
 #include <chrono>
+#include <list>
 #include <type_traits>
 
 namespace stencil {
@@ -138,7 +139,6 @@ class StencilUpdateKernel {
           tdv_kernel_argument(tdv_kernel_argument) {
         assert(TransFunc::stencil_radius <= grid_width && grid_width <= max_grid_width);
         assert(TransFunc::stencil_radius <= grid_height && grid_height <= max_grid_height);
-        assert(i_iteration < target_i_iteration);
         assert(grid_width >= 2);
         assert(grid_width <= max_grid_width);
         assert(grid_height <= max_grid_height);
@@ -248,7 +248,9 @@ class StencilUpdateKernel {
 
                 std::size_t pe_iteration = i_processing_element / TransFunc::n_subiterations;
                 std::size_t n_iterations =
-                    std::min(target_i_iteration - i_iteration, temporal_parallelism);
+                    (i_iteration <= target_i_iteration)
+                        ? std::min(target_i_iteration - i_iteration, temporal_parallelism)
+                        : 0;
 
                 if (pe_iteration < n_iterations) {
                     TDV tdv = tdv_local_state.get_time_dependent_value(pe_iteration);
@@ -371,13 +373,18 @@ class StencilUpdateKernel {
  */
 template <concepts::TransitionFunction F, std::size_t temporal_parallelism = 1,
           std::size_t spatial_parallelism = 1, std::size_t max_grid_height = 1024,
-          std::size_t max_grid_width = 1024,
+          std::size_t max_grid_width = 1024, std::size_t n_kernels = 1,
           tdv::single_pass::Strategy<F, temporal_parallelism> TDVStrategy =
               tdv::single_pass::InlineStrategy>
 class StencilUpdate {
   private:
     using Cell = F::Cell;
     using TDV = typename F::TimeDependentValue;
+
+    template <std::size_t i> class PipeIdentifier;
+
+    using TDVGlobalState = TDVStrategy::template GlobalState<F, temporal_parallelism>;
+    using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
 
   public:
     /// \brief Shorthand for the used and supported grid type.
@@ -477,23 +484,11 @@ class StencilUpdate {
         if (source_grid.get_grid_width() > max_grid_width) {
             throw std::range_error("The grid is too wide for the stencil update kernel.");
         }
-        using in_pipe = sycl::pipe<class monotile_in_pipe, std::array<Cell, spatial_parallelism>>;
-        using out_pipe = sycl::pipe<class monotile_out_pipe, std::array<Cell, spatial_parallelism>>;
+        using in_pipe = sycl::pipe<PipeIdentifier<0>, std::array<Cell, spatial_parallelism>>;
+        using out_pipe =
+            sycl::pipe<PipeIdentifier<n_kernels>, std::array<Cell, spatial_parallelism>>;
 
-        using TDVGlobalState = TDVStrategy::template GlobalState<F, temporal_parallelism>;
-        using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
-        using ExecutionKernelImpl =
-            StencilUpdateKernel<F, TDVKernelArgument, temporal_parallelism, spatial_parallelism,
-                                max_grid_height, max_grid_width, in_pipe, out_pipe>;
-
-        sycl::queue input_kernel_queue =
-            sycl::queue(params.device, {sycl::property::queue::in_order{}});
-        sycl::queue output_kernel_queue =
-            sycl::queue(params.device, {sycl::property::queue::in_order{}});
-
-        sycl::queue update_kernel_queue =
-            sycl::queue(params.device, {sycl::property::queue::enable_profiling{},
-                                        sycl::property::queue::in_order{}});
+        sycl::queue queue = sycl::queue(params.device, {sycl::property::queue::enable_profiling{}});
 
         GridImpl swap_grid_a = source_grid.make_similar();
         GridImpl swap_grid_b = source_grid.make_similar();
@@ -503,30 +498,24 @@ class StencilUpdate {
 
         F trans_func = params.transition_function;
         TDVGlobalState tdv_global_state(trans_func, params.iteration_offset, params.n_iterations);
+        sycl::range<2> grid_range = source_grid.get_grid_range();
 
         auto walltime_start = std::chrono::high_resolution_clock::now();
 
-        std::size_t target_n_iterations = params.iteration_offset + params.n_iterations;
-        for (std::size_t i = params.iteration_offset; i < target_n_iterations;
+        std::size_t target_i_iteration = params.iteration_offset + params.n_iterations;
+        for (std::size_t i = params.iteration_offset; i < target_i_iteration;
              i += temporal_parallelism) {
-            pass_source->template submit_read<in_pipe, max_grid_height, max_grid_width>(
-                input_kernel_queue);
-            std::size_t iters_in_this_pass =
-                std::min(temporal_parallelism, target_n_iterations - i);
+            pass_source->template submit_read<in_pipe, max_grid_height, max_grid_width>(queue);
 
-            sycl::event work_event = update_kernel_queue.submit([&](sycl::handler &cgh) {
-                TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i, iters_in_this_pass);
-                ExecutionKernelImpl exec_kernel(
-                    trans_func, i, target_n_iterations, source_grid.get_grid_height(),
-                    source_grid.get_grid_width(), params.halo_value, tdv_kernel_argument);
-                cgh.single_task<ExecutionKernelImpl>(exec_kernel);
-            });
+            std::list<sycl::event> pass_work_events =
+                submit_work_kernel<0>(queue, tdv_global_state, i, target_i_iteration, grid_range);
             if (params.profiling) {
-                work_events.push_back(work_event);
+                for (sycl::event event : pass_work_events) {
+                    work_events.push_back(event);
+                };
             }
 
-            pass_target->template submit_write<out_pipe, max_grid_height, max_grid_width>(
-                output_kernel_queue);
+            pass_target->template submit_write<out_pipe, max_grid_height, max_grid_width>(queue);
 
             if (i == params.iteration_offset) {
                 pass_source = &swap_grid_b;
@@ -537,7 +526,7 @@ class StencilUpdate {
         }
 
         if (params.blocking) {
-            output_kernel_queue.wait();
+            queue.wait();
         }
 
         auto walltime_end = std::chrono::high_resolution_clock::now();
@@ -590,6 +579,48 @@ class StencilUpdate {
     double get_walltime() const { return walltime; }
 
   private:
+    template <std::size_t i_kernel>
+    std::list<sycl::event>
+    submit_work_kernel(sycl::queue queue, TDVGlobalState &tdv_global_state, std::size_t i_iteration,
+                       std::size_t target_i_iteration, sycl::range<2> grid_range)
+        requires(i_kernel < n_kernels)
+    {
+        using in_pipe = sycl::pipe<PipeIdentifier<i_kernel>, std::array<Cell, spatial_parallelism>>;
+        using out_pipe =
+            sycl::pipe<PipeIdentifier<i_kernel + 1>, std::array<Cell, spatial_parallelism>>;
+        constexpr size_t local_temporal_parallelism =
+            temporal_parallelism / n_kernels +
+            ((i_kernel == n_kernels - 1) ? temporal_parallelism % n_kernels : 0);
+        using ExecutionKernelImpl =
+            StencilUpdateKernel<F, TDVKernelArgument, local_temporal_parallelism,
+                                spatial_parallelism, max_grid_height, max_grid_width, in_pipe,
+                                out_pipe>;
+
+        sycl::event work_event = queue.submit([&](sycl::handler &cgh) {
+            TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i_iteration,
+                                                  local_temporal_parallelism);
+            ExecutionKernelImpl exec_kernel(params.transition_function, i_iteration,
+                                            target_i_iteration, grid_range[0], grid_range[1],
+                                            params.halo_value, tdv_kernel_argument);
+            cgh.single_task<ExecutionKernelImpl>(exec_kernel);
+        });
+
+        std::list<sycl::event> following_events = submit_work_kernel<i_kernel + 1>(
+            queue, tdv_global_state, i_iteration + local_temporal_parallelism, target_i_iteration,
+            grid_range);
+        following_events.push_front(work_event);
+        return following_events;
+    }
+
+    template <std::size_t i_kernel>
+    std::list<sycl::event>
+    submit_work_kernel(sycl::queue queue, TDVGlobalState &tdv_global_state, std::size_t i_iteration,
+                       std::size_t target_i_iteration, sycl::range<2> grid_range)
+        requires(i_kernel == n_kernels)
+    {
+        return std::list<sycl::event>();
+    }
+
     Params params;
     std::size_t n_processed_cells;
     double walltime;
