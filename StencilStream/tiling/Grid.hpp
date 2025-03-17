@@ -251,6 +251,8 @@ template <typename Cell, std::size_t spatial_parallelism> class Grid {
      */
     std::size_t get_grid_width() const { return grid_range[1]; }
 
+    sycl::range<2> get_grid_range() const { return grid_range; }
+
     /**
      * \brief Return the range of (central) tiles of the grid.
      *

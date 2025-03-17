@@ -44,8 +44,8 @@ void test_tiling_kernel(std::size_t grid_height, std::size_t grid_width, std::si
         tdv::single_pass::InlineStrategy::template GlobalState<TransFunc, temporal_parallelism>;
     using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
     using TestExecutionKernel =
-        StencilUpdateKernel<TransFunc, TDVKernelArgument, temporal_parallelism, spatial_parallelism,
-                            tile_height, tile_width, in_pipe, out_pipe>;
+        StencilUpdateKernel<TransFunc, TDVKernelArgument, temporal_parallelism, 0,
+                            spatial_parallelism, tile_height, tile_width, in_pipe, out_pipe>;
 
     constexpr std::size_t n_processing_elements = temporal_parallelism * TransFunc::n_subiterations;
     constexpr std::size_t stencil_buffer_lead =
@@ -200,20 +200,22 @@ TEST_CASE("tiling::StencilUpdateKernel", "[tiling::StencilUpdateKernel]") {
 }
 
 TEST_CASE("tiling::StencilUpdate", "[tiling::StencilUpdate]") {
-    constexpr std::size_t temporal_parallelism = 2;
+    constexpr std::size_t temporal_parallelism = 4;
     constexpr std::size_t tile_height = 128;
-    constexpr std::size_t tile_width = 64;
+    constexpr std::size_t tile_width = 128;
 
     using StencilUpdateVect1Impl =
-        StencilUpdate<FPGATransFunc<1>, temporal_parallelism, 1, tile_height, tile_width>;
+        StencilUpdate<FPGATransFunc<1>, temporal_parallelism, 1, tile_height, tile_width, 1>;
     using GridVect1Impl = Grid<FPGATransFunc<1>::Cell, 1>;
 
     using StencilUpdateVect2Impl =
-        StencilUpdate<FPGATransFunc<1>, temporal_parallelism, 2, tile_height, tile_width>;
+        StencilUpdate<FPGATransFunc<1>, temporal_parallelism, 2, tile_height, tile_width, 1>;
     using GridVect2Impl = Grid<FPGATransFunc<1>::Cell, 2>;
 
     using StencilUpdateVect4Impl =
-        StencilUpdate<FPGATransFunc<1>, temporal_parallelism, 4, tile_height, tile_width>;
+        StencilUpdate<FPGATransFunc<1>, temporal_parallelism, 4, tile_height, tile_width, 1>;
+    using StencilUpdateVect4SplitImpl =
+        StencilUpdate<FPGATransFunc<1>, temporal_parallelism, 4, tile_height, tile_width, 2>;
     using GridVect4Impl = Grid<FPGATransFunc<1>::Cell, 4>;
 
     static_assert(concepts::StencilUpdate<StencilUpdateVect1Impl, FPGATransFunc<1>, GridVect1Impl>);
@@ -257,6 +259,17 @@ TEST_CASE("tiling::StencilUpdate", "[tiling::StencilUpdate]") {
                                                                        0, temporal_parallelism + 1);
             test_stencil_update<GridVect4Impl, StencilUpdateVect4Impl>(grid_height, grid_width - 1,
                                                                        0, temporal_parallelism + 1);
+
+            test_stencil_update<GridVect4Impl, StencilUpdateVect4SplitImpl>(
+                grid_height, grid_width, 0, temporal_parallelism);
+            test_stencil_update<GridVect4Impl, StencilUpdateVect4SplitImpl>(
+                grid_height, grid_width, 1, temporal_parallelism);
+            test_stencil_update<GridVect4Impl, StencilUpdateVect4SplitImpl>(
+                grid_height, grid_width, 0, temporal_parallelism + 1);
+            test_stencil_update<GridVect4Impl, StencilUpdateVect4SplitImpl>(
+                grid_height - 1, grid_width, 0, temporal_parallelism + 1);
+            test_stencil_update<GridVect4Impl, StencilUpdateVect4SplitImpl>(
+                grid_height, grid_width - 1, 0, temporal_parallelism + 1);
         }
     }
 }

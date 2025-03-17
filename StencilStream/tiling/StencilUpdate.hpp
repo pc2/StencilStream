@@ -24,6 +24,7 @@
 #include "Grid.hpp"
 
 #include <chrono>
+#include <list>
 #include <optional>
 
 namespace stencil {
@@ -55,9 +56,9 @@ namespace tiling {
  */
 template <concepts::TransitionFunction TransFunc,
           tdv::single_pass::KernelArgument<TransFunc> TDVKernelArgument,
-          std::size_t temporal_parallelism, std::size_t spatial_parallelism,
-          std::size_t output_tile_height, std::size_t output_tile_width, typename in_pipe,
-          typename out_pipe>
+          std::size_t local_temporal_parallelism, std::size_t remaining_temporal_parallelism,
+          std::size_t spatial_parallelism, std::size_t output_tile_height,
+          std::size_t output_tile_width, typename in_pipe, typename out_pipe>
 class StencilUpdateKernel {
   private:
     using Cell = typename TransFunc::Cell;
@@ -65,9 +66,6 @@ class StencilUpdateKernel {
     using TDV = typename TransFunc::TimeDependentValue;
     using StencilImpl = Stencil<Cell, TransFunc::stencil_radius, TDV>;
     using TDVLocalState = typename TDVKernelArgument::LocalState;
-
-    static constexpr std::size_t n_processing_elements =
-        temporal_parallelism * TransFunc::n_subiterations;
 
     static constexpr std::size_t stencil_radius = TransFunc::stencil_radius;
     static constexpr std::size_t vect_stencil_buffer_lead =
@@ -78,9 +76,22 @@ class StencilUpdateKernel {
     static constexpr std::size_t stencil_buffer_width =
         stencil_radius + spatial_parallelism + stencil_buffer_lead;
 
-    static constexpr std::size_t halo_height = stencil_radius * n_processing_elements;
-    static constexpr std::size_t halo_width = stencil_buffer_lead * n_processing_elements;
-    static constexpr std::size_t vect_halo_width = vect_stencil_buffer_lead * n_processing_elements;
+    static constexpr std::size_t n_processing_elements =
+        local_temporal_parallelism * TransFunc::n_subiterations;
+
+    static constexpr std::size_t halo_height =
+        stencil_radius * (local_temporal_parallelism + remaining_temporal_parallelism) *
+        TransFunc::n_subiterations;
+    static constexpr std::size_t halo_width =
+        stencil_buffer_lead * (local_temporal_parallelism + remaining_temporal_parallelism) *
+        TransFunc::n_subiterations;
+    static constexpr std::size_t vect_halo_width = halo_width / spatial_parallelism;
+
+    static constexpr std::size_t local_halo_height =
+        stencil_radius * local_temporal_parallelism * TransFunc::n_subiterations;
+    static constexpr std::size_t local_halo_width =
+        stencil_buffer_lead * local_temporal_parallelism * TransFunc::n_subiterations;
+    static constexpr std::size_t vect_local_halo_width = local_halo_width / spatial_parallelism;
 
     static constexpr std::size_t vect_output_tile_width = output_tile_width / spatial_parallelism;
     static_assert(output_tile_width % spatial_parallelism == 0);
@@ -298,8 +309,9 @@ class StencilUpdateKernel {
                     }
                 }
 
-                bool is_valid_output = (input_tile_r >= uindex_1d_t(2 * halo_height)) &&
-                                       (vect_input_tile_c >= uindex_1d_t(2 * vect_halo_width));
+                bool is_valid_output =
+                    (input_tile_r >= uindex_1d_t(2 * local_halo_height)) &&
+                    (vect_input_tile_c >= uindex_1d_t(2 * vect_local_halo_width));
 
                 if (is_valid_output) {
                     out_pipe::write(carry);
@@ -354,12 +366,15 @@ class StencilUpdateKernel {
  */
 template <concepts::TransitionFunction F, std::size_t temporal_parallelism = 1,
           std::size_t spatial_parallelism = 1, std::size_t tile_height = 1024,
-          std::size_t tile_width = 1024,
+          std::size_t tile_width = 1024, std::size_t n_kernels = 1,
           tdv::single_pass::Strategy<F, temporal_parallelism> TDVStrategy =
               tdv::single_pass::InlineStrategy>
 class StencilUpdate {
   private:
     using Cell = F::Cell;
+
+    template <std::size_t i> class PipeIdentifier;
+
     using TDVGlobalState = typename TDVStrategy::template GlobalState<F, temporal_parallelism>;
     using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
 
@@ -453,25 +468,22 @@ class StencilUpdate {
      * complete. Otherwise, it will return as soon as all kernels are submitted.
      */
     GridImpl operator()(GridImpl &source_grid) {
-        using in_pipe = sycl::pipe<class tiling_in_pipe, std::array<Cell, spatial_parallelism>>;
-        using out_pipe = sycl::pipe<class tiling_out_pipe, std::array<Cell, spatial_parallelism>>;
-        using ExecutionKernelImpl =
-            StencilUpdateKernel<F, TDVKernelArgument, temporal_parallelism, spatial_parallelism,
+        using in_pipe = sycl::pipe<PipeIdentifier<0>, std::array<Cell, spatial_parallelism>>;
+        using out_pipe =
+            sycl::pipe<PipeIdentifier<n_kernels>, std::array<Cell, spatial_parallelism>>;
+
+        // Never submitted, but necessary to compute total halo height an width.
+        using FullExecutionKernelImpl =
+            StencilUpdateKernel<F, TDVKernelArgument, temporal_parallelism, 0, spatial_parallelism,
                                 tile_height, tile_width, in_pipe, out_pipe>;
-        constexpr std::size_t halo_height = ExecutionKernelImpl::get_halo_height();
-        constexpr std::size_t halo_width = ExecutionKernelImpl::get_halo_width();
+        constexpr std::size_t halo_height = FullExecutionKernelImpl::get_halo_height();
+        constexpr std::size_t halo_width = FullExecutionKernelImpl::get_halo_width();
 
         if (params.n_iterations == 0) {
             return GridImpl(source_grid);
         }
 
-        sycl::queue input_kernel_queue =
-            sycl::queue(params.device, {sycl::property::queue::in_order{}});
-        sycl::queue output_kernel_queue =
-            sycl::queue(params.device, {sycl::property::queue::in_order{}});
-        sycl::queue working_queue =
-            sycl::queue(params.device, {sycl::property::queue::enable_profiling{},
-                                        sycl::property::queue::in_order{}});
+        sycl::queue queue = sycl::queue(params.device, {sycl::property::queue::enable_profiling{}});
 
         GridImpl swap_grid_a = source_grid.make_similar();
         GridImpl swap_grid_b = source_grid.make_similar();
@@ -480,44 +492,34 @@ class StencilUpdate {
         GridImpl *pass_target = &swap_grid_b;
 
         sycl::range<2> tile_range = source_grid.get_tile_range(tile_height, tile_width);
-        std::size_t grid_height = source_grid.get_grid_height();
-        std::size_t grid_width = source_grid.get_grid_width();
+        sycl::range<2> grid_range = source_grid.get_grid_range();
 
-        F trans_func = params.transition_function;
-        TDVGlobalState tdv_global_state(trans_func, params.iteration_offset, params.n_iterations);
+        TDVGlobalState tdv_global_state(params.transition_function, params.iteration_offset,
+                                        params.n_iterations);
 
         auto walltime_start = std::chrono::high_resolution_clock::now();
 
-        std::size_t target_n_iterations = params.iteration_offset + params.n_iterations;
-        for (std::size_t i = params.iteration_offset; i < target_n_iterations;
+        std::size_t target_i_iteration = params.iteration_offset + params.n_iterations;
+        for (std::size_t i = params.iteration_offset; i < target_i_iteration;
              i += temporal_parallelism) {
-            std::size_t iters_in_this_pass =
-                std::min(temporal_parallelism, target_n_iterations - i);
-
             for (std::size_t i_tile_r = 0; i_tile_r < tile_range[0]; i_tile_r++) {
                 for (std::size_t i_tile_c = 0; i_tile_c < tile_range[1]; i_tile_c++) {
+                    sycl::id<2> i_tile(i_tile_r, i_tile_c);
+
                     pass_source->template submit_read<in_pipe, tile_height, tile_width, halo_height,
-                                                      halo_width>(input_kernel_queue, i_tile_r,
-                                                                  i_tile_c, params.halo_value);
+                                                      halo_width>(queue, i_tile_r, i_tile_c,
+                                                                  params.halo_value);
 
-                    auto work_event = working_queue.submit([&](sycl::handler &cgh) {
-                        TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i,
-                                                              iters_in_this_pass);
-                        std::size_t r_offset = i_tile_r * tile_height;
-                        std::size_t c_offset = i_tile_c * tile_width;
-
-                        ExecutionKernelImpl exec_kernel(trans_func, i, target_n_iterations,
-                                                        r_offset, c_offset, grid_height, grid_width,
-                                                        params.halo_value, tdv_kernel_argument);
-
-                        cgh.single_task<ExecutionKernelImpl>(exec_kernel);
-                    });
+                    std::list<sycl::event> pass_work_events = submit_work_kernel<0>(
+                        queue, tdv_global_state, i, target_i_iteration, grid_range, i_tile);
                     if (params.profiling) {
-                        work_events.push_back(work_event);
+                        for (sycl::event event : pass_work_events) {
+                            work_events.push_back(event);
+                        };
                     }
 
                     pass_target->template submit_write<out_pipe, tile_height, tile_width>(
-                        output_kernel_queue, i_tile_r, i_tile_c);
+                        queue, i_tile_r, i_tile_c);
                 }
             }
 
@@ -530,7 +532,7 @@ class StencilUpdate {
         }
 
         if (params.blocking) {
-            output_kernel_queue.wait();
+            queue.wait();
         }
 
         auto walltime_end = std::chrono::high_resolution_clock::now();
@@ -583,6 +585,59 @@ class StencilUpdate {
     double get_walltime() const { return walltime; }
 
   private:
+    template <std::size_t i_kernel>
+    std::list<sycl::event> submit_work_kernel(sycl::queue queue, TDVGlobalState &tdv_global_state,
+                                              std::size_t i_iteration,
+                                              std::size_t target_i_iteration,
+                                              sycl::range<2> grid_range, sycl::id<2> i_tile)
+        requires(i_kernel < n_kernels)
+    {
+        using in_pipe = sycl::pipe<PipeIdentifier<i_kernel>, std::array<Cell, spatial_parallelism>>;
+        using out_pipe =
+            sycl::pipe<PipeIdentifier<i_kernel + 1>, std::array<Cell, spatial_parallelism>>;
+
+        constexpr size_t local_temporal_parallelism =
+            temporal_parallelism / n_kernels +
+            ((i_kernel == n_kernels - 1) ? temporal_parallelism % n_kernels : 0);
+        constexpr size_t remaining_temporal_parallelism =
+            temporal_parallelism - local_temporal_parallelism -
+            i_kernel * (temporal_parallelism / n_kernels);
+
+        using ExecutionKernelImpl =
+            StencilUpdateKernel<F, TDVKernelArgument, local_temporal_parallelism,
+                                remaining_temporal_parallelism, spatial_parallelism, tile_height,
+                                tile_width, in_pipe, out_pipe>;
+
+        sycl::event work_event = queue.submit([&](sycl::handler &cgh) {
+            TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i_iteration,
+                                                  local_temporal_parallelism);
+            std::ptrdiff_t r_offset = i_tile[0] * tile_height;
+            std::ptrdiff_t c_offset = i_tile[1] * tile_width;
+
+            ExecutionKernelImpl exec_kernel(params.transition_function, i_iteration,
+                                            target_i_iteration, r_offset, c_offset, grid_range[0],
+                                            grid_range[1], params.halo_value, tdv_kernel_argument);
+
+            cgh.single_task<ExecutionKernelImpl>(exec_kernel);
+        });
+
+        std::list<sycl::event> following_events = submit_work_kernel<i_kernel + 1>(
+            queue, tdv_global_state, i_iteration + local_temporal_parallelism, target_i_iteration,
+            grid_range, i_tile);
+        following_events.push_front(work_event);
+        return following_events;
+    }
+
+    template <std::size_t i_kernel>
+    std::list<sycl::event> submit_work_kernel(sycl::queue queue, TDVGlobalState &tdv_global_state,
+                                              std::size_t i_iteration,
+                                              std::size_t target_i_iteration,
+                                              sycl::range<2> grid_range, sycl::id<2> i_tile)
+        requires(i_kernel == n_kernels)
+    {
+        return std::list<sycl::event>();
+    }
+
     Params params;
     std::size_t n_processed_cells;
     double walltime;
