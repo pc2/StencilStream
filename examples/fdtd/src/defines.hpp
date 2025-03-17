@@ -47,7 +47,7 @@ constexpr size_t spatial_parallelism = 2;
 constexpr size_t tile_width = 512;
 // monotile and CPU. More than a quadratic tile doesn't make sense.
 constexpr size_t tile_height = tile_width;
-constexpr size_t n_kernels = 1;
+constexpr size_t n_kernels = 2;
 
 #elif defined(STENCILSTREAM_BACKEND_TILING)
 constexpr size_t temporal_parallelism = 50;
@@ -55,7 +55,7 @@ constexpr size_t spatial_parallelism = 2;
 constexpr size_t tile_width = 512;
 // tiling, make tile as wide as possible.
 constexpr size_t tile_height = 1 << 16;
-constexpr size_t n_kernels = 1;
+constexpr size_t n_kernels = 2;
 #endif
 
 constexpr size_t max_n_rings = 15;

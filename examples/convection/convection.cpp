@@ -250,7 +250,7 @@ constexpr size_t max_nx = 1 << 16;
 constexpr size_t max_ny = 512;
 constexpr size_t temporal_parallelism = 7;
 constexpr size_t spatial_parallelism = 1;
-constexpr size_t n_kernels = 1;
+constexpr size_t n_kernels = 2;
 using Grid = monotile::Grid<ThermalConvectionCell, spatial_parallelism>;
 using PseudoTransientUpdate =
     monotile::StencilUpdate<PseudoTransientKernel, temporal_parallelism, spatial_parallelism,
