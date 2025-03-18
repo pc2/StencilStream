@@ -201,9 +201,7 @@ class StencilUpdate {
             std::list<sycl::event> pass_work_events =
                 submit_work_kernel<0>(queue, tdv_global_state, i, target_i_iteration, grid_range);
             if (params.profiling) {
-                for (sycl::event event : pass_work_events) {
-                    work_events.push_back(event);
-                };
+                work_events.push_back(pass_work_events);
             }
 
             pass_target->template submit_write<out_pipe, max_grid_height, max_grid_width>(queue);
@@ -247,16 +245,21 @@ class StencilUpdate {
      */
     double get_kernel_runtime() const {
         double kernel_runtime = 0.0;
-        for (sycl::event work_event : work_events) {
+        for (std::list<sycl::event> pass_work_events : work_events) {
+            double start = -std::numeric_limits<double>::infinity();
+            double end = std::numeric_limits<double>::infinity();
+            for (sycl::event work_event : pass_work_events) {
+                start = std::max(
+                    start,
+                    double(work_event
+                               .get_profiling_info<sycl::info::event_profiling::command_start>()));
+                end = std::min(
+                    end,
+                    double(
+                        work_event.get_profiling_info<sycl::info::event_profiling::command_end>()));
+            }
             const double timesteps_per_second = 1000000000.0;
-            double start =
-                double(
-                    work_event.get_profiling_info<sycl::info::event_profiling::command_start>()) /
-                timesteps_per_second;
-            double end =
-                double(work_event.get_profiling_info<sycl::info::event_profiling::command_end>()) /
-                timesteps_per_second;
-            kernel_runtime += end - start;
+            kernel_runtime += (end - start) / timesteps_per_second;
         }
         return kernel_runtime;
     }
@@ -315,7 +318,7 @@ class StencilUpdate {
     Params params;
     std::size_t n_processed_cells;
     double walltime;
-    std::vector<sycl::event> work_events;
+    std::vector<std::list<sycl::event>> work_events;
 };
 
 } // namespace monotile
