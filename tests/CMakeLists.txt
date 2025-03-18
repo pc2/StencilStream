@@ -32,8 +32,10 @@ set(UNIT_TEST_CUDA_SOURCES
 set(UNIT_TEST_FPGA_SOURCES
     monotile/Grid.cpp
     monotile/StencilUpdate.cpp
+    monotile/StencilUpdateKernel.cpp
     tiling/Grid.cpp
     tiling/StencilUpdate.cpp
+    tiling/StencilUpdateKernel.cpp
 )
 
 add_executable(unit_test_cpu ${UNIT_TEST_BASE_SOURCES} ${UNIT_TEST_CPU_SOURCES})
