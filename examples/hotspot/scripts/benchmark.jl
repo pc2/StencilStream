@@ -5,10 +5,10 @@ using Statistics
 
 const OPERATIONS_PER_CELL = 15
 const CELL_SIZE = 8 # bytes
-const TEMPORAL_PARALLELISM = Dict(:monotile => 35, :tiling => 25, :cuda => 1)
+const TEMPORAL_PARALLELISM = Dict(:monotile => 64, :tiling => 64, :cuda => 1)
 const SPATIAL_PARALLELISM = Dict(:monotile => 8, :tiling => 8, :cuda => 1)
 const TILE_HEIGHT = Dict(:monotile => 1024, :tiling => 2^16, :cuda => nothing)
-const TILE_WIDTH = Dict(:monotile => 1024, :tiling => 1024, :cuda => nothing)
+const TILE_WIDTH = Dict(:monotile => 1024, :tiling => 2048, :cuda => nothing)
 
 function create_experiment(n_rows, n_columns, temp_file, power_file)
     begin
