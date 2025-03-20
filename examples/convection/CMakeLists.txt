@@ -35,5 +35,5 @@ endforeach()
 
 # Setting seeds for hardware synthesis.
 foreach(TARGET convection convection_report)
-    target_link_options(${TARGET} PUBLIC -Xsseed=2)
+    target_link_options(${TARGET} PUBLIC -Xsseed=1)
 endforeach()
