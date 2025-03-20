@@ -259,14 +259,14 @@ class StencilUpdate {
     double get_kernel_runtime() const {
         double kernel_runtime = 0.0;
         for (std::list<sycl::event> pass_work_events : work_events) {
-            double start = -std::numeric_limits<double>::infinity();
-            double end = std::numeric_limits<double>::infinity();
+            double start = std::numeric_limits<double>::infinity();
+            double end = -std::numeric_limits<double>::infinity();
             for (sycl::event work_event : pass_work_events) {
-                start = std::max(
+                start = std::min(
                     start,
                     double(work_event
                                .get_profiling_info<sycl::info::event_profiling::command_start>()));
-                end = std::min(
+                end = std::max(
                     end,
                     double(
                         work_event.get_profiling_info<sycl::info::event_profiling::command_end>()));

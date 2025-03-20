@@ -59,16 +59,19 @@ function max_perf_benchmark(exec, variant)
         runtime = open(command, "r") do process_in
             runtime_name = (variant == :cuda) ? "Walltime" : "Kernel Runtime"
             line_re = Regex("$(runtime_name): ([0-9]+\\.[0-9]+) s")
+            runtime = nothing
 
-            while true
+            while !eof(process_in)
                 line = readline(process_in)
                 println(line)
 
                 line_match = match(line_re, line)
                 if line_match !== nothing
-                    return parse(Float64, line_match[1])
+                    runtime = parse(Float64, line_match[1])
                 end
             end
+
+            runtime
         end
         push!(runtimes, runtime)
     end
