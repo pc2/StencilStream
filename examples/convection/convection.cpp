@@ -248,7 +248,7 @@ using ThermalSolverUpdate = cuda::StencilUpdate<ThermalSolverKernel>;
 #else
 constexpr size_t max_nx = 1 << 16;
 constexpr size_t max_ny = 512;
-constexpr size_t temporal_parallelism = 10;
+constexpr size_t temporal_parallelism = 9;
 constexpr size_t spatial_parallelism = 1;
 constexpr size_t n_kernels = 2;
 using Grid = monotile::Grid<ThermalConvectionCell, spatial_parallelism>;
