@@ -197,7 +197,7 @@ fdtd (monotile) synthesis:
     script:
         - cd examples/fdtd
         - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/${STST_EXECUTABLE} ${STST_VARIANT}
-        - ./scripts/plot_frames.jl frames out/
+        - julia --project -O3 -t126 ./scripts/plot_frames.jl out/
     artifacts:
         paths:
             - examples/fdtd/out/*.csv
