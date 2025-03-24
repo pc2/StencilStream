@@ -192,9 +192,6 @@ int main(int argc, char **argv) {
         .n_iterations = parameters.n_timesteps(),
         .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
-#if defined(STENCILSTREAM_BACKEND_MONOTILE) || defined(STENCILSTREAM_BACKEND_TILING)
-        .profiling = true, // enable additional profiling for FPGA targets
-#endif
     });
 
     size_t n_timesteps = parameters.n_timesteps();
@@ -216,10 +213,6 @@ int main(int argc, char **argv) {
 
     std::cout << "Simulation complete!" << std::endl;
     std::cout << "Walltime: " << simulation.get_walltime() << " s" << std::endl;
-#if defined(STENCILSTREAM_BACKEND_MONOTILE) || defined(STENCILSTREAM_BACKEND_TILING)
-    // Print pure kernel runtime for FPGA targets
-    std::cout << "Kernel Runtime: " << simulation.get_kernel_runtime() << " s" << std::endl;
-#endif
 
     save_frame(grid, n_timesteps, CellField::HZ_SUM, parameters);
 

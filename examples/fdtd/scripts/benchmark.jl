@@ -4,28 +4,30 @@ include("../../../scripts/benchmark-common.jl")
 const N_SUBITERATIONS = 2
 const OPERATIONS_PER_CELL = 8 + (6 + 4 + 2 + 2 + 2) # Including all paths, excluding source wave computation
 const CELL_SIZE = 4 * (4 + 4) # bytes, including material coefficients
-const TEMPORAL_PARALLELISM = Dict(:monotile => 105, :tiling => 63, :cuda => 1)
+const TEMPORAL_PARALLELISM = Dict(:monotile => 63, :tiling => 55, :cuda => 1)
 const SPATIAL_PARALLELISM = Dict(:monotile => 2, :tiling => 2, :cuda => 1)
 const TILE_HEIGHT = Dict(:monotile => 512, :tiling => 2^16, :cuda => nothing)
 const TILE_WIDTH = Dict(:monotile => 512, :tiling => 512, :cuda => nothing)
 
 function max_perf_benchmark(exe, variant)
     if variant == :monotile || variant == :cuda
-        experiment_path = "./experiments/full_tile.json"
+        experiment_path = "./experiments/mono_benchmark.json"
         n_samples = 10
     elseif variant == :tiling
-        experiment_path = "./experiments/max_grid.json"
+        experiment_path = "./experiments/tiling_benchmark.json"
         n_samples = 2
     end
     out_dir = Base.Filesystem.mkpath("./out/")
     command = `$exe -c $experiment_path -o $out_dir`
 
-    runtime_name = (variant == :cuda) ? "Walltime" : "Kernel Runtime"
-    runtime_re = Regex("$(runtime_name): ([0-9]+\\.[0-9]+) s")
+    runtime_re = Regex("Walltime: ([0-9]+\\.[0-9]+) s")
 
     # Defining names here so that later definitions won't be dropped.
     grid_wh = n_timesteps = nothing
     runtimes = Vector()
+
+    # Warmup to exclude programming from the benchmark
+    run(command)
 
     for i_sample in 1:n_samples
         runtime, grid_wh, n_timesteps = open(command, "r") do process_in
@@ -33,8 +35,7 @@ function max_perf_benchmark(exe, variant)
             grid_wh = nothing
             n_timesteps = nothing
 
-            # While any of the metrics is nothing...
-            while any(v -> v === nothing, [runtime, grid_wh, n_timesteps])
+            while !eof(process_in)
                 line = readline(process_in)
                 println(line)
                 if (m = match(r"grid w/h\s*= ([0-9]+) cells", line)) !== nothing

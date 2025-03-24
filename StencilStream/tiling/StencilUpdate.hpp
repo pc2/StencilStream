@@ -23,7 +23,6 @@
 #include "StencilUpdateKernel.hpp"
 
 #include <chrono>
-#include <list>
 
 namespace stencil {
 namespace tiling {
@@ -144,7 +143,7 @@ class StencilUpdate {
      * \brief Create a new stencil updater object.
      */
     StencilUpdate(Params params)
-        : params(params), n_processed_cells(0), work_events(), walltime(0.0) {}
+        : params(params), n_processed_cells(0), walltime(0.0) {}
 
     /**
      * \brief Return a reference to the parameters.
@@ -184,8 +183,7 @@ class StencilUpdate {
         std::vector<sycl::queue> work_queues;
         for (std::size_t i_kernel = 0; i_kernel < n_kernels; i_kernel++) {
             work_queues.push_back(
-                sycl::queue(params.device, {sycl::property::queue::in_order{},
-                                            sycl::property::queue::enable_profiling{}}));
+                sycl::queue(params.device, {sycl::property::queue::in_order{}}));
         }
 
         GridImpl swap_grid_a = source_grid.make_similar();
@@ -213,11 +211,8 @@ class StencilUpdate {
                                                       halo_width>(input_queue, i_tile_r, i_tile_c,
                                                                   params.halo_value);
 
-                    std::list<sycl::event> pass_work_events = submit_work_kernel<0>(
+                    submit_work_kernel<0>(
                         work_queues, tdv_global_state, i, target_i_iteration, grid_range, i_tile);
-                    if (params.profiling) {
-                        work_events.push_back(pass_work_events);
-                    }
 
                     pass_target->template submit_write<out_pipe, tile_height, tile_width>(
                         output_queue, i_tile_r, i_tile_c);
@@ -265,25 +260,8 @@ class StencilUpdate {
      * This runtime is accumulated across multiple calls to \ref operator()(). However, this is only
      * possible if \ref Params::profiling is set to true.
      */
-    double get_kernel_runtime() const {
-        double kernel_runtime = 0.0;
-        for (std::list<sycl::event> pass_work_events : work_events) {
-            double start = std::numeric_limits<double>::infinity();
-            double end = -std::numeric_limits<double>::infinity();
-            for (sycl::event work_event : pass_work_events) {
-                start = std::min(
-                    start,
-                    double(work_event
-                               .get_profiling_info<sycl::info::event_profiling::command_start>()));
-                end = std::max(
-                    end,
-                    double(
-                        work_event.get_profiling_info<sycl::info::event_profiling::command_end>()));
-            }
-            const double timesteps_per_second = 1000000000.0;
-            kernel_runtime += (end - start) / timesteps_per_second;
-        }
-        return kernel_runtime;
+    [[deprecated("Not implemented, equal to walltime")]] double get_kernel_runtime() const {
+        return walltime;
     }
 
     /**
@@ -296,7 +274,7 @@ class StencilUpdate {
 
   private:
     template <std::size_t i_kernel>
-    std::list<sycl::event>
+    void
     submit_work_kernel(std::vector<sycl::queue> work_queues, TDVGlobalState &tdv_global_state,
                        std::size_t i_iteration, std::size_t target_i_iteration,
                        sycl::range<2> grid_range, sycl::id<2> i_tile)
@@ -318,7 +296,7 @@ class StencilUpdate {
                                 remaining_temporal_parallelism, spatial_parallelism, tile_height,
                                 tile_width, in_pipe, out_pipe>;
 
-        sycl::event work_event = work_queues[i_kernel].submit([&](sycl::handler &cgh) {
+        work_queues[i_kernel].submit([&](sycl::handler &cgh) {
             TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i_iteration,
                                                   local_temporal_parallelism);
             std::ptrdiff_t r_offset = i_tile[0] * tile_height;
@@ -331,27 +309,24 @@ class StencilUpdate {
             cgh.single_task<ExecutionKernelImpl>(exec_kernel);
         });
 
-        std::list<sycl::event> following_events = submit_work_kernel<i_kernel + 1>(
+        submit_work_kernel<i_kernel + 1>(
             work_queues, tdv_global_state, i_iteration + local_temporal_parallelism,
             target_i_iteration, grid_range, i_tile);
-        following_events.push_front(work_event);
-        return following_events;
     }
 
     template <std::size_t i_kernel>
-    std::list<sycl::event>
+    void
     submit_work_kernel(std::vector<sycl::queue> work_queues, TDVGlobalState &tdv_global_state,
                        std::size_t i_iteration, std::size_t target_i_iteration,
                        sycl::range<2> grid_range, sycl::id<2> i_tile)
         requires(i_kernel == n_kernels)
     {
-        return std::list<sycl::event>();
+        return;
     }
 
     Params params;
     std::size_t n_processed_cells;
     double walltime;
-    std::vector<std::list<sycl::event>> work_events;
 };
 
 } // namespace tiling

@@ -5,7 +5,7 @@ using Statistics
 
 const OPERATIONS_PER_CELL = 15
 const CELL_SIZE = 8 # bytes
-const TEMPORAL_PARALLELISM = Dict(:monotile => 64, :tiling => 64, :cuda => 1)
+const TEMPORAL_PARALLELISM = Dict(:monotile => 64, :tiling => 48, :cuda => 1)
 const SPATIAL_PARALLELISM = Dict(:monotile => 8, :tiling => 8, :cuda => 1)
 const TILE_HEIGHT = Dict(:monotile => 1024, :tiling => 2^16, :cuda => nothing)
 const TILE_WIDTH = Dict(:monotile => 1024, :tiling => 2048, :cuda => nothing)
@@ -28,13 +28,13 @@ function max_perf_benchmark(exec, variant)
     if variant == :monotile
         grid_height = TILE_HEIGHT[:monotile]
         grid_width = TILE_WIDTH[:monotile]
-        n_iters = 10_000 * TEMPORAL_PARALLELISM[:monotile]
-        n_samples = 10
+        n_iters = 100_000 * TEMPORAL_PARALLELISM[:monotile]
+        n_samples = 5
     elseif variant == :tiling
         grid_height = 16*TILE_WIDTH[:tiling]
         grid_width = 16*TILE_WIDTH[:tiling]
-        n_iters = 1000
-        n_samples = 3
+        n_iters = 100 * TEMPORAL_PARALLELISM[:tiling]
+        n_samples = 5
     elseif variant == :cuda
         # TODO: Provide better parameters, maybe unify them.
         grid_height = grid_width = 16 * 2^10
@@ -54,11 +54,13 @@ function max_perf_benchmark(exec, variant)
 
     command = `$exec $grid_height $grid_width $n_iters $temp_path $power_path $out_path`
 
+    # Warmup to exclude programming from the benchmark
+    run(command)
+
     runtimes = Vector()
     for i_sample in 1:n_samples
         runtime = open(command, "r") do process_in
-            runtime_name = (variant == :cuda) ? "Walltime" : "Kernel Runtime"
-            line_re = Regex("$(runtime_name): ([0-9]+\\.[0-9]+) s")
+            line_re = Regex("Walltime: ([0-9]+\\.[0-9]+) s")
             runtime = nothing
 
             while !eof(process_in)
