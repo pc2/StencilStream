@@ -4,10 +4,10 @@ include("../../../scripts/benchmark-common.jl")
 const N_SUBITERATIONS = 2
 const OPERATIONS_PER_CELL = 8 + (6 + 4 + 2 + 2 + 2) # Including all paths, excluding source wave computation
 const CELL_SIZE = 4 * (4 + 4) # bytes, including material coefficients
-const TEMPORAL_PARALLELISM = Dict(:monotile => 63, :tiling => 55, :cuda => 1)
+const TEMPORAL_PARALLELISM = Dict(:monotile => 80, :tiling => 64, :cuda => 1)
 const SPATIAL_PARALLELISM = Dict(:monotile => 2, :tiling => 2, :cuda => 1)
-const TILE_HEIGHT = Dict(:monotile => 512, :tiling => 2^16, :cuda => nothing)
-const TILE_WIDTH = Dict(:monotile => 512, :tiling => 512, :cuda => nothing)
+const TILE_HEIGHT = Dict(:monotile => 1024, :tiling => 2^16, :cuda => nothing)
+const TILE_WIDTH = Dict(:monotile => 1024, :tiling => 768, :cuda => nothing)
 
 function max_perf_benchmark(exe, variant)
     if variant == :monotile || variant == :cuda
