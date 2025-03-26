@@ -3,9 +3,10 @@ include("../../../scripts/benchmark-common.jl")
 using DelimitedFiles
 using Statistics
 
+const GLOBAL_MEMORY_SPACE = 32 * 2^30
 const OPERATIONS_PER_CELL = 15
 const CELL_SIZE = 8 # bytes
-const TEMPORAL_PARALLELISM = Dict(:monotile => 64, :tiling => 64, :cuda => 1)
+const TEMPORAL_PARALLELISM = Dict(:monotile => 60, :tiling => 64, :cuda => 1)
 const SPATIAL_PARALLELISM = Dict(:monotile => 8, :tiling => 8, :cuda => 1)
 const TILE_HEIGHT = Dict(:monotile => 8192, :tiling => 2^16, :cuda => nothing)
 const TILE_WIDTH = Dict(:monotile => 8192, :tiling => 4096, :cuda => nothing)
@@ -31,8 +32,10 @@ function max_perf_benchmark(exec, variant)
         n_iters = 100_000 * TEMPORAL_PARALLELISM[:monotile]
         n_samples = 5
     elseif variant == :tiling
-        grid_height = 16*TILE_WIDTH[:tiling]
-        grid_width = 16*TILE_WIDTH[:tiling]
+        max_n_cells = GLOBAL_MEMORY_SPACE / 3 / CELL_SIZE
+        n_tiles = Int(floor(√max_n_cells / TILE_WIDTH[:tiling]))
+        grid_height = n_tiles*TILE_WIDTH[:tiling]
+        grid_width = n_tiles*TILE_WIDTH[:tiling]
         n_iters = 100 * TEMPORAL_PARALLELISM[:tiling]
         n_samples = 5
     elseif variant == :cuda
@@ -41,6 +44,10 @@ function max_perf_benchmark(exec, variant)
         n_iters = 1000
         n_samples = 3
     end
+    println("Grid dimensions: $(grid_height) x $(grid_width)")
+    println("Grid size: $(grid_height * grid_width * CELL_SIZE * 2^-30) GB")
+    println("No. of iterations: $(n_iters)")
+    println("No. of samples: $(n_samples)")
 
     experiment_dir = mktempdir("/dev/shm/")
     temp_path = experiment_dir * "/temp.bin"

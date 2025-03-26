@@ -4,7 +4,7 @@ include("../../../scripts/benchmark-common.jl")
 const N_SUBITERATIONS = 2
 const OPERATIONS_PER_CELL = 8 + (6 + 4 + 2 + 2 + 2) # Including all paths, excluding source wave computation
 const CELL_SIZE = 4 * (4 + 4) # bytes, including material coefficients
-const TEMPORAL_PARALLELISM = Dict(:monotile => 80, :tiling => 64, :cuda => 1)
+const TEMPORAL_PARALLELISM = Dict(:monotile => 72, :tiling => 64, :cuda => 1)
 const SPATIAL_PARALLELISM = Dict(:monotile => 2, :tiling => 2, :cuda => 1)
 const TILE_HEIGHT = Dict(:monotile => 1024, :tiling => 2^16, :cuda => nothing)
 const TILE_WIDTH = Dict(:monotile => 1024, :tiling => 768, :cuda => nothing)
@@ -15,7 +15,7 @@ function max_perf_benchmark(exe, variant)
         n_samples = 10
     elseif variant == :tiling
         experiment_path = "./experiments/tiling_benchmark.json"
-        n_samples = 2
+        n_samples = 3
     end
     out_dir = Base.Filesystem.mkpath("./out/")
     command = `$exe -c $experiment_path -o $out_dir`

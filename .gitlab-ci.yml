@@ -140,7 +140,7 @@ hotspot (monotile) synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:30:00
     script:
         - cd examples/hotspot
         - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/${STST_EXECUTABLE} ${STST_VARIANT}
