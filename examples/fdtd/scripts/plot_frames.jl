@@ -19,7 +19,12 @@ end
 
 @threads for path in glob("*.csv", output_directory_path)
     data = readdlm(path, ',', Float64)
-    norm_data = data ./ (2 * maximum(abs.(data))) .+ 0.5
+    max_abs_value = maximum(abs.(data))
+    if max_abs_value == 0
+        norm_data = data .+ 0.5
+    else
+        norm_data = data ./ (2 * max_abs_value) .+ 0.5
+    end
     image = (cell -> get(ColorSchemes.broc, cell)).(norm_data)
     save(path * ".png", image)
 end
