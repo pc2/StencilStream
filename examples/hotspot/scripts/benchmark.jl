@@ -29,7 +29,7 @@ function max_perf_benchmark(exec, variant)
     if variant == :monotile
         grid_height = TILE_HEIGHT[:monotile]
         grid_width = TILE_WIDTH[:monotile]
-        n_iters = 100_000 * TEMPORAL_PARALLELISM[:monotile]
+        n_iters = 2_000 * TEMPORAL_PARALLELISM[:monotile]
         n_samples = 5
     elseif variant == :tiling
         max_n_cells = GLOBAL_MEMORY_SPACE / 3 / CELL_SIZE

@@ -93,7 +93,7 @@ struct HotspotKernel : public BaseTransitionFunction {
 };
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
-const size_t max_grid_height = 8129;
+const size_t max_grid_height = 8192;
 const size_t max_grid_width = 8192;
 const size_t temporal_parallelism = 60;
 const size_t spatial_parallelism = 8;
