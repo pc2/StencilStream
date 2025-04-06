@@ -247,13 +247,16 @@ using ThermalSolverUpdate = cuda::StencilUpdate<ThermalSolverKernel>;
 
 #else
 constexpr size_t max_nx = 1 << 16;
-constexpr size_t max_ny = 512;
+constexpr size_t max_ny = 768;
+constexpr size_t temporal_parallelism = 8;
 constexpr size_t spatial_parallelism = 1;
+constexpr size_t n_kernels = 2;
 using Grid = monotile::Grid<ThermalConvectionCell, spatial_parallelism>;
 using PseudoTransientUpdate =
-    monotile::StencilUpdate<PseudoTransientKernel, 7, spatial_parallelism, max_nx, max_ny>;
+    monotile::StencilUpdate<PseudoTransientKernel, temporal_parallelism, spatial_parallelism,
+                            max_nx, max_ny, n_kernels>;
 using ThermalSolverUpdate =
-    monotile::StencilUpdate<ThermalSolverKernel, 1, spatial_parallelism, max_nx, max_ny>;
+    monotile::StencilUpdate<ThermalSolverKernel, 1, spatial_parallelism, max_nx, max_ny, 1>;
 
 #endif
 
@@ -371,6 +374,7 @@ int main(int argc, char **argv) {
         .halo_value = ThermalConvectionCell::halo_value(),
         .n_iterations = nerr,
         .device = device,
+        .blocking = true,
     });
 
     Grid grid(nx + 1, ny + 1);
@@ -478,5 +482,6 @@ int main(int argc, char **argv) {
     auto computation_time = std::chrono::duration_cast<std::chrono::duration<double>>(
         computation_end - computation_start);
     std::cout << "Total time = " << computation_time.count() << std::endl;
+    std::cout << "Of which transient computation time: " << pseudo_transient_update.get_walltime() << " s" << std::endl;
     return 0;
 }

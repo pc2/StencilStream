@@ -22,7 +22,7 @@ target_link_libraries(hotspot_cuda PUBLIC StencilStream_CUDA)
 # Monotile versions
 add_executable(hotspot_mono hotspot.cpp)
 target_link_libraries(hotspot_mono PUBLIC StencilStream_Monotile)
-target_link_options(hotspot_mono PUBLIC -Xsseed=2)
+target_link_options(hotspot_mono PUBLIC -Xsseed=12177)
 
 add_executable(hotspot_mono_emu hotspot.cpp)
 target_link_libraries(hotspot_mono_emu PUBLIC StencilStream_MonotileEmulator)
@@ -42,7 +42,7 @@ target_link_libraries(hotspot_tiling_report PUBLIC StencilStream_TilingReport)
 
 # Setting seeds for hardware synthesis.
 foreach(TARGET hotspot_tiling hotspot_tiling_report)
-    target_link_options(${TARGET} PUBLIC -Xsseed=2)
+    target_link_options(${TARGET} PUBLIC -Xsseed=1)
 endforeach()
 
 # Adding a custom target for all Hotspot reports

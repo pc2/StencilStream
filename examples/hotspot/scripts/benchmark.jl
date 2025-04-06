@@ -3,12 +3,13 @@ include("../../../scripts/benchmark-common.jl")
 using DelimitedFiles
 using Statistics
 
+const GLOBAL_MEMORY_SPACE = 32 * 2^30
 const OPERATIONS_PER_CELL = 15
 const CELL_SIZE = 8 # bytes
-const TEMPORAL_PARALLELISM = Dict(:monotile => 35, :tiling => 25, :cuda => 1)
+const TEMPORAL_PARALLELISM = Dict(:monotile => 64, :tiling => 64, :cuda => 1)
 const SPATIAL_PARALLELISM = Dict(:monotile => 8, :tiling => 8, :cuda => 1)
-const TILE_HEIGHT = Dict(:monotile => 1024, :tiling => 2^16, :cuda => nothing)
-const TILE_WIDTH = Dict(:monotile => 1024, :tiling => 1024, :cuda => nothing)
+const TILE_HEIGHT = Dict(:monotile => 6144, :tiling => 2^16, :cuda => nothing)
+const TILE_WIDTH = Dict(:monotile => 6144, :tiling => 4096, :cuda => nothing)
 
 function create_experiment(n_rows, n_columns, temp_file, power_file)
     begin
@@ -28,19 +29,25 @@ function max_perf_benchmark(exec, variant)
     if variant == :monotile
         grid_height = TILE_HEIGHT[:monotile]
         grid_width = TILE_WIDTH[:monotile]
-        n_iters = 10_000 * TEMPORAL_PARALLELISM[:monotile]
-        n_samples = 10
+        n_iters = 2_000 * TEMPORAL_PARALLELISM[:monotile]
+        n_samples = 5
     elseif variant == :tiling
-        grid_height = 16*TILE_WIDTH[:tiling]
-        grid_width = 16*TILE_WIDTH[:tiling]
-        n_iters = 1000
-        n_samples = 3
+        max_n_cells = GLOBAL_MEMORY_SPACE / 3 / CELL_SIZE
+        n_tiles = Int(floor(√max_n_cells / TILE_WIDTH[:tiling]))
+        grid_height = n_tiles*TILE_WIDTH[:tiling]
+        grid_width = n_tiles*TILE_WIDTH[:tiling]
+        n_iters = 100 * TEMPORAL_PARALLELISM[:tiling]
+        n_samples = 5
     elseif variant == :cuda
         # TODO: Provide better parameters, maybe unify them.
         grid_height = grid_width = 16 * 2^10
         n_iters = 1000
         n_samples = 3
     end
+    println("Grid dimensions: $(grid_height) x $(grid_width)")
+    println("Grid size: $(grid_height * grid_width * CELL_SIZE * 2^-30) GB")
+    println("No. of iterations: $(n_iters)")
+    println("No. of samples: $(n_samples)")
 
     experiment_dir = mktempdir("/dev/shm/")
     temp_path = experiment_dir * "/temp.bin"
@@ -54,21 +61,26 @@ function max_perf_benchmark(exec, variant)
 
     command = `$exec $grid_height $grid_width $n_iters $temp_path $power_path $out_path`
 
+    # Warmup to exclude programming from the benchmark
+    run(command)
+
     runtimes = Vector()
     for i_sample in 1:n_samples
         runtime = open(command, "r") do process_in
-            runtime_name = (variant == :cuda) ? "Walltime" : "Kernel Runtime"
-            line_re = Regex("$(runtime_name): ([0-9]+\\.[0-9]+) s")
+            line_re = Regex("Walltime: ([0-9]+\\.[0-9]+) s")
+            runtime = nothing
 
-            while true
+            while !eof(process_in)
                 line = readline(process_in)
                 println(line)
 
                 line_match = match(line_re, line)
                 if line_match !== nothing
-                    return parse(Float64, line_match[1])
+                    runtime = parse(Float64, line_match[1])
                 end
             end
+
+            runtime
         end
         push!(runtimes, runtime)
     end

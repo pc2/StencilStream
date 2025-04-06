@@ -93,21 +93,25 @@ struct HotspotKernel : public BaseTransitionFunction {
 };
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
-const size_t max_grid_height = 1024;
-const size_t max_grid_width = 1024;
-const size_t temporal_parallelism = 35;
+const size_t max_grid_height = 6144;
+const size_t max_grid_width = 6144;
+const size_t temporal_parallelism = 64;
 const size_t spatial_parallelism = 8;
-using StencilUpdate = monotile::StencilUpdate<HotspotKernel, temporal_parallelism,
-                                              spatial_parallelism, max_grid_height, max_grid_width>;
+const size_t n_kernels = 16;
+using StencilUpdate =
+    monotile::StencilUpdate<HotspotKernel, temporal_parallelism, spatial_parallelism,
+                            max_grid_height, max_grid_width, n_kernels>;
 using Grid = StencilUpdate::GridImpl;
 
 #elif defined(STENCILSTREAM_BACKEND_TILING)
 const size_t tile_height = 1 << 16;
-const size_t tile_width = 1024;
-const size_t temporal_parallelism = 25;
+const size_t tile_width = 4096;
+const size_t temporal_parallelism = 64;
 const size_t spatial_parallelism = 8;
-using StencilUpdate = tiling::StencilUpdate<HotspotKernel, temporal_parallelism,
-                                            spatial_parallelism, tile_height, tile_width>;
+const size_t n_kernels = 16;
+using StencilUpdate =
+    tiling::StencilUpdate<HotspotKernel, temporal_parallelism, spatial_parallelism, tile_height,
+                          tile_width, n_kernels>;
 using Grid = StencilUpdate::GridImpl;
 
 #elif defined(STENCILSTREAM_BACKEND_CPU)
@@ -277,19 +281,12 @@ int main(int argc, char **argv) {
         .n_iterations = sim_time,
         .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
-#if defined(STENCILSTREAM_BACKEND_MONOTILE) || defined(STENCILSTREAM_BACKEND_TILING)
-        .profiling = true, // enable additional profiling for FPGA targets
-#endif
     });
 
     grid = update(grid);
 
     std::cout << "Ending simulation" << std::endl;
     std::cout << "Walltime: " << update.get_walltime() << " s" << std::endl;
-#if defined(STENCILSTREAM_BACKEND_MONOTILE) || defined(STENCILSTREAM_BACKEND_TILING)
-    // Print pure kernel runtime for FPGA targets
-    std::cout << "Kernel Runtime: " << update.get_kernel_runtime() << " s" << std::endl;
-#endif
 
     write_output(grid, ofile, binary_io);
 

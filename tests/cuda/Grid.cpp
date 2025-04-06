@@ -27,9 +27,7 @@ using TestGrid = Grid<sycl::id<2>>;
 
 static_assert(concepts::Grid<TestGrid, sycl::id<2>>);
 
-TEST_CASE("cuda::Grid::Grid", "[cuda::Grid]") {
-    grid_test::test_constructors<TestGrid>(128, 128);
-}
+TEST_CASE("cuda::Grid::Grid", "[cuda::Grid]") { grid_test::test_constructors<TestGrid>(128, 128); }
 
 TEST_CASE("cuda::Grid::copy_from_buffer", "[cuda::Grid]") {
     grid_test::test_copy_from_buffer<TestGrid>(128, 128);

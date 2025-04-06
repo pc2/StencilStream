@@ -42,7 +42,7 @@ default:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
+        SCHEDULER_PARAMETERS: -A pc2-shks -p normal -t 1-00:00:00 -c 8 --mem 120G
     script:
         - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "${STST_EXAMPLE}" "${STST_EXECUTABLE}"
     artifacts:
@@ -80,7 +80,7 @@ FPGA/CPU unit test:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 0:10:00 -c 16 --mem 4G
+        SCHEDULER_PARAMETERS: -A pc2-shks -p normal -t 0:10:00 -c 16 --mem 4G
     script:
         - mkdir -p build
         - cd build
@@ -112,7 +112,7 @@ convection benchmark:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
+        SCHEDULER_PARAMETERS: -A pc2-shks -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
     script:
         - cd examples/convection
         - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection monotile
@@ -140,7 +140,7 @@ hotspot (monotile) synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
+        SCHEDULER_PARAMETERS: -A pc2-shks -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:30:00
     script:
         - cd examples/hotspot
         - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/${STST_EXECUTABLE} ${STST_VARIANT}
@@ -193,11 +193,11 @@ fdtd (monotile) synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:30:00
+        SCHEDULER_PARAMETERS: -A pc2-shks -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:30:00
     script:
         - cd examples/fdtd
         - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/${STST_EXECUTABLE} ${STST_VARIANT}
-        - ./scripts/plot_frames.jl frames out/
+        - julia --project -O3 -t126 ./scripts/plot_frames.jl out/
     artifacts:
         paths:
             - examples/fdtd/out/*.csv
@@ -271,7 +271,7 @@ release:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -c 8 --mem 2G -t 00:05:00
+        SCHEDULER_PARAMETERS: -A pc2-shks -p normal -c 8 --mem 2G -t 00:05:00
     before_script:
         - source ./scripts/env_base.sh
     script:
