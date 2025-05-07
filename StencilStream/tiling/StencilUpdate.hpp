@@ -142,8 +142,7 @@ class StencilUpdate {
     /**
      * \brief Create a new stencil updater object.
      */
-    StencilUpdate(Params params)
-        : params(params), n_processed_cells(0), walltime(0.0) {}
+    StencilUpdate(Params params) : params(params), n_processed_cells(0), walltime(0.0) {}
 
     /**
      * \brief Return a reference to the parameters.
@@ -182,8 +181,7 @@ class StencilUpdate {
         sycl::queue output_queue = sycl::queue(params.device, {sycl::property::queue::in_order{}});
         std::vector<sycl::queue> work_queues;
         for (std::size_t i_kernel = 0; i_kernel < n_kernels; i_kernel++) {
-            work_queues.push_back(
-                sycl::queue(params.device, {sycl::property::queue::in_order{}}));
+            work_queues.push_back(sycl::queue(params.device, {sycl::property::queue::in_order{}}));
         }
 
         GridImpl swap_grid_a = source_grid.make_similar();
@@ -211,8 +209,8 @@ class StencilUpdate {
                                                       halo_width>(input_queue, i_tile_r, i_tile_c,
                                                                   params.halo_value);
 
-                    submit_work_kernel<0>(
-                        work_queues, tdv_global_state, i, target_i_iteration, grid_range, i_tile);
+                    submit_work_kernel<0>(work_queues, tdv_global_state, i, target_i_iteration,
+                                          grid_range, i_tile);
 
                     pass_target->template submit_write<out_pipe, tile_height, tile_width>(
                         output_queue, i_tile_r, i_tile_c);
@@ -274,10 +272,9 @@ class StencilUpdate {
 
   private:
     template <std::size_t i_kernel>
-    void
-    submit_work_kernel(std::vector<sycl::queue> work_queues, TDVGlobalState &tdv_global_state,
-                       std::size_t i_iteration, std::size_t target_i_iteration,
-                       sycl::range<2> grid_range, sycl::id<2> i_tile)
+    void submit_work_kernel(std::vector<sycl::queue> work_queues, TDVGlobalState &tdv_global_state,
+                            std::size_t i_iteration, std::size_t target_i_iteration,
+                            sycl::range<2> grid_range, sycl::id<2> i_tile)
         requires(i_kernel < n_kernels)
     {
         using in_pipe = sycl::pipe<PipeIdentifier<i_kernel>, std::array<Cell, spatial_parallelism>>;
@@ -309,16 +306,15 @@ class StencilUpdate {
             cgh.single_task<ExecutionKernelImpl>(exec_kernel);
         });
 
-        submit_work_kernel<i_kernel + 1>(
-            work_queues, tdv_global_state, i_iteration + local_temporal_parallelism,
-            target_i_iteration, grid_range, i_tile);
+        submit_work_kernel<i_kernel + 1>(work_queues, tdv_global_state,
+                                         i_iteration + local_temporal_parallelism,
+                                         target_i_iteration, grid_range, i_tile);
     }
 
     template <std::size_t i_kernel>
-    void
-    submit_work_kernel(std::vector<sycl::queue> work_queues, TDVGlobalState &tdv_global_state,
-                       std::size_t i_iteration, std::size_t target_i_iteration,
-                       sycl::range<2> grid_range, sycl::id<2> i_tile)
+    void submit_work_kernel(std::vector<sycl::queue> work_queues, TDVGlobalState &tdv_global_state,
+                            std::size_t i_iteration, std::size_t target_i_iteration,
+                            sycl::range<2> grid_range, sycl::id<2> i_tile)
         requires(i_kernel == n_kernels)
     {
         return;
