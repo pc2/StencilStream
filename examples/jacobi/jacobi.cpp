@@ -24,7 +24,7 @@
 const char *variant = "monotile";
 #elif defined(STENCILSTREAM_BACKEND_TILING)
     #include <StencilStream/tiling/StencilUpdate.hpp>
-const char *variant = "tiling"
+const char *variant = "tiling";
 #endif
 #include <fstream>
 #include <iostream>

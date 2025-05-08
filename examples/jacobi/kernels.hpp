@@ -28,8 +28,8 @@ using namespace stencil;
 struct Jacobi1General : public stencil::BaseTransitionFunction {
     using Cell = float;
 
-    static constexpr size_t temporal_parallelism = 544;
-    static constexpr size_t mono_tile_width = 64 * 1024;
+    static constexpr size_t temporal_parallelism = 127;
+    static constexpr size_t mono_tile_width = 8 * 1024;
     static constexpr size_t n_operations = 1;
     static constexpr size_t n_coefficients = 1;
 
@@ -50,8 +50,8 @@ struct Jacobi1General : public stencil::BaseTransitionFunction {
 struct Jacobi2Constant : public stencil::BaseTransitionFunction {
     using Cell = float;
 
-    static constexpr size_t temporal_parallelism = 272;
-    static constexpr size_t mono_tile_width = 32 * 1024;
+    static constexpr size_t temporal_parallelism = 112;
+    static constexpr size_t mono_tile_width = 8 * 1024;
     static constexpr size_t n_operations = 2;
     static constexpr size_t n_coefficients = 0;
 
@@ -62,15 +62,15 @@ struct Jacobi2Constant : public stencil::BaseTransitionFunction {
 
     float operator()(stencil::Stencil<float, 1> const &stencil) const {
         // 2 Ops / 4 Bytes
-        return (stencil[-1][0] + stencil[1][0]) / 2.0;
+        return (stencil[-1][0] + stencil[1][0]) * 0.5f;
     }
 };
 
 struct Jacobi3Constant : public stencil::BaseTransitionFunction {
     using Cell = float;
 
-    static constexpr size_t temporal_parallelism = 181;
-    static constexpr size_t mono_tile_width = 32 * 1024;
+    static constexpr size_t temporal_parallelism = 84;
+    static constexpr size_t mono_tile_width = 8 * 1024;
     static constexpr size_t n_operations = 3;
     static constexpr size_t n_coefficients = 0;
 
@@ -81,14 +81,14 @@ struct Jacobi3Constant : public stencil::BaseTransitionFunction {
 
     float operator()(stencil::Stencil<float, 1> const &stencil) const {
         // 3 Ops / 4 Bytes
-        return (stencil[-1][0] + stencil[0][0] + stencil[1][0]) / 3.0;
+        return (stencil[-1][0] + stencil[0][0] + stencil[1][0]) * 0.33333334f;
     }
 };
 
 struct Jacobi4Constant : public stencil::BaseTransitionFunction {
     using Cell = float;
 
-    static constexpr size_t temporal_parallelism = 72;
+    static constexpr size_t temporal_parallelism = 56;
     static constexpr size_t mono_tile_width = 16 * 1024;
     static constexpr size_t n_operations = 4;
     static constexpr size_t n_coefficients = 0;
@@ -100,15 +100,15 @@ struct Jacobi4Constant : public stencil::BaseTransitionFunction {
 
     float operator()(stencil::Stencil<float, 1> const &stencil) const {
         // 4 Ops / 4 Bytes
-        return (stencil[-1][0] + stencil[0][-1] + stencil[1][0] + stencil[0][-1]) / 4.0;
+        return (stencil[-1][0] + stencil[0][-1] + stencil[1][0] + stencil[0][-1]) * 0.25f;
     }
 };
 
 struct Jacobi5Constant : public stencil::BaseTransitionFunction {
     using Cell = float;
 
-    static constexpr size_t temporal_parallelism = 88;
-    static constexpr size_t mono_tile_width = 12 * 1024;
+    static constexpr size_t temporal_parallelism = 56;
+    static constexpr size_t mono_tile_width = 16 * 1024;
     static constexpr size_t n_operations = 5;
     static constexpr size_t n_coefficients = 0;
 
@@ -119,15 +119,14 @@ struct Jacobi5Constant : public stencil::BaseTransitionFunction {
 
     float operator()(stencil::Stencil<float, 1> const &stencil) const {
         // 5 Ops / 4 Bytes
-        return (stencil[-1][0] + stencil[0][-1] + stencil[1][0] + stencil[0][-1] + stencil[0][0]) /
-               5.0;
+        return (stencil[-1][0] + stencil[0][-1] + stencil[1][0] + stencil[0][-1] + stencil[0][0]) * 0.2f;
     }
 };
 
 struct Jacobi4General : public stencil::BaseTransitionFunction {
     using Cell = float;
 
-    static constexpr size_t temporal_parallelism = 72;
+    static constexpr size_t temporal_parallelism = 56;
     static constexpr size_t mono_tile_width = 16 * 1024;
     static constexpr size_t n_operations = 7;
     static constexpr size_t n_coefficients = 4;
@@ -152,7 +151,7 @@ struct Jacobi4General : public stencil::BaseTransitionFunction {
 struct Jacobi5General : public stencil::BaseTransitionFunction {
     using Cell = float;
 
-    static constexpr size_t temporal_parallelism = 56;
+    static constexpr size_t temporal_parallelism = 44;
     static constexpr size_t mono_tile_width = 16 * 1024;
     static constexpr size_t n_operations = 9;
     static constexpr size_t n_coefficients = 5;
@@ -177,7 +176,7 @@ struct Jacobi5General : public stencil::BaseTransitionFunction {
 struct Jacobi9General : public stencil::BaseTransitionFunction {
     using Cell = float;
 
-    static constexpr size_t temporal_parallelism = 32;
+    static constexpr size_t temporal_parallelism = 24;
     static constexpr size_t mono_tile_width = 32 * 1024;
     static constexpr size_t n_operations = 17;
     static constexpr size_t n_coefficients = 9;
