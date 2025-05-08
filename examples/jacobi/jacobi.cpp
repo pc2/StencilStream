@@ -17,41 +17,68 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "kernels.hpp"
+
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
     #include <StencilStream/monotile/StencilUpdate.hpp>
-#elif defined(STENCILSTREAM_BACKEND_CPU)
-    #include <StencilStream/cpu/StencilUpdate.hpp>
+const char *variant = "monotile";
 #elif defined(STENCILSTREAM_BACKEND_TILING)
     #include <StencilStream/tiling/StencilUpdate.hpp>
+const char *variant = "tiling"
 #endif
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <sycl/ext/intel/fpga_extensions.hpp>
-
-#include "kernels.hpp"
 
 using namespace stencil;
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
 using StencilUpdate =
     monotile::StencilUpdate<JacobiKernel, temporal_parallelism, spatial_parallelism, tile_height,
-                            mono_tile_width, n_kernels>;
+                            tile_width, n_kernels>;
 
 #elif defined(STENCILSTREAM_BACKEND_CPU)
 using StencilUpdate = cpu::StencilUpdate<JacobiKernel>;
 
 #elif defined(STENCILSTREAM_BACKEND_TILING)
 using StencilUpdate = tiling::StencilUpdate<JacobiKernel, temporal_parallelism, spatial_parallelism,
-                                            tile_height, tiling_tile_width, n_kernels>;
+                                            tile_height, tile_width, n_kernels>;
 #endif
 
 using Grid = StencilUpdate::GridImpl;
 
+void print_usage(int argc, char **argv) {
+    std::cerr << "Usage: " << argv[0]
+              << "  <grid_rows> <grid_cols> <no. of iterations> <output_file> <coef>" << std::endl;
+    std::cerr << "    <grid_rows>         - number of rows in the grid (positive integer)"
+              << std::endl;
+    std::cerr << "    <grid_cols>         - number of columns in the grid (positive integer)"
+              << std::endl;
+    std::cerr << "    <no. of iterations> - number of iterations (positive integer)" << std::endl;
+    std::cerr << "    <output_file>       - path to the output file" << std::endl;
+    std::cerr
+        << "    <coef>              - coefficients for general variants (floating-point numbers)"
+        << std::endl;
+
+    exit(1);
+}
 
 int main(int argc, char **argv) {
-    if (argc < 5) {
+    if (argc == 2 && std::strcmp(argv[1], "show-config") == 0) {
+        std::cout << "{" << std::endl;
+        std::cout << "    \"variant\": \"" << variant << "\"," << std::endl;
+        std::cout << "    \"temporal_parallelism\": " << temporal_parallelism << "," << std::endl;
+        std::cout << "    \"spatial_parallelism\": " << spatial_parallelism << "," << std::endl;
+        std::cout << "    \"tile_height\": " << tile_height << "," << std::endl;
+        std::cout << "    \"tile_width\": " << tile_width << "," << std::endl;
+        std::cout << "    \"n_coefficients\": " << JacobiKernel::n_coefficients << "," << std::endl;
+        std::cout << "    \"n_operations\": " << JacobiKernel::n_operations << std::endl;
+        std::cout << "}" << std::endl;
+        exit(0);
+    } else if (argc < n_main_arguments) {
         print_usage(argc, argv);
     }
+
     sycl::range<2> range(atoi(argv[1]), atoi(argv[2]));
     size_t n_iterations = atoi(argv[3]);
     std::string out_path(argv[4]);
@@ -71,11 +98,11 @@ int main(int argc, char **argv) {
         }
     }
 
-    #if defined(STENCILSTREAM_TARGET_FPGA)
-        sycl::device device(sycl::ext::intel::fpga_selector_v);
-    #else
-        sycl::device device;
-    #endif
+#if defined(STENCILSTREAM_TARGET_FPGA)
+    sycl::device device(sycl::ext::intel::fpga_selector_v);
+#else
+    sycl::device device;
+#endif
 
     StencilUpdate update({
         .transition_function = JacobiKernel(argc, argv),

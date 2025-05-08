@@ -13,7 +13,7 @@ target_compile_definitions(jacobi PUBLIC JACOBI_KERNEL=Jacobi4General)
 add_custom_target(jacobi_reports)
 
 foreach(KERNEL Jacobi1General Jacobi2Constant Jacobi3Constant Jacobi4Constant Jacobi5Constant Jacobi4General Jacobi5General Jacobi9General)
-    foreach(BACKEND mono mono_emu mono_report tiling tiling_emu tiling_report cpu)
+    foreach(BACKEND mono mono_emu mono_report tiling tiling_emu tiling_report)
 
         set(EXECUTABLE "${KERNEL}_${BACKEND}")
         add_executable(${EXECUTABLE} jacobi.cpp)
@@ -35,8 +35,6 @@ foreach(KERNEL Jacobi1General Jacobi2Constant Jacobi3Constant Jacobi4Constant Ja
             else()
                 target_link_libraries(${EXECUTABLE} PUBLIC StencilStream_Tiling)
             endif()
-        elseif(${BACKEND} STREQUAL "cpu")
-            target_link_libraries(${EXECUTABLE} PUBLIC StencilStream_CPU)
         endif()
 
         if(${BACKEND} MATCHES "report")

@@ -18,23 +18,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include <StencilStream/Stencil.hpp>
 #include <StencilStream/BaseTransitionFunction.hpp>
+#include <StencilStream/Stencil.hpp>
 
 constexpr int n_main_arguments = 5;
-void print_usage(int argc, char** argv) {
-    std::cerr << "Usage: " << argv[0]
-            << "  <grid_rows> <grid_cols> <no. of iterations> <output_file> <coef>"
-            << std::endl;
-    std::cerr << "    <grid_rows>         - number of rows in the grid (positive integer)"
-            << std::endl;
-    std::cerr << "    <grid_cols>         - number of columns in the grid (positive integer)"
-            << std::endl;
-    std::cerr << "    <no. of iterations> - number of iterations (positive integer)" << std::endl;
-    std::cerr << "    <output_file>       - path to the output file" << std::endl;
-    std::cerr << "    <coef>              - coefficients for general variants (floating-point numbers)" << std::endl;
-    exit(1);
-}
+void print_usage(int argc, char **argv);
 
 using namespace stencil;
 struct Jacobi1General : public stencil::BaseTransitionFunction {
@@ -42,10 +30,12 @@ struct Jacobi1General : public stencil::BaseTransitionFunction {
 
     static constexpr size_t temporal_parallelism = 544;
     static constexpr size_t mono_tile_width = 64 * 1024;
+    static constexpr size_t n_operations = 1;
+    static constexpr size_t n_coefficients = 1;
 
     float coef;
 
-    Jacobi1General(int argc, char** argv) : coef() {
+    Jacobi1General(int argc, char **argv) : coef() {
         if (argc != n_main_arguments + 1)
             print_usage(argc, argv);
         coef = atof(argv[n_main_arguments]);
@@ -62,8 +52,10 @@ struct Jacobi2Constant : public stencil::BaseTransitionFunction {
 
     static constexpr size_t temporal_parallelism = 272;
     static constexpr size_t mono_tile_width = 32 * 1024;
+    static constexpr size_t n_operations = 2;
+    static constexpr size_t n_coefficients = 0;
 
-    Jacobi2Constant(int argc, char** argv) {
+    Jacobi2Constant(int argc, char **argv) {
         if (argc != n_main_arguments)
             print_usage(argc, argv);
     }
@@ -79,8 +71,10 @@ struct Jacobi3Constant : public stencil::BaseTransitionFunction {
 
     static constexpr size_t temporal_parallelism = 181;
     static constexpr size_t mono_tile_width = 32 * 1024;
+    static constexpr size_t n_operations = 3;
+    static constexpr size_t n_coefficients = 0;
 
-    Jacobi3Constant(int argc, char** argv) {
+    Jacobi3Constant(int argc, char **argv) {
         if (argc != n_main_arguments)
             print_usage(argc, argv);
     }
@@ -94,10 +88,12 @@ struct Jacobi3Constant : public stencil::BaseTransitionFunction {
 struct Jacobi4Constant : public stencil::BaseTransitionFunction {
     using Cell = float;
 
-    static constexpr size_t temporal_parallelism = 136;
-    static constexpr size_t mono_tile_width = 32 * 1024;
+    static constexpr size_t temporal_parallelism = 72;
+    static constexpr size_t mono_tile_width = 16 * 1024;
+    static constexpr size_t n_operations = 4;
+    static constexpr size_t n_coefficients = 0;
 
-    Jacobi4Constant(int argc, char** argv) {
+    Jacobi4Constant(int argc, char **argv) {
         if (argc != n_main_arguments)
             print_usage(argc, argv);
     }
@@ -113,8 +109,10 @@ struct Jacobi5Constant : public stencil::BaseTransitionFunction {
 
     static constexpr size_t temporal_parallelism = 88;
     static constexpr size_t mono_tile_width = 12 * 1024;
+    static constexpr size_t n_operations = 5;
+    static constexpr size_t n_coefficients = 0;
 
-    Jacobi5Constant(int argc, char** argv) {
+    Jacobi5Constant(int argc, char **argv) {
         if (argc != n_main_arguments)
             print_usage(argc, argv);
     }
@@ -131,8 +129,10 @@ struct Jacobi4General : public stencil::BaseTransitionFunction {
 
     static constexpr size_t temporal_parallelism = 72;
     static constexpr size_t mono_tile_width = 16 * 1024;
+    static constexpr size_t n_operations = 7;
+    static constexpr size_t n_coefficients = 4;
 
-    Jacobi4General(int argc, char** argv) : coef() {
+    Jacobi4General(int argc, char **argv) : coef() {
         if (argc != n_main_arguments + 4)
             print_usage(argc, argv);
         for (int i = 0; i < 4; i++) {
@@ -154,8 +154,10 @@ struct Jacobi5General : public stencil::BaseTransitionFunction {
 
     static constexpr size_t temporal_parallelism = 56;
     static constexpr size_t mono_tile_width = 16 * 1024;
+    static constexpr size_t n_operations = 9;
+    static constexpr size_t n_coefficients = 5;
 
-    Jacobi5General(int argc, char** argv) : coef() {
+    Jacobi5General(int argc, char **argv) : coef() {
         if (argc != n_main_arguments + 5)
             print_usage(argc, argv);
         for (int i = 0; i < 5; i++) {
@@ -177,8 +179,10 @@ struct Jacobi9General : public stencil::BaseTransitionFunction {
 
     static constexpr size_t temporal_parallelism = 32;
     static constexpr size_t mono_tile_width = 32 * 1024;
+    static constexpr size_t n_operations = 17;
+    static constexpr size_t n_coefficients = 9;
 
-    Jacobi9General(int argc, char** argv) : coef() {
+    Jacobi9General(int argc, char **argv) : coef() {
         if (argc != n_main_arguments + 9)
             print_usage(argc, argv);
         for (int r = 0; r < 3; r++) {
@@ -208,6 +212,10 @@ using JacobiKernel = JACOBI_KERNEL;
 const size_t temporal_parallelism = JacobiKernel::temporal_parallelism;
 const size_t spatial_parallelism = 16;
 const size_t tile_height = 1 << 16;
-const size_t mono_tile_width = JacobiKernel::mono_tile_width;
-const size_t tiling_tile_width = mono_tile_width - spatial_parallelism * (2 * temporal_parallelism + 1);
+#if defined(STENCILSTREAM_BACKEND_MONOTILE)
+const size_t tile_width = JacobiKernel::mono_tile_width;
+#elif defined(STENCILSTREAM_BACKEND_TILING)
+const size_t tile_width =
+    JacobiKernel::mono_tile_width - spatial_parallelism * (2 * temporal_parallelism + 1);
+#endif
 const size_t n_kernels = temporal_parallelism / 4;
