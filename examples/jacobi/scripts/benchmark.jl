@@ -15,11 +15,11 @@ function max_perf_benchmark(exe)
 
     grid_wh = min(tile_height, tile_width)
 
-    # target runtime = 60s. Designs reach roughly 2 TFLOPS, so total operations are given as below:
-    target_total_operations = 2e12 * 60
+    # target runtime = 60s. Designs reach roughly 1 TFLOPS, so total operations are given as below:
+    target_total_operations = 1e12 * 60
     n_timesteps = target_total_operations / n_operations_per_cell / grid_wh^2
     n_timesteps = Int(temporal_parallelism * ceil(n_timesteps / temporal_parallelism)) # round up for max utilization
-    n_samples = 10
+    n_samples = 3
 
     arguments = fill(1/n_coefficients, n_coefficients)
 
