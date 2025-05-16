@@ -44,3 +44,11 @@ foreach(KERNEL Jacobi1General Jacobi2Constant Jacobi3Constant Jacobi4Constant Ja
         endif()
     endforeach()
 endforeach()
+
+target_link_options(Jacobi2Constant_mono PUBLIC -Xsseed=10893)
+target_link_options(Jacobi2Constant_tiling PUBLIC -Xsseed=10893)
+target_link_options(Jacobi4Constant_mono PUBLIC -Xsseed=10893)
+target_link_options(Jacobi5Constant_mono PUBLIC -Xsseed=10893)
+target_link_options(Jacobi5Constant_tiling PUBLIC -Xsseed=10893)
+target_link_options(Jacobi5General_tiling PUBLIC -Xsseed=10893)
+target_link_options(Jacobi9General_tiling PUBLIC -Xsseed=10893)
