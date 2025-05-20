@@ -1,5 +1,4 @@
 stages:
-    - deploy
     - preevaluation
     - synthesis
     - benchmark
@@ -60,12 +59,12 @@ default:
             - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.tar.gz"
 
 # =============
-# deploy
+# Preevaluation
 # =============
 
 mkdocs:
     extends: .mkdocs_job
-    stage: deploy
+    stage: preevaluation
     image: javanile/mkdocs
 
     script: mkdocs build
@@ -77,10 +76,6 @@ mkdocs:
         paths:
         - public 
     needs: []
-
-# =============
-# Preevaluation
-# =============
 
 documentation:
     extends: .cheap_job
