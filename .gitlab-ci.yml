@@ -69,9 +69,6 @@ mkdocs:
 
     script: mkdocs build
 
-    tags:
-        - noctua2
-
     artifacts:
         paths:
         - public 
