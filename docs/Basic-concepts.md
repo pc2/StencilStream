@@ -125,7 +125,6 @@ To interact with the grid’s contents, you’ll use a grid accessor, which prov
 ### 📚 Learn More
 
 - See the [API Reference](../html/conceptstencil_1_1concepts_1_1Grid.html).
-- Explore real-world examples in the [Samples Section](#) to see how grids are initialized and used in practice.
 
 ---
 
@@ -163,29 +162,27 @@ Inside the transition function, the actual logic or computation is defined which
 ### 📚 Learn More
 
 - See the [API Reference](../html/conceptstencil_1_1concepts_1_1TransitionFunction.html).
-- Explore real-world examples in the [Samples Section](#) to see how .... .
-
 ---
 
 ## Definition of Variables
 
 StencilStream offers several variables to configure your simulation. Below is a list of the most important ones, along with their purpose and usage.
 
-**`device`**  
+`device`
 :  Specifies the target compute device. Used in the `StencilUpdater` constructor to select the hardware (e.g., CPU, GPU, FPGA) that will run the transition function.
 
-**`stencil_radius`**  
+`stencil_radius` 
 :  Defines the radius of the stencil used in the transition function. A radius of 1 means the stencil includes all direct neighbors (top, bottom, left, right, and diagonals) around the central cell.
 
-**`n_iterations`**  
+`n_iterations`  
 :  Sets the number of simulation steps (iterations) to compute. The resulting output grid will contain data up to:  
 `iteration_offset + n_iterations`.
 
-**`iteration_offset`**  
+`iteration_offset`  
 :  Defines the starting iteration index of the input grid. Useful for simulations that are run in chunks or resume from previous states.
 
-**`halo_value`**  
+`halo_value`  
 :  Specifies the value assigned to **out-of-bounds** cells. These are virtual cells outside the actual grid boundaries, used during stencil computation near edges.
 
-**`TimeDependentValue`**  
+`TimeDependentValue`  
 :  ???
