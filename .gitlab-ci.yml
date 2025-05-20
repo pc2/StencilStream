@@ -70,7 +70,7 @@ mkdocs:
     script: mkdocs build
 
     tags:
-        - docker-shared
+        - noctua2
 
     artifacts:
         paths:
@@ -81,7 +81,7 @@ documentation:
     extends: .cheap_job
     stage: preevaluation
     tags:
-        
+        - docker-shared
     image: alpine
     before_script:
         - apk add --no-cache doxygen graphviz font-noto
