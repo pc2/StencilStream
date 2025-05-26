@@ -184,8 +184,9 @@ struct Jacobi5General : public stencil::BaseTransitionFunction {
 struct Jacobi9General : public stencil::BaseTransitionFunction {
     using Cell = float;
 
-    // Tuned for ~1.9 TFLOPS at 350MHz
-    static constexpr size_t temporal_parallelism = 20;
+    // Tuned for ~1.5 TFLOPS at 350MHz
+    // 2 TFLOPS lead to routing issues
+    static constexpr size_t temporal_parallelism = 16;
     static constexpr size_t mono_tile_width = 32 * 1024;
     static constexpr size_t n_operations = 17;
     static constexpr size_t n_coefficients = 9;
