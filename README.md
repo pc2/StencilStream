@@ -32,7 +32,6 @@ StencilStream has been validated on the following hardware platforms:
 - **Accelerators**
   - Intel Stratix 10 GX 2800 FPGA
   - NVIDIA A100 GPU
-  - AMD Instinct MI210 GPU
 
 Currently supported compute backends include:
 
