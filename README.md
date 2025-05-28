@@ -2,9 +2,9 @@
 
 StencilStream is a SYCL-based simulation framework for iterative stencil codes, primarily targeting FPGAs. With StencilStream, application developers and domain scientists can merely write down their stencil code definition and obtain a fully functional and optimized, FPGA-accelerated application.
 
-### 🎯 Design Goals
+## 🎯 Design Goals
 
-While many stencil acceleration frameworks exist — including those targeting FPGAs — they often rely on custom toolchains and domain-specific languages. This introduces a steep learning curve and makes integration into real-world applications difficult.
+There are many stencil acceleration frameworks available, even for FPGAs. However, many of them use customized toolchains to support domain-specific languages, which makes them both hard to use for real-world applications and hard to extend.
 
 **StencilStream** takes a different approach. By leveraging standard **SYCL/oneAPI** and **modern C++ templates**, it offers a clean, extensible, and developer-friendly framework with three core goals:
 
@@ -15,10 +15,10 @@ While many stencil acceleration frameworks exist — including those targeting F
   Real-world applications have unique needs. StencilStream is designed to be flexible and adaptable to different problem domains and hardware targets.
 
 - **🚀 Performant**  
-  You don’t need to be an FPGA or performance tuning expert. StencilStream delivers high performance out-of-the-box, making it accessible for domain scientists and engineers alike.
+  You don’t need to be an FPGA or performance tuning expert.
 
 
-### ⚙️ Hardware Platform Support
+## ⚙️ Hardware Platform Support
 
 **StencilStream** is built to enable high-performance stencil computations across a diverse range of modern compute architectures. The framework abstracts away low-level hardware details, allowing developers to focus on algorithm design while targeting various platforms with minimal code changes.
 
@@ -39,9 +39,6 @@ Currently supported compute backends include:
 - **FPGA** – via Intel’s oneAPI FPGA runtime  
 - **CPU** – via Intel DPC++ compiler  
 - **CUDA** – using the Codeplay SYCL plugin for NVIDIA GPUs  
-- **AMD** – via ROCm and Codeplay SYCL HIP plugin (feature release)
-
-> 💡 For guidance on selecting and configuring the right backend for your hardware, refer to the [Basic Concepts](#Basic-concepts) section.
 
 
 ## Examples
