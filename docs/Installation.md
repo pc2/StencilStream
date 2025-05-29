@@ -2,7 +2,7 @@
 
 This guide walks you through setting up **StencilStream** on your system. Please note that backend availability depends on your hardware.
 
-> ⚠️ The framework is supported on the [Noctua 2](https://pc2.uni-paderborn.de/de/systems-and-services/noctua-2) supercomputer but can also be used on other systems. However, we cannot guarantee seamless operation elsewhere without adaptation.
+> ⚠️ The **framework** is supported on the [Noctua 2](https://pc2.uni-paderborn.de/de/systems-and-services/noctua-2) supercomputer but can also be used on other systems. We cannot guarantee seamless operation on other systems without adaptation.
 
 ### 🖥️ Platform Support
 
@@ -21,16 +21,16 @@ For each supported combination, refer to the official compatibility notes from I
 
 ### 📦 Software Requirements
 
-To build and run StencilStream, you’ll need a modern SYCL toolchain and build environment. At a minimum, this includes a C++20-capable compiler, CMake, Git, and Intel's DPC++ compiler. Julia is optional but recommended for running benchmarking scripts included in the examples repository.
+To build and run StencilStream, you’ll need a modern SYCL toolchain and build environment. At a minimum, this includes a C++20-capable compiler, CMake, Git, and Intel's DPC++ compiler. Julia is optional but recommended for running benchmarking and visualization scripts included in the `examples/` directory.
 
 Depending on your hardware, additional toolchains may be required, such as CUDA (for NVIDIA), or Intel’s FPGA development stack. Please ensure that all necessary device drivers and runtime libraries are correctly installed and accessible.
 
-#### General Dependencies (All Platforms)
+#### General Dependencies
 | Software                     | Recommended Version      |
 |-----------------------------|--------------------------|
 | Intel oneAPI DPC++ Compiler | • 2024.2.1 or newer        |
 | CMake                       | • 3.29.3 or newer          |
-| Git                         | • 2.34+                    |
+| Git                         | • 2.34 or newer                    |
 | Julia (optional for benchmarking)            | • 1.10.4 or newer |
 
 #### Backend-Specific Requirements

@@ -1,4 +1,4 @@
-##  Basic Concepts
+## Basic Concepts
 
 **StencilStream** is a flexible and extensible framework that offers developers a high degree of control when implementing stencil computations. This section introduces the fundamental concepts necessary to use the framework effectively at a higher level.  
 
@@ -57,17 +57,21 @@ struct Cell {
 
 This approach gives you maximum flexibility and is especially useful for simulations involving mixed-precision or multi-field data.
 
-> 💡 Choose your Cell type based on the needs of your simulation—simple types for performance, complex structs for flexibility.
+> ⚠️ Each grid can store **only one cell type**.  To simulate heterogeneous data, you should combine multiple cell types into a single `struct` cell.
 
 ---
 ## <i class="fas fa-chess-board"></i> Grid
 
-A **Grid** in StencilStream is a 2D container that holds your simulation state. Each element in the grid is a `Cell`, and the type of that cell is user-defined.
+A **Grid** in StencilStream is a 2D container that holds your simulation state. Each element in the grid is a `Cell`, and its type is defined by the user. While the grid is defined over the `x` and `y` dimensions, it's important to understand how the grid is internally processed.
 
-Currently, grids are strictly **2-dimensional**, defined along the `x` and `y` axes.
+The grid is surrounded by halo cells, which must be set manually. These halo cells are a conceptual abstraction and only exist to support the transition logic. They cannot be accessed directly by the user!
 
-> ⚠️ Each grid can store **only one cell type**.  
-> To simulate heterogeneous data, you should combine multiple fields into a single `struct` cell.
+![Grid concept](grid-concept.png)
+The figure shows an example of a 3×3 grid. On the left is the user’s view, while the right illustrates how the framework internally represents the grid. The gray area marks the **halo region** that surrounds the original grid. The **radius** determines how many layers of halo cells are added. It will be explained in more detail in the Transition Function section. Note that all halo cells are of the same type.
+
+> 💡 To manually control border behavior, define it explicitly in the transition function.
+
+> ⚠️ Currently, grids are strictly **2-dimensional**, defined along the `x` and `y` axes.
 
 ### Creating a Grid
 
@@ -105,7 +109,7 @@ A **stencil object** is a smaller window over the whole grid. It includes the **
 ![Stencil Object Diagram](stencil_obj.png)
 *Figure 1: Coordinates in the stencil object passed to the transition function. The central cell (blue) and its neighbors (gray) in a 2D stencil.*
 
-> ⚠️ Currently, only quadratic Stencil objects are possible
+> ⚠️  Currently, only **square** stencil objects are supported.
 
 
 ### How the Transition Function Works
@@ -118,15 +122,15 @@ This process is illustrated below:
 *Figure 2: Stencil-based computation: from input grid to output grid via the transition function.*
 
 
-> ✅ The return value of the transition function **must match the  defined Cell type in the transition function**.
-> 
+> ✅ The return value of the transition function **must match the defined Cell type**.
 
 ### 📚 Learn More
 
 - See the [API Reference](../html/conceptstencil_1_1concepts_1_1TransitionFunction.html).
+
 ---
 
-## Definition of Variables
+## Variable Definitions
 
 StencilStream offers several variables to configure your simulation. Below is a list of the most important ones, along with their purpose and usage.
 
@@ -147,4 +151,4 @@ StencilStream offers several variables to configure your simulation. Below is a 
 :  Specifies the value assigned to **out-of-bounds** cells. These are virtual cells outside the actual grid boundaries, used during stencil computation near edges.
 
 `TimeDependentValue`  
-:  ???
+: (To be documented)
