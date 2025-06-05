@@ -12,8 +12,7 @@
 
 In StencilStream, the **Cell** is the fundamental unit of computation. It defines the data layout for each point in your stencil grid.
 
-One of StencilStream’s core strengths is that it **does not restrict the cell’s data type or structure**. You have full flexibility to define a `Cell` that best fits your simulation needs.
-
+One of StencilStream’s core strengths is that it **does not restrict the cell’s data type or structure**. You have full flexibility to define a `Cell` that best fits your simulation needs. The only constraint is that it **must be semiregular**.
 
 
 ### Simple Cell Types
@@ -21,15 +20,15 @@ One of StencilStream’s core strengths is that it **does not restrict the cell�
 The most basic `Cell` can be a single primitive type. For example, a boolean cell:
 
 ```cpp
-bool cell;
+using Cell = bool;
 ```
 
 You can also use other fundamental types such as int, float, or double:
 
 ```cpp
-int cell;
-float cell;
-double cell;
+using Cell = int;
+using Cell = float;
+using Cell = double;
 ```
 
 ### Vector-Based Cells
@@ -37,7 +36,7 @@ double cell;
 For more advanced use cases, you can use vector types. Here's an example of a cell with two floating-point values:
 
 ```cpp
-vec<float, 2> cell;
+using Cell = vec<float, 2>;
 ```
 
 This is useful when each cell holds multiple related values (e.g., temperature and heat flow).
@@ -64,7 +63,7 @@ This approach gives you maximum flexibility and is especially useful for simulat
 
 A **Grid** in StencilStream is a 2D container that holds your simulation state. Each element in the grid is a `Cell`, and its type is defined by the user. While the grid is defined over the `x` and `y` dimensions, it's important to understand how the grid is internally processed.
 
-The grid is surrounded by halo cells, which must be set manually. These halo cells are a conceptual abstraction and only exist to support the transition logic. They cannot be accessed directly by the user!
+The grid is surrounded by halo cells, whose values are defined by the user. These cells support the transition logic and are especially useful for handling edge cases. While they are constant during computation and cannot be modified, they can be read by the transition functions.
 
 ![Grid concept](grid-concept.png)
 The figure shows an example of a 3×3 grid. On the left is the user’s view, while the right illustrates how the framework internally represents the grid. The gray area marks the **halo region** that surrounds the original grid. The **radius** determines how many layers of halo cells are added. It will be explained in more detail in the Transition Function section. Note that all halo cells are of the same type.
