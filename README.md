@@ -22,7 +22,7 @@ There are many stencil acceleration frameworks available, even for FPGAs. Howeve
 
 **StencilStream** is built to enable high-performance stencil computations across a diverse range of modern compute architectures. The framework abstracts away low-level hardware details, allowing developers to focus on algorithm design while targeting various platforms with minimal code changes.
 
-To ensure portability and efficiency, StencilStream provides multiple backend implementations optimized for specific hardware. The correct backend is selected based on the target architecture during build or runtime.
+To ensure portability and efficiency, StencilStream provides multiple backend implementations optimized for specific hardware. Switching between backends requires linking against a different virtual backend library during the build process.
 
 StencilStream has been validated on the following hardware platforms:
 
