@@ -10,4 +10,8 @@ ImageIO = "82e4d734-157c-48bb-816b-45c225c6df19"
 ImageMagick = "6218d12a-5da1-5696-b52f-db25d2ecc6d1"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 OpenCV = "f878e3a2-a245-4720-8660-60795d644f2a"
+OpenSSL_jll = "458c3c95-2e84-50aa-8efc-19380b2a3a95"
 ParallelStencil = "94395366-693c-11ea-3b26-d9b7aac5d958"
+
+[compat]
+OpenSSL_jll = "~3.0" # Only OpenSSL 3.0 is available on Noctua 2
