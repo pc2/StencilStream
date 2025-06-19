@@ -26,6 +26,7 @@ Manifest.toml
 **/*.png
 **/*.gch
 **/*.zip
+**/*.DS_Store
 
 build
 doxygen

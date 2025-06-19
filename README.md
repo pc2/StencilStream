@@ -2,13 +2,43 @@
 
 StencilStream is a SYCL-based simulation framework for iterative stencil codes, primarily targeting FPGAs. With StencilStream, application developers and domain scientists can merely write down their stencil code definition and obtain a fully functional and optimized, FPGA-accelerated application.
 
-## Design Goals
+## 🎯 Design Goals
 
-There are many stencil acceleration frameworks available, even for FPGAs. However, many of them use customized toolchains to support domain-specific languages, which makes them both hard to use for real-world applications and hard to extend. Therefore, StencilStream uses the SYCL/oneAPI framework and C++ templates, so that it is:
+There are many stencil acceleration frameworks available, even for FPGAs. However, many of them use customized toolchains to support domain-specific languages, which makes them both hard to use for real-world applications and hard to extend.
 
-* **Simple:** The first steps don't take much and one can build and verify a simple app very quickly.
-* **Versatile:** Actual applications have special needs and properties, and StencilStream supports them.
-* **Performant:** Domain Scientists usually aren't FPGA experts or performance engineers. With StencilStream, they don't have to be and still get highly performant applications.
+**StencilStream** takes a different approach. By leveraging standard **SYCL/oneAPI** and **modern C++ templates**, it offers a clean, extensible, and developer-friendly framework with three core goals:
+
+- **🧩 Simple**  
+  Get started quickly. You can build and validate a basic stencil application in just a few steps.
+
+- **🛠️ Versatile**  
+  Real-world applications have unique needs. StencilStream is designed to be flexible and adaptable to different problem domains and hardware targets.
+
+- **🚀 Performant**  
+  You don’t need to be an FPGA or performance tuning expert.
+
+
+## ⚙️ Hardware Platform Support
+
+**StencilStream** is built to enable high-performance stencil computations across a diverse range of modern compute architectures. The framework abstracts away low-level hardware details, allowing developers to focus on algorithm design while targeting various platforms with minimal code changes.
+
+To ensure portability and efficiency, StencilStream provides multiple backend implementations optimized for specific hardware. Switching between backends requires linking against a different virtual backend library during the build process.
+
+StencilStream has been validated on the following hardware platforms:
+
+- **CPUs**
+  - AMD EPYC
+
+- **Accelerators**
+  - Intel Stratix 10 GX 2800 FPGA
+  - NVIDIA A100 GPU
+
+Currently supported compute backends include:
+
+- **FPGA** – via Intel’s oneAPI FPGA runtime  
+- **CPU** – via Intel DPC++ compiler  
+- **CUDA** – using the Codeplay SYCL plugin for NVIDIA GPUs  
+
 
 ## Examples
 
@@ -17,12 +47,6 @@ We have implemented multiple example applications. One is a simple sketch to sho
 ### Conway's Game of Life
 
 Our implementation of Conway's Game of Life is found in the subfolder [examples/conway](examples/conway/). It reads in the current state of a grid from standard-in, computes a requested number of iterations, and then writes it out again.
-
-### Diffusion
-
-This implementation simulates heat diffusion and can be found in the subfolder [eamples/diffusion](examples/diffusion). The example begins by generating a grid of a specified size, determined by command-line inputs, with a circular region whose diameter is one-sixth of the grid's total size. Additionally, two opposite sides of the grid are set to cold and hot temperatures, respectively.
-
-![A video showing heat diffusion, computed by the diffusion app](docs/diffusion-animation.mp4)
 
 ### HotSpot
 
