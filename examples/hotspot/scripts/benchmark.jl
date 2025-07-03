@@ -1,5 +1,6 @@
 #!/usr/bin/env -S julia --project
 include("../../../scripts/benchmark-common.jl")
+Pkg.instantiate()
 using DelimitedFiles
 using Statistics
 

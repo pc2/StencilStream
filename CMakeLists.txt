@@ -17,6 +17,8 @@ cmake_minimum_required(VERSION 3.22.1)
 
 project(StencilStream CXX)
 set(CMAKE_PROJECT_VERSION 4.0.0)
+set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+set(BENCHMARK_ENABLE_TESTING OFF)
 
 option(StencilStream_VerboseSynthesis "Print some progress information during hardware synthesis" OFF)
 

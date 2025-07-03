@@ -1,6 +1,6 @@
 #pragma once
-#include "Grid.hpp"
-#include "Stencil.hpp"
+#include "../Stencil.hpp"
+#include "Grid_baseline.hpp"
 #include <chrono>
 #include <sycl/sycl.hpp>
 #include <vector>
