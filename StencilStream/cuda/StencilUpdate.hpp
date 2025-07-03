@@ -1,124 +1,58 @@
-/*
- * Copyright © 2020-2024 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
- * University
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the “Software”), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
 #pragma once
-#include "../Concepts.hpp"
-#include "../Stencil.hpp"
 #include "Grid.hpp"
+#include "Stencil.hpp"
 #include <chrono>
+#include <sycl/sycl.hpp>
+#include <vector>
 
-namespace stencil {
-namespace cuda {
+#include <bit>
+#include <sycl/ext/intel/ac_types/ac_int.hpp>
+#include <sycl/id.hpp>
+#include <sycl/range.hpp>
+#include <variant>
 
-/**
- * \brief A grid updater that applies an iterative stencil code to a grid.
- *
- * This updater applies an iterative stencil code, defined by the template parameter `F`, to the
- * grid; As often as requested.
- *
- * \tparam F The transition function to apply to input grids.
- */
-template <concepts::TransitionFunction F> class StencilUpdate {
+template <typename F> class StencilUpdate {
   private:
-    using Cell = F::Cell;
+    using Cell = typename F::Cell;
+    std::vector<sycl::event> work_events;
 
   public:
-    /// \brief Shorthand for the used and supported grid type.
     using GridImpl = Grid<Cell>;
 
-    /**
-     * \brief Parameters for the stencil updater.
-     */
     struct Params {
-        /**
-         * \brief An instance of the transition function type.
-         *
-         * User applications may store runtime parameters here.
-         */
+
         F transition_function;
 
-        /**
-         *  \brief The cell value to present for cells outside of the grid.
-         */
         Cell halo_value = Cell();
 
-        /**
-         * \brief The iteration index offset.
-         *
-         * This offset will be added to the "actual" iteration index. This way, simulations can
-         * "resume" with the next timestep if the intermediate grid has been evaluated by the host.
-         */
         std::size_t iteration_offset = 0;
 
-        /**
-         * \brief The number of iterations to compute.
-         */
         std::size_t n_iterations = 1;
 
-        /**
-         * \brief The device to use for computations.
-         */
         sycl::device device = sycl::device();
 
-        /**
-         * \brief Should the stencil updater block until completion, or return immediately after all
-         * kernels have been submitted.
-         *
-         * Choosing one option or the other won't effect the correctness: For example, if you choose
-         * a non-blocking stencil updater and immediately try to access the grid after the updater
-         * has returned, SYCL/OneAPI will block your thread until the computations are complete and
-         * it can actually provide you access to the data.
-         */
         bool blocking = false;
+        bool profiling = true;
     };
 
-    /**
-     * \brief Create a new stencil updater object.
-     */
-    StencilUpdate(Params params) : params(params), n_processed_cells(0), walltime(0.0) {}
+    StencilUpdate(Params params)
+        : params(params), n_processed_cells(0), walltime(0.0), work_events() {}
 
-    /**
-     * \brief Compute a new grid based on the source grid, using the configured transition function.
-     *
-     * The computation does not work in-place. Instead, it will allocate two additional grids with
-     * the same size as the source grid and use them for a double buffering scheme. Therefore, you
-     * are free to reuse the source grid as it will not be altered.
-     *
-     * If \ref Params::blocking is set to true, this method will block until the computation is
-     * complete. Otherwise, it will return as soon as all kernels are submitted.
-     */
     GridImpl operator()(GridImpl &source_grid) {
+        sycl::queue update_kernel_queue =
+            sycl::queue(params.device, {sycl::property::queue::enable_profiling()});
+
         GridImpl swap_grid_a = source_grid.make_similar();
         GridImpl swap_grid_b = source_grid.make_similar();
         GridImpl *pass_source = &source_grid;
         GridImpl *pass_target = &swap_grid_b;
 
-        sycl::queue queue(params.device);
         auto walltime_start = std::chrono::high_resolution_clock::now();
 
         for (std::size_t i_iter = 0; i_iter < params.n_iterations; i_iter++) {
             for (std::size_t i_subiter = 0; i_subiter < F::n_subiterations; i_subiter++) {
-                run_iter(queue, pass_source, pass_target, params.iteration_offset + i_iter,
-                         i_subiter);
+                run_iter(update_kernel_queue, pass_source, pass_target,
+                         params.iteration_offset + i_iter, i_subiter);
                 if (i_iter == 0 && i_subiter == 0) {
                     pass_source = &swap_grid_b;
                     pass_target = &swap_grid_a;
@@ -129,7 +63,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
         }
 
         if (params.blocking) {
-            queue.wait();
+            update_kernel_queue.wait();
         }
 
         auto walltime_end = std::chrono::high_resolution_clock::now();
@@ -141,63 +75,44 @@ template <concepts::TransitionFunction F> class StencilUpdate {
         return *pass_source;
     }
 
-    /**
-     * \brief Return a reference to the parameters.
-     *
-     * Modifications to the parameters struct will be used in the next call to \ref operator()().
-     */
-    Params &get_params() { return params; }
-
-    /**
-     * \brief Return the accumulated total number of cells processed by this updater.
-     *
-     * For each call of to \ref operator()(), this is the width times the height of the grid, times
-     * the number of computed iterations. This will also be accumulated across multiple calls to
-     * \ref operator()().
-     */
     std::size_t get_n_processed_cells() const { return n_processed_cells; }
 
-    /**
-     * \brief Return the accumulated runtime of the updater, measured from the host side.
-     *
-     * For each call to \ref operator()(), the time it took to submit all kernels and, if \ref
-     * Params::blocking is true, to finish the computation is recorded and accumulated.
-     */
     double get_walltime() const { return walltime; }
 
+    void clear_work_events() { work_events.clear(); }
+
+    double get_kernel_runtime() const {
+        double kernel_runtime = 0.0;
+        for (sycl::event work_event : work_events) {
+            const double timesteps_per_second = 1000000000.0;
+            double start =
+                double(
+                    work_event.get_profiling_info<sycl::info::event_profiling::command_start>()) /
+                timesteps_per_second;
+            double end =
+                double(work_event.get_profiling_info<sycl::info::event_profiling::command_end>()) /
+                timesteps_per_second;
+            kernel_runtime += end - start;
+        }
+        return kernel_runtime;
+    }
+
   private:
-    /**
-     * \brief Update the source grid by one iteration.
-     *
-     * This method will read the current state of the grid from the pass source and write the update
-     * the pass target.
-     *
-     * \param queue The queue to submit the kernel to.
-     *
-     * \param pass_source A pointer to a grid. The old state of the grid will be read from here.
-     *
-     * \param pass_target A pointer to a grid. The new state will be written to this grid.
-     *
-     * \param i_iter The index of the iteration to compute.
-     *
-     * \param i_subiter The index of the sub-iteration to compute.
-     */
     void run_iter(sycl::queue queue, GridImpl *pass_source, GridImpl *pass_target,
                   std::size_t i_iter, std::size_t i_subiter) {
-        using TDV = typename F::TimeDependentValue;
-        using StencilImpl = Stencil<Cell, F::stencil_radius, TDV>;
 
-        queue.submit([&](sycl::handler &cgh) {
+        using StencilImpl = Stencil<Cell, F::stencil_radius>;
+
+        sycl::event work_event = queue.submit([&](sycl::handler &cgh) {
             sycl::accessor source_ac(pass_source->get_buffer(), cgh, sycl::read_only);
             sycl::accessor target_ac(pass_target->get_buffer(), cgh, sycl::write_only);
             std::size_t grid_height = source_ac.get_range()[0];
             std::size_t grid_width = source_ac.get_range()[1];
             Cell halo_value = params.halo_value;
             F transition_function = params.transition_function;
-            TDV tdv = transition_function.get_time_dependent_value(i_iter);
 
             auto kernel = [=](sycl::id<2> id) {
-                StencilImpl stencil(id, source_ac.get_range(), i_iter, i_subiter, tdv);
+                StencilImpl stencil(id, source_ac.get_range(), i_iter, i_subiter);
 
                 for (std::size_t rel_r = 0; rel_r < 2 * F::stencil_radius + 1; rel_r++) {
                     for (std::size_t rel_c = 0; rel_c < 2 * F::stencil_radius + 1; rel_c++) {
@@ -220,11 +135,12 @@ template <concepts::TransitionFunction F> class StencilUpdate {
 
             cgh.parallel_for(source_ac.get_range(), kernel);
         });
+        if (params.profiling) {
+            work_events.push_back(work_event);
+        }
     }
 
     Params params;
     std::size_t n_processed_cells;
     double walltime;
 };
-} // namespace cuda
-} // namespace stencil
