@@ -482,6 +482,7 @@ int main(int argc, char **argv) {
     auto computation_time = std::chrono::duration_cast<std::chrono::duration<double>>(
         computation_end - computation_start);
     std::cout << "Total time = " << computation_time.count() << std::endl;
-    std::cout << "Of which transient computation time: " << pseudo_transient_update.get_walltime() << " s" << std::endl;
+    std::cout << "Of which transient computation time: " << pseudo_transient_update.get_walltime()
+              << " s" << std::endl;
     return 0;
 }
