@@ -97,6 +97,8 @@ template <typename F> class StencilUpdate {
 
         for (std::size_t i_iter = 0; i_iter < params.n_iterations; i_iter++) {
             for (std::size_t i_subiter = 0; i_subiter < F::n_subiterations; i_subiter++) {
+                dummy_kernel(update_kernel_queue, pass_source, pass_target,
+                             params.iteration_offset + i_iter, i_subiter);
                 run_iter(update_kernel_queue, pass_source, pass_target,
                          params.iteration_offset + i_iter, i_subiter);
                 if (i_iter == 0 && i_subiter == 0) {
@@ -193,6 +195,91 @@ template <typename F> class StencilUpdate {
     }
 
   private:
+    void dummy_kernel(sycl::queue queue, GridImpl *pass_source, GridImpl *pass_target,
+                      std::size_t i_iter, std::size_t i_subiter) {
+        using StencilImpl = Stencil<Cell, F::stencil_radius>;
+
+        sycl::event work_event = queue.submit([&](sycl::handler &cgh) {
+            sycl::accessor source_ac(pass_source->get_buffer(), cgh, sycl::read_only);
+
+            sycl::accessor T_out_ac_pass_source(pass_source->get_T_out_buffer(), cgh,
+                                                sycl::read_only);
+            sycl::accessor Pt_out_ac_pass_source(pass_source->get_Pt_out_buffer(), cgh,
+                                                 sycl::read_only);
+            sycl::accessor Vx_out_ac_pass_source(pass_source->get_Vx_out_buffer(), cgh,
+                                                 sycl::read_only);
+            sycl::accessor Vy_out_ac_pass_source(pass_source->get_Vy_out_buffer(), cgh,
+                                                 sycl::read_only);
+            sycl::accessor tau_xx_out_ac_pass_source(pass_source->get_tau_xx_out_buffer(), cgh,
+                                                     sycl::read_only);
+            sycl::accessor tau_yy_out_ac_pass_source(pass_source->get_tau_yy_out_buffer(), cgh,
+                                                     sycl::read_only);
+            sycl::accessor sigma_xy_out_ac_pass_source(pass_source->get_sigma_xy_out_buffer(), cgh,
+                                                       sycl::read_only);
+            sycl::accessor dVxd_tau_out_ac_pass_source(pass_source->get_dVxd_tau_out_buffer(), cgh,
+                                                       sycl::read_only);
+            sycl::accessor dVyd_tau_out_ac_pass_source(pass_source->get_dVyd_tau_out_buffer(), cgh,
+                                                       sycl::read_only);
+            sycl::accessor ErrV_out_ac_pass_source(pass_source->get_ErrV_out_buffer(), cgh,
+                                                   sycl::read_only);
+            sycl::accessor ErrP_out_ac_pass_source(pass_source->get_ErrP_out_buffer(), cgh,
+                                                   sycl::read_only);
+
+            sycl::accessor T_out_ac_pass_target(pass_target->get_T_out_buffer(), cgh,
+                                                sycl::write_only);
+            sycl::accessor Pt_out_ac_pass_target(pass_target->get_Pt_out_buffer(), cgh,
+                                                 sycl::write_only);
+            sycl::accessor Vx_out_ac_pass_target(pass_target->get_Vx_out_buffer(), cgh,
+                                                 sycl::write_only);
+            sycl::accessor Vy_out_ac_pass_target(pass_target->get_Vy_out_buffer(), cgh,
+                                                 sycl::write_only);
+            sycl::accessor tau_xx_out_ac_pass_target(pass_target->get_tau_xx_out_buffer(), cgh,
+                                                     sycl::write_only);
+            sycl::accessor tau_yy_out_ac_pass_target(pass_target->get_tau_yy_out_buffer(), cgh,
+                                                     sycl::write_only);
+            sycl::accessor sigma_xy_out_ac_pass_target(pass_target->get_sigma_xy_out_buffer(), cgh,
+                                                       sycl::write_only);
+            sycl::accessor dVxd_tau_out_ac_pass_target(pass_target->get_dVxd_tau_out_buffer(), cgh,
+                                                       sycl::write_only);
+            sycl::accessor dVyd_tau_out_ac_pass_target(pass_target->get_dVyd_tau_out_buffer(), cgh,
+                                                       sycl::write_only);
+            sycl::accessor ErrV_out_ac_pass_target(pass_target->get_ErrV_out_buffer(), cgh,
+                                                   sycl::write_only);
+            sycl::accessor ErrP_out_ac_pass_target(pass_target->get_ErrP_out_buffer(), cgh,
+                                                   sycl::write_only);
+
+            std::size_t grid_height = source_ac.get_range()[0];
+            std::size_t grid_width = source_ac.get_range()[1];
+            Cell halo_value = params.halo_value;
+            F transition_function = params.transition_function;
+
+            auto kernel = [=](sycl::id<2> id) {
+                StencilImpl stencil(id, source_ac.get_range(), i_iter, i_subiter);
+
+                Cell cell;
+
+                size_t cell_id = id[0] * grid_width + id[1];
+
+                cell.T = T_out_ac_pass_source[cell_id];
+                cell.Pt = Pt_out_ac_pass_source[cell_id];
+                cell.Vx = Vx_out_ac_pass_source[cell_id];
+                cell.Vy = Vy_out_ac_pass_source[cell_id];
+                cell.tau_xx = tau_xx_out_ac_pass_source[cell_id];
+                cell.tau_yy = tau_yy_out_ac_pass_source[cell_id];
+                cell.sigma_xy = sigma_xy_out_ac_pass_source[cell_id];
+                cell.dVxd_tau = dVxd_tau_out_ac_pass_source[cell_id];
+                cell.dVyd_tau = dVyd_tau_out_ac_pass_source[cell_id];
+                cell.ErrV = ErrV_out_ac_pass_source[cell_id];
+                cell.ErrP = ErrP_out_ac_pass_source[cell_id];
+            };
+
+            cgh.parallel_for(source_ac.get_range(), kernel);
+        });
+        if (params.profiling) {
+            work_events.push_back(work_event);
+        }
+    }
+
     void run_iter(sycl::queue queue, GridImpl *pass_source, GridImpl *pass_target,
                   std::size_t i_iter, std::size_t i_subiter) {
 
