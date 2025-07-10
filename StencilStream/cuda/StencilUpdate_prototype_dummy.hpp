@@ -271,6 +271,18 @@ template <typename F> class StencilUpdate {
                 cell.dVyd_tau = dVyd_tau_out_ac_pass_source[cell_id];
                 cell.ErrV = ErrV_out_ac_pass_source[cell_id];
                 cell.ErrP = ErrP_out_ac_pass_source[cell_id];
+
+                T_out_ac_pass_target[cell_id] = cell.T;
+                Pt_out_ac_pass_target[cell_id] = cell.Pt;
+                Vx_out_ac_pass_target[cell_id] = cell.Vx;
+                Vy_out_ac_pass_target[cell_id] = cell.Vy;
+                tau_xx_out_ac_pass_target[cell_id] = cell.tau_xx;
+                tau_yy_out_ac_pass_target[cell_id] = cell.tau_yy;
+                sigma_xy_out_ac_pass_target[cell_id] = cell.sigma_xy;
+                dVxd_tau_out_ac_pass_target[cell_id] = cell.dVxd_tau;
+                dVyd_tau_out_ac_pass_target[cell_id] = cell.dVyd_tau;
+                ErrV_out_ac_pass_target[cell_id] = cell.ErrV;
+                ErrP_out_ac_pass_target[cell_id] = cell.ErrP;
             };
 
             cgh.parallel_for(source_ac.get_range(), kernel);

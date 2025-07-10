@@ -2,7 +2,7 @@
 #SBATCH --account=hpc-lco-kenter   # Use your project's account name
 #SBATCH --gres=gpu:a100:1
 ##SBATCH --qos=devel --partition=dgx
-#SBATCH -c 32 --mem 32G -t 00:10:00
+#SBATCH -c 32 --mem 32G -t 00:15:00
 #SBATCH --output=%j_convection_baseline.out
 
 ml reset
@@ -14,4 +14,4 @@ ml system/CUDA/12.6.0
 
 
 cd /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/build
-./examples/convection/convection_cuda_baseline /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/examples/convection/experiments/max-res-default.json /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/build/out
+./examples/convection/convection_cuda_baseline /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/examples/convection/experiments/default.json /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/build/out

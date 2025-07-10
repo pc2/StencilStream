@@ -1,5 +1,5 @@
 #pragma once
-#include "../Stencil.hpp"
+#include "../Stencil_prototype.hpp"
 #include "Grid_baseline.hpp"
 #include <chrono>
 #include <sycl/sycl.hpp>

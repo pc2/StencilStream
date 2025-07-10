@@ -14,4 +14,4 @@ ml intel/oneapi/25.0.0
 ml system/CUDA/12.6.0
 
 cd /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/build
-./examples/convection/convection_cuda_prototype /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/examples/convection/experiments/max-res-default.json /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/build/out
+./examples/convection/convection_cuda_prototype /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/examples/convection/experiments/default.json /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/build/out
