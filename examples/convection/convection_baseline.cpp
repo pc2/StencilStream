@@ -3,6 +3,8 @@
 #include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
+#include <iostream>
 #include <nlohmann/json.hpp>
 #include <sycl/ext/intel/fpga_extensions.hpp>
 
@@ -339,6 +341,12 @@ int main(int argc, char **argv) {
     // Starting iteration with one and using an inclusive upper bound to stay compatible with the
     // reference.
 
+    double io_time = 0.0;
+    double thermal_solver_kernel_walltime = 0.0;
+    double thermal_solver_walltime = 0.0;
+    double thermal_solver_data_preperation_time = 0.0;
+    int total_iterations = 0;
+
     auto computation_start = std::chrono::system_clock::now();
     for (size_t it = 1; it <= nt; it++) {
         double errV = 2 * epsilon;
@@ -386,6 +394,8 @@ int main(int argc, char **argv) {
         printf("it = %zu (iter = %zu, time = %e), errV=%1.3e, errP=%1.3e \n", it, iter,
                transients_computation_time.count(), errV, errP);
 
+        total_iterations += iter;
+
         double dt_adv = std::min(dx / max_Vx, dy / max_Vy) / 2.1;
         double dt = std::min(dt_diff, dt_adv);
 
@@ -397,6 +407,8 @@ int main(int argc, char **argv) {
             .device = device,
         });
         grid = thermal_solver_update(grid);
+
+        auto io_start = std::chrono::high_resolution_clock::now();
 
         if (it > 0 && it % nout == 0) {
             std::filesystem::path output_file_path =
@@ -416,15 +428,53 @@ int main(int argc, char **argv) {
             }
             out_file.close();
         }
+        auto io_stop = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> io_time_chrono = io_stop - io_start;
+        io_time += io_time_chrono.count();
+        thermal_solver_kernel_walltime += thermal_solver_update.get_kernel_runtime();
+        thermal_solver_walltime += thermal_solver_update.get_walltime();
+        thermal_solver_data_preperation_time += thermal_solver_update.get_data_preperation_time();
     }
 
     auto computation_end = std::chrono::system_clock::now();
     auto computation_time = std::chrono::duration_cast<std::chrono::duration<double>>(
         computation_end - computation_start);
-    std::cout << "Total time = " << computation_time.count() << std::endl;
-    std::cout << "Of which transient computation time: " << pseudo_transient_update.get_walltime()
-              << " s" << std::endl;
-    std::cout << "Of which transient computation kerneltime: "
-              << pseudo_transient_update.get_kernel_runtime() << " s" << std::endl;
+
+    const int label_width = 45;
+    std::cout << "\n" << std::fixed << std::setprecision(6);
+
+    std::cout << std::setw(label_width) << std::left
+              << "Total wall time:" << computation_time.count() << " s\n";
+
+    std::cout << std::setw(label_width) << "Of which transient computation wall time:"
+              << pseudo_transient_update.get_walltime() << " s\n";
+
+    std::cout << std::setw(label_width)
+              << "Of which transient kernel time:" << pseudo_transient_update.get_kernel_runtime()
+              << " s\n";
+
+    std::cout << std::setw(label_width) << "Of which transient kernel data preperation:"
+              << pseudo_transient_update.get_data_preperation_time() << " s\n";
+
+    std::cout << std::setw(label_width)
+              << "Of which thermal solver computation wall time:" << thermal_solver_walltime
+              << " s\n";
+
+    std::cout << std::setw(label_width)
+              << "Of which thermal solver kernel time:" << thermal_solver_kernel_walltime << " s\n";
+
+    std::cout << std::setw(label_width) << "Of which transient kernel data preperation:"
+              << pseudo_transient_update.get_data_preperation_time() << " s\n";
+
+    std::cout << std::setw(label_width) << "Of which time to write csv:" << io_time << " s\n";
+
+    int bytes_per_cell = 88;
+    int operations_per_cell = 67;
+
+    std::cout << std::setw(label_width) << "GFLOP/s standard:"
+              << ((pseudo_transient_update.get_n_processed_cells() * operations_per_cell) /
+                  pseudo_transient_update.get_walltime()) /
+                     1.0e9;
+
     return 0;
 }

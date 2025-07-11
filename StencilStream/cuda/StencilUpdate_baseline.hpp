@@ -42,10 +42,14 @@ template <typename F> class StencilUpdate {
         sycl::queue update_kernel_queue =
             sycl::queue(params.device, {sycl::property::queue::enable_profiling()});
 
+        auto data_preperation_start_before = std::chrono::high_resolution_clock::now();
+
         GridImpl swap_grid_a = source_grid.make_similar();
         GridImpl swap_grid_b = source_grid.make_similar();
         GridImpl *pass_source = &source_grid;
         GridImpl *pass_target = &swap_grid_b;
+
+        auto data_preperation_end_before = std::chrono::high_resolution_clock::now();
 
         auto walltime_start = std::chrono::high_resolution_clock::now();
 
@@ -69,6 +73,15 @@ template <typename F> class StencilUpdate {
         auto walltime_end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> walltime = walltime_end - walltime_start;
         this->walltime += walltime.count();
+
+        // No need to convert data at the end because baseline only use AOS
+        // auto data_preperation_start_after = std::chrono::high_resolution_clock::now();
+        // auto data_preperation_end_after = std::chrono::high_resolution_clock::now();
+
+        std::chrono::duration<double> data_preperation_time =
+            data_preperation_end_before - data_preperation_start_before;
+        this->data_preperation_time += data_preperation_time.count();
+
         n_processed_cells +=
             params.n_iterations * source_grid.get_grid_height() * source_grid.get_grid_width();
 
@@ -78,6 +91,7 @@ template <typename F> class StencilUpdate {
     std::size_t get_n_processed_cells() const { return n_processed_cells; }
 
     double get_walltime() const { return walltime; }
+    double get_data_preperation_time() const { return data_preperation_time; }
 
     void clear_work_events() { work_events.clear(); }
 
@@ -143,4 +157,5 @@ template <typename F> class StencilUpdate {
     Params params;
     std::size_t n_processed_cells;
     double walltime;
+    double data_preperation_time;
 };
