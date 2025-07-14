@@ -1,4 +1,4 @@
-#include <StencilStream/cuda/StencilUpdate_baseline.hpp>
+#include <StencilStream/cuda/StencilUpdate_prototype_dummy.hpp>
 
 #include <chrono>
 #include <filesystem>
@@ -320,7 +320,7 @@ int main(int argc, char **argv) {
         .blocking = true,
     });
 
-    ThermalGrid grid(nx + 1, ny + 1);
+    ThermalGrid grid(nx + 1, ny + 1 /*, ThermalConvectionCell::halo_value()*/);
     {
         ThermalGrid::GridAccessor<sycl::access::mode::read_write> ac(grid);
         for (size_t x = 0; x < nx + 1; x++) {
@@ -413,7 +413,7 @@ int main(int argc, char **argv) {
 
         if (it > 0 && it % nout == 0) {
             std::filesystem::path output_file_path =
-                output_dir_path / std::filesystem::path(std::to_string(it) + "_base" + ".csv");
+                output_dir_path / std::filesystem::path(std::to_string(it) + "_dummy" + ".csv");
             std::ofstream out_file(output_file_path);
             {
                 ThermalGrid::GridAccessor<sycl::access::mode::read> ac(grid);
@@ -448,7 +448,7 @@ int main(int argc, char **argv) {
         std::chrono::duration_cast<std::chrono::duration<double>>(main_time_end - main_time_start);
 
     // Prints
-    const int label_width = 50;
+    const int label_width = 45;
     std::cout << "\n" << std::fixed << std::setprecision(6);
 
     std::cout << std::setw(label_width) << std::left << "Walltime (Main):" << main_time.count()
