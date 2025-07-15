@@ -2,7 +2,7 @@
 #SBATCH --account=hpc-lco-kenter   # Use your project's account name
 #SBATCH --gres=gpu:a100:1
 ##SBATCH --qos=devel --partition=dgx
-#SBATCH -c 32 --mem 32G -t 00:15:00
+#SBATCH -c 32 --mem 32G -t 00:20:00
 #SBATCH --output=%j_convection_baseline.out
 
 ml reset

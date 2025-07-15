@@ -15,6 +15,9 @@ target_link_libraries(convection_cuda PUBLIC StencilStream_CUDA)
 add_executable(convection_cuda_prototype convection_prototype.cpp)
 target_link_libraries(convection_cuda_prototype PUBLIC StencilStream_CUDA)
 
+add_executable(convection_cuda_prototype_dummy convection_prototype_dummy.cpp)
+target_link_libraries(convection_cuda_prototype_dummy PUBLIC StencilStream_CUDA)
+
 add_executable(convection_cuda_baseline convection_baseline.cpp)
 target_link_libraries(convection_cuda_baseline PUBLIC StencilStream_CUDA)
 
@@ -35,7 +38,7 @@ FetchContent_Declare(json
 FetchContent_MakeAvailable(json)
 
 # Linking with the JSON library
-foreach(TARGET convection convection_cpu convection_cuda convection_emu convection_report convection_cuda_prototype convection_cuda_baseline)
+foreach(TARGET convection convection_cpu convection_cuda convection_emu convection_report convection_cuda_prototype convection_cuda_baseline convection_cuda_prototype_dummy)
     target_link_libraries(${TARGET} PRIVATE nlohmann_json::nlohmann_json)
 endforeach()
 

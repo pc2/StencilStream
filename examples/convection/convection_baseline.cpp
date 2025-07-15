@@ -346,6 +346,7 @@ int main(int argc, char **argv) {
     double thermal_solver_kernel_walltime = 0.0;
     double thermal_solver_walltime = 0.0;
     double thermal_solver_data_preperation_time = 0.0;
+    double error_check_time = 0.0;
     int total_iterations = 0;
 
     auto computation_start = std::chrono::system_clock::now();
@@ -395,6 +396,7 @@ int main(int argc, char **argv) {
         printf("it = %zu (iter = %zu, time = %e), errV=%1.3e, errP=%1.3e \n", it, iter,
                transients_computation_time.count(), errV, errP);
 
+        error_check_time += transients_computation_time.count();
         total_iterations += iter;
 
         double dt_adv = std::min(dx / max_Vx, dy / max_Vy) / 2.1;
@@ -448,14 +450,14 @@ int main(int argc, char **argv) {
         std::chrono::duration_cast<std::chrono::duration<double>>(main_time_end - main_time_start);
 
     // Prints
-    const int label_width = 50;
+    const int label_width = 80;
     std::cout << "\n" << std::fixed << std::setprecision(6);
 
     std::cout << std::setw(label_width) << std::left << "Walltime (Main):" << main_time.count()
               << " s\n";
 
     std::cout << std::setw(label_width) << std::left
-              << "Walltime of all computations:" << main_time.count() << " s\n";
+              << "Walltime of all computations:" << computation_time.count() << " s\n";
 
     std::cout << std::setw(label_width) << "    ↪ Of which transient computation wall time:"
               << pseudo_transient_update.get_walltime() << " s\n";
@@ -466,6 +468,9 @@ int main(int argc, char **argv) {
     std::cout << std::setw(label_width) << "    ↪ Of which transient kernel data preperation:"
               << pseudo_transient_update.get_data_preperation_time() << " s\n";
 
+    std::cout << std::setw(label_width) << "    ↪ Of which error checking:" << error_check_time
+              << " s\n";
+
     std::cout << std::setw(label_width)
               << "    ↪ Of which thermal solver computation wall time:" << thermal_solver_walltime
               << " s\n";
@@ -474,8 +479,8 @@ int main(int argc, char **argv) {
               << "    ↪ Of which thermal solver kernel time:" << thermal_solver_kernel_walltime
               << " s\n";
 
-    std::cout << std::setw(label_width) << "    ↪ Of which transient kernel data preperation:"
-              << pseudo_transient_update.get_data_preperation_time() << " s\n";
+    std::cout << std::setw(label_width) << "    ↪ Of which thermal solver kernel data preperation:"
+              << thermal_solver_data_preperation_time << " s\n";
 
     std::cout << std::setw(label_width) << "Of which time to write csv:" << io_time << " s\n";
 

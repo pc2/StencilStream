@@ -272,6 +272,20 @@ template <typename F> class StencilUpdate {
                 cell.ErrV = ErrV_out_ac_pass_source[cell_id];
                 cell.ErrP = ErrP_out_ac_pass_source[cell_id];
 
+                /*
+                cell.T += 0.00000001;
+                cell.Pt += 0.00000001;
+                cell.Vx += 0.00000001;
+                cell.Vy += 0.00000001;
+                cell.tau_xx += 0.00000001;
+                cell.tau_yy += 0.00000001;
+                cell.sigma_xy += 0.00000001;
+                cell.dVxd_tau += 0.00000001;
+                cell.dVyd_tau += 0.00000001;
+                cell.ErrV += 0.00000001;
+                cell.ErrP += 0.00000001;
+*/
+
                 T_out_ac_pass_target[cell_id] = cell.T;
                 Pt_out_ac_pass_target[cell_id] = cell.Pt;
                 Vx_out_ac_pass_target[cell_id] = cell.Vx;
