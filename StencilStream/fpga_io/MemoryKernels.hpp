@@ -118,5 +118,92 @@ class CompleteBufferWriteKernel
     }
 };
 
+template <typename T, sycl::access::mode access_mode, std::size_t max_tile_height,
+          std::size_t max_tile_width>
+class PartialBufferIOKernel {
+  public:
+    using Accessor = sycl::accessor<T, 2, access_mode, sycl::access::target::device>;
+    using uindex_local_r_t = ac_int<std::bit_width(max_tile_height), false>;
+    using uindex_local_c_t = ac_int<std::bit_width(max_tile_width), false>;
+
+    PartialBufferIOKernel(Accessor accessor, sycl::id<2> offset, sycl::range<2> range)
+        : accessor(accessor), row_offset(offset[0]), column_offset(offset[1]),
+          tile_height(range[0]), tile_width(range[1]) {
+        if (range[0] > max_tile_height || range[1] > max_tile_width) {
+            throw std::out_of_range("The given tile is too big for the IO kernel.");
+        }
+        if (offset[0] + range[0] > accessor.get_range()[0] ||
+            offset[1] + range[1] > accessor.get_range()[1]) {
+            throw std::out_of_range("Requested tile out of buffer range.");
+        }
+    }
+
+    PartialBufferIOKernel(sycl::buffer<T, 2> buffer, sycl::handler &cgh, sycl::id<2> offset,
+                          sycl::range<2> range)
+        : PartialBufferIOKernel(Accessor(buffer, cgh), offset, range) {}
+
+  protected:
+    Accessor accessor;
+    std::size_t row_offset, column_offset;
+    uindex_local_r_t tile_height;
+    uindex_local_c_t tile_width;
+};
+
+template <typename T, typename out_pipe, std::size_t max_tile_height, std::size_t max_tile_width>
+class PartialBufferReadKernel
+    : public PartialBufferIOKernel<T, sycl::access::mode::read, max_tile_height, max_tile_width> {
+  public:
+    using Parent =
+        PartialBufferIOKernel<T, sycl::access::mode::read, max_tile_height, max_tile_width>;
+    using Accessor = Parent::Accessor;
+    using uindex_local_r_t = Parent::uindex_local_r_t;
+    using uindex_local_c_t = Parent::uindex_local_c_t;
+
+    PartialBufferReadKernel(Accessor accessor, sycl::id<2> offset, sycl::range<2> range)
+        : Parent(accessor, offset, range) {}
+    PartialBufferReadKernel(sycl::buffer<T, 2> buffer, sycl::handler &cgh, sycl::id<2> offset,
+                            sycl::range<2> range)
+        : Parent(buffer, cgh, offset, range) {}
+
+    void operator()() const {
+        [[intel::loop_coalesce(2)]] for (uindex_local_r_t local_r = 0; local_r < this->tile_height;
+                                         local_r++) {
+            for (uindex_local_c_t local_c = 0; local_c < this->tile_width; local_c++) {
+                std::size_t r = this->row_offset + std::size_t(local_r);
+                std::size_t c = this->column_offset + std::size_t(local_c);
+                out_pipe::write(this->accessor[r][c]);
+            }
+        }
+    }
+};
+
+template <typename T, typename in_pipe, std::size_t max_tile_height, std::size_t max_tile_width>
+class PartialBufferWriteKernel
+    : public PartialBufferIOKernel<T, sycl::access::mode::write, max_tile_height, max_tile_width> {
+  public:
+    using Parent =
+        PartialBufferIOKernel<T, sycl::access::mode::write, max_tile_height, max_tile_width>;
+    using Accessor = Parent::Accessor;
+    using uindex_local_r_t = Parent::uindex_local_r_t;
+    using uindex_local_c_t = Parent::uindex_local_c_t;
+
+    PartialBufferWriteKernel(Accessor accessor, sycl::id<2> offset, sycl::range<2> range)
+        : Parent(accessor, offset, range) {}
+    PartialBufferWriteKernel(sycl::buffer<T, 2> buffer, sycl::handler &cgh, sycl::id<2> offset,
+                             sycl::range<2> range)
+        : Parent(buffer, cgh, offset, range) {}
+
+    void operator()() const {
+        [[intel::loop_coalesce(2)]] for (uindex_local_r_t local_r = 0; local_r < this->tile_height;
+                                         local_r++) {
+            for (uindex_local_c_t local_c = 0; local_c < this->tile_width; local_c++) {
+                std::size_t r = this->row_offset + std::size_t(local_r);
+                std::size_t c = this->column_offset + std::size_t(local_c);
+                this->accessor[r][c] = in_pipe::read();
+            }
+        }
+    }
+};
+
 } // namespace fpga_io
 } // namespace stencil
