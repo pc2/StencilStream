@@ -34,13 +34,17 @@ class CompleteBufferIOKernel {
     using uindex_r_t = ac_int<std::bit_width(max_buffer_height), false>;
     using uindex_c_t = ac_int<std::bit_width(max_buffer_width), false>;
 
-    CompleteBufferIOKernel(sycl::buffer<T, 2> buffer, sycl::handler &cgh) : accessor(buffer, cgh), buffer_height(buffer.get_range()[0]), buffer_width(buffer.get_range()[1]) {
+    CompleteBufferIOKernel(sycl::buffer<T, 2> buffer, sycl::handler &cgh)
+        : accessor(buffer, cgh), buffer_height(buffer.get_range()[0]),
+          buffer_width(buffer.get_range()[1]) {
         if (buffer.get_range()[0] > max_buffer_height || buffer.get_range()[1] > max_buffer_width) {
             throw std::out_of_range("The given buffer is too big for the IO kernel.");
         }
     }
 
-    CompleteBufferIOKernel(Accessor accessor) : accessor(accessor), buffer_height(accessor.get_range()[0]), buffer_width(accessor.get_range()[1]) {
+    CompleteBufferIOKernel(Accessor accessor)
+        : accessor(accessor), buffer_height(accessor.get_range()[0]),
+          buffer_width(accessor.get_range()[1]) {
         if (accessor.get_range()[0] > max_buffer_height ||
             accessor.get_range()[1] > max_buffer_width) {
             throw std::out_of_range("The given buffer is too big for the IO kernel.");
@@ -96,14 +100,15 @@ class CompleteBufferWriteKernel
     using uindex_r_t = Parent::uindex_r_t;
     using uindex_c_t = Parent::uindex_c_t;
 
-    CompleteBufferWriteKernel(sycl::buffer<T, 2> buffer, sycl::handler &cgh) : Parent(buffer, cgh) {}
+    CompleteBufferWriteKernel(sycl::buffer<T, 2> buffer, sycl::handler &cgh)
+        : Parent(buffer, cgh) {}
     CompleteBufferWriteKernel(Accessor accessor) : Parent(accessor) {}
 
     void operator()() const {
         auto accessor = this->accessor;
         uindex_r_t buffer_height = this->buffer_height;
         uindex_c_t buffer_width = this->buffer_width;
-        
+
         [[intel::loop_coalesce(2)]]
         for (uindex_r_t r = 0; r < buffer_height; r++) {
             for (uindex_c_t c = 0; c < buffer_width; c++) {

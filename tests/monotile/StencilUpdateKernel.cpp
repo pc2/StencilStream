@@ -39,10 +39,8 @@ template <std::size_t spatial_parallelism>
 void test_monotile_kernel(std::size_t grid_height, std::size_t grid_width,
                           std::size_t iteration_offset, std::size_t target_i_iteration) {
     using CellVector = Padded<std::array<Cell, spatial_parallelism>>;
-    using in_pipe =
-        HostPipe<class MonotileExecutionKernelInPipeID, CellVector>;
-    using out_pipe =
-        HostPipe<class MonotileExecutionKernelOutPipeID, CellVector>;
+    using in_pipe = HostPipe<class MonotileExecutionKernelInPipeID, CellVector>;
+    using out_pipe = HostPipe<class MonotileExecutionKernelOutPipeID, CellVector>;
     using GlobalState = tdv::single_pass::InlineStrategy::GlobalState<TransFunc, 1>;
     using KernelArgument = typename GlobalState::KernelArgument;
     using TestExecutionKernel =

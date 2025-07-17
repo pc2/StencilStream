@@ -178,8 +178,8 @@ class StencilUpdate {
         }
         using in_pipe = sycl::pipe<PipeIdentifier<0>, CellVector>;
         using out_pipe = sycl::pipe<PipeIdentifier<n_kernels>, CellVector>;
-        using InputKernel = fpga_io::CompleteBufferReadKernel<CellVector, in_pipe, max_grid_height,
-                                                              max_grid_width>;
+        using InputKernel =
+            fpga_io::CompleteBufferReadKernel<CellVector, in_pipe, max_grid_height, max_grid_width>;
         using OutputKernel = fpga_io::CompleteBufferWriteKernel<CellVector, out_pipe,
                                                                 max_grid_height, max_grid_width>;
 

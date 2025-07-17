@@ -26,7 +26,8 @@ constexpr std::size_t max_grid_width = 32;
 void test_complete_buffer_read_kernel(sycl::range<2> buffer_range) {
     using Cell = sycl::id<2>;
     using out_pipe = sycl::pipe<class complete_buffer_read_kernel_pipe_id, Cell>;
-    using Kernel = stencil::fpga_io::CompleteBufferReadKernel<Cell, out_pipe, max_grid_height, max_grid_width>;
+    using Kernel =
+        stencil::fpga_io::CompleteBufferReadKernel<Cell, out_pipe, max_grid_height, max_grid_width>;
 
     sycl::buffer<Cell, 2> in_buffer(buffer_range);
     {
@@ -72,7 +73,8 @@ TEST_CASE("fpga_io::CompleteBufferReadKernel", "[fpga_io]") {
 void test_complete_buffer_write_kernel(sycl::range<2> buffer_range) {
     using Cell = sycl::id<2>;
     using in_pipe = sycl::pipe<class complete_buffer_write_kernel_pipe_id, Cell>;
-    using Kernel = stencil::fpga_io::CompleteBufferWriteKernel<Cell, in_pipe, max_grid_height, max_grid_width>;
+    using Kernel =
+        stencil::fpga_io::CompleteBufferWriteKernel<Cell, in_pipe, max_grid_height, max_grid_width>;
 
     sycl::queue queue;
     queue.single_task([=]() {

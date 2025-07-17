@@ -33,8 +33,9 @@ template <std::size_t vector_length> void test_dual_io_pipe_recv_kernel(std::siz
     };
     using Vect = std::array<Cell, vector_length>;
     using recv_pipe = sycl::pipe<class recv_pipe_id, Vect, 512>;
-    using Kernel = stencil::fpga_io::DualIOPipeRecvKernel<Vect, stencil::fpga_io::kernel_input_ch0,
-                                                     stencil::fpga_io::kernel_input_ch1, recv_pipe>;
+    using Kernel =
+        stencil::fpga_io::DualIOPipeRecvKernel<Vect, stencil::fpga_io::kernel_input_ch0,
+                                               stencil::fpga_io::kernel_input_ch1, recv_pipe>;
     std::size_t n_vectors = stencil::int_ceil_div(n_cells, vector_length);
 
     std::uniform_int_distribution<std::size_t> seed_distribution(
@@ -107,8 +108,9 @@ template <std::size_t vector_length> void test_dual_io_pipe_send_kernel(std::siz
     };
     using Vect = std::array<Cell, vector_length>;
     using send_pipe = sycl::pipe<class send_pipe_id, Vect, 512>;
-    using Kernel = stencil::fpga_io::DualIOPipeSendKernel<Vect, stencil::fpga_io::kernel_output_ch0,
-                                                     stencil::fpga_io::kernel_output_ch1, send_pipe>;
+    using Kernel =
+        stencil::fpga_io::DualIOPipeSendKernel<Vect, stencil::fpga_io::kernel_output_ch0,
+                                               stencil::fpga_io::kernel_output_ch1, send_pipe>;
     std::size_t n_vectors = stencil::int_ceil_div(n_cells, vector_length);
 
     std::uniform_int_distribution<std::size_t> seed_distribution(

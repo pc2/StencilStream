@@ -125,7 +125,8 @@ struct Jacobi5Constant : public stencil::BaseTransitionFunction {
 
     float operator()(stencil::Stencil<float, 1> const &stencil) const {
         // 5 Ops / 4 Bytes
-        return (stencil[-1][0] + stencil[0][-1] + stencil[1][0] + stencil[0][-1] + stencil[0][0]) * 0.2f;
+        return (stencil[-1][0] + stencil[0][-1] + stencil[1][0] + stencil[0][-1] + stencil[0][0]) *
+               0.2f;
     }
 };
 
