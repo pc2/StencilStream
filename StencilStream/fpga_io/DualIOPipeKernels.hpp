@@ -22,7 +22,7 @@
 #include "Base.hpp"
 
 namespace stencil {
-namespace io {
+namespace fpga_io {
 
 template <typename T, typename lower_pipe_id, typename upper_pipe_id, typename out_pipe>
 class DualIOPipeRecvKernel {
@@ -165,5 +165,5 @@ class DualIOPipeSendKernel {
     std::size_t n_values;
 };
 
-} // namespace io
+} // namespace fpga_io
 } // namespace stencil
