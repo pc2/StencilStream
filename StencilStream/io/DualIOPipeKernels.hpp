@@ -93,5 +93,77 @@ class DualIOPipeRecvKernel {
     std::size_t n_values;
 };
 
+template <typename T, typename lower_pipe_id, typename upper_pipe_id, typename in_pipe>
+class DualIOPipeSendKernel {
+    static constexpr std::size_t max_group_size = 1024;
+    static constexpr std::size_t max_group_length_in_values = max_group_size / sizeof(T);
+    static constexpr std::size_t max_group_length_in_pipewords = max_group_size / pipeword_size;
+
+    using lower_send_io_pipe =
+        sycl::ext::intel::kernel_writeable_io_pipe<lower_pipe_id, pipeword_t,
+                                                   max_group_length_in_pipewords>;
+    using upper_send_io_pipe =
+        sycl::ext::intel::kernel_writeable_io_pipe<upper_pipe_id, pipeword_t,
+                                                   max_group_length_in_pipewords>;
+
+  public:
+    DualIOPipeSendKernel(std::size_t n_values) : n_values(n_values) {}
+
+    void operator()() const
+        requires(sizeof(T) == 32)
+    {
+        for (size_t i = 0; i < n_values; i++) {
+            T value = in_pipe::read();
+            pipeword_t pipeword = *((pipeword_t *)&value);
+            if (i % 2 == 0) {
+                lower_send_io_pipe::write(pipeword);
+            } else {
+                upper_send_io_pipe::write(pipeword);
+            }
+        }
+    }
+
+    void operator()() const
+        requires(sizeof(T) == 64)
+    {
+        for (size_t i = 0; i < n_values; i++) {
+            T value = in_pipe::read();
+            pipeword_t *pipewords = (pipeword_t *)&value;
+            lower_send_io_pipe::write(pipewords[0]);
+            upper_send_io_pipe::write(pipewords[1]);
+        }
+    }
+
+    void operator()() const
+        requires(sizeof(T) != 32 && sizeof(T) != 64 && sizeof(T) <= max_group_size &&
+                 max_group_size % sizeof(T) == 0)
+    {
+        std::size_t n_groups = int_ceil_div(n_values, max_group_length_in_values);
+        for (size_t i_group = 0; i_group < n_groups; i_group++) {
+            std::size_t group_length_in_values = std::min(
+                max_group_length_in_values, n_values - i_group * max_group_length_in_values);
+            std::size_t group_length_in_pipewords =
+                int_ceil_div(group_length_in_values * sizeof(T), pipeword_size);
+
+            T group_buffer[max_group_length_in_values];
+            pipeword_t *pipeword = (pipeword_t *)group_buffer;
+
+            for (size_t i_value = 0; i_value < group_length_in_values; i_value++) {
+                group_buffer[i_value] = in_pipe::read();
+            }
+
+            for (size_t i_word = 0; i_word < group_length_in_pipewords; i_word += 2) {
+                lower_send_io_pipe::write(pipeword[i_word]);
+                if (i_word + 1 < group_length_in_pipewords) {
+                    upper_send_io_pipe::write(pipeword[i_word + 1]);
+                }
+            }
+        }
+    }
+
+  private:
+    std::size_t n_values;
+};
+
 } // namespace io
 } // namespace stencil
