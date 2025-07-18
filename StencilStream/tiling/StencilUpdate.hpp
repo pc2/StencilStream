@@ -18,6 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
+#include "../fpga_io/MemoryKernels.hpp"
 #include "../tdv/SinglePassStrategies.hpp"
 #include "Grid.hpp"
 #include "StencilUpdateKernel.hpp"
@@ -78,6 +79,7 @@ class StencilUpdate {
      * \brief A shorthand for the used and supported grid type.
      */
     using GridImpl = Grid<Cell, spatial_parallelism>;
+    using CellVector = GridImpl::CellVector;
 
     /**
      * \brief Parameters for the stencil updater.
@@ -162,9 +164,10 @@ class StencilUpdate {
      * complete. Otherwise, it will return as soon as all kernels are submitted.
      */
     GridImpl operator()(GridImpl &source_grid) {
-        using in_pipe = sycl::pipe<PipeIdentifier<0>, std::array<Cell, spatial_parallelism>>;
-        using out_pipe =
-            sycl::pipe<PipeIdentifier<n_kernels>, std::array<Cell, spatial_parallelism>>;
+        using in_pipe = sycl::pipe<PipeIdentifier<0>, CellVector>;
+        using out_pipe = sycl::pipe<PipeIdentifier<n_kernels>, CellVector>;
+        using OutputKernel =
+            fpga_io::PartialBufferWriteKernel<CellVector, out_pipe, tile_height, tile_width>;
 
         // Never submitted, but necessary to compute total halo height an width.
         using FullExecutionKernelImpl =
@@ -172,6 +175,8 @@ class StencilUpdate {
                                 tile_height, tile_width, in_pipe, out_pipe>;
         constexpr std::size_t halo_height = FullExecutionKernelImpl::get_halo_height();
         constexpr std::size_t halo_width = FullExecutionKernelImpl::get_halo_width();
+        constexpr std::size_t vect_halo_width = FullExecutionKernelImpl::get_vect_halo_width();
+        constexpr std::size_t vect_tile_width = tile_width / spatial_parallelism;
 
         if (params.n_iterations == 0) {
             return GridImpl(source_grid);
@@ -190,8 +195,9 @@ class StencilUpdate {
         GridImpl *pass_source = &source_grid;
         GridImpl *pass_target = &swap_grid_b;
 
-        sycl::range<2> tile_range = source_grid.get_tile_range(tile_height, tile_width);
+        sycl::range<2> tile_id_range = source_grid.get_tile_id_range(tile_height, tile_width);
         sycl::range<2> grid_range = source_grid.get_grid_range();
+        sycl::range<2> vect_grid_range = source_grid.get_vect_grid_range();
 
         TDVGlobalState tdv_global_state(params.transition_function, params.iteration_offset,
                                         params.n_iterations);
@@ -201,19 +207,26 @@ class StencilUpdate {
         std::size_t target_i_iteration = params.iteration_offset + params.n_iterations;
         for (std::size_t i = params.iteration_offset; i < target_i_iteration;
              i += temporal_parallelism) {
-            for (std::size_t i_tile_r = 0; i_tile_r < tile_range[0]; i_tile_r++) {
-                for (std::size_t i_tile_c = 0; i_tile_c < tile_range[1]; i_tile_c++) {
-                    sycl::id<2> i_tile(i_tile_r, i_tile_c);
+            for (std::size_t tile_r = 0; tile_r < tile_id_range[0]; tile_r++) {
+                for (std::size_t tile_c = 0; tile_c < tile_id_range[1]; tile_c++) {
+                    sycl::id<2> tile_id(tile_r, tile_c);
 
                     pass_source->template submit_read<in_pipe, tile_height, tile_width, halo_height,
-                                                      halo_width>(input_queue, i_tile_r, i_tile_c,
+                                                      halo_width>(input_queue, tile_r, tile_c,
                                                                   params.halo_value);
 
                     submit_work_kernel<0>(work_queues, tdv_global_state, i, target_i_iteration,
-                                          grid_range, i_tile);
+                                          grid_range, tile_id);
 
-                    pass_target->template submit_write<out_pipe, tile_height, tile_width>(
-                        output_queue, i_tile_r, i_tile_c);
+                    output_queue.submit([&](sycl::handler &cgh) {
+                        sycl::id<2> offset(tile_r * tile_height, tile_c * vect_tile_width);
+                        sycl::range<2> range(
+                            std::min(grid_range[0] - tile_r * tile_height, tile_height),
+                            std::min(vect_grid_range[1] - tile_c * vect_tile_width,
+                                     vect_tile_width));
+                        OutputKernel kernel(pass_target->get_internal(), cgh, offset, range);
+                        cgh.single_task(kernel);
+                    });
                 }
             }
 
@@ -274,12 +287,11 @@ class StencilUpdate {
     template <std::size_t i_kernel>
     void submit_work_kernel(std::vector<sycl::queue> work_queues, TDVGlobalState &tdv_global_state,
                             std::size_t i_iteration, std::size_t target_i_iteration,
-                            sycl::range<2> grid_range, sycl::id<2> i_tile)
+                            sycl::range<2> grid_range, sycl::id<2> tile_id)
         requires(i_kernel < n_kernels)
     {
-        using in_pipe = sycl::pipe<PipeIdentifier<i_kernel>, std::array<Cell, spatial_parallelism>>;
-        using out_pipe =
-            sycl::pipe<PipeIdentifier<i_kernel + 1>, std::array<Cell, spatial_parallelism>>;
+        using in_pipe = sycl::pipe<PipeIdentifier<i_kernel>, CellVector>;
+        using out_pipe = sycl::pipe<PipeIdentifier<i_kernel + 1>, CellVector>;
 
         constexpr size_t local_temporal_parallelism =
             temporal_parallelism / n_kernels +
@@ -296,8 +308,8 @@ class StencilUpdate {
         work_queues[i_kernel].submit([&](sycl::handler &cgh) {
             TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i_iteration,
                                                   local_temporal_parallelism);
-            std::ptrdiff_t r_offset = i_tile[0] * tile_height;
-            std::ptrdiff_t c_offset = i_tile[1] * tile_width;
+            std::ptrdiff_t r_offset = tile_id[0] * tile_height;
+            std::ptrdiff_t c_offset = tile_id[1] * tile_width;
 
             ExecutionKernelImpl exec_kernel(params.transition_function, i_iteration,
                                             target_i_iteration, r_offset, c_offset, grid_range[0],
@@ -308,13 +320,13 @@ class StencilUpdate {
 
         submit_work_kernel<i_kernel + 1>(work_queues, tdv_global_state,
                                          i_iteration + local_temporal_parallelism,
-                                         target_i_iteration, grid_range, i_tile);
+                                         target_i_iteration, grid_range, tile_id);
     }
 
     template <std::size_t i_kernel>
     void submit_work_kernel(std::vector<sycl::queue> work_queues, TDVGlobalState &tdv_global_state,
                             std::size_t i_iteration, std::size_t target_i_iteration,
-                            sycl::range<2> grid_range, sycl::id<2> i_tile)
+                            sycl::range<2> grid_range, sycl::id<2> tile_id)
         requires(i_kernel == n_kernels)
     {
         return;

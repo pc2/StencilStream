@@ -54,6 +54,7 @@ template <std::size_t spatial_parallelism, std::size_t tile_height, std::size_t 
           std::size_t halo_height, std::size_t halo_width>
 void test_tiling_submit_read(std::size_t grid_height, std::size_t grid_width) {
     using TestGrid = Grid<sycl::id<2>, spatial_parallelism>;
+    using CellVector = typename TestGrid::CellVector;
 
     TestGrid grid(grid_height, grid_width);
     {
@@ -70,11 +71,10 @@ void test_tiling_submit_read(std::size_t grid_height, std::size_t grid_width) {
         sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
     sycl::queue working_queue = sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
 
-    sycl::range<2> tile_range = grid.get_tile_range(tile_height, tile_width);
+    sycl::range<2> tile_range = grid.get_tile_id_range(tile_height, tile_width);
     for (std::size_t tile_r = 0; tile_r < tile_range[0]; tile_r++) {
         for (std::size_t tile_c = 0; tile_c < tile_range[1]; tile_c++) {
-            using in_pipe = sycl::pipe<class tiled_grid_submit_read_test_id,
-                                       std::array<sycl::id<2>, spatial_parallelism>>;
+            using in_pipe = sycl::pipe<class tiled_grid_submit_read_test_id, CellVector>;
 
             grid.template submit_read<in_pipe, tile_height, tile_width, halo_height, halo_width>(
                 input_kernel_queue, tile_r, tile_c, sycl::id<2>(-1, -1));
@@ -98,11 +98,10 @@ void test_tiling_submit_read(std::size_t grid_height, std::size_t grid_width) {
                     for (int local_r = 0; local_r < input_tile_height; local_r++) {
                         for (int local_c = 0; local_c < input_tile_width;
                              local_c += spatial_parallelism) {
-                            std::array<sycl::id<2>, spatial_parallelism> read_vector =
-                                in_pipe::read();
+                            CellVector read_vector = in_pipe::read();
 #pragma unroll
                             for (int i_cell = 0; i_cell < spatial_parallelism; i_cell++) {
-                                out_ac[local_r][local_c + i_cell] = read_vector[i_cell];
+                                out_ac[local_r][local_c + i_cell] = read_vector.value[i_cell];
                             }
                         }
                     }
@@ -140,70 +139,4 @@ TEST_CASE("tiling::Grid::submit_read", "[tiling::Grid]") {
 
     test_tiling_submit_read<4, tile_height, tile_width, 1, 4>(3 * tile_height, 3 * tile_width);
     test_tiling_submit_read<4, tile_height, tile_width, 1, 4>(tile_height - 1, tile_width - 1);
-}
-
-template <std::size_t spatial_parallelism, std::size_t tile_height, std::size_t tile_width>
-void test_tiling_submit_write() {
-    using TestGrid = Grid<sycl::id<2>, spatial_parallelism>;
-
-    using out_pipe = sycl::pipe<class tiled_grid_submit_write_test_id,
-                                std::array<sycl::id<2>, spatial_parallelism>>;
-
-    sycl::queue output_kernel_queue =
-        sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
-    sycl::queue working_queue = sycl::queue(sycl::device(), {sycl::property::queue::in_order{}});
-
-    std::size_t grid_height = 3 * tile_height - 1;
-    std::size_t grid_width = 3 * tile_width - 1;
-
-    TestGrid grid(grid_height, grid_width);
-
-    for (std::size_t tile_r = 0; tile_r < 3; tile_r++) {
-        for (std::size_t tile_c = 0; tile_c < 3; tile_c++) {
-            working_queue.submit([&](sycl::handler &cgh) {
-                std::size_t r_start = tile_r * tile_height;
-                std::size_t r_end = r_start + std::min(tile_height, grid_height - r_start);
-                std::size_t vect_c_start = (tile_c * tile_width) / spatial_parallelism;
-                std::size_t vect_c_end =
-                    vect_c_start +
-                    int_ceil_div(std::min(tile_width, grid_width - tile_c * tile_width),
-                                 spatial_parallelism);
-
-                cgh.single_task([=]() {
-                    for (std::size_t r = r_start; r < r_end; r++) {
-                        for (std::size_t vect_c = vect_c_start; vect_c < vect_c_end; vect_c++) {
-                            std::array<sycl::id<2>, spatial_parallelism> out_vector;
-#pragma unroll
-                            for (std::size_t cell_i = 0; cell_i < spatial_parallelism; cell_i++) {
-                                out_vector[cell_i] =
-                                    sycl::id<2>(r, vect_c * spatial_parallelism + cell_i);
-                            }
-                            out_pipe::write(out_vector);
-                        }
-                    }
-                });
-            });
-
-            grid.template submit_write<out_pipe, tile_height, tile_width>(output_kernel_queue,
-                                                                          tile_r, tile_c);
-        }
-    }
-
-    using GridAccessor = TestGrid::template GridAccessor<access::mode::read_write>;
-    GridAccessor out_ac(grid);
-    for (std::size_t r = 0; r < grid_height; r++) {
-        for (std::size_t c = 0; c < grid_width; c++) {
-            REQUIRE(out_ac[r][c][0] == r);
-            REQUIRE(out_ac[r][c][1] == c);
-        }
-    }
-}
-
-TEST_CASE("tiling::Grid::submit_write", "[tiling::Grid]") {
-    constexpr std::size_t tile_height = 64;
-    constexpr std::size_t tile_width = 32;
-
-    test_tiling_submit_write<1, tile_height, tile_width>();
-    test_tiling_submit_write<2, tile_height, tile_width>();
-    test_tiling_submit_write<4, tile_height, tile_width>();
 }

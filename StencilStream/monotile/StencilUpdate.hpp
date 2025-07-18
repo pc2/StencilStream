@@ -68,13 +68,8 @@ template <concepts::TransitionFunction F, std::size_t temporal_parallelism = 1,
           tdv::single_pass::Strategy<F, temporal_parallelism> TDVStrategy =
               tdv::single_pass::InlineStrategy>
 class StencilUpdate {
-  public:
-    /// \brief Shorthand for the used and supported grid type.
-    using GridImpl = Grid<typename F::Cell, spatial_parallelism>;
-
   private:
     using Cell = F::Cell;
-    using CellVector = GridImpl::CellVector;
     using TDV = typename F::TimeDependentValue;
 
     template <std::size_t i> class PipeIdentifier;
@@ -83,6 +78,10 @@ class StencilUpdate {
     using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
 
   public:
+    /// \brief Shorthand for the used and supported grid type.
+    using GridImpl = Grid<typename F::Cell, spatial_parallelism>;
+    using CellVector = GridImpl::CellVector;
+
     /**
      * \brief Parameters for the stencil updater.
      */
