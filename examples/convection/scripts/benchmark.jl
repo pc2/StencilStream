@@ -4,7 +4,7 @@ include("../../../scripts/benchmark-common.jl")
 const N_SUBITERATIONS = 3
 const OPERATIONS_PER_CELL = (5 + 5 + 3 + 6 + 6 + 6) + (10 + 3 + 2 + 14 + 3 + 2) + 2
 const CELL_SIZE = 88 # bytes
-const TEMPORAL_PARALLELISM = Dict(:monotile => 8, :cuda => 1)
+const TEMPORAL_PARALLELISM = Dict(:monotile => 4, :cuda => 1)
 const SPATIAL_PARALLELISM = Dict(:monotile => 1, :cuda => 1)
 const TILE_NX = Dict(:monotile => 2^16, :cuda => nothing)
 const TILE_NY = Dict(:monotile => 768, :cuda => nothing)

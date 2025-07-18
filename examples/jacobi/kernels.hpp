@@ -30,7 +30,7 @@ struct Jacobi1General : public stencil::BaseTransitionFunction {
 
     // Temporal parallelism necessary for 1 TFLOPS would be 208.
     // Not achievable due to tiling halo size.
-    static constexpr size_t temporal_parallelism = 127;
+    static constexpr size_t temporal_parallelism = 63;
     static constexpr size_t mono_tile_width = 8 * 1024;
     static constexpr size_t n_operations = 1;
     static constexpr size_t n_coefficients = 1;
@@ -53,7 +53,7 @@ struct Jacobi2Constant : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     // Tuned for ~1 TFLOPS at 350MHz
-    static constexpr size_t temporal_parallelism = 104;
+    static constexpr size_t temporal_parallelism = 52;
     static constexpr size_t mono_tile_width = 8 * 1024;
     static constexpr size_t n_operations = 2;
     static constexpr size_t n_coefficients = 0;
@@ -73,7 +73,7 @@ struct Jacobi3Constant : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     // Tuned for ~1 TFLOPS at 350MHz
-    static constexpr size_t temporal_parallelism = 68;
+    static constexpr size_t temporal_parallelism = 34;
     static constexpr size_t mono_tile_width = 16 * 1024;
     static constexpr size_t n_operations = 3;
     static constexpr size_t n_coefficients = 0;
@@ -93,7 +93,7 @@ struct Jacobi4Constant : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     // Tuned for ~1.5 TFLOPS at 350MHz
-    static constexpr size_t temporal_parallelism = 64;
+    static constexpr size_t temporal_parallelism = 32;
     static constexpr size_t mono_tile_width = 16 * 1024;
     static constexpr size_t n_operations = 4;
     static constexpr size_t n_coefficients = 0;
@@ -113,7 +113,7 @@ struct Jacobi5Constant : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     // Tuned for ~1.5 TFLOPS at 350MHz
-    static constexpr size_t temporal_parallelism = 52;
+    static constexpr size_t temporal_parallelism = 26;
     static constexpr size_t mono_tile_width = 16 * 1024;
     static constexpr size_t n_operations = 5;
     static constexpr size_t n_coefficients = 0;
@@ -134,7 +134,7 @@ struct Jacobi4General : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     // Tuned for ~2 TFLOPS at 350MHz
-    static constexpr size_t temporal_parallelism = 56;
+    static constexpr size_t temporal_parallelism = 28;
     static constexpr size_t mono_tile_width = 16 * 1024;
     static constexpr size_t n_operations = 7;
     static constexpr size_t n_coefficients = 4;
@@ -160,7 +160,7 @@ struct Jacobi5General : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     // Tuned for ~2 TFLOPS at 350MHz
-    static constexpr size_t temporal_parallelism = 44;
+    static constexpr size_t temporal_parallelism = 22;
     static constexpr size_t mono_tile_width = 16 * 1024;
     static constexpr size_t n_operations = 9;
     static constexpr size_t n_coefficients = 5;
@@ -187,7 +187,7 @@ struct Jacobi9General : public stencil::BaseTransitionFunction {
 
     // Tuned for ~1.5 TFLOPS at 350MHz
     // 2 TFLOPS lead to routing issues
-    static constexpr size_t temporal_parallelism = 16;
+    static constexpr size_t temporal_parallelism = 8;
     static constexpr size_t mono_tile_width = 32 * 1024;
     static constexpr size_t n_operations = 17;
     static constexpr size_t n_coefficients = 9;
