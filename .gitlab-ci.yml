@@ -66,7 +66,7 @@ FPGA/CPU unit test:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 0:10:00 -c 16 --mem 4G
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 0:30:00 -c 16 --mem 16G
     script:
         - mkdir -p build
         - cd build
@@ -98,7 +98,7 @@ convection benchmark:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_max -t 00:15:00
     script:
         - cd examples/convection
         - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection monotile
@@ -126,7 +126,7 @@ hotspot (monotile) synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:30:00
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_max -t 00:30:00
     script:
         - cd examples/hotspot
         - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/${STST_EXECUTABLE} ${STST_VARIANT}
@@ -179,7 +179,7 @@ fdtd (monotile) synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:30:00
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_max -t 00:30:00
     script:
         - cd examples/fdtd
         - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/${STST_EXECUTABLE} ${STST_VARIANT}
@@ -234,7 +234,7 @@ jacobi (monotile) synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:30:00
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_max -t 00:30:00
     script:
         - cd examples/jacobi
         - ./scripts/benchmark.jl max_perf ../../build/examples/jacobi/${STST_EXECUTABLE}
