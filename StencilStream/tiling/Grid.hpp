@@ -23,6 +23,7 @@
 #include <cmath>
 #include <memory>
 #include <numeric>
+#include <stdexcept>
 #include <sycl/ext/intel/ac_types/ac_int.hpp>
 #include <vector>
 
@@ -249,33 +250,95 @@ template <typename Cell, std::size_t spatial_parallelism> class Grid {
      */
     std::size_t get_grid_width() const { return grid_range[1]; }
 
-    std::size_t get_vect_grid_width() const {
-        return int_ceil_div(grid_range[1], spatial_parallelism);
+    std::size_t get_grid_width(bool vectorized) const {
+        return vectorized ? int_ceil_div(grid_range[1], spatial_parallelism) : grid_range[1];
     }
 
     sycl::range<2> get_grid_range() const { return grid_range; }
 
-    sycl::range<2> get_vect_grid_range() const {
-        return sycl::range<2>(grid_range[0], get_vect_grid_width());
+    sycl::range<2> get_grid_range(bool vectorized) const {
+        if (vectorized) {
+            return sycl::range<2>(grid_range[0], get_grid_width(true));
+        } else {
+            return grid_range;
+        }
     }
 
-    /**
-     * \brief Return the range of (central) tiles of the grid.
-     *
-     * This is not the range of a single tile nor is the range of the grid. It is the range of valid
-     * arguments for \ref submit_read and \ref submit_write. For example, if the grid is 60 by 60
-     * cells in size and a tile is 32 by 32 cells in size, the tile range would be 2 by 2 tiles.
-     *
-     * \return The range of tiles of the grid.
-     */
-    sycl::range<2> get_tile_id_range(std::size_t tile_height, std::size_t tile_width) const {
-        return sycl::range<2>(int_ceil_div(get_grid_height(), tile_height),
-                              int_ceil_div(get_grid_width(), tile_width));
+    sycl::range<2> get_tile_id_range(sycl::range<2> max_tile_range) const {
+        if (max_tile_range[1] % spatial_parallelism != 0) {
+            throw std::invalid_argument(
+                "Tile widths must be a multiple of the spatial parallelism");
+        }
+        return sycl::range<2>(int_ceil_div(get_grid_height(), max_tile_range[0]),
+                              int_ceil_div(get_grid_width(), max_tile_range[1]));
     }
 
-    template <std::size_t tile_height, std::size_t tile_width>
-    sycl::range<2> get_tile_id_range() const {
-        return get_tile_id_range(tile_height, tile_width);
+    sycl::id<2> get_tile_offset(sycl::id<2> tile_id, sycl::range<2> max_tile_range,
+                                bool vectorized) const {
+        sycl::range<2> tile_id_range = get_tile_id_range(max_tile_range);
+        if (tile_id[0] >= tile_id_range[0] || tile_id[1] >= tile_id_range[1]) {
+            throw std::out_of_range("Tile ID out of range");
+        }
+        std::size_t row_offset = tile_id[0] * max_tile_range[0];
+        std::size_t column_offset = tile_id[1] * max_tile_range[1];
+        if (vectorized) {
+            column_offset /= spatial_parallelism;
+        }
+        return sycl::id<2>(row_offset, column_offset);
+    }
+
+    std::array<std::ptrdiff_t, 2> get_haloed_tile_offset(sycl::id<2> tile_id,
+                                                         sycl::range<2> max_tile_range,
+                                                         sycl::range<2> halo_range, bool vectorized,
+                                                         bool only_valid_cells) const {
+        if (halo_range[1] % spatial_parallelism != 0) {
+            throw std::invalid_argument(
+                "Halo widths must be a multiple of the spatial parallelism");
+        }
+        sycl::id<2> tile_offset = get_tile_offset(tile_id, max_tile_range, vectorized);
+        std::ptrdiff_t haloed_row_offset = tile_offset[0] - halo_range[0];
+        std::ptrdiff_t haloed_column_offset =
+            tile_offset[1] - (vectorized ? halo_range[1] / spatial_parallelism : halo_range[1]);
+        if (only_valid_cells) {
+            haloed_row_offset = std::max<std::ptrdiff_t>(haloed_row_offset, 0);
+            haloed_column_offset = std::max<std::ptrdiff_t>(haloed_column_offset, 0);
+        }
+        return {haloed_row_offset, haloed_column_offset};
+    }
+
+    sycl::range<2> get_tile_range(sycl::id<2> tile_id, sycl::range<2> max_tile_range,
+                                  bool vectorized) const {
+        sycl::range<2> tile_id_range = get_tile_id_range(max_tile_range);
+        if (tile_id[0] >= tile_id_range[0] || tile_id[1] >= tile_id_range[1]) {
+            throw std::out_of_range("Tile ID out of range");
+        }
+        std::size_t tile_height =
+            std::min(grid_range[0] - tile_id[0] * max_tile_range[0], max_tile_range[0]);
+        std::size_t tile_width =
+            std::min(grid_range[1] - tile_id[1] * max_tile_range[1], max_tile_range[1]);
+        if (vectorized) {
+            tile_width = int_ceil_div(tile_width, spatial_parallelism);
+        }
+        return sycl::range<2>(tile_height, tile_width);
+    }
+
+    sycl::range<2> get_haloed_tile_range(sycl::id<2> tile_id, sycl::range<2> max_tile_range,
+                                         sycl::range<2> halo_range, bool vectorized,
+                                         bool only_valid_cells) const {
+        if (halo_range[1] % spatial_parallelism != 0) {
+            throw std::invalid_argument(
+                "Halo widths must be a multiple of the spatial parallelism");
+        }
+        sycl::range<2> tile_range = get_tile_range(tile_id, max_tile_range, vectorized);
+        tile_range[0] += 2 * halo_range[0];
+        tile_range[1] += 2 * (vectorized ? halo_range[1] / spatial_parallelism : halo_range[1]);
+        if (only_valid_cells) {
+            std::array<std::ptrdiff_t, 2> tile_offset = get_haloed_tile_offset(
+                tile_id, max_tile_range, halo_range, vectorized, only_valid_cells);
+            tile_range[0] = std::min(get_grid_height() - tile_offset[0], tile_range[0]);
+            tile_range[1] = std::min(get_grid_width(vectorized) - tile_offset[1], tile_range[1]);
+        }
+        return tile_range;
     }
 
     /**
@@ -315,7 +378,8 @@ template <typename Cell, std::size_t spatial_parallelism> class Grid {
         static_assert(halo_width % spatial_parallelism == 0);
         static_assert(tile_width % spatial_parallelism == 0);
 
-        sycl::range<2> tile_range = get_tile_id_range(tile_height, tile_width);
+        sycl::range<2> max_tile_range(tile_height, tile_width);
+        sycl::range<2> tile_range = get_tile_id_range(max_tile_range);
         std::size_t grid_height = this->get_grid_height();
         std::size_t grid_width = this->get_grid_width();
 

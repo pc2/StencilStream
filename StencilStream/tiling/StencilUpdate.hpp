@@ -195,9 +195,10 @@ class StencilUpdate {
         GridImpl *pass_source = &source_grid;
         GridImpl *pass_target = &swap_grid_b;
 
-        sycl::range<2> tile_id_range = source_grid.get_tile_id_range(tile_height, tile_width);
+        sycl::range<2> max_tile_range = sycl::range<2>(tile_height, tile_width);
+        sycl::range<2> tile_id_range = source_grid.get_tile_id_range(max_tile_range);
         sycl::range<2> grid_range = source_grid.get_grid_range();
-        sycl::range<2> vect_grid_range = source_grid.get_vect_grid_range();
+        sycl::range<2> vect_grid_range = source_grid.get_grid_range(true);
 
         TDVGlobalState tdv_global_state(params.transition_function, params.iteration_offset,
                                         params.n_iterations);
