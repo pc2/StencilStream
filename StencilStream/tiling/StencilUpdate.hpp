@@ -175,8 +175,6 @@ class StencilUpdate {
                                 tile_height, tile_width, in_pipe, out_pipe>;
         constexpr std::size_t halo_height = FullExecutionKernelImpl::get_halo_height();
         constexpr std::size_t halo_width = FullExecutionKernelImpl::get_halo_width();
-        constexpr std::size_t vect_halo_width = FullExecutionKernelImpl::get_vect_halo_width();
-        constexpr std::size_t vect_tile_width = tile_width / spatial_parallelism;
 
         if (params.n_iterations == 0) {
             return GridImpl(source_grid);
@@ -195,10 +193,10 @@ class StencilUpdate {
         GridImpl *pass_source = &source_grid;
         GridImpl *pass_target = &swap_grid_b;
 
-        sycl::range<2> max_tile_range = sycl::range<2>(tile_height, tile_width);
+        sycl::range<2> halo_range(halo_height, halo_width);
+        sycl::range<2> max_tile_range(tile_height, tile_width);
         sycl::range<2> tile_id_range = source_grid.get_tile_id_range(max_tile_range);
         sycl::range<2> grid_range = source_grid.get_grid_range();
-        sycl::range<2> vect_grid_range = source_grid.get_grid_range(true);
 
         TDVGlobalState tdv_global_state(params.transition_function, params.iteration_offset,
                                         params.n_iterations);
@@ -220,11 +218,10 @@ class StencilUpdate {
                                           grid_range, tile_id);
 
                     output_queue.submit([&](sycl::handler &cgh) {
-                        sycl::id<2> offset(tile_r * tile_height, tile_c * vect_tile_width);
-                        sycl::range<2> range(
-                            std::min(grid_range[0] - tile_r * tile_height, tile_height),
-                            std::min(vect_grid_range[1] - tile_c * vect_tile_width,
-                                     vect_tile_width));
+                        sycl::id<2> offset =
+                            pass_target->get_tile_offset(tile_id, max_tile_range, true);
+                        sycl::range<2> range =
+                            pass_target->get_tile_range(tile_id, max_tile_range, true);
                         OutputKernel kernel(pass_target->get_internal(), cgh, offset, range);
                         cgh.single_task(kernel);
                     });

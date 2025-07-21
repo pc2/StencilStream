@@ -37,6 +37,7 @@ set(UNIT_TEST_FPGA_SOURCES
     monotile/StencilUpdate.cpp
     monotile/StencilUpdateKernel.cpp
     tiling/Grid.cpp
+    tiling/HaloInjectionKernel.cpp
     tiling/StencilUpdate.cpp
     tiling/StencilUpdateKernel.cpp
 )

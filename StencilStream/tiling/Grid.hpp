@@ -329,16 +329,25 @@ template <typename Cell, std::size_t spatial_parallelism> class Grid {
             throw std::invalid_argument(
                 "Halo widths must be a multiple of the spatial parallelism");
         }
-        sycl::range<2> tile_range = get_tile_range(tile_id, max_tile_range, vectorized);
-        tile_range[0] += 2 * halo_range[0];
-        tile_range[1] += 2 * (vectorized ? halo_range[1] / spatial_parallelism : halo_range[1]);
+        sycl::range<2> haloed_tile_range = get_tile_range(tile_id, max_tile_range, vectorized);
+        haloed_tile_range[0] += 2 * halo_range[0];
+        haloed_tile_range[1] +=
+            2 * (vectorized ? halo_range[1] / spatial_parallelism : halo_range[1]);
+
         if (only_valid_cells) {
-            std::array<std::ptrdiff_t, 2> tile_offset = get_haloed_tile_offset(
-                tile_id, max_tile_range, halo_range, vectorized, only_valid_cells);
-            tile_range[0] = std::min(get_grid_height() - tile_offset[0], tile_range[0]);
-            tile_range[1] = std::min(get_grid_width(vectorized) - tile_offset[1], tile_range[1]);
+            std::array<std::ptrdiff_t, 2> haloed_tile_offset =
+                get_haloed_tile_offset(tile_id, max_tile_range, halo_range, vectorized, false);
+            sycl::range<2> grid_range = get_grid_range(vectorized);
+            sycl::id<2> lower_right_corner(
+                std::min(haloed_tile_offset[0] + haloed_tile_range[0], grid_range[0]),
+                std::min(haloed_tile_offset[1] + haloed_tile_range[1], grid_range[1]));
+            std::array<std::ptrdiff_t, 2> upper_left_corner =
+                get_haloed_tile_offset(tile_id, max_tile_range, halo_range, vectorized, true);
+            return sycl::range<2>(lower_right_corner[0] - upper_left_corner[0],
+                                  lower_right_corner[1] - upper_left_corner[1]);
+        } else {
+            return haloed_tile_range;
         }
-        return tile_range;
     }
 
     /**
