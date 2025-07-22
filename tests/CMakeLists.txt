@@ -33,6 +33,7 @@ set(UNIT_TEST_CUDA_SOURCES
 set(UNIT_TEST_FPGA_SOURCES
     fpga_io/DualIOPipeKernels.cpp
     fpga_io/MemoryKernels.cpp
+    fpga_io/SwitchKernels.cpp
     monotile/Grid.cpp
     monotile/StencilUpdate.cpp
     monotile/StencilUpdateKernel.cpp
