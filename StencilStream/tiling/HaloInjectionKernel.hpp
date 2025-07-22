@@ -46,23 +46,23 @@ class HaloInjectionKernel {
         ac_int<std::bit_width(max_vect_tile_width + 2 * vect_halo_width), false>;
 
     HaloInjectionKernel(GridImpl const &grid, sycl::id<2> tile_id, Cell halo_value)
-        : vect_tile_offset(0, 0), tile_height(0), vect_tile_width(0),
+        : vect_tile_offset(0, 0), haloed_tile_height(0), vect_haloed_tile_width(0),
           grid_range(grid.get_grid_range()), halo_value(halo_value) {
         sycl::range<2> max_tile_range(max_tile_height, max_tile_width);
         sycl::range<2> halo_range(halo_height, halo_width);
 
         vect_tile_offset = grid.get_tile_offset(tile_id, max_tile_range, true);
 
-        sycl::range<2> vect_tile_range =
+        sycl::range<2> vect_haloed_tile_range =
             grid.get_haloed_tile_range(tile_id, max_tile_range, halo_range, true, false);
-        tile_height = vect_tile_range[0];
-        vect_tile_width = vect_tile_range[1];
+        haloed_tile_height = vect_haloed_tile_range[0];
+        vect_haloed_tile_width = vect_haloed_tile_range[1];
     }
 
     void operator()() const {
         [[intel::loop_coalesce(2)]]
-        for (uindex_r_t local_r = 0; local_r < tile_height; local_r++) {
-            for (uindex_vect_c_t local_vect_c = 0; local_vect_c < vect_tile_width; local_vect_c++) {
+        for (uindex_r_t local_r = 0; local_r < haloed_tile_height; local_r++) {
+            for (uindex_vect_c_t local_vect_c = 0; local_vect_c < vect_haloed_tile_width; local_vect_c++) {
                 std::size_t r = (local_r - halo_height).to_ulong() + vect_tile_offset[0];
                 std::size_t base_c =
                     ((local_vect_c - vect_halo_width).to_ulong() + vect_tile_offset[1]) *
@@ -100,8 +100,8 @@ class HaloInjectionKernel {
 
   private:
     sycl::id<2> vect_tile_offset;
-    uindex_r_t tile_height;
-    uindex_vect_c_t vect_tile_width;
+    uindex_r_t haloed_tile_height;
+    uindex_vect_c_t vect_haloed_tile_width;
     sycl::range<2> grid_range;
     Cell halo_value;
 };

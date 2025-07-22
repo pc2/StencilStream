@@ -21,6 +21,7 @@
 #include "../fpga_io/MemoryKernels.hpp"
 #include "../tdv/SinglePassStrategies.hpp"
 #include "Grid.hpp"
+#include "HaloInjectionKernel.hpp"
 #include "StencilUpdateKernel.hpp"
 
 #include <chrono>
@@ -46,40 +47,62 @@ namespace tiling {
  * product of the parameter and the size of the cell is below the physical memory word width. Common
  * values are 512 bits or 64 bytes.
  *
- * \tparam tile_height (Optimization parameter) The height of the tile that is updated in one pass.
- * For best hardware utilization, this should be a power of two. Increasing the maximal height of a
- * tile may increase the performance of the design by introducing longer steady-states and reducing
- * halo computation overheads. However, it will also increase the logic resource utilization and
- * might lower the clock frequency.
+ * \tparam max_tile_height (Optimization parameter) The height of the tile that is updated in one
+ * pass. For best hardware utilization, this should be a power of two. Increasing the maximal height
+ * of a tile may increase the performance of the design by introducing longer steady-states and
+ * reducing halo computation overheads. However, it will also increase the logic resource
+ * utilization and might lower the clock frequency.
  *
- * \tparam tile_width (Optimization parameter) The width of the tile that is updated in one pass.
- * Increasing the maximal width of a tile may increase the performance of the design by introducing
- * longer steady-states and reducing halo computation overheads. However, it will also increase the
- * logic and on-chip memory utilization and might lower the clock frequency.
+ * \tparam max_tile_width (Optimization parameter) The width of the tile that is updated in one
+ * pass. Increasing the maximal width of a tile may increase the performance of the design by
+ * introducing longer steady-states and reducing halo computation overheads. However, it will also
+ * increase the logic and on-chip memory utilization and might lower the clock frequency.
  *
  * \tparam TDVStrategy (Optimization parameter) The precomputation strategy for the time-dependent
  * value system (\ref page-tdv "See guide").
  */
 template <concepts::TransitionFunction F, std::size_t temporal_parallelism = 1,
-          std::size_t spatial_parallelism = 1, std::size_t tile_height = 1024,
-          std::size_t tile_width = 1024, std::size_t n_kernels = 1,
+          std::size_t spatial_parallelism = 1, std::size_t max_tile_height = 1024,
+          std::size_t max_tile_width = 1024, std::size_t n_kernels = 1,
           tdv::single_pass::Strategy<F, temporal_parallelism> TDVStrategy =
               tdv::single_pass::InlineStrategy>
 class StencilUpdate {
   private:
     using Cell = F::Cell;
-
-    template <std::size_t i> class PipeIdentifier;
+    using CellVector = Padded<std::array<Cell, spatial_parallelism>>;
 
     using TDVGlobalState = typename TDVStrategy::template GlobalState<F, temporal_parallelism>;
     using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
+
+    template <std::size_t i> class PipeIdentifier;
+    using incomplete_in_pipe = sycl::pipe<class incomplete_in_pipe_id, CellVector>;
+    using in_pipe = sycl::pipe<PipeIdentifier<0>, CellVector>;
+    using out_pipe = sycl::pipe<PipeIdentifier<n_kernels>, CellVector>;
+
+    // Never submitted, but necessary to compute total halo height and width.
+    using FullExecutionKernelImpl =
+        StencilUpdateKernel<F, TDVKernelArgument, temporal_parallelism, 0, spatial_parallelism,
+                            max_tile_height, max_tile_width, in_pipe, out_pipe>;
+    static constexpr std::size_t halo_height = FullExecutionKernelImpl::get_halo_height();
+    static constexpr std::size_t halo_width = FullExecutionKernelImpl::get_halo_width();
+    static constexpr std::size_t max_haloed_tile_height = max_tile_height + 2 * halo_height;
+    static constexpr std::size_t max_vect_tile_width = max_tile_width / spatial_parallelism;
+    static constexpr std::size_t vect_halo_width = halo_width / spatial_parallelism;
+
+    using InputKernel = fpga_io::PartialBufferReadKernel<CellVector, incomplete_in_pipe,
+                                                         max_tile_height + 2 * halo_height,
+                                                         max_vect_tile_width + 2 * vect_halo_width>;
+    using HaloInjectionKernelImpl =
+        HaloInjectionKernel<Cell, spatial_parallelism, incomplete_in_pipe, in_pipe, max_tile_height,
+                            max_tile_width, halo_height, halo_width>;
+    using OutputKernel =
+        fpga_io::PartialBufferWriteKernel<CellVector, out_pipe, max_tile_height, max_tile_width>;
 
   public:
     /**
      * \brief A shorthand for the used and supported grid type.
      */
     using GridImpl = Grid<Cell, spatial_parallelism>;
-    using CellVector = GridImpl::CellVector;
 
     /**
      * \brief Parameters for the stencil updater.
@@ -164,23 +187,13 @@ class StencilUpdate {
      * complete. Otherwise, it will return as soon as all kernels are submitted.
      */
     GridImpl operator()(GridImpl &source_grid) {
-        using in_pipe = sycl::pipe<PipeIdentifier<0>, CellVector>;
-        using out_pipe = sycl::pipe<PipeIdentifier<n_kernels>, CellVector>;
-        using OutputKernel =
-            fpga_io::PartialBufferWriteKernel<CellVector, out_pipe, tile_height, tile_width>;
-
-        // Never submitted, but necessary to compute total halo height an width.
-        using FullExecutionKernelImpl =
-            StencilUpdateKernel<F, TDVKernelArgument, temporal_parallelism, 0, spatial_parallelism,
-                                tile_height, tile_width, in_pipe, out_pipe>;
-        constexpr std::size_t halo_height = FullExecutionKernelImpl::get_halo_height();
-        constexpr std::size_t halo_width = FullExecutionKernelImpl::get_halo_width();
-
         if (params.n_iterations == 0) {
             return GridImpl(source_grid);
         }
 
         sycl::queue input_queue = sycl::queue(params.device, {sycl::property::queue::in_order{}});
+        sycl::queue halo_injection_queue =
+            sycl::queue(params.device, {sycl::property::queue::in_order{}});
         sycl::queue output_queue = sycl::queue(params.device, {sycl::property::queue::in_order{}});
         std::vector<sycl::queue> work_queues;
         for (std::size_t i_kernel = 0; i_kernel < n_kernels; i_kernel++) {
@@ -194,7 +207,7 @@ class StencilUpdate {
         GridImpl *pass_target = &swap_grid_b;
 
         sycl::range<2> halo_range(halo_height, halo_width);
-        sycl::range<2> max_tile_range(tile_height, tile_width);
+        sycl::range<2> max_tile_range(max_tile_height, max_tile_width);
         sycl::range<2> tile_id_range = source_grid.get_tile_id_range(max_tile_range);
         sycl::range<2> grid_range = source_grid.get_grid_range();
 
@@ -210,9 +223,20 @@ class StencilUpdate {
                 for (std::size_t tile_c = 0; tile_c < tile_id_range[1]; tile_c++) {
                     sycl::id<2> tile_id(tile_r, tile_c);
 
-                    pass_source->template submit_read<in_pipe, tile_height, tile_width, halo_height,
-                                                      halo_width>(input_queue, tile_r, tile_c,
-                                                                  params.halo_value);
+                    input_queue.submit([&](sycl::handler &cgh) {
+                        std::array<std::ptrdiff_t, 2> raw_offset =
+                            pass_source->get_haloed_tile_offset(tile_id, max_tile_range, halo_range,
+                                                                true, true);
+                        sycl::id<2> offset = sycl::range<2>(raw_offset[0], raw_offset[1]);
+                        sycl::range<2> range = pass_source->get_haloed_tile_range(
+                            tile_id, max_tile_range, halo_range, true, true);
+                        InputKernel kernel(pass_source->get_internal(), cgh, offset, range);
+
+                        cgh.single_task(kernel);
+                    });
+
+                    halo_injection_queue.single_task(
+                        HaloInjectionKernelImpl(*pass_source, tile_id, params.halo_value));
 
                     submit_work_kernel<0>(work_queues, tdv_global_state, i, target_i_iteration,
                                           grid_range, tile_id);
@@ -300,14 +324,14 @@ class StencilUpdate {
 
         using ExecutionKernelImpl =
             StencilUpdateKernel<F, TDVKernelArgument, local_temporal_parallelism,
-                                remaining_temporal_parallelism, spatial_parallelism, tile_height,
-                                tile_width, in_pipe, out_pipe>;
+                                remaining_temporal_parallelism, spatial_parallelism,
+                                max_tile_height, max_tile_width, in_pipe, out_pipe>;
 
         work_queues[i_kernel].submit([&](sycl::handler &cgh) {
             TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i_iteration,
                                                   local_temporal_parallelism);
-            std::ptrdiff_t r_offset = tile_id[0] * tile_height;
-            std::ptrdiff_t c_offset = tile_id[1] * tile_width;
+            std::ptrdiff_t r_offset = tile_id[0] * max_tile_height;
+            std::ptrdiff_t c_offset = tile_id[1] * max_tile_width;
 
             ExecutionKernelImpl exec_kernel(params.transition_function, i_iteration,
                                             target_i_iteration, r_offset, c_offset, grid_range[0],
