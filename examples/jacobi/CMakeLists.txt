@@ -28,6 +28,7 @@ foreach(KERNEL Jacobi1General Jacobi2Constant Jacobi3Constant Jacobi4Constant Ja
                 target_link_libraries(${EXECUTABLE} PUBLIC StencilStream_Monotile)
             endif()
             target_link_options(${EXECUTABLE} PUBLIC -Xsclock=350MHz)
+            target_link_libraries(${EXECUTABLE} PUBLIC StencilStream_NamedKernels)
         elseif(${BACKEND} MATCHES "^tiling")
             if(${BACKEND} MATCHES "emu")
                 target_link_libraries(${EXECUTABLE} PUBLIC StencilStream_TilingEmulator)
@@ -37,6 +38,7 @@ foreach(KERNEL Jacobi1General Jacobi2Constant Jacobi3Constant Jacobi4Constant Ja
                 target_link_libraries(${EXECUTABLE} PUBLIC StencilStream_Tiling)
             endif()
             target_link_options(${EXECUTABLE} PUBLIC -Xsclock=350MHz)
+            target_link_libraries(${EXECUTABLE} PUBLIC StencilStream_NamedKernels)
         endif()
 
         if(${BACKEND} MATCHES "report")

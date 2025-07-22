@@ -205,13 +205,25 @@ class StencilUpdate {
         for (std::size_t i = params.iteration_offset; i < target_i_iteration;
              i += temporal_parallelism) {
             input_queue.submit([&](sycl::handler &cgh) {
-                cgh.single_task(InputKernel(pass_source->get_internal(), cgh));
+                InputKernel kernel(pass_source->get_internal(), cgh);
+
+#if defined(STENCILSTREAM_NAMED_KERNELS)
+                cgh.single_task<class input_kernel>(kernel);
+#else
+                cgh.single_task(kernel);
+#endif
             });
 
             submit_work_kernel<0>(work_queues, tdv_global_state, i, target_i_iteration, grid_range);
 
             output_queue.submit([&](sycl::handler &cgh) {
-                cgh.single_task(OutputKernel(pass_target->get_internal(), cgh));
+                OutputKernel kernel(pass_target->get_internal(), cgh);
+
+#if defined(STENCILSTREAM_NAMED_KERNELS)
+                cgh.single_task<class output_kernel>(kernel);
+#else
+                cgh.single_task(kernel);
+#endif
             });
 
             if (i == params.iteration_offset) {
@@ -290,7 +302,7 @@ class StencilUpdate {
             ExecutionKernelImpl exec_kernel(params.transition_function, i_iteration,
                                             target_i_iteration, grid_range[0], grid_range[1],
                                             params.halo_value, tdv_kernel_argument);
-            cgh.single_task<ExecutionKernelImpl>(exec_kernel);
+            cgh.single_task(exec_kernel);
         });
 
         submit_work_kernel<i_kernel + 1>(work_queues, tdv_global_state,
