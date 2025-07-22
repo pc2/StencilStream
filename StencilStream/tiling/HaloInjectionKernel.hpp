@@ -62,7 +62,8 @@ class HaloInjectionKernel {
     void operator()() const {
         [[intel::loop_coalesce(2)]]
         for (uindex_r_t local_r = 0; local_r < haloed_tile_height; local_r++) {
-            for (uindex_vect_c_t local_vect_c = 0; local_vect_c < vect_haloed_tile_width; local_vect_c++) {
+            for (uindex_vect_c_t local_vect_c = 0; local_vect_c < vect_haloed_tile_width;
+                 local_vect_c++) {
                 std::size_t r = (local_r - halo_height).to_ulong() + vect_tile_offset[0];
                 std::size_t base_c =
                     ((local_vect_c - vect_halo_width).to_ulong() + vect_tile_offset[1]) *
