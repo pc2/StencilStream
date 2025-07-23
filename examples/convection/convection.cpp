@@ -373,7 +373,6 @@ int main(int argc, char **argv) {
             },
         .halo_value = ThermalConvectionCell::halo_value(),
         .n_iterations = nerr,
-        .device = device,
         .blocking = true,
     });
 
@@ -454,7 +453,6 @@ int main(int argc, char **argv) {
                 ThermalSolverKernel{.nx = nx, .ny = ny, .dx = dx, .dy = dy, .dt = dt, .DcT = DcT},
             .halo_value = ThermalConvectionCell::halo_value(),
             .n_iterations = 1,
-            .device = device,
         });
         grid = thermal_solver_update(grid);
 
