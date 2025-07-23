@@ -18,13 +18,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "Base.hpp"
+#include "Helpers.hpp"
 #include <bit>
 #include <exception>
 #include <sycl/ext/intel/ac_types/ac_int.hpp>
 
 namespace stencil {
-namespace fpga_io {
+namespace internal {
 
 template <typename T, typename in_pipe, typename low_out_pipe, typename high_out_pipe,
           std::size_t max_n_words = std::numeric_limits<std::size_t>::max()>
@@ -85,5 +85,5 @@ class MergeSwitchKernel {
     bool low_pipe_active;
 };
 
-} // namespace fpga_io
+} // namespace internal
 } // namespace stencil

@@ -20,14 +20,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "../HostPipe.hpp"
-#include "../TransFuncs.hpp"
-#include <StencilStream/monotile/StencilUpdateKernel.hpp>
+#include "../../HostPipe.hpp"
+#include "../../TransFuncs.hpp"
+#include <StencilStream/monotile/internal/StencilUpdateKernel.hpp>
 #include <catch2/catch_all.hpp>
 
 using namespace sycl;
 using namespace stencil;
 using namespace stencil::monotile;
+using namespace stencil::monotile::internal;
 
 constexpr std::size_t stencil_radius = 2;
 constexpr std::size_t tile_height = 64;
@@ -38,7 +39,7 @@ using TransFunc = HostTransFunc<stencil_radius>;
 template <std::size_t spatial_parallelism>
 void test_monotile_kernel(std::size_t grid_height, std::size_t grid_width,
                           std::size_t iteration_offset, std::size_t target_i_iteration) {
-    using CellVector = Padded<std::array<Cell, spatial_parallelism>>;
+    using CellVector = stencil::internal::Padded<std::array<Cell, spatial_parallelism>>;
     using in_pipe = HostPipe<class MonotileExecutionKernelInPipeID, CellVector>;
     using out_pipe = HostPipe<class MonotileExecutionKernelOutPipeID, CellVector>;
     using GlobalState = tdv::single_pass::InlineStrategy::GlobalState<TransFunc, 1>;
@@ -85,7 +86,7 @@ void test_monotile_kernel(std::size_t grid_height, std::size_t grid_width,
     }
 }
 
-TEST_CASE("monotile::StencilUpdateKernel", "[monotile::StencilUpdateKernel]") {
+TEST_CASE("monotile::internal::StencilUpdateKernel", "[monotile::internal::StencilUpdateKernel]") {
     std::size_t n_processing_elements = temporal_parallelism * TransFunc::n_subiterations;
     std::size_t n_steps =
         (std::log2(tile_height) - 1) * (std::log2(tile_width) - 1) * (n_processing_elements - 1);

@@ -18,13 +18,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "Base.hpp"
+#include "Helpers.hpp"
 #include <bit>
 #include <exception>
 #include <sycl/ext/intel/ac_types/ac_int.hpp>
 
 namespace stencil {
-namespace fpga_io {
+namespace internal {
 
 template <typename T, sycl::access::mode access_mode, std::size_t max_buffer_height,
           std::size_t max_buffer_width>
@@ -205,5 +205,5 @@ class PartialBufferWriteKernel
     }
 };
 
-} // namespace fpga_io
+} // namespace internal
 } // namespace stencil

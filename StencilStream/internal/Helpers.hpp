@@ -18,14 +18,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../Helpers.hpp"
 #include <array>
+#include <numeric>
 #include <stdint.h>
 #include <sycl/ext/intel/fpga_extensions.hpp>
 #include <sycl/sycl.hpp>
 
 namespace stencil {
-namespace fpga_io {
+namespace internal {
+
+/**
+ * \brief A container with padding to the next power of two.
+ *
+ * Wrapping a type in this template ensures that the resulting size is a power of two.
+ *
+ * \tparam T The contained type.
+ */
+template <typename T> struct Padded {
+    T value;
+} __attribute__((aligned(std::bit_ceil(sizeof(T)))));
+
+template <typename T> inline constexpr T int_ceil_div(T a, T b) {
+    return a / b + ((a % b == 0) ? 0 : 1);
+}
+
 struct kernel_input_ch0 {
     static constexpr unsigned id = 0;
 };
@@ -60,5 +76,6 @@ struct kernel_output_ch3 {
 
 constexpr std::size_t pipeword_size = 32;
 using pipeword_t = std::array<uint8_t, pipeword_size> __attribute__((aligned(pipeword_size)));
-} // namespace fpga_io
+
+} // namespace internal
 } // namespace stencil

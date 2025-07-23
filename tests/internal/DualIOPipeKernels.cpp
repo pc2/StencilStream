@@ -17,7 +17,7 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <StencilStream/fpga_io/DualIOPipeKernels.hpp>
+#include <StencilStream/internal/DualIOPipeKernels.hpp>
 #include <catch2/catch_all.hpp>
 #include <filesystem>
 #include <fstream>
@@ -27,16 +27,15 @@ static std::size_t read_bytes_from_file_1 = 0;
 static std::size_t read_bytes_from_file_3 = 0;
 
 template <std::size_t vector_length> void test_dual_io_pipe_recv_kernel(std::size_t n_cells) {
+    using namespace stencil::internal;
     struct Cell {
         std::size_t i;
         char padding[32 - sizeof(std::size_t)];
     };
     using Vect = std::array<Cell, vector_length>;
     using recv_pipe = sycl::pipe<class recv_pipe_id, Vect, 512>;
-    using Kernel =
-        stencil::fpga_io::DualIOPipeRecvKernel<Vect, stencil::fpga_io::kernel_input_ch0,
-                                               stencil::fpga_io::kernel_input_ch1, recv_pipe>;
-    std::size_t n_vectors = stencil::int_ceil_div(n_cells, vector_length);
+    using Kernel = DualIOPipeRecvKernel<Vect, kernel_input_ch0, kernel_input_ch1, recv_pipe>;
+    std::size_t n_vectors = int_ceil_div(n_cells, vector_length);
 
     std::uniform_int_distribution<std::size_t> seed_distribution(
         0, std::numeric_limits<std::size_t>::max() - n_cells);
@@ -89,7 +88,7 @@ template <std::size_t vector_length> void test_dual_io_pipe_recv_kernel(std::siz
     }
 }
 
-TEST_CASE("fpga_io::DualIOPipeRecvKernel", "[fpga_io]") {
+TEST_CASE("internal::DualIOPipeRecvKernel", "[DualIOPipeKernels]") {
     // Power-of-two cell counts
     test_dual_io_pipe_recv_kernel<1>(32 * 1024);
     test_dual_io_pipe_recv_kernel<2>(32 * 1024);
@@ -102,16 +101,16 @@ TEST_CASE("fpga_io::DualIOPipeRecvKernel", "[fpga_io]") {
 }
 
 template <std::size_t vector_length> void test_dual_io_pipe_send_kernel(std::size_t n_cells) {
+    using namespace stencil::internal;
+
     struct Cell {
         std::size_t i;
         char padding[32 - sizeof(std::size_t)];
     };
     using Vect = std::array<Cell, vector_length>;
     using send_pipe = sycl::pipe<class send_pipe_id, Vect, 512>;
-    using Kernel =
-        stencil::fpga_io::DualIOPipeSendKernel<Vect, stencil::fpga_io::kernel_output_ch0,
-                                               stencil::fpga_io::kernel_output_ch1, send_pipe>;
-    std::size_t n_vectors = stencil::int_ceil_div(n_cells, vector_length);
+    using Kernel = DualIOPipeSendKernel<Vect, kernel_output_ch0, kernel_output_ch1, send_pipe>;
+    std::size_t n_vectors = int_ceil_div(n_cells, vector_length);
 
     std::uniform_int_distribution<std::size_t> seed_distribution(
         0, std::numeric_limits<std::size_t>::max() - n_cells);
@@ -159,7 +158,7 @@ template <std::size_t vector_length> void test_dual_io_pipe_send_kernel(std::siz
     }
 }
 
-TEST_CASE("fpga_io::DualIOPipeSendKernel", "[fpga_io]") {
+TEST_CASE("internal::DualIOPipeSendKernel", "[DualIOPipeKernels]") {
     // Power-of-two cell counts
     test_dual_io_pipe_send_kernel<1>(32 * 1024);
     test_dual_io_pipe_send_kernel<2>(32 * 1024);

@@ -18,13 +18,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../Concepts.hpp"
-#include "../Helpers.hpp"
-#include "../tdv/SinglePassStrategies.hpp"
+#include "../../Concepts.hpp"
+#include "../../internal/Helpers.hpp"
+#include "../../tdv/SinglePassStrategies.hpp"
 #include <sycl/ext/intel/ac_types/ac_int.hpp>
 
 namespace stencil {
 namespace tiling {
+namespace internal {
 
 /**
  * \brief A kernel that executes a stencil transition function on a tile.
@@ -58,14 +59,14 @@ template <concepts::TransitionFunction TransFunc,
 class StencilUpdateKernel {
   private:
     using Cell = typename TransFunc::Cell;
-    using CellVector = Padded<std::array<Cell, spatial_parallelism>>;
+    using CellVector = stencil::internal::Padded<std::array<Cell, spatial_parallelism>>;
     using TDV = typename TransFunc::TimeDependentValue;
     using StencilImpl = Stencil<Cell, TransFunc::stencil_radius, TDV>;
     using TDVLocalState = typename TDVKernelArgument::LocalState;
 
     static constexpr std::size_t stencil_radius = TransFunc::stencil_radius;
     static constexpr std::size_t vect_stencil_buffer_lead =
-        int_ceil_div(stencil_radius, spatial_parallelism);
+        stencil::internal::int_ceil_div(stencil_radius, spatial_parallelism);
     static constexpr std::size_t stencil_buffer_lead =
         vect_stencil_buffer_lead * spatial_parallelism;
     static constexpr std::size_t stencil_buffer_height = 2 * stencil_radius + 1;
@@ -150,6 +151,8 @@ class StencilUpdateKernel {
      * \brief Execute the configured operations.
      */
     void operator()() const {
+        using namespace stencil::internal;
+
         TDVLocalState tdv_local_state(tdv_kernel_argument);
 
         /*
@@ -331,5 +334,6 @@ class StencilUpdateKernel {
     TDVKernelArgument tdv_kernel_argument;
 };
 
+} // namespace internal
 } // namespace tiling
 } // namespace stencil

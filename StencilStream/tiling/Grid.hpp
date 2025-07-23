@@ -74,7 +74,7 @@ template <typename Cell, std::size_t spatial_parallelism> class Grid {
      */
     static constexpr std::size_t dimensions = 2;
 
-    using CellVector = Padded<std::array<Cell, spatial_parallelism>>;
+    using CellVector = stencil::internal::Padded<std::array<Cell, spatial_parallelism>>;
 
     /**
      * \brief Create a new, uninitialized grid with the given dimensions.
@@ -84,7 +84,8 @@ template <typename Cell, std::size_t spatial_parallelism> class Grid {
      * \param grid_width The width, or number of columns, of the new grid.
      */
     Grid(std::size_t grid_height, std::size_t grid_width)
-        : grid_buffer(sycl::range<2>(grid_height, int_ceil_div(grid_width, spatial_parallelism))),
+        : grid_buffer(sycl::range<2>(
+              grid_height, stencil::internal::int_ceil_div(grid_width, spatial_parallelism))),
           grid_range(grid_height, grid_width) {}
 
     /**
@@ -251,6 +252,7 @@ template <typename Cell, std::size_t spatial_parallelism> class Grid {
     std::size_t get_grid_width() const { return grid_range[1]; }
 
     std::size_t get_grid_width(bool vectorized) const {
+        using namespace stencil::internal;
         return vectorized ? int_ceil_div(grid_range[1], spatial_parallelism) : grid_range[1];
     }
 
@@ -265,6 +267,7 @@ template <typename Cell, std::size_t spatial_parallelism> class Grid {
     }
 
     sycl::range<2> get_tile_id_range(sycl::range<2> max_tile_range) const {
+        using namespace stencil::internal;
         if (max_tile_range[1] % spatial_parallelism != 0) {
             throw std::invalid_argument(
                 "Tile widths must be a multiple of the spatial parallelism");
@@ -308,6 +311,7 @@ template <typename Cell, std::size_t spatial_parallelism> class Grid {
 
     sycl::range<2> get_tile_range(sycl::id<2> tile_id, sycl::range<2> max_tile_range,
                                   bool vectorized) const {
+        using namespace stencil::internal;
         sycl::range<2> tile_id_range = get_tile_id_range(max_tile_range);
         if (tile_id[0] >= tile_id_range[0] || tile_id[1] >= tile_id_range[1]) {
             throw std::out_of_range("Tile ID out of range");

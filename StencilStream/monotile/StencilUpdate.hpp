@@ -18,11 +18,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../fpga_io/DualIOPipeKernels.hpp"
-#include "../fpga_io/MemoryKernels.hpp"
-#include "../fpga_io/SwitchKernels.hpp"
+#include "../internal/DualIOPipeKernels.hpp"
+#include "../internal/MemoryKernels.hpp"
+#include "../internal/SwitchKernels.hpp"
 #include "Grid.hpp"
-#include "StencilUpdateKernel.hpp"
+#include "internal/StencilUpdateKernel.hpp"
 #include <chrono>
 #include <type_traits>
 
@@ -72,7 +72,7 @@ template <concepts::TransitionFunction F, std::size_t temporal_parallelism = 1,
 class StencilUpdate {
   private:
     using Cell = F::Cell;
-    using CellVector = Padded<std::array<Cell, spatial_parallelism>>;
+    using CellVector = stencil::internal::Padded<std::array<Cell, spatial_parallelism>>;
 
     template <std::size_t i> class PipeIdentifier;
 
@@ -200,6 +200,8 @@ class StencilUpdate {
      * complete. Otherwise, it will return as soon as all kernels are submitted.
      */
     GridImpl operator()(GridImpl &source_grid) {
+        using namespace stencil::internal;
+
         if (source_grid.get_grid_width() < 2) {
             throw std::range_error("The grid is too narrow. The monotile backend can only process "
                                    "grids with at least two columns.");
@@ -294,6 +296,7 @@ class StencilUpdate {
     void submit_pass(Queues &queues, GridImpl &pass_source, GridImpl &pass_target,
                      TDVGlobalState &tdv_global_state, std::size_t i_iteration,
                      std::size_t target_i_iteration) {
+        using namespace stencil::internal;
         using recv_out_pipe = sycl::pipe<class recv_out_pipe_id, CellVector>;
         using recv_to_work_pipe = sycl::pipe<class recv_to_work_pipe_id, CellVector>;
         using recv_to_write_pipe = sycl::pipe<class recv_to_write_pipe_id, CellVector>;
@@ -310,54 +313,53 @@ class StencilUpdate {
         bool is_root = params.operating_mode ==
                        OperatingMode::DEBUG_MPI_ROOT; // TODO: Also set for actual root.
 
-        using ReadKernel = fpga_io::CompleteBufferReadKernel<CellVector, read_to_work_pipe,
-                                                             max_grid_height, max_grid_width>;
+        using ReadKernel = CompleteBufferReadKernel<CellVector, read_to_work_pipe, max_grid_height,
+                                                    max_grid_width>;
         if (single_device || is_root) {
             queues.read_queue.submit([&](sycl::handler &cgh) {
                 cgh.single_task(ReadKernel(pass_source.get_internal(), cgh));
             });
         }
 
-        using RecvKernel = fpga_io::DualIOPipeRecvKernel<CellVector, fpga_io::kernel_input_ch0,
-                                                         fpga_io::kernel_input_ch1, recv_out_pipe>;
+        using RecvKernel =
+            DualIOPipeRecvKernel<CellVector, kernel_input_ch0, kernel_input_ch1, recv_out_pipe>;
         if (!single_device) {
             queues.recv_queue.single_task(RecvKernel(n_vectors));
         }
 
-        using RecvForkKernel = fpga_io::ForkSwitchKernel<CellVector, recv_out_pipe,
-                                                         recv_to_work_pipe, recv_to_write_pipe>;
+        using RecvForkKernel =
+            ForkSwitchKernel<CellVector, recv_out_pipe, recv_to_work_pipe, recv_to_write_pipe>;
         if (!single_device) {
             queues.recv_fork_queue.single_task(RecvForkKernel(n_vectors, is_root));
         }
 
-        using WorkMergeKernel = fpga_io::MergeSwitchKernel<CellVector, recv_to_work_pipe,
-                                                           read_to_work_pipe, work_in_pipe>;
+        using WorkMergeKernel =
+            MergeSwitchKernel<CellVector, recv_to_work_pipe, read_to_work_pipe, work_in_pipe>;
         queues.work_merge_queue.single_task(WorkMergeKernel(n_vectors, !is_root && !single_device));
 
         submit_work_kernel<0>(queues.work_queues, tdv_global_state, i_iteration, target_i_iteration,
                               pass_source.get_grid_range());
 
-        using WorkForkKernel = fpga_io::ForkSwitchKernel<CellVector, work_out_pipe,
-                                                         work_to_send_pipe, work_to_write_pipe>;
+        using WorkForkKernel =
+            ForkSwitchKernel<CellVector, work_out_pipe, work_to_send_pipe, work_to_write_pipe>;
         queues.work_fork_queue.single_task(WorkForkKernel(n_vectors, !single_device));
 
-        using WriteMergeKernel = fpga_io::MergeSwitchKernel<CellVector, work_to_write_pipe,
-                                                            recv_to_write_pipe, write_in_pipe>;
+        using WriteMergeKernel =
+            MergeSwitchKernel<CellVector, work_to_write_pipe, recv_to_write_pipe, write_in_pipe>;
         if (single_device || is_root) {
             queues.write_merge_queue.single_task(WriteMergeKernel(n_vectors, single_device));
         }
 
-        using WriteKernel = fpga_io::CompleteBufferWriteKernel<CellVector, write_in_pipe,
-                                                               max_grid_height, max_grid_width>;
+        using WriteKernel =
+            CompleteBufferWriteKernel<CellVector, write_in_pipe, max_grid_height, max_grid_width>;
         if (single_device || is_root) {
             queues.write_queue.submit([&](sycl::handler &cgh) {
                 cgh.single_task(WriteKernel(pass_target.get_internal(), cgh));
             });
         }
 
-        using SendKernel =
-            fpga_io::DualIOPipeSendKernel<CellVector, fpga_io::kernel_output_ch2,
-                                          fpga_io::kernel_output_ch3, work_to_send_pipe>;
+        using SendKernel = DualIOPipeSendKernel<CellVector, kernel_output_ch2, kernel_output_ch3,
+                                                work_to_send_pipe>;
         if (!single_device) {
             queues.send_queue.single_task(SendKernel(n_vectors));
         }
@@ -375,9 +377,9 @@ class StencilUpdate {
             temporal_parallelism / n_kernels +
             ((i_kernel == n_kernels - 1) ? temporal_parallelism % n_kernels : 0);
         using ExecutionKernelImpl =
-            StencilUpdateKernel<F, TDVKernelArgument, local_temporal_parallelism,
-                                spatial_parallelism, max_grid_height, max_grid_width, in_pipe,
-                                out_pipe>;
+            internal::StencilUpdateKernel<F, TDVKernelArgument, local_temporal_parallelism,
+                                          spatial_parallelism, max_grid_height, max_grid_width,
+                                          in_pipe, out_pipe>;
 
         work_queues[i_kernel].submit([&](sycl::handler &cgh) {
             TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i_iteration,

@@ -18,11 +18,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../fpga_io/MemoryKernels.hpp"
+#include "../internal/MemoryKernels.hpp"
 #include "../tdv/SinglePassStrategies.hpp"
 #include "Grid.hpp"
-#include "HaloInjectionKernel.hpp"
-#include "StencilUpdateKernel.hpp"
+#include "internal/HaloInjectionKernel.hpp"
+#include "internal/StencilUpdateKernel.hpp"
 
 #include <chrono>
 
@@ -69,7 +69,7 @@ template <concepts::TransitionFunction F, std::size_t temporal_parallelism = 1,
 class StencilUpdate {
   private:
     using Cell = F::Cell;
-    using CellVector = Padded<std::array<Cell, spatial_parallelism>>;
+    using CellVector = stencil::internal::Padded<std::array<Cell, spatial_parallelism>>;
 
     using TDVGlobalState = typename TDVStrategy::template GlobalState<F, temporal_parallelism>;
     using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
@@ -81,22 +81,25 @@ class StencilUpdate {
 
     // Never submitted, but necessary to compute total halo height and width.
     using FullExecutionKernelImpl =
-        StencilUpdateKernel<F, TDVKernelArgument, temporal_parallelism, 0, spatial_parallelism,
-                            max_tile_height, max_tile_width, in_pipe, out_pipe>;
+        internal::StencilUpdateKernel<F, TDVKernelArgument, temporal_parallelism, 0,
+                                      spatial_parallelism, max_tile_height, max_tile_width, in_pipe,
+                                      out_pipe>;
     static constexpr std::size_t halo_height = FullExecutionKernelImpl::get_halo_height();
     static constexpr std::size_t halo_width = FullExecutionKernelImpl::get_halo_width();
     static constexpr std::size_t max_haloed_tile_height = max_tile_height + 2 * halo_height;
     static constexpr std::size_t max_vect_tile_width = max_tile_width / spatial_parallelism;
     static constexpr std::size_t vect_halo_width = halo_width / spatial_parallelism;
 
-    using InputKernel = fpga_io::PartialBufferReadKernel<CellVector, incomplete_in_pipe,
-                                                         max_tile_height + 2 * halo_height,
-                                                         max_vect_tile_width + 2 * vect_halo_width>;
+    using InputKernel =
+        stencil::internal::PartialBufferReadKernel<CellVector, incomplete_in_pipe,
+                                                   max_tile_height + 2 * halo_height,
+                                                   max_vect_tile_width + 2 * vect_halo_width>;
     using HaloInjectionKernelImpl =
-        HaloInjectionKernel<Cell, spatial_parallelism, incomplete_in_pipe, in_pipe, max_tile_height,
-                            max_tile_width, halo_height, halo_width>;
+        internal::HaloInjectionKernel<Cell, spatial_parallelism, incomplete_in_pipe, in_pipe,
+                                      max_tile_height, max_tile_width, halo_height, halo_width>;
     using OutputKernel =
-        fpga_io::PartialBufferWriteKernel<CellVector, out_pipe, max_tile_height, max_tile_width>;
+        stencil::internal::PartialBufferWriteKernel<CellVector, out_pipe, max_tile_height,
+                                                    max_tile_width>;
 
   public:
     /**
@@ -335,9 +338,9 @@ class StencilUpdate {
             i_kernel * (temporal_parallelism / n_kernels);
 
         using ExecutionKernelImpl =
-            StencilUpdateKernel<F, TDVKernelArgument, local_temporal_parallelism,
-                                remaining_temporal_parallelism, spatial_parallelism,
-                                max_tile_height, max_tile_width, in_pipe, out_pipe>;
+            internal::StencilUpdateKernel<F, TDVKernelArgument, local_temporal_parallelism,
+                                          remaining_temporal_parallelism, spatial_parallelism,
+                                          max_tile_height, max_tile_width, in_pipe, out_pipe>;
 
         work_queues[i_kernel].submit([&](sycl::handler &cgh) {
             TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i_iteration,

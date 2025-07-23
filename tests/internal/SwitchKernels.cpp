@@ -17,7 +17,7 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <StencilStream/fpga_io/SwitchKernels.hpp>
+#include <StencilStream/internal/SwitchKernels.hpp>
 #include <catch2/catch_all.hpp>
 
 constexpr std::size_t max_n_words = 255;
@@ -26,8 +26,8 @@ void test_fork_switch_kernel(std::size_t n_words, bool low_pipe_active) {
     using in_pipe = sycl::pipe<class fork_switch_in_pipe_id, std::size_t>;
     using low_out_pipe = sycl::pipe<class fork_switch_low_out_pipe_id, std::size_t>;
     using high_out_pipe = sycl::pipe<class fork_switch_high_out_pipe_id, std::size_t>;
-    using Kernel = stencil::fpga_io::ForkSwitchKernel<std::size_t, in_pipe, low_out_pipe,
-                                                      high_out_pipe, max_n_words>;
+    using Kernel = stencil::internal::ForkSwitchKernel<std::size_t, in_pipe, low_out_pipe,
+                                                       high_out_pipe, max_n_words>;
 
     sycl::queue queue;
     queue.single_task([=]() {
@@ -55,7 +55,7 @@ void test_fork_switch_kernel(std::size_t n_words, bool low_pipe_active) {
     }
 }
 
-TEST_CASE("fpga_io::ForkSwitchKernel", "[fpga_io]") {
+TEST_CASE("internal::ForkSwitchKernel", "[SwitchKernels]") {
     test_fork_switch_kernel(2, false);
     test_fork_switch_kernel(max_n_words, false);
     test_fork_switch_kernel(2, true);
@@ -66,8 +66,8 @@ void test_merge_switch_kernel(std::size_t n_words, bool low_pipe_active) {
     using low_in_pipe = sycl::pipe<class merge_switch_low_in_pipe_id, std::size_t>;
     using high_in_pipe = sycl::pipe<class merge_switch_high_in_pipe_id, std::size_t>;
     using out_pipe = sycl::pipe<class merge_switch_out_pipe_id, std::size_t>;
-    using Kernel = stencil::fpga_io::MergeSwitchKernel<std::size_t, low_in_pipe, high_in_pipe,
-                                                       out_pipe, max_n_words>;
+    using Kernel = stencil::internal::MergeSwitchKernel<std::size_t, low_in_pipe, high_in_pipe,
+                                                        out_pipe, max_n_words>;
 
     sycl::queue queue;
     queue.single_task([=]() {
@@ -99,7 +99,7 @@ void test_merge_switch_kernel(std::size_t n_words, bool low_pipe_active) {
     }
 }
 
-TEST_CASE("fpga_io::MergeSwitchKernel", "[fpga_io]") {
+TEST_CASE("internal::MergeSwitchKernel", "[SwitchKernels]") {
     test_merge_switch_kernel(2, false);
     test_merge_switch_kernel(max_n_words, false);
     test_merge_switch_kernel(2, true);

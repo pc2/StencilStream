@@ -20,9 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "../TransFuncs.hpp"
+#include "../../TransFuncs.hpp"
 #include <StencilStream/tiling/Grid.hpp>
-#include <StencilStream/tiling/HaloInjectionKernel.hpp>
+#include <StencilStream/tiling/internal/HaloInjectionKernel.hpp>
 #include <catch2/catch_all.hpp>
 
 template <std::size_t spatial_parallelism, std::size_t max_tile_height, std::size_t max_tile_width,
@@ -33,9 +33,10 @@ void test_tiling_halo_injection_kernel(std::size_t grid_height, std::size_t grid
     using in_pipe = sycl::pipe<class halo_injection_in_pipe_id, CellVector>;
     using out_pipe = sycl::pipe<class halo_injection_out_pipe_id, CellVector>;
 
-    using Kernel = stencil::tiling::HaloInjectionKernel<Cell, spatial_parallelism, in_pipe,
-                                                        out_pipe, max_tile_height, max_tile_width,
-                                                        halo_height, halo_width>;
+    using Kernel =
+        stencil::tiling::internal::HaloInjectionKernel<Cell, spatial_parallelism, in_pipe, out_pipe,
+                                                       max_tile_height, max_tile_width, halo_height,
+                                                       halo_width>;
 
     sycl::queue queue;
     sycl::range<2> max_tile_range(max_tile_height, max_tile_width);

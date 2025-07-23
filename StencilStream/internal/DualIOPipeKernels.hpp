@@ -18,10 +18,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "Base.hpp"
+#include "Helpers.hpp"
 
 namespace stencil {
-namespace fpga_io {
+namespace internal {
 
 template <typename T, typename lower_pipe_id, typename upper_pipe_id, typename out_pipe>
 class DualIOPipeRecvKernel {
@@ -164,5 +164,5 @@ class DualIOPipeSendKernel {
     std::size_t n_values;
 };
 
-} // namespace fpga_io
+} // namespace internal
 } // namespace stencil

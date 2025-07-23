@@ -20,24 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "../TransFuncs.hpp"
+#include "../../TransFuncs.hpp"
 
 #include <StencilStream/BaseTransitionFunction.hpp>
 #include <StencilStream/tiling/Grid.hpp>
-#include <StencilStream/tiling/StencilUpdateKernel.hpp>
+#include <StencilStream/tiling/internal/StencilUpdateKernel.hpp>
 #include <catch2/catch_all.hpp>
 
 using namespace sycl;
 using namespace stencil;
 using namespace stencil::tiling;
+using namespace stencil::tiling::internal;
 
 template <std::size_t stencil_radius, std::size_t temporal_parallelism,
           std::size_t spatial_parallelism, std::size_t tile_height, std::size_t tile_width>
 void test_tiling_kernel(std::size_t grid_height, std::size_t grid_width, std::size_t tile_r,
                         std::size_t tile_c, std::size_t iteration_offset,
                         std::size_t target_i_iteration) {
+    using namespace stencil::internal;
+
     using TransFunc = FPGATransFunc<stencil_radius>;
-    using CellVector = Padded<std::array<typename TransFunc::Cell, spatial_parallelism>>;
+    using CellVector =
+        stencil::internal::Padded<std::array<typename TransFunc::Cell, spatial_parallelism>>;
     using in_pipe = sycl::pipe<class TilingExecutionKernelInPipeID, CellVector>;
     using out_pipe = sycl::pipe<class TilingExecutionKernelOutPipeID, CellVector>;
     using TDVGlobalState =
