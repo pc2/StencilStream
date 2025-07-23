@@ -26,7 +26,8 @@ void test_fork_switch_kernel(std::size_t n_words, bool low_pipe_active) {
     using in_pipe = sycl::pipe<class fork_switch_in_pipe_id, std::size_t>;
     using low_out_pipe = sycl::pipe<class fork_switch_low_out_pipe_id, std::size_t>;
     using high_out_pipe = sycl::pipe<class fork_switch_high_out_pipe_id, std::size_t>;
-    using Kernel = stencil::fpga_io::ForkSwitchKernel<std::size_t, in_pipe, low_out_pipe, high_out_pipe, max_n_words>;
+    using Kernel = stencil::fpga_io::ForkSwitchKernel<std::size_t, in_pipe, low_out_pipe,
+                                                      high_out_pipe, max_n_words>;
 
     sycl::queue queue;
     queue.single_task([=]() {
@@ -65,7 +66,8 @@ void test_merge_switch_kernel(std::size_t n_words, bool low_pipe_active) {
     using low_in_pipe = sycl::pipe<class merge_switch_low_in_pipe_id, std::size_t>;
     using high_in_pipe = sycl::pipe<class merge_switch_high_in_pipe_id, std::size_t>;
     using out_pipe = sycl::pipe<class merge_switch_out_pipe_id, std::size_t>;
-    using Kernel = stencil::fpga_io::MergeSwitchKernel<std::size_t, low_in_pipe, high_in_pipe, out_pipe, max_n_words>;
+    using Kernel = stencil::fpga_io::MergeSwitchKernel<std::size_t, low_in_pipe, high_in_pipe,
+                                                       out_pipe, max_n_words>;
 
     sycl::queue queue;
     queue.single_task([=]() {

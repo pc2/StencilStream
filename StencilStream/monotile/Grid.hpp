@@ -133,6 +133,10 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
 
     sycl::range<2> get_grid_range() const { return grid_range; }
 
+    sycl::range<2> get_grid_range(bool vectorized) const {
+        return vectorized ? tile_buffer.get_range() : grid_range;
+    }
+
     /**
      * \brief An accessor for the monotile grid.
      *

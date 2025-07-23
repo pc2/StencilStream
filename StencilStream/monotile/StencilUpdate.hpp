@@ -18,7 +18,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
+#include "../fpga_io/DualIOPipeKernels.hpp"
 #include "../fpga_io/MemoryKernels.hpp"
+#include "../fpga_io/SwitchKernels.hpp"
 #include "Grid.hpp"
 #include "StencilUpdateKernel.hpp"
 #include <chrono>
@@ -70,17 +72,58 @@ template <concepts::TransitionFunction F, std::size_t temporal_parallelism = 1,
 class StencilUpdate {
   private:
     using Cell = F::Cell;
-    using TDV = typename F::TimeDependentValue;
+    using CellVector = Padded<std::array<Cell, spatial_parallelism>>;
 
     template <std::size_t i> class PipeIdentifier;
 
+    using TDV = typename F::TimeDependentValue;
     using TDVGlobalState = TDVStrategy::template GlobalState<F, temporal_parallelism>;
     using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
+
+    struct Queues {
+        sycl::queue read_queue, recv_queue, recv_fork_queue, work_merge_queue, work_fork_queue,
+            write_merge_queue, write_queue, send_queue;
+        std::vector<sycl::queue> work_queues;
+
+        Queues(sycl::device device)
+            : read_queue(device, {sycl::property::queue::in_order{}}),
+              recv_queue(device, {sycl::property::queue::in_order{}}),
+              recv_fork_queue(device, {sycl::property::queue::in_order{}}),
+              work_merge_queue(device, {sycl::property::queue::in_order{}}),
+              work_fork_queue(device, {sycl::property::queue::in_order{}}),
+              write_merge_queue(device, {sycl::property::queue::in_order{}}),
+              write_queue(device, {sycl::property::queue::in_order{}}),
+              send_queue(device, {sycl::property::queue::in_order{}}), work_queues() {
+            for (std::size_t i = 0; i < n_kernels; i++) {
+                work_queues.push_back(sycl::queue(device, {sycl::property::queue::in_order{}}));
+            }
+        }
+
+        void wait() {
+            read_queue.wait();
+            recv_queue.wait();
+            recv_fork_queue.wait();
+            work_merge_queue.wait();
+            work_fork_queue.wait();
+            write_merge_queue.wait();
+            write_queue.wait();
+            send_queue.wait();
+            for (std::size_t i_queue = 0; i_queue < work_queues.size(); i_queue++) {
+                work_queues[i_queue].wait();
+            }
+        }
+    };
 
   public:
     /// \brief Shorthand for the used and supported grid type.
     using GridImpl = Grid<typename F::Cell, spatial_parallelism>;
-    using CellVector = GridImpl::CellVector;
+
+    enum class OperatingMode {
+        SINGLE_DEVICE,
+        MPI,
+        DEBUG_MPI_ROOT,
+        DEBUG_MPI_NONROOT,
+    };
 
     /**
      * \brief Parameters for the stencil updater.
@@ -111,15 +154,7 @@ class StencilUpdate {
          */
         std::size_t n_iterations = 1;
 
-        /**
-         * \brief The device to use for computations.
-         *
-         * For some setups, it might be necessary to explicitly select the device to use for
-         * computation. This can be done for example with the `sycl::ext::intel::fpga_selector_v`
-         * class in the `sycl/ext/intel/fpga_extensions.hpp` header. This selector will select the
-         * first FPGA it sees.
-         */
-        sycl::device device = sycl::device();
+        OperatingMode operating_mode = OperatingMode::SINGLE_DEVICE;
 
         /**
          * \brief Should the stencil updater block until completion, or return immediately after all
@@ -175,19 +210,18 @@ class StencilUpdate {
         if (source_grid.get_grid_width() > max_grid_width) {
             throw std::range_error("The grid is too wide for the stencil update kernel.");
         }
-        using in_pipe = sycl::pipe<PipeIdentifier<0>, CellVector>;
-        using out_pipe = sycl::pipe<PipeIdentifier<n_kernels>, CellVector>;
-        using InputKernel =
-            fpga_io::CompleteBufferReadKernel<CellVector, in_pipe, max_grid_height, max_grid_width>;
-        using OutputKernel = fpga_io::CompleteBufferWriteKernel<CellVector, out_pipe,
-                                                                max_grid_height, max_grid_width>;
 
-        sycl::queue input_queue = sycl::queue(params.device, {sycl::property::queue::in_order{}});
-        sycl::queue output_queue = sycl::queue(params.device, {sycl::property::queue::in_order{}});
-        std::vector<sycl::queue> work_queues;
-        for (std::size_t i_kernel = 0; i_kernel < n_kernels; i_kernel++) {
-            work_queues.push_back(sycl::queue(params.device, {sycl::property::queue::in_order{}}));
-        }
+#if defined(STENCILSTREAM_TARGET_FPGA_EMU)
+        auto device_selector = sycl::ext::intel::fpga_emulator_selector_v;
+#elif defined(STENCILSTREAM_TARGET_FPGA)
+        auto device_selector = sycl::ext::intel::fpga_selector_v;
+#else
+    #error                                                                                         \
+        "Please link with the `StencilStream_Monotile`, `StencilStream_MonotileEmulator`, or `StencilStream_MonotileReport` targets!"
+#endif
+        sycl::device device(device_selector);
+
+        Queues queues(device);
 
         GridImpl swap_grid_a = source_grid.make_similar();
         GridImpl swap_grid_b = source_grid.make_similar();
@@ -197,36 +231,17 @@ class StencilUpdate {
 
         F trans_func = params.transition_function;
         TDVGlobalState tdv_global_state(trans_func, params.iteration_offset, params.n_iterations);
-        sycl::range<2> grid_range = source_grid.get_grid_range();
 
         auto walltime_start = std::chrono::high_resolution_clock::now();
 
         std::size_t target_i_iteration = params.iteration_offset + params.n_iterations;
-        for (std::size_t i = params.iteration_offset; i < target_i_iteration;
-             i += temporal_parallelism) {
-            input_queue.submit([&](sycl::handler &cgh) {
-                InputKernel kernel(pass_source->get_internal(), cgh);
+        std::size_t n_passes = int_ceil_div(params.n_iterations, temporal_parallelism);
+        for (std::size_t i_pass = 0; i_pass < n_passes; i_pass++) {
+            std::size_t i_iteration = params.iteration_offset + i_pass * temporal_parallelism;
+            submit_pass(queues, *pass_source, *pass_target, tdv_global_state, i_iteration,
+                        target_i_iteration);
 
-#if defined(STENCILSTREAM_NAMED_KERNELS)
-                cgh.single_task<class input_kernel>(kernel);
-#else
-                cgh.single_task(kernel);
-#endif
-            });
-
-            submit_work_kernel<0>(work_queues, tdv_global_state, i, target_i_iteration, grid_range);
-
-            output_queue.submit([&](sycl::handler &cgh) {
-                OutputKernel kernel(pass_target->get_internal(), cgh);
-
-#if defined(STENCILSTREAM_NAMED_KERNELS)
-                cgh.single_task<class output_kernel>(kernel);
-#else
-                cgh.single_task(kernel);
-#endif
-            });
-
-            if (i == params.iteration_offset) {
+            if (i_pass == 0) {
                 pass_source = &swap_grid_b;
                 pass_target = &swap_grid_a;
             } else {
@@ -235,11 +250,7 @@ class StencilUpdate {
         }
 
         if (params.blocking) {
-            for (sycl::queue queue : work_queues) {
-                queue.wait();
-            }
-            input_queue.wait();
-            output_queue.wait();
+            queues.wait();
         }
 
         auto walltime_end = std::chrono::high_resolution_clock::now();
@@ -280,6 +291,78 @@ class StencilUpdate {
     double get_walltime() const { return walltime; }
 
   private:
+    void submit_pass(Queues &queues, GridImpl &pass_source, GridImpl &pass_target,
+                     TDVGlobalState &tdv_global_state, std::size_t i_iteration,
+                     std::size_t target_i_iteration) {
+        using recv_out_pipe = sycl::pipe<class recv_out_pipe_id, CellVector>;
+        using recv_to_work_pipe = sycl::pipe<class recv_to_work_pipe_id, CellVector>;
+        using recv_to_write_pipe = sycl::pipe<class recv_to_write_pipe_id, CellVector>;
+        using read_to_work_pipe = sycl::pipe<class read_to_work_pipe_id, CellVector>;
+        using work_to_send_pipe = sycl::pipe<class work_to_send_pipe_id, CellVector>;
+        using work_to_write_pipe = sycl::pipe<class work_to_write_pipe_id, CellVector>;
+        using write_in_pipe = sycl::pipe<class write_in_pipe_id, CellVector>;
+        using work_in_pipe = sycl::pipe<PipeIdentifier<0>, CellVector>;
+        using work_out_pipe = sycl::pipe<PipeIdentifier<n_kernels>, CellVector>;
+
+        sycl::range<2> vect_grid_range = pass_source.get_grid_range(true);
+        std::size_t n_vectors = vect_grid_range[0] * vect_grid_range[1];
+        bool single_device = params.operating_mode == OperatingMode::SINGLE_DEVICE;
+        bool is_root = params.operating_mode ==
+                       OperatingMode::DEBUG_MPI_ROOT; // TODO: Also set for actual root.
+
+        using ReadKernel = fpga_io::CompleteBufferReadKernel<CellVector, read_to_work_pipe,
+                                                             max_grid_height, max_grid_width>;
+        if (single_device || is_root) {
+            queues.read_queue.submit([&](sycl::handler &cgh) {
+                cgh.single_task(ReadKernel(pass_source.get_internal(), cgh));
+            });
+        }
+
+        using RecvKernel = fpga_io::DualIOPipeRecvKernel<CellVector, fpga_io::kernel_input_ch0,
+                                                         fpga_io::kernel_input_ch1, recv_out_pipe>;
+        if (!single_device) {
+            queues.recv_queue.single_task(RecvKernel(n_vectors));
+        }
+
+        using RecvForkKernel = fpga_io::ForkSwitchKernel<CellVector, recv_out_pipe,
+                                                         recv_to_work_pipe, recv_to_write_pipe>;
+        if (!single_device) {
+            queues.recv_fork_queue.single_task(RecvForkKernel(n_vectors, is_root));
+        }
+
+        using WorkMergeKernel = fpga_io::MergeSwitchKernel<CellVector, recv_to_work_pipe,
+                                                           read_to_work_pipe, work_in_pipe>;
+        queues.work_merge_queue.single_task(WorkMergeKernel(n_vectors, !is_root && !single_device));
+
+        submit_work_kernel<0>(queues.work_queues, tdv_global_state, i_iteration, target_i_iteration,
+                              pass_source.get_grid_range());
+
+        using WorkForkKernel = fpga_io::ForkSwitchKernel<CellVector, work_out_pipe,
+                                                         work_to_send_pipe, work_to_write_pipe>;
+        queues.work_fork_queue.single_task(WorkForkKernel(n_vectors, !single_device));
+
+        using WriteMergeKernel = fpga_io::MergeSwitchKernel<CellVector, work_to_write_pipe,
+                                                            recv_to_write_pipe, write_in_pipe>;
+        if (single_device || is_root) {
+            queues.write_merge_queue.single_task(WriteMergeKernel(n_vectors, single_device));
+        }
+
+        using WriteKernel = fpga_io::CompleteBufferWriteKernel<CellVector, write_in_pipe,
+                                                               max_grid_height, max_grid_width>;
+        if (single_device || is_root) {
+            queues.write_queue.submit([&](sycl::handler &cgh) {
+                cgh.single_task(WriteKernel(pass_target.get_internal(), cgh));
+            });
+        }
+
+        using SendKernel =
+            fpga_io::DualIOPipeSendKernel<CellVector, fpga_io::kernel_output_ch2,
+                                          fpga_io::kernel_output_ch3, work_to_send_pipe>;
+        if (!single_device) {
+            queues.send_queue.single_task(SendKernel(n_vectors));
+        }
+    }
+
     template <std::size_t i_kernel>
     void submit_work_kernel(std::vector<sycl::queue> work_queues, TDVGlobalState &tdv_global_state,
                             std::size_t i_iteration, std::size_t target_i_iteration,
