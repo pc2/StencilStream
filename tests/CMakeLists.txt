@@ -34,6 +34,7 @@ set(UNIT_TEST_FPGA_SOURCES
     internal/DualIOPipeKernels.cpp
     internal/MemoryKernels.cpp
     internal/SwitchKernels.cpp
+    monotile/internal/StencilUpdateDesign.cpp
     monotile/internal/StencilUpdateKernel.cpp
     monotile/Grid.cpp
     monotile/StencilUpdate.cpp
