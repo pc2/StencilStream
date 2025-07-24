@@ -29,7 +29,6 @@
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
-#include <sycl/ext/intel/fpga_extensions.hpp>
 
 using namespace stencil;
 using json = nlohmann::json;
@@ -346,12 +345,6 @@ int main(int argc, char **argv) {
                   rho;             // numerical bulk compressibility
     double dampX = 1.0 - dmp / nx; // damping term for the x-momentum equation
     double dampY = 1.0 - dmp / ny; // damping term for the y-momentum equation
-
-#if defined(STENCILSTREAM_TARGET_FPGA)
-    sycl::device device(sycl::ext::intel::fpga_selector_v);
-#else
-    sycl::device device;
-#endif
 
     PseudoTransientUpdate pseudo_transient_update({
         .transition_function =

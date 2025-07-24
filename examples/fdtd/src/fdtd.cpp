@@ -19,7 +19,6 @@
  */
 #include "Kernel.hpp"
 #include <deque>
-#include <sycl/ext/intel/fpga_extensions.hpp>
 
 #if MATERIAL == 0
     #include "material/CoefResolver.hpp"
@@ -177,22 +176,11 @@ int main(int argc, char **argv) {
         }
     }
 
-#if defined(STENCILSTREAM_TARGET_FPGA)
-    sycl::device device(sycl::ext::intel::fpga_selector_v);
-#elif defined(STENCILSTREAM_TARGET_CUDA)
-    sycl::device device(sycl::gpu_selector_v);
-#else
-    sycl::device device;
-#endif
-
     StencilUpdate simulation({
         .transition_function = KernelImpl(parameters, mat_resolver),
         .halo_value = CellImpl::halo(),
         .iteration_offset = 0,
         .n_iterations = parameters.n_timesteps(),
-#if !defined(STENCILSTREAM_BACKEND_MONOTILE)
-        .device = device,
-#endif
         .blocking = true, // enable blocking for meaningful walltime measurements
     });
 

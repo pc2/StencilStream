@@ -137,16 +137,6 @@ class StencilUpdate {
         std::size_t n_iterations = 1;
 
         /**
-         * \brief The device to use for computations.
-         *
-         * For some setups, it might be necessary to explicitly select the device to use for
-         * computation. This can be done for example with the `sycl::ext::intel::fpga_selector_v`
-         * class in the `sycl/ext/intel/fpga_extensions.hpp` header. This selector will select the
-         * first FPGA it sees.
-         */
-        sycl::device device = sycl::device();
-
-        /**
          * \brief Should the stencil updater block until completion, or return immediately after all
          * kernels have been submitted.
          *
@@ -194,13 +184,23 @@ class StencilUpdate {
             return GridImpl(source_grid);
         }
 
-        sycl::queue input_queue = sycl::queue(params.device, {sycl::property::queue::in_order{}});
+#if defined(STENCILSTREAM_TARGET_FPGA_EMU)
+        auto device_selector = sycl::ext::intel::fpga_emulator_selector_v;
+#elif defined(STENCILSTREAM_TARGET_FPGA)
+        auto device_selector = sycl::ext::intel::fpga_selector_v;
+#else
+    #error                                                                                         \
+        "Please link with the `StencilStream_Monotile`, `StencilStream_MonotileEmulator`, or `StencilStream_MonotileReport` targets!"
+#endif
+        sycl::device device(device_selector);
+
+        sycl::queue input_queue = sycl::queue(device, {sycl::property::queue::in_order{}});
         sycl::queue halo_injection_queue =
-            sycl::queue(params.device, {sycl::property::queue::in_order{}});
-        sycl::queue output_queue = sycl::queue(params.device, {sycl::property::queue::in_order{}});
+            sycl::queue(device, {sycl::property::queue::in_order{}});
+        sycl::queue output_queue = sycl::queue(device, {sycl::property::queue::in_order{}});
         std::vector<sycl::queue> work_queues;
         for (std::size_t i_kernel = 0; i_kernel < n_kernels; i_kernel++) {
-            work_queues.push_back(sycl::queue(params.device, {sycl::property::queue::in_order{}}));
+            work_queues.push_back(sycl::queue(device, {sycl::property::queue::in_order{}}));
         }
 
         GridImpl swap_grid_a = source_grid.make_similar();

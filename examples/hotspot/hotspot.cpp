@@ -20,7 +20,6 @@
 #include <StencilStream/BaseTransitionFunction.hpp>
 #include <chrono>
 #include <fstream>
-#include <sycl/ext/intel/fpga_extensions.hpp>
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
     #include <StencilStream/monotile/StencilUpdate.hpp>
@@ -266,22 +265,11 @@ int main(int argc, char **argv) {
     FLOAT Rz_1 = 1.f / Rz;
     FLOAT Cap_1 = step / Cap;
 
-#if defined(STENCILSTREAM_TARGET_FPGA)
-    sycl::device device(sycl::ext::intel::fpga_selector_v);
-#elif defined(STENCILSTREAM_TARGET_CUDA)
-    sycl::device device(sycl::gpu_selector_v);
-#else
-    sycl::device device;
-#endif
-
     StencilUpdate update({
         .transition_function =
             HotspotKernel{.Rx_1 = Rx_1, .Ry_1 = Ry_1, .Rz_1 = Rz_1, .Cap_1 = Cap_1},
         .halo_value = HotspotCell(0.0, 0.0),
         .n_iterations = sim_time,
-#if !defined(STENCILSTREAM_BACKEND_MONOTILE)
-        .device = device,
-#endif
         .blocking = true, // enable blocking for meaningful walltime measurements
     });
 

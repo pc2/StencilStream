@@ -28,7 +28,6 @@ const char *variant = "tiling";
 #endif
 #include <fstream>
 #include <iostream>
-#include <sycl/ext/intel/fpga_extensions.hpp>
 
 using namespace stencil;
 
@@ -98,19 +97,10 @@ int main(int argc, char **argv) {
         }
     }
 
-#if defined(STENCILSTREAM_TARGET_FPGA)
-    sycl::device device(sycl::ext::intel::fpga_selector_v);
-#else
-    sycl::device device;
-#endif
-
     StencilUpdate update({
         .transition_function = JacobiKernel(argc, argv),
         .halo_value = 0.0,
         .n_iterations = n_iterations,
-#if !defined(STENCILSTREAM_BACKEND_MONOTILE)
-        .device = device,
-#endif
         .blocking = true,
     });
 
