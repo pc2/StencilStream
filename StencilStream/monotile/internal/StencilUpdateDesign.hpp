@@ -227,7 +227,7 @@ class IOPipeStencilUpdateDesign
 
         using RecvForkKernel =
             ForkSwitchKernel<CellVector, recv_out_pipe, recv_to_work_pipe, recv_to_write_pipe>;
-        recv_fork_queue.single_task(RecvForkKernel(n_vectors, is_root));
+        recv_fork_queue.single_task(RecvForkKernel(n_vectors, !is_root));
 
         using WorkMergeKernel =
             MergeSwitchKernel<CellVector, recv_to_work_pipe, read_to_work_pipe, work_in_pipe>;
