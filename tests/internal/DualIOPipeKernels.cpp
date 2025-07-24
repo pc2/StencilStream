@@ -17,14 +17,12 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "../IOPipeDebugging.hpp"
 #include <StencilStream/internal/DualIOPipeKernels.hpp>
 #include <catch2/catch_all.hpp>
 #include <filesystem>
 #include <fstream>
 #include <random>
-
-static std::size_t read_bytes_from_file_1 = 0;
-static std::size_t read_bytes_from_file_3 = 0;
 
 template <std::size_t vector_length> void test_dual_io_pipe_recv_kernel(std::size_t n_cells) {
     using namespace stencil::internal;
@@ -43,19 +41,17 @@ template <std::size_t vector_length> void test_dual_io_pipe_recv_kernel(std::siz
     std::size_t seed = seed_distribution(rd);
 
     {
-        std::fstream lower_out_file("0", std::ios_base::out | std::ios_base::app |
-                                             std::ios_base::binary);
-        std::fstream upper_out_file("2", std::ios_base::out | std::ios_base::app |
-                                             std::ios_base::binary);
+        IOPipeDebugManager &manager = IOPipeDebugManager::get_instance();
+        InputPipeWriter lower_out_pipe = manager.get_input_pipe_writer(0);
+        InputPipeWriter upper_out_pipe = manager.get_input_pipe_writer(1);
 
         for (std::size_t i_vector = 0; i_vector < n_vectors; i_vector++) {
             for (std::size_t i_cell = 0; i_cell < vector_length; i_cell++) {
                 std::size_t i = i_vector * vector_length + i_cell;
-                Cell cell{seed + i};
                 if (i % 2 == 0) {
-                    lower_out_file.write((char *)&cell, sizeof(Cell));
+                    lower_out_pipe.write<Cell>(Cell{seed + i});
                 } else {
-                    upper_out_file.write((char *)&cell, sizeof(Cell));
+                    upper_out_pipe.write<Cell>(Cell{seed + i});
                 }
             }
         }
@@ -134,24 +130,15 @@ template <std::size_t vector_length> void test_dual_io_pipe_send_kernel(std::siz
     queue.wait();
 
     {
-        std::fstream lower_out_file("1", std::ios_base::in | std::ios_base::binary);
-        lower_out_file.seekg(read_bytes_from_file_1);
-        std::fstream upper_out_file("3", std::ios_base::in | std::ios_base::binary);
-        upper_out_file.seekg(read_bytes_from_file_3);
+        IOPipeDebugManager &manager = IOPipeDebugManager::get_instance();
+        OutputPipeReader lower_out_pipe = manager.get_output_pipe_reader(0);
+        OutputPipeReader upper_out_pipe = manager.get_output_pipe_reader(1);
 
         for (std::size_t i_vector = 0; i_vector < n_vectors; i_vector++) {
             for (std::size_t i_cell = 0; i_cell < vector_length; i_cell++) {
-                Cell cell;
                 std::size_t i = i_vector * vector_length + i_cell;
-                if (i % 2 == 0) {
-                    lower_out_file.read((char *)&cell, sizeof(Cell));
-                    REQUIRE(lower_out_file.gcount() == sizeof(Cell));
-                    read_bytes_from_file_1 += sizeof(Cell);
-                } else {
-                    upper_out_file.read((char *)&cell, sizeof(Cell));
-                    REQUIRE(upper_out_file.gcount() == sizeof(Cell));
-                    read_bytes_from_file_3 += sizeof(Cell);
-                }
+                Cell cell =
+                    (i % 2 == 0) ? lower_out_pipe.read<Cell>() : upper_out_pipe.read<Cell>();
                 REQUIRE(cell.i == seed + i);
             }
         }

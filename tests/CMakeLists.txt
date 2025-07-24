@@ -15,7 +15,6 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 set(UNIT_TEST_BASE_SOURCES
-    main.cpp
     HostPipe.cpp
     Stencil.cpp
 )
@@ -45,10 +44,10 @@ set(UNIT_TEST_FPGA_SOURCES
 )
 
 add_executable(unit_test_cpu ${UNIT_TEST_BASE_SOURCES} ${UNIT_TEST_CPU_SOURCES})
-target_link_libraries(unit_test_cpu PRIVATE Catch2::Catch2 StencilStream_CPU)
+target_link_libraries(unit_test_cpu PRIVATE Catch2::Catch2WithMain StencilStream_CPU)
 
 add_executable(unit_test_cuda ${UNIT_TEST_BASE_SOURCES} ${UNIT_TEST_CUDA_SOURCES})
-target_link_libraries(unit_test_cuda PRIVATE Catch2::Catch2 StencilStream_CUDA)
+target_link_libraries(unit_test_cuda PRIVATE Catch2::Catch2WithMain StencilStream_CUDA)
 
 add_executable(unit_test_fpga ${UNIT_TEST_BASE_SOURCES} ${UNIT_TEST_FPGA_SOURCES})
-target_link_libraries(unit_test_fpga PRIVATE Catch2::Catch2 StencilStream_MonotileEmulator StencilStream_TilingEmulator)
+target_link_libraries(unit_test_fpga PRIVATE Catch2::Catch2WithMain StencilStream_MonotileEmulator StencilStream_TilingEmulator)
