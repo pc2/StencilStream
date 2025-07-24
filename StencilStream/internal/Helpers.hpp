@@ -24,6 +24,12 @@
 #include <sycl/ext/intel/fpga_extensions.hpp>
 #include <sycl/sycl.hpp>
 
+#if defined(STENCILSTREAM_NAMED_KERNELS)
+    #define STENCILSTREAM_NAMED_SINGLE_TASK(Name, argument) single_task<class Name>(argument)
+#else
+    #define STENCILSTREAM_NAMED_SINGLE_TASK(Name, argument) single_task(argument)
+#endif
+
 namespace stencil {
 namespace internal {
 

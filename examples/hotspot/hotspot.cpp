@@ -279,7 +279,9 @@ int main(int argc, char **argv) {
             HotspotKernel{.Rx_1 = Rx_1, .Ry_1 = Ry_1, .Rz_1 = Rz_1, .Cap_1 = Cap_1},
         .halo_value = HotspotCell(0.0, 0.0),
         .n_iterations = sim_time,
+#if !defined(STENCILSTREAM_BACKEND_MONOTILE)
         .device = device,
+#endif
         .blocking = true, // enable blocking for meaningful walltime measurements
     });
 

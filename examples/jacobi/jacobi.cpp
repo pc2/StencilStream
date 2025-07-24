@@ -108,7 +108,9 @@ int main(int argc, char **argv) {
         .transition_function = JacobiKernel(argc, argv),
         .halo_value = 0.0,
         .n_iterations = n_iterations,
+#if !defined(STENCILSTREAM_BACKEND_MONOTILE)
         .device = device,
+#endif
         .blocking = true,
     });
 

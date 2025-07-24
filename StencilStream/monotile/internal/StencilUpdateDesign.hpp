@@ -148,7 +148,8 @@ class LocalStencilUpdateDesign
         using ReadKernel =
             CompleteBufferReadKernel<CellVector, in_pipe, max_grid_height, max_grid_width>;
         read_queue.submit([&](sycl::handler &cgh) {
-            cgh.single_task(ReadKernel(pass_source.get_internal(), cgh));
+            ReadKernel kernel(pass_source.get_internal(), cgh);
+            cgh.STENCILSTREAM_NAMED_SINGLE_TASK(read_kernel, kernel);
         });
 
         this->submit_work_kernels(i_iteration, target_i_iteration, pass_source.get_grid_range());
@@ -156,7 +157,8 @@ class LocalStencilUpdateDesign
         using WriteKernel =
             CompleteBufferWriteKernel<CellVector, out_pipe, max_grid_height, max_grid_width>;
         write_queue.submit([&](sycl::handler &cgh) {
-            cgh.single_task(WriteKernel(pass_target.get_internal(), cgh));
+            WriteKernel kernel(pass_target.get_internal(), cgh);
+            cgh.STENCILSTREAM_NAMED_SINGLE_TASK(write_kernel, kernel);
         });
     }
 
@@ -217,21 +219,24 @@ class IOPipeStencilUpdateDesign
                                                     max_grid_width>;
         if (is_root) {
             read_queue.submit([&](sycl::handler &cgh) {
-                cgh.single_task(ReadKernel(pass_source.get_internal(), cgh));
+                ReadKernel kernel(pass_source.get_internal(), cgh);
+                cgh.STENCILSTREAM_NAMED_SINGLE_TASK(read_kernel, kernel);
             });
         }
 
         using RecvKernel =
             DualIOPipeRecvKernel<CellVector, kernel_input_ch0, kernel_input_ch1, recv_out_pipe>;
-        recv_queue.single_task(RecvKernel(n_vectors));
+        recv_queue.STENCILSTREAM_NAMED_SINGLE_TASK(recv_kernel, RecvKernel(n_vectors));
 
         using RecvForkKernel =
             ForkSwitchKernel<CellVector, recv_out_pipe, recv_to_work_pipe, recv_to_write_pipe>;
-        recv_fork_queue.single_task(RecvForkKernel(n_vectors, !is_root));
+        recv_fork_queue.STENCILSTREAM_NAMED_SINGLE_TASK(recv_fork_kernel,
+                                                        RecvForkKernel(n_vectors, !is_root));
 
         using WorkMergeKernel =
             MergeSwitchKernel<CellVector, recv_to_work_pipe, read_to_work_pipe, work_in_pipe>;
-        work_merge_queue.single_task(WorkMergeKernel(n_vectors, !is_root));
+        work_merge_queue.STENCILSTREAM_NAMED_SINGLE_TASK(work_merge_kernel,
+                                                         WorkMergeKernel(n_vectors, !is_root));
 
         this->submit_work_kernels(i_iteration, target_i_iteration, pass_source.get_grid_range());
 
@@ -239,13 +244,14 @@ class IOPipeStencilUpdateDesign
                                                       max_grid_height, max_grid_width>;
         if (is_root) {
             write_queue.submit([&](sycl::handler &cgh) {
-                cgh.single_task(WriteKernel(pass_target.get_internal(), cgh));
+                cgh.STENCILSTREAM_NAMED_SINGLE_TASK(write_kernel,
+                                                    WriteKernel(pass_target.get_internal(), cgh));
             });
         }
 
         using SendKernel =
             DualIOPipeSendKernel<CellVector, kernel_output_ch2, kernel_output_ch3, work_out_pipe>;
-        send_queue.single_task(SendKernel(n_vectors));
+        send_queue.STENCILSTREAM_NAMED_SINGLE_TASK(send_kernel, SendKernel(n_vectors));
     }
 
     void wait_for_queues() {

@@ -111,7 +111,9 @@ int main(int argc, char **argv) {
     StencilUpdate<ConwayKernel> update({
         .transition_function = ConwayKernel(),
         .n_iterations = n_iterations,
+#if !defined(STENCILSTREAM_BACKEND_MONOTILE)
         .device = device,
+#endif
     });
     grid = update(grid);
 

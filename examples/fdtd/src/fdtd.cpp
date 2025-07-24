@@ -190,7 +190,9 @@ int main(int argc, char **argv) {
         .halo_value = CellImpl::halo(),
         .iteration_offset = 0,
         .n_iterations = parameters.n_timesteps(),
+#if !defined(STENCILSTREAM_BACKEND_MONOTILE)
         .device = device,
+#endif
         .blocking = true, // enable blocking for meaningful walltime measurements
     });
 

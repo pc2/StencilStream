@@ -26,6 +26,11 @@
 namespace stencil {
 namespace monotile {
 
+enum class Connectivity {
+    SINGLE_DEVICE,
+    IO_PIPES,
+};
+
 /**
  * \brief A grid updater that applies an iterative stencil code to a grid.
  *
@@ -65,10 +70,20 @@ template <concepts::TransitionFunction F, std::size_t temporal_parallelism = 1,
           std::size_t spatial_parallelism = 1, std::size_t max_grid_height = 1024,
           std::size_t max_grid_width = 1024, std::size_t n_kernels = 1,
           tdv::single_pass::Strategy<F, temporal_parallelism> TDVStrategy =
-              tdv::single_pass::InlineStrategy>
+              tdv::single_pass::InlineStrategy,
+          Connectivity connectivity = Connectivity::SINGLE_DEVICE>
 class StencilUpdate {
   private:
     using Cell = F::Cell;
+    using LocalDesign =
+        internal::LocalStencilUpdateDesign<F, temporal_parallelism, spatial_parallelism,
+                                           max_grid_height, max_grid_width, n_kernels, TDVStrategy>;
+    using IOPipeDesign =
+        internal::IOPipeStencilUpdateDesign<F, temporal_parallelism, spatial_parallelism,
+                                            max_grid_height, max_grid_width, n_kernels,
+                                            TDVStrategy>;
+    using Design =
+        std::conditional<connectivity == Connectivity::IO_PIPES, IOPipeDesign, LocalDesign>::type;
 
   public:
     using GridImpl = Grid<typename F::Cell, spatial_parallelism>;
@@ -169,9 +184,6 @@ class StencilUpdate {
 #endif
         sycl::device device(device_selector);
 
-        using Design = internal::LocalStencilUpdateDesign<F, temporal_parallelism,
-                                                          spatial_parallelism, max_grid_height,
-                                                          max_grid_width, n_kernels, TDVStrategy>;
         Design design(params.transition_function, params.halo_value, params.iteration_offset,
                       params.n_iterations, device);
 

@@ -234,20 +234,12 @@ class StencilUpdate {
                         sycl::range<2> range = pass_source->get_haloed_tile_range(
                             tile_id, max_tile_range, halo_range, true, true);
                         InputKernel kernel(pass_source->get_internal(), cgh, offset, range);
-
-#if defined(STENCILSTREAM_NAMED_KERNELS)
-                        cgh.single_task<class input_kernel>(kernel);
-#else
-                        cgh.single_task(kernel);
-#endif
+                        cgh.STENCILSTREAM_NAMED_SINGLE_TASK(input_kernel, kernel);
                     });
 
                     HaloInjectionKernelImpl hik(*pass_source, tile_id, params.halo_value);
-#if defined(STENCILSTREAM_NAMED_KERNELS)
-                    halo_injection_queue.single_task<class halo_injection_kernel>(hik);
-#else
-                    halo_injection_queue.single_task(hik);
-#endif
+                    halo_injection_queue.STENCILSTREAM_NAMED_SINGLE_TASK(halo_injection_kernel,
+                                                                         hik);
 
                     submit_work_kernel<0>(work_queues, tdv_global_state, i, target_i_iteration,
                                           grid_range, tile_id);
@@ -258,11 +250,7 @@ class StencilUpdate {
                         sycl::range<2> range =
                             pass_target->get_tile_range(tile_id, max_tile_range, true);
                         OutputKernel kernel(pass_target->get_internal(), cgh, offset, range);
-#if defined(STENCILSTREAM_NAMED_KERNELS)
-                        cgh.single_task<class output_kernel>(kernel);
-#else
-                        cgh.single_task(kernel);
-#endif
+                        cgh.STENCILSTREAM_NAMED_SINGLE_TASK(output_kernel, kernel);
                     });
                 }
             }
