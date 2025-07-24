@@ -17,32 +17,48 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "../GridTest.hpp"
-#include <StencilStream/monotile/Grid.hpp>
+#pragma once
+#include "../Helpers.hpp"
+#include <array>
+#include <stdint.h>
+#include <sycl/ext/intel/fpga_extensions.hpp>
+#include <sycl/sycl.hpp>
 
-using namespace stencil;
-using namespace stencil::monotile;
-using namespace sycl;
-using namespace std;
+namespace stencil {
+namespace fpga_io {
+struct kernel_input_ch0 {
+    static constexpr unsigned id = 0;
+};
 
-// Assert that the monotile grid fulfills the grid concept.
-static_assert(concepts::Grid<Grid<sycl::id<2>>, sycl::id<2>>);
+struct kernel_output_ch0 {
+    static constexpr unsigned id = 1;
+};
 
-constexpr std::size_t max_grid_height = 64;
-constexpr std::size_t max_grid_width = 32;
+struct kernel_input_ch1 {
+    static constexpr unsigned id = 2;
+};
 
-TEST_CASE("monotile::Grid::Grid", "[monotile::Grid]") {
-    grid_test::test_constructors<Grid<sycl::id<2>>>(max_grid_height, max_grid_width);
-}
+struct kernel_output_ch1 {
+    static constexpr unsigned id = 3;
+};
 
-TEST_CASE("monotile::Grid::copy_from_buffer", "[monotile::Grid]") {
-    grid_test::test_copy_from_buffer<Grid<sycl::id<2>>>(max_grid_height, max_grid_width);
-}
+struct kernel_input_ch2 {
+    static constexpr unsigned id = 4;
+};
 
-TEST_CASE("monotile::Grid::copy_to_buffer", "[monotile::Grid]") {
-    grid_test::test_copy_to_buffer<Grid<sycl::id<2>>>(max_grid_height, max_grid_width);
-}
+struct kernel_output_ch2 {
+    static constexpr unsigned id = 5;
+};
 
-TEST_CASE("monotile::Grid::make_similar", "[monotile::Grid]") {
-    grid_test::test_make_similar<Grid<sycl::id<2>>>(max_grid_height, max_grid_width);
-}
+struct kernel_input_ch3 {
+    static constexpr unsigned id = 6;
+};
+
+struct kernel_output_ch3 {
+    static constexpr unsigned id = 7;
+};
+
+constexpr std::size_t pipeword_size = 32;
+using pipeword_t = std::array<uint8_t, pipeword_size> __attribute__((aligned(pipeword_size)));
+} // namespace fpga_io
+} // namespace stencil

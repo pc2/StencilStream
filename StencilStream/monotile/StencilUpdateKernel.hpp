@@ -67,7 +67,7 @@ class StencilUpdateKernel {
     using TDV = typename TransFunc::TimeDependentValue;
     using TDVLocalState = typename TDVKernelArgument::LocalState;
     using StencilImpl = Stencil<Cell, TransFunc::stencil_radius, TDV>;
-    using CellVector = std::array<Cell, spatial_parallelism>;
+    using CellVector = Padded<std::array<Cell, spatial_parallelism>>;
 
     static constexpr std::size_t n_processing_elements =
         temporal_parallelism * TransFunc::n_subiterations;
@@ -196,7 +196,7 @@ class StencilUpdateKernel {
             } else {
 #pragma unroll
                 for (std::size_t i_cell = 0; i_cell < spatial_parallelism; i_cell++) {
-                    carry[i_cell] = halo_value;
+                    carry.value[i_cell] = halo_value;
                 }
             }
 
@@ -233,7 +233,7 @@ class StencilUpdateKernel {
                          i_vector_cell++) {
                         stencil_buffer[i_processing_element][cache_r]
                                       [TransFunc::stencil_radius + stencil_buffer_lead +
-                                       i_vector_cell] = new_vect[i_vector_cell];
+                                       i_vector_cell] = new_vect.value[i_vector_cell];
                     }
 
                     if (cache_r > 0) {
@@ -298,13 +298,13 @@ class StencilUpdateKernel {
                             }
                         }
 
-                        carry[i_vector_cell] = trans_func(stencil);
+                        carry.value[i_vector_cell] = trans_func(stencil);
                     }
                 } else {
 #pragma unroll
                     for (std::size_t i_vector_cell = 0; i_vector_cell < spatial_parallelism;
                          i_vector_cell++) {
-                        carry[i_vector_cell] =
+                        carry.value[i_vector_cell] =
                             stencil_buffer[i_processing_element][TransFunc::stencil_radius]
                                           [TransFunc::stencil_radius + i_vector_cell];
                     }

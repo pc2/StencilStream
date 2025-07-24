@@ -18,6 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
+#include "../fpga_io/MemoryKernels.hpp"
 #include "Grid.hpp"
 #include "StencilUpdateKernel.hpp"
 #include <chrono>
@@ -78,7 +79,8 @@ class StencilUpdate {
 
   public:
     /// \brief Shorthand for the used and supported grid type.
-    using GridImpl = Grid<Cell, spatial_parallelism>;
+    using GridImpl = Grid<typename F::Cell, spatial_parallelism>;
+    using CellVector = GridImpl::CellVector;
 
     /**
      * \brief Parameters for the stencil updater.
@@ -173,9 +175,12 @@ class StencilUpdate {
         if (source_grid.get_grid_width() > max_grid_width) {
             throw std::range_error("The grid is too wide for the stencil update kernel.");
         }
-        using in_pipe = sycl::pipe<PipeIdentifier<0>, std::array<Cell, spatial_parallelism>>;
-        using out_pipe =
-            sycl::pipe<PipeIdentifier<n_kernels>, std::array<Cell, spatial_parallelism>>;
+        using in_pipe = sycl::pipe<PipeIdentifier<0>, CellVector>;
+        using out_pipe = sycl::pipe<PipeIdentifier<n_kernels>, CellVector>;
+        using InputKernel =
+            fpga_io::CompleteBufferReadKernel<CellVector, in_pipe, max_grid_height, max_grid_width>;
+        using OutputKernel = fpga_io::CompleteBufferWriteKernel<CellVector, out_pipe,
+                                                                max_grid_height, max_grid_width>;
 
         sycl::queue input_queue = sycl::queue(params.device, {sycl::property::queue::in_order{}});
         sycl::queue output_queue = sycl::queue(params.device, {sycl::property::queue::in_order{}});
@@ -199,13 +204,27 @@ class StencilUpdate {
         std::size_t target_i_iteration = params.iteration_offset + params.n_iterations;
         for (std::size_t i = params.iteration_offset; i < target_i_iteration;
              i += temporal_parallelism) {
-            pass_source->template submit_read<in_pipe, max_grid_height, max_grid_width>(
-                input_queue);
+            input_queue.submit([&](sycl::handler &cgh) {
+                InputKernel kernel(pass_source->get_internal(), cgh);
+
+#if defined(STENCILSTREAM_NAMED_KERNELS)
+                cgh.single_task<class input_kernel>(kernel);
+#else
+                cgh.single_task(kernel);
+#endif
+            });
 
             submit_work_kernel<0>(work_queues, tdv_global_state, i, target_i_iteration, grid_range);
 
-            pass_target->template submit_write<out_pipe, max_grid_height, max_grid_width>(
-                output_queue);
+            output_queue.submit([&](sycl::handler &cgh) {
+                OutputKernel kernel(pass_target->get_internal(), cgh);
+
+#if defined(STENCILSTREAM_NAMED_KERNELS)
+                cgh.single_task<class output_kernel>(kernel);
+#else
+                cgh.single_task(kernel);
+#endif
+            });
 
             if (i == params.iteration_offset) {
                 pass_source = &swap_grid_b;
@@ -267,9 +286,8 @@ class StencilUpdate {
                             sycl::range<2> grid_range)
         requires(i_kernel < n_kernels)
     {
-        using in_pipe = sycl::pipe<PipeIdentifier<i_kernel>, std::array<Cell, spatial_parallelism>>;
-        using out_pipe =
-            sycl::pipe<PipeIdentifier<i_kernel + 1>, std::array<Cell, spatial_parallelism>>;
+        using in_pipe = sycl::pipe<PipeIdentifier<i_kernel>, CellVector>;
+        using out_pipe = sycl::pipe<PipeIdentifier<i_kernel + 1>, CellVector>;
         constexpr size_t local_temporal_parallelism =
             temporal_parallelism / n_kernels +
             ((i_kernel == n_kernels - 1) ? temporal_parallelism % n_kernels : 0);
@@ -284,7 +302,7 @@ class StencilUpdate {
             ExecutionKernelImpl exec_kernel(params.transition_function, i_iteration,
                                             target_i_iteration, grid_range[0], grid_range[1],
                                             params.halo_value, tdv_kernel_argument);
-            cgh.single_task<ExecutionKernelImpl>(exec_kernel);
+            cgh.single_task(exec_kernel);
         });
 
         submit_work_kernel<i_kernel + 1>(work_queues, tdv_global_state,

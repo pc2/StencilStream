@@ -40,9 +40,10 @@ target_link_libraries(hotspot_tiling_emu PUBLIC StencilStream_TilingEmulator)
 add_executable(hotspot_tiling_report hotspot.cpp)
 target_link_libraries(hotspot_tiling_report PUBLIC StencilStream_TilingReport)
 
-# Setting seeds for hardware synthesis.
-foreach(TARGET hotspot_tiling hotspot_tiling_report)
+# Setting seeds for hardware synthesis and naming kernels
+foreach(TARGET hotspot_mono hotspot_mono_report hotspot_tiling hotspot_tiling_report)
     target_link_options(${TARGET} PUBLIC -Xsseed=1)
+    target_link_libraries(${TARGET} PUBLIC StencilStream_NamedKernels)
 endforeach()
 
 # Adding a custom target for all Hotspot reports
