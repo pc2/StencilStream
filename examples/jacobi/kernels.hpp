@@ -134,7 +134,7 @@ struct Jacobi4General : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     // Tuned for ~2 TFLOPS at 350MHz
-    static constexpr size_t temporal_parallelism = 28;
+    static constexpr size_t temporal_parallelism = 4;
     static constexpr size_t mono_tile_width = 16 * 1024;
     static constexpr size_t n_operations = 7;
     static constexpr size_t n_coefficients = 4;
@@ -228,4 +228,4 @@ const size_t tile_width = JacobiKernel::mono_tile_width;
 const size_t tile_width =
     JacobiKernel::mono_tile_width - spatial_parallelism * (2 * temporal_parallelism + 1);
 #endif
-const size_t n_kernels = temporal_parallelism / 4;
+const size_t n_kernels = stencil::internal::int_ceil_div<size_t>(temporal_parallelism, 4);

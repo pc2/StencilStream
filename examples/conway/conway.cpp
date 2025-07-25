@@ -99,7 +99,6 @@ int main(int argc, char **argv) {
 
     Grid<bool> grid = read(height, width);
 
-
     StencilUpdate<ConwayKernel> update({
         .transition_function = ConwayKernel(),
         .n_iterations = n_iterations,

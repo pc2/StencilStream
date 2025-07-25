@@ -195,8 +195,7 @@ class StencilUpdate {
         sycl::device device(device_selector);
 
         sycl::queue input_queue = sycl::queue(device, {sycl::property::queue::in_order{}});
-        sycl::queue halo_injection_queue =
-            sycl::queue(device, {sycl::property::queue::in_order{}});
+        sycl::queue halo_injection_queue = sycl::queue(device, {sycl::property::queue::in_order{}});
         sycl::queue output_queue = sycl::queue(device, {sycl::property::queue::in_order{}});
         std::vector<sycl::queue> work_queues;
         for (std::size_t i_kernel = 0; i_kernel < n_kernels; i_kernel++) {

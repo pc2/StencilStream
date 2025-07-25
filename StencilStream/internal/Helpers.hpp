@@ -19,7 +19,10 @@
  */
 #pragma once
 #include <array>
+#include <functional>
+#include <mpi.h>
 #include <numeric>
+#include <pc2/queue_extensions.hpp>
 #include <stdint.h>
 #include <sycl/ext/intel/fpga_extensions.hpp>
 #include <sycl/sycl.hpp>
@@ -82,6 +85,24 @@ struct kernel_output_ch3 {
 
 constexpr std::size_t pipeword_size = 32;
 using pipeword_t = std::array<uint8_t, pipeword_size> __attribute__((aligned(pipeword_size)));
+
+inline std::vector<sycl::queue>
+alloc_queues(std::function<int(const sycl::device &)> device_selector, std::size_t n_queues) {
+    std::vector<sycl::queue> queues;
+    int mpi_initialized;
+    MPI_Initialized(&mpi_initialized);
+    if (mpi_initialized) {
+        queues = sycl::ext::pc2::mpi_queues<std::function<int(const sycl::device &)>,
+                                            sycl::property_list>(
+            device_selector, n_queues, {sycl::property::queue::in_order{}});
+    } else {
+        sycl::device device(device_selector);
+        for (std::size_t i_queue = 0; i_queue < n_queues; i_queue++) {
+            queues.push_back(sycl::queue(device, {sycl::property::queue::in_order{}}));
+        }
+    }
+    return queues;
+}
 
 } // namespace internal
 } // namespace stencil

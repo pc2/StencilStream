@@ -34,12 +34,12 @@ void test_monotile_stencil_update_design(std::size_t iteration_offset, std::size
         max_grid_width, n_kernels, stencil::tdv::single_pass::InlineStrategy>;
     using CellVector = typename Design::CellVector;
     FPGATransFunc<1> trans_func;
-    sycl::device device(sycl::ext::intel::fpga_emulator_selector_v);
-    Design design(trans_func, Cell::halo(), iteration_offset, n_iterations, device);
+    Design design(trans_func, Cell::halo(), iteration_offset, n_iterations,
+                  sycl::ext::intel::fpga_emulator_selector_v);
 
     sycl::range<2> grid_range(max_grid_height, max_grid_width);
 
-    sycl::queue queue(device);
+    sycl::queue queue(sycl::ext::intel::fpga_emulator_selector_v);
     queue.single_task([=]() {
         for (std::size_t r = 0; r < max_grid_height; r++) {
             for (std::size_t vect_c = 0; vect_c < int_ceil_div(max_grid_width, spatial_parallelism);
@@ -122,8 +122,8 @@ void test_monotile_local_stencil_update_design() {
         }
     }
 
-    sycl::device device(sycl::ext::intel::fpga_emulator_selector_v);
-    Design design(FPGATransFunc<1>(), Cell::halo(), 0, temporal_parallelism, device);
+    Design design(FPGATransFunc<1>(), Cell::halo(), 0, temporal_parallelism,
+                  sycl::ext::intel::fpga_emulator_selector_v);
     design.submit_pass(in_grid, out_grid, 0, temporal_parallelism);
 
     GridAccessor in_ac(in_grid);
@@ -169,8 +169,8 @@ void test_monotile_io_pipe_stencil_update_design(bool test_root) {
     using Grid = typename Design::GridImpl;
     using GridAccessor = typename Grid::template GridAccessor<sycl::access::mode::read_write>;
 
-    sycl::device device(sycl::ext::intel::fpga_emulator_selector_v);
-    Design design(FPGATransFunc<1>(), Cell::halo(), 0, 2 * temporal_parallelism, device);
+    Design design(FPGATransFunc<1>(), Cell::halo(), 0, 2 * temporal_parallelism,
+                  sycl::ext::intel::fpga_emulator_selector_v);
 
     Grid in_grid(max_grid_height, max_grid_width);
     Grid out_grid = in_grid.make_similar();

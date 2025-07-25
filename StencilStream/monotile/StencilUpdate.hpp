@@ -163,6 +163,9 @@ class StencilUpdate {
     GridImpl operator()(GridImpl &source_grid) {
         using namespace stencil::internal;
 
+        int mpi_initialized;
+        MPI_Initialized(&mpi_initialized);
+
         if (source_grid.get_grid_width() < 2) {
             throw std::range_error("The grid is too narrow. The monotile backend can only process "
                                    "grids with at least two columns.");
@@ -175,45 +178,32 @@ class StencilUpdate {
         }
 
 #if defined(STENCILSTREAM_TARGET_FPGA_EMU)
-        auto device_selector = sycl::ext::intel::fpga_emulator_selector_v;
+        std::function<int(const sycl::device &)> device_selector =
+            sycl::ext::intel::fpga_emulator_selector_v;
 #elif defined(STENCILSTREAM_TARGET_FPGA)
-        auto device_selector = sycl::ext::intel::fpga_selector_v;
+        std::function<int(const sycl::device &)> device_selector =
+            sycl::ext::intel::fpga_selector_v;
 #else
     #error                                                                                         \
         "Please link with the `StencilStream_Monotile`, `StencilStream_MonotileEmulator`, or `StencilStream_MonotileReport` targets!"
 #endif
-        sycl::device device(device_selector);
-
         Design design(params.transition_function, params.halo_value, params.iteration_offset,
-                      params.n_iterations, device);
+                      params.n_iterations, device_selector);
 
-        GridImpl swap_grid_a = source_grid.make_similar();
-        GridImpl swap_grid_b = source_grid.make_similar();
-
-        GridImpl *pass_source = &source_grid;
-        GridImpl *pass_target = &swap_grid_b;
-
+        if (mpi_initialized) {
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
         auto walltime_start = std::chrono::high_resolution_clock::now();
 
-        std::size_t target_i_iteration = params.iteration_offset + params.n_iterations;
-        std::size_t n_passes = int_ceil_div(params.n_iterations, temporal_parallelism);
-        for (std::size_t i_pass = 0; i_pass < n_passes; i_pass++) {
-            std::size_t i_iteration = params.iteration_offset + i_pass * temporal_parallelism;
-
-            design.submit_pass(*pass_source, *pass_target, i_iteration, target_i_iteration);
-
-            if (i_pass == 0) {
-                pass_source = &swap_grid_b;
-                pass_target = &swap_grid_a;
-            } else {
-                std::swap(pass_source, pass_target);
-            }
-        }
-
+        GridImpl result_grid =
+            design.submit_simulation(source_grid, params.iteration_offset, params.n_iterations);
         if (params.blocking) {
             design.wait_for_queues();
         }
 
+        if (mpi_initialized) {
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
         auto walltime_end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> walltime = walltime_end - walltime_start;
         this->walltime += walltime.count();
@@ -221,7 +211,7 @@ class StencilUpdate {
         n_processed_cells +=
             params.n_iterations * source_grid.get_grid_height() * source_grid.get_grid_width();
 
-        return *pass_source;
+        return result_grid;
     }
 
     /**

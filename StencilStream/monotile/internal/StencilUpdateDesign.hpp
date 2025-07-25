@@ -52,13 +52,11 @@ class StencilUpdateDesign {
     using GridImpl = Grid<typename F::Cell, spatial_parallelism>;
 
     StencilUpdateDesign(F transition_function, Cell halo_value, std::size_t iteration_offset,
-                        std::size_t n_iterations, sycl::device device)
-        : transition_function(transition_function), halo_value(halo_value), work_queues(),
-          tdv_global_state(transition_function, iteration_offset, n_iterations) {
-        for (std::size_t i_kernel = 0; i_kernel < n_kernels; i_kernel++) {
-            work_queues.push_back(sycl::queue(device, {sycl::property::queue::in_order{}}));
-        }
-    }
+                        std::size_t n_iterations,
+                        std::function<int(const sycl::device &)> device_selector)
+        : transition_function(transition_function), halo_value(halo_value),
+          work_queues(stencil::internal::alloc_queues(device_selector, n_kernels)),
+          tdv_global_state(transition_function, iteration_offset, n_iterations) {}
 
     template <std::size_t i_kernel>
     void submit_work_kernel(std::size_t i_iteration, std::size_t target_i_iteration,
@@ -134,10 +132,42 @@ class LocalStencilUpdateDesign
     using GridImpl = Grid<typename F::Cell, spatial_parallelism>;
 
     LocalStencilUpdateDesign(F transition_function, Cell halo_value, std::size_t iteration_offset,
-                             std::size_t n_iterations, sycl::device device)
-        : Parent(transition_function, halo_value, iteration_offset, n_iterations, device),
-          read_queue(device, {sycl::property::queue::in_order{}}),
-          write_queue(device, {sycl::property::queue::in_order{}}) {}
+                             std::size_t n_iterations,
+                             std::function<int(const sycl::device &)> device_selector)
+        : Parent(transition_function, halo_value, iteration_offset, n_iterations, device_selector),
+          read_queue(), write_queue() {
+        std::vector<sycl::queue> queues = stencil::internal::alloc_queues(device_selector, 2);
+        read_queue = queues[0];
+        write_queue = queues[1];
+    }
+
+    GridImpl submit_simulation(GridImpl source_grid, std::size_t iteration_offset,
+                               std::size_t n_iterations) {
+        using namespace stencil::internal;
+
+        GridImpl swap_grid_a = source_grid.make_similar();
+        GridImpl swap_grid_b = source_grid.make_similar();
+
+        GridImpl *pass_source = &source_grid;
+        GridImpl *pass_target = &swap_grid_b;
+
+        std::size_t target_i_iteration = iteration_offset + n_iterations;
+        std::size_t n_passes = int_ceil_div(n_iterations, temporal_parallelism);
+        for (std::size_t i_pass = 0; i_pass < n_passes; i_pass++) {
+            std::size_t i_iteration = iteration_offset + i_pass * temporal_parallelism;
+
+            submit_pass(*pass_source, *pass_target, i_iteration, target_i_iteration);
+
+            if (i_pass == 0) {
+                pass_source = &swap_grid_b;
+                pass_target = &swap_grid_a;
+            } else {
+                std::swap(pass_source, pass_target);
+            }
+        }
+
+        return *pass_source;
+    }
 
     void submit_pass(GridImpl &pass_source, GridImpl &pass_target, std::size_t i_iteration,
                      std::size_t target_i_iteration) {
@@ -190,16 +220,54 @@ class IOPipeStencilUpdateDesign
     using GridImpl = Grid<typename F::Cell, spatial_parallelism>;
 
     IOPipeStencilUpdateDesign(F transition_function, Cell halo_value, std::size_t iteration_offset,
-                              std::size_t n_iterations, sycl::device device)
-        : Parent(transition_function, halo_value, iteration_offset, n_iterations, device),
-          read_queue(device, {sycl::property::queue::in_order{}}),
-          recv_queue(device, {sycl::property::queue::in_order{}}),
-          recv_fork_queue(device, {sycl::property::queue::in_order{}}),
-          work_merge_queue(device, {sycl::property::queue::in_order{}}),
-          work_fork_queue(device, {sycl::property::queue::in_order{}}),
-          write_merge_queue(device, {sycl::property::queue::in_order{}}),
-          write_queue(device, {sycl::property::queue::in_order{}}),
-          send_queue(device, {sycl::property::queue::in_order{}}) {}
+                              std::size_t n_iterations,
+                              std::function<int(const sycl::device &)> device_selector)
+        : Parent(transition_function, halo_value, iteration_offset, n_iterations, device_selector),
+          read_queue(), recv_queue(), recv_fork_queue(), work_merge_queue(), work_fork_queue(),
+          write_merge_queue(), write_queue(), send_queue() {
+        std::vector<sycl::queue> queues = stencil::internal::alloc_queues(device_selector, 8);
+        read_queue = queues[0];
+        recv_queue = queues[1];
+        recv_fork_queue = queues[2];
+        work_merge_queue = queues[3];
+        work_fork_queue = queues[4];
+        write_merge_queue = queues[5];
+        write_queue = queues[6];
+        send_queue = queues[7];
+    }
+
+    GridImpl submit_simulation(GridImpl source_grid, std::size_t iteration_offset,
+                               std::size_t n_iterations) {
+        using namespace stencil::internal;
+
+        int rank, n_ranks;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        MPI_Comm_size(MPI_COMM_WORLD, &n_ranks);
+
+        GridImpl swap_grid_a = source_grid.make_similar();
+        GridImpl swap_grid_b = source_grid.make_similar();
+
+        GridImpl *pass_source = &source_grid;
+        GridImpl *pass_target = &swap_grid_b;
+
+        std::size_t target_i_iteration = iteration_offset + n_iterations;
+        std::size_t n_passes = int_ceil_div(n_iterations, temporal_parallelism * n_ranks);
+        for (std::size_t i_pass = 0; i_pass < n_passes; i_pass++) {
+            std::size_t i_iteration =
+                iteration_offset + (i_pass * n_ranks + rank) * temporal_parallelism;
+
+            submit_pass(*pass_source, *pass_target, i_iteration, target_i_iteration, i_pass == 0);
+
+            if (i_pass == 0) {
+                pass_source = &swap_grid_b;
+                pass_target = &swap_grid_a;
+            } else {
+                std::swap(pass_source, pass_target);
+            }
+        }
+
+        return *pass_source;
+    }
 
     void submit_pass(GridImpl &pass_source, GridImpl &pass_target, std::size_t i_iteration,
                      std::size_t target_i_iteration, bool is_root) {

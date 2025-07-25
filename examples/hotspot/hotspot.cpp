@@ -94,12 +94,13 @@ struct HotspotKernel : public BaseTransitionFunction {
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
 const size_t max_grid_height = 6144;
 const size_t max_grid_width = 6144;
-const size_t temporal_parallelism = 32;
+const size_t temporal_parallelism = 2;
 const size_t spatial_parallelism = 8;
-const size_t n_kernels = 8;
+const size_t n_kernels = 1;
 using StencilUpdate =
     monotile::StencilUpdate<HotspotKernel, temporal_parallelism, spatial_parallelism,
-                            max_grid_height, max_grid_width, n_kernels>;
+                            max_grid_height, max_grid_width, n_kernels,
+                            tdv::single_pass::InlineStrategy, monotile::Connectivity::IO_PIPES>;
 using Grid = StencilUpdate::GridImpl;
 
 #elif defined(STENCILSTREAM_BACKEND_TILING)
@@ -216,6 +217,12 @@ auto exception_handler = [](sycl::exception_list exceptions) {
 };
 
 int main(int argc, char **argv) {
+    MPI_Init(NULL, NULL);
+
+    int rank, n_ranks;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &n_ranks);
+
     size_t n_rows, n_columns, sim_time;
     bool benchmark_mode = false;
 
@@ -247,7 +254,9 @@ int main(int argc, char **argv) {
 
     Grid grid = read_input(tfile, pfile, n_rows, n_columns, binary_io);
 
-    printf("Start computing the transient temperature\n");
+    if (rank == 0) {
+        printf("Start computing the transient temperature\n");
+    }
 
     FLOAT grid_height = chip_height / n_rows;
     FLOAT grid_width = chip_width / n_columns;
@@ -275,10 +284,12 @@ int main(int argc, char **argv) {
 
     grid = update(grid);
 
-    std::cout << "Ending simulation" << std::endl;
-    std::cout << "Walltime: " << update.get_walltime() << " s" << std::endl;
+    if (rank == 0) {
+        std::cout << "Ending simulation" << std::endl;
+        std::cout << "Walltime: " << update.get_walltime() << " s" << std::endl;
+        write_output(grid, ofile, binary_io);
+    }
 
-    write_output(grid, ofile, binary_io);
-
+    MPI_Finalize();
     return 0;
 }

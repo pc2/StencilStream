@@ -34,7 +34,8 @@ using namespace stencil;
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
 using StencilUpdate =
     monotile::StencilUpdate<JacobiKernel, temporal_parallelism, spatial_parallelism, tile_height,
-                            tile_width, n_kernels>;
+                            tile_width, n_kernels, tdv::single_pass::InlineStrategy,
+                            monotile::Connectivity::IO_PIPES>;
 
 #elif defined(STENCILSTREAM_BACKEND_CPU)
 using StencilUpdate = cpu::StencilUpdate<JacobiKernel>;
@@ -63,6 +64,12 @@ void print_usage(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
+    MPI_Init(NULL, NULL);
+
+    int rank, n_ranks;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &n_ranks);
+
     if (argc == 2 && std::strcmp(argv[1], "show-config") == 0) {
         std::cout << "{" << std::endl;
         std::cout << "    \"variant\": \"" << variant << "\"," << std::endl;
@@ -104,14 +111,16 @@ int main(int argc, char **argv) {
         .blocking = true,
     });
 
-    std::cout << "Starting simulation" << std::endl;
+    if (rank == 0) {
+        std::cout << "Starting simulation" << std::endl;
+    }
 
     grid = update(grid);
 
-    std::cout << "Simulation complete!" << std::endl;
-    std::cout << "Walltime: " << update.get_walltime() << " s" << std::endl;
+    if (rank == 0) {
+        std::cout << "Simulation complete!" << std::endl;
+        std::cout << "Walltime: " << update.get_walltime() << " s" << std::endl;
 
-    {
         Grid::GridAccessor<sycl::access::mode::read> grid_ac(grid);
         std::fstream out(out_path, out.out | out.trunc | out.binary);
 
