@@ -43,6 +43,7 @@ template <typename F> class StencilUpdate {
             sycl::queue(params.device, {sycl::property::queue::enable_profiling()});
 
         auto data_preperation_start_before = std::chrono::high_resolution_clock::now();
+        update_kernel_queue.wait();
 
         GridImpl swap_grid_a = source_grid.make_similar();
         GridImpl swap_grid_b = source_grid.make_similar();
@@ -74,13 +75,19 @@ template <typename F> class StencilUpdate {
         std::chrono::duration<double> walltime = walltime_end - walltime_start;
         this->walltime += walltime.count();
 
-        // No need to convert data at the end because baseline only use AOS
         // auto data_preperation_start_after = std::chrono::high_resolution_clock::now();
-        // auto data_preperation_end_after = std::chrono::high_resolution_clock::now();
+        // No need to convert data at the end because baseline only use AOS
 
-        std::chrono::duration<double> data_preperation_time =
+        // update_kernel_queue.wait();
+        // auto data_preperation_end_after = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> data_preperation_time_before =
             data_preperation_end_before - data_preperation_start_before;
-        this->data_preperation_time += data_preperation_time.count();
+
+        // std::chrono::duration<double> data_preperation_time_after =
+        //     data_preperation_end_after - data_preperation_start_after;
+
+        this->data_preperation_time_before += data_preperation_time_before.count();
+        // this->data_preperation_time_after += data_preperation_time_after.count();
 
         n_processed_cells +=
             params.n_iterations * source_grid.get_grid_height() * source_grid.get_grid_width();
@@ -91,7 +98,8 @@ template <typename F> class StencilUpdate {
     std::size_t get_n_processed_cells() const { return n_processed_cells; }
 
     double get_walltime() const { return walltime; }
-    double get_data_preperation_time() const { return data_preperation_time; }
+    double get_data_preperation_time_before() const { return data_preperation_time_before; }
+    // double get_data_preperation_time_after() const { return data_preperation_time_after; }
 
     void clear_work_events() { work_events.clear(); }
 
@@ -157,5 +165,6 @@ template <typename F> class StencilUpdate {
     Params params;
     std::size_t n_processed_cells;
     double walltime;
-    double data_preperation_time;
+    double data_preperation_time_before;
+    double data_preperation_time_after;
 };
