@@ -32,7 +32,7 @@ namespace internal {
 
 template <concepts::TransitionFunction F, std::size_t temporal_parallelism = 1,
           std::size_t spatial_parallelism = 1, std::size_t max_grid_height = 1024,
-          std::size_t max_grid_width = 1024, std::size_t n_kernels = 1,
+          std::size_t max_grid_width = 1024, std::size_t n_work_kernels = 1,
           tdv::single_pass::Strategy<F, temporal_parallelism> TDVStrategy =
               tdv::single_pass::InlineStrategy>
 class StencilUpdateDesign {
@@ -42,7 +42,7 @@ class StencilUpdateDesign {
 
     template <std::size_t i> class PipeIdentifier;
     using work_in_pipe = sycl::pipe<PipeIdentifier<0>, CellVector>;
-    using work_out_pipe = sycl::pipe<PipeIdentifier<n_kernels>, CellVector>;
+    using work_out_pipe = sycl::pipe<PipeIdentifier<n_work_kernels>, CellVector>;
 
     using TDV = typename F::TimeDependentValue;
     using TDVGlobalState = TDVStrategy::template GlobalState<F, temporal_parallelism>;
@@ -51,23 +51,30 @@ class StencilUpdateDesign {
     /// \brief Shorthand for the used and supported grid type.
     using GridImpl = Grid<typename F::Cell, spatial_parallelism>;
 
+    static constexpr std::size_t n_kernels = n_work_kernels;
+
     StencilUpdateDesign(F transition_function, Cell halo_value, std::size_t iteration_offset,
-                        std::size_t n_iterations,
-                        std::function<int(const sycl::device &)> device_selector)
-        : transition_function(transition_function), halo_value(halo_value),
-          work_queues(stencil::internal::alloc_queues(device_selector, n_kernels)),
-          tdv_global_state(transition_function, iteration_offset, n_iterations) {}
+                        std::size_t n_iterations, std::vector<sycl::queue> const &queues)
+        : transition_function(transition_function), halo_value(halo_value), work_queues(),
+          tdv_global_state(transition_function, iteration_offset, n_iterations) {
+        if (queues.size() < n_work_kernels) {
+            throw std::invalid_argument("Too few queues allocated!");
+        }
+        for (std::size_t i_kernel = 0; i_kernel < n_work_kernels; i_kernel++) {
+            work_queues.push_back(queues[i_kernel]);
+        }
+    }
 
     template <std::size_t i_kernel>
     void submit_work_kernel(std::size_t i_iteration, std::size_t target_i_iteration,
                             sycl::range<2> grid_range)
-        requires(i_kernel < n_kernels)
+        requires(i_kernel < n_work_kernels)
     {
         using in_pipe = sycl::pipe<PipeIdentifier<i_kernel>, CellVector>;
         using out_pipe = sycl::pipe<PipeIdentifier<i_kernel + 1>, CellVector>;
         constexpr size_t local_temporal_parallelism =
-            temporal_parallelism / n_kernels +
-            ((i_kernel == n_kernels - 1) ? temporal_parallelism % n_kernels : 0);
+            temporal_parallelism / n_work_kernels +
+            ((i_kernel == n_work_kernels - 1) ? temporal_parallelism % n_work_kernels : 0);
         using ExecutionKernelImpl =
             internal::StencilUpdateKernel<F, TDVKernelArgument, local_temporal_parallelism,
                                           spatial_parallelism, max_grid_height, max_grid_width,
@@ -89,7 +96,7 @@ class StencilUpdateDesign {
     template <std::size_t i_kernel>
     void submit_work_kernel(std::size_t i_iteration, std::size_t target_i_iteration,
                             sycl::range<2> grid_range)
-        requires(i_kernel == n_kernels)
+        requires(i_kernel == n_work_kernels)
     {
         return;
     }
@@ -116,29 +123,32 @@ class StencilUpdateDesign {
 
 template <concepts::TransitionFunction F, std::size_t temporal_parallelism = 1,
           std::size_t spatial_parallelism = 1, std::size_t max_grid_height = 1024,
-          std::size_t max_grid_width = 1024, std::size_t n_kernels = 1,
+          std::size_t max_grid_width = 1024, std::size_t n_work_kernels = 1,
           tdv::single_pass::Strategy<F, temporal_parallelism> TDVStrategy =
               tdv::single_pass::InlineStrategy>
 class LocalStencilUpdateDesign
     : public StencilUpdateDesign<F, temporal_parallelism, spatial_parallelism, max_grid_height,
-                                 max_grid_width, n_kernels, TDVStrategy> {
+                                 max_grid_width, n_work_kernels, TDVStrategy> {
   public:
-    using Parent = StencilUpdateDesign<F, temporal_parallelism, spatial_parallelism,
-                                       max_grid_height, max_grid_width, n_kernels, TDVStrategy>;
+    using Parent =
+        StencilUpdateDesign<F, temporal_parallelism, spatial_parallelism, max_grid_height,
+                            max_grid_width, n_work_kernels, TDVStrategy>;
     using Cell = F::Cell;
     using CellVector = stencil::internal::Padded<std::array<Cell, spatial_parallelism>>;
 
     /// \brief Shorthand for the used and supported grid type.
     using GridImpl = Grid<typename F::Cell, spatial_parallelism>;
 
+    static constexpr std::size_t n_io_kernels = 2;
+    static constexpr std::size_t n_kernels = Parent::n_kernels + n_io_kernels;
+
     LocalStencilUpdateDesign(F transition_function, Cell halo_value, std::size_t iteration_offset,
-                             std::size_t n_iterations,
-                             std::function<int(const sycl::device &)> device_selector)
-        : Parent(transition_function, halo_value, iteration_offset, n_iterations, device_selector),
-          read_queue(), write_queue() {
-        std::vector<sycl::queue> queues = stencil::internal::alloc_queues(device_selector, 2);
-        read_queue = queues[0];
-        write_queue = queues[1];
+                             std::size_t n_iterations, std::vector<sycl::queue> const &queues)
+        : Parent(transition_function, halo_value, iteration_offset, n_iterations, queues),
+          read_queue(queues[Parent::n_kernels]), write_queue(queues[Parent::n_kernels + 1]) {
+        if (queues.size() < n_kernels) {
+            throw std::invalid_argument("Too few queues allocated!");
+        }
     }
 
     GridImpl submit_simulation(GridImpl source_grid, std::size_t iteration_offset,
@@ -204,36 +214,37 @@ class LocalStencilUpdateDesign
 
 template <concepts::TransitionFunction F, std::size_t temporal_parallelism = 1,
           std::size_t spatial_parallelism = 1, std::size_t max_grid_height = 1024,
-          std::size_t max_grid_width = 1024, std::size_t n_kernels = 1,
+          std::size_t max_grid_width = 1024, std::size_t n_work_kernels = 1,
           tdv::single_pass::Strategy<F, temporal_parallelism> TDVStrategy =
               tdv::single_pass::InlineStrategy>
 class IOPipeStencilUpdateDesign
     : public StencilUpdateDesign<F, temporal_parallelism, spatial_parallelism, max_grid_height,
-                                 max_grid_width, n_kernels, TDVStrategy> {
+                                 max_grid_width, n_work_kernels, TDVStrategy> {
   public:
-    using Parent = StencilUpdateDesign<F, temporal_parallelism, spatial_parallelism,
-                                       max_grid_height, max_grid_width, n_kernels, TDVStrategy>;
+    using Parent =
+        StencilUpdateDesign<F, temporal_parallelism, spatial_parallelism, max_grid_height,
+                            max_grid_width, n_work_kernels, TDVStrategy>;
     using Cell = F::Cell;
     using CellVector = stencil::internal::Padded<std::array<Cell, spatial_parallelism>>;
 
     /// \brief Shorthand for the used and supported grid type.
     using GridImpl = Grid<typename F::Cell, spatial_parallelism>;
 
+    static constexpr std::size_t n_io_kernels = 8;
+    static constexpr std::size_t n_kernels = Parent::n_kernels + n_io_kernels;
+
     IOPipeStencilUpdateDesign(F transition_function, Cell halo_value, std::size_t iteration_offset,
-                              std::size_t n_iterations,
-                              std::function<int(const sycl::device &)> device_selector)
-        : Parent(transition_function, halo_value, iteration_offset, n_iterations, device_selector),
-          read_queue(), recv_queue(), recv_fork_queue(), work_merge_queue(), work_fork_queue(),
-          write_merge_queue(), write_queue(), send_queue() {
-        std::vector<sycl::queue> queues = stencil::internal::alloc_queues(device_selector, 8);
-        read_queue = queues[0];
-        recv_queue = queues[1];
-        recv_fork_queue = queues[2];
-        work_merge_queue = queues[3];
-        work_fork_queue = queues[4];
-        write_merge_queue = queues[5];
-        write_queue = queues[6];
-        send_queue = queues[7];
+                              std::size_t n_iterations, std::vector<sycl::queue> const &queues)
+        : Parent(transition_function, halo_value, iteration_offset, n_iterations, queues),
+          read_queue(queues[Parent::n_kernels + 0]), recv_queue(queues[Parent::n_kernels + 1]),
+          recv_fork_queue(queues[Parent::n_kernels + 2]),
+          work_merge_queue(queues[Parent::n_kernels + 3]),
+          work_fork_queue(queues[Parent::n_kernels + 4]),
+          write_merge_queue(queues[Parent::n_kernels + 5]),
+          write_queue(queues[Parent::n_kernels + 6]), send_queue(queues[Parent::n_kernels + 7]) {
+        if (queues.size() < n_kernels) {
+            throw std::invalid_argument("Too few queues allocated!");
+        }
     }
 
     GridImpl submit_simulation(GridImpl source_grid, std::size_t iteration_offset,

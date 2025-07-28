@@ -21,6 +21,7 @@
 #include "Grid.hpp"
 #include "internal/StencilUpdateDesign.hpp"
 #include <chrono>
+#include <pc2/queue_extensions.hpp>
 #include <type_traits>
 
 namespace stencil {
@@ -141,7 +142,28 @@ class StencilUpdate {
     /**
      * \brief Create a new stencil updater object.
      */
-    StencilUpdate(Params params) : params(params), n_processed_cells(0), walltime(0.0) {}
+    StencilUpdate(Params params) : params(params), queues(), n_processed_cells(0), walltime(0.0) {
+#if defined(STENCILSTREAM_TARGET_FPGA_EMU)
+        std::function<int(const sycl::device &)> device_selector =
+            sycl::ext::intel::fpga_emulator_selector_v;
+#elif defined(STENCILSTREAM_TARGET_FPGA)
+        std::function<int(const sycl::device &)> device_selector =
+            sycl::ext::intel::fpga_selector_v;
+#else
+    #error                                                                                         \
+        "Please link with the `StencilStream_Monotile`, `StencilStream_MonotileEmulator`, or `StencilStream_MonotileReport` targets!"
+#endif
+
+        if (connectivity == Connectivity::IO_PIPES) {
+            queues = sycl::ext::pc2::mpi_queues<decltype(device_selector), sycl::property_list>(
+                device_selector, Design::n_kernels, {sycl::property::queue::in_order{}});
+        } else {
+            sycl::device device(device_selector);
+            for (std::size_t i_queue = 0; i_queue < Design::n_kernels; i_queue++) {
+                queues.push_back(sycl::queue(device, {sycl::property::queue::in_order{}}));
+            }
+        }
+    }
 
     /**
      * \brief Return a reference to the parameters.
@@ -177,18 +199,8 @@ class StencilUpdate {
             throw std::range_error("The grid is too wide for the stencil update kernel.");
         }
 
-#if defined(STENCILSTREAM_TARGET_FPGA_EMU)
-        std::function<int(const sycl::device &)> device_selector =
-            sycl::ext::intel::fpga_emulator_selector_v;
-#elif defined(STENCILSTREAM_TARGET_FPGA)
-        std::function<int(const sycl::device &)> device_selector =
-            sycl::ext::intel::fpga_selector_v;
-#else
-    #error                                                                                         \
-        "Please link with the `StencilStream_Monotile`, `StencilStream_MonotileEmulator`, or `StencilStream_MonotileReport` targets!"
-#endif
         Design design(params.transition_function, params.halo_value, params.iteration_offset,
-                      params.n_iterations, device_selector);
+                      params.n_iterations, queues);
 
         if (mpi_initialized) {
             MPI_Barrier(MPI_COMM_WORLD);
@@ -243,6 +255,7 @@ class StencilUpdate {
 
   private:
     Params params;
+    std::vector<sycl::queue> queues;
     std::size_t n_processed_cells;
     double walltime;
 };

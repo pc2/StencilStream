@@ -25,6 +25,15 @@
 constexpr std::size_t max_grid_height = 256;
 constexpr std::size_t max_grid_width = 128;
 
+inline std::vector<sycl::queue> alloc_queues(std::size_t n_queues) {
+    std::vector<sycl::queue> queues;
+    sycl::device device(sycl::ext::intel::fpga_emulator_selector_v);
+    for (std::size_t i = 0; i < n_queues; i++) {
+        queues.push_back(sycl::queue(device));
+    }
+    return queues;
+}
+
 template <std::size_t temporal_parallelism, std::size_t spatial_parallelism, std::size_t n_kernels>
 void test_monotile_stencil_update_design(std::size_t iteration_offset, std::size_t n_iterations) {
     using namespace stencil::internal;
@@ -34,8 +43,9 @@ void test_monotile_stencil_update_design(std::size_t iteration_offset, std::size
         max_grid_width, n_kernels, stencil::tdv::single_pass::InlineStrategy>;
     using CellVector = typename Design::CellVector;
     FPGATransFunc<1> trans_func;
-    Design design(trans_func, Cell::halo(), iteration_offset, n_iterations,
-                  sycl::ext::intel::fpga_emulator_selector_v);
+
+    std::vector<sycl::queue> queues = alloc_queues(Design::n_kernels);
+    Design design(trans_func, Cell::halo(), iteration_offset, n_iterations, queues);
 
     sycl::range<2> grid_range(max_grid_height, max_grid_width);
 
@@ -122,8 +132,8 @@ void test_monotile_local_stencil_update_design() {
         }
     }
 
-    Design design(FPGATransFunc<1>(), Cell::halo(), 0, temporal_parallelism,
-                  sycl::ext::intel::fpga_emulator_selector_v);
+    std::vector<sycl::queue> queues = alloc_queues(Design::n_kernels);
+    Design design(FPGATransFunc<1>(), Cell::halo(), 0, temporal_parallelism, queues);
     design.submit_pass(in_grid, out_grid, 0, temporal_parallelism);
 
     GridAccessor in_ac(in_grid);
@@ -169,8 +179,8 @@ void test_monotile_io_pipe_stencil_update_design(bool test_root) {
     using Grid = typename Design::GridImpl;
     using GridAccessor = typename Grid::template GridAccessor<sycl::access::mode::read_write>;
 
-    Design design(FPGATransFunc<1>(), Cell::halo(), 0, 2 * temporal_parallelism,
-                  sycl::ext::intel::fpga_emulator_selector_v);
+    std::vector<sycl::queue> queues = alloc_queues(Design::n_kernels);
+    Design design(FPGATransFunc<1>(), Cell::halo(), 0, 2 * temporal_parallelism, queues);
 
     Grid in_grid(max_grid_height, max_grid_width);
     Grid out_grid = in_grid.make_similar();
