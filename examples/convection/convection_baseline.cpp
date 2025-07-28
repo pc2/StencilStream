@@ -345,7 +345,8 @@ int main(int argc, char **argv) {
     double io_time = 0.0;
     double thermal_solver_kernel_walltime = 0.0;
     double thermal_solver_walltime = 0.0;
-    double thermal_solver_data_preperation_time = 0.0;
+    double thermal_solver_data_preperation_time_before = 0.0;
+    double thermal_solver_data_preperation_time_after = 0.0;
     double error_check_time = 0.0;
     int total_iterations = 0;
 
@@ -408,6 +409,7 @@ int main(int argc, char **argv) {
             .halo_value = ThermalConvectionCell::halo_value(),
             .n_iterations = 1,
             .device = device,
+            .blocking = true,
         });
         grid = thermal_solver_update(grid);
 
@@ -435,8 +437,11 @@ int main(int argc, char **argv) {
         std::chrono::duration<double> io_time_chrono = io_stop - io_start;
         io_time += io_time_chrono.count();
         thermal_solver_kernel_walltime += thermal_solver_update.get_kernel_runtime();
-        thermal_solver_walltime += thermal_solver_update.get_walltime();
-        thermal_solver_data_preperation_time += thermal_solver_update.get_data_preperation_time();
+        thermal_solver_walltime = thermal_solver_update.get_walltime();
+        thermal_solver_data_preperation_time_before =
+            thermal_solver_update.get_data_preperation_time_before();
+        // thermal_solver_data_preperation_time_after =
+        //     thermal_solver_update.get_data_preperation_time_after();
     }
 
     // Time of all computations
@@ -465,8 +470,12 @@ int main(int argc, char **argv) {
     std::cout << std::setw(label_width) << "    ↪ Of which transient kernel time:"
               << pseudo_transient_update.get_kernel_runtime() << " s\n";
 
-    std::cout << std::setw(label_width) << "    ↪ Of which transient kernel data preperation:"
-              << pseudo_transient_update.get_data_preperation_time() << " s\n";
+    std::cout
+        << std::setw(label_width) << "    ↪ Of which transient kernel data preperation:"
+        << pseudo_transient_update
+               .get_data_preperation_time_before() //+
+                                                   // pseudo_transient_update.get_data_preperation_time_after()
+        << " s\n";
 
     std::cout << std::setw(label_width) << "    ↪ Of which error checking:" << error_check_time
               << " s\n";
@@ -479,8 +488,11 @@ int main(int argc, char **argv) {
               << "    ↪ Of which thermal solver kernel time:" << thermal_solver_kernel_walltime
               << " s\n";
 
-    std::cout << std::setw(label_width) << "    ↪ Of which thermal solver kernel data preperation:"
-              << thermal_solver_data_preperation_time << " s\n";
+    std::cout
+        << std::setw(label_width) << "    ↪ Of which thermal solver kernel data preperation:"
+        << thermal_solver_data_preperation_time_before //+
+                                                       //  thermal_solver_data_preperation_time_after
+        << " s\n";
 
     std::cout << std::setw(label_width) << "Of which time to write csv:" << io_time << " s\n";
 
