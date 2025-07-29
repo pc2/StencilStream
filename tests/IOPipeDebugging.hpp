@@ -22,13 +22,19 @@
 #include <exception>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <mutex>
+
+inline std::string get_io_pipe_file_name(std::size_t i_pipe, bool is_input) {
+    std::size_t i_file = 2 * i_pipe + (is_input ? 0 : 1);
+    return std::to_string(i_file);
+}
 
 class InputPipeWriter {
   public:
     InputPipeWriter(std::size_t i_pipe, std::mutex &mutex)
         : pipe_lock(mutex),
-          pipe_file(std::to_string(2 * i_pipe),
+          pipe_file(get_io_pipe_file_name(i_pipe, true),
                     std::ios_base::out | std::ios_base::app | std::ios_base::binary) {}
 
     InputPipeWriter(InputPipeWriter &) = delete;
@@ -49,10 +55,19 @@ class InputPipeWriter {
 class OutputPipeReader {
   public:
     OutputPipeReader(std::size_t i_pipe, std::mutex &mutex, std::size_t &read_bytes)
-        : pipe_lock(mutex),
-          pipe_file(std::to_string(2 * i_pipe + 1), std::ios_base::in | std::ios_base::binary),
+        : i_pipe(i_pipe), pipe_lock(mutex), pipe_file(get_io_pipe_file_name(i_pipe, false),
+                                                      std::ios_base::in | std::ios_base::binary),
           read_bytes(read_bytes) {
         pipe_file.seekg(read_bytes);
+    }
+
+    ~OutputPipeReader() {
+        std::size_t current_position = pipe_file.tellg();
+        std::size_t length = std::filesystem::file_size(get_io_pipe_file_name(i_pipe, false));
+        if (current_position != length) {
+            std::cerr << length - current_position << " bytes have not been read from pipe "
+                      << i_pipe << ". Tests may be invalid." << std::endl;
+        }
     }
 
     OutputPipeReader(InputPipeWriter &) = delete;
@@ -72,6 +87,7 @@ class OutputPipeReader {
     }
 
   private:
+    std::size_t i_pipe;
     std::unique_lock<std::mutex> pipe_lock;
     std::fstream pipe_file;
     std::size_t &read_bytes;

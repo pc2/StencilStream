@@ -249,11 +249,16 @@ class IOPipeStencilUpdateDesign
 
     GridImpl submit_simulation(GridImpl source_grid, std::size_t iteration_offset,
                                std::size_t n_iterations) {
-        using namespace stencil::internal;
-
         int rank, n_ranks;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &n_ranks);
+
+        return submit_simulation(source_grid, iteration_offset, n_iterations, rank, n_ranks);
+    }
+
+    GridImpl submit_simulation(GridImpl source_grid, std::size_t iteration_offset,
+                               std::size_t n_iterations, std::size_t i_rank, std::size_t n_ranks) {
+        using namespace stencil::internal;
 
         GridImpl swap_grid_a = source_grid.make_similar();
         GridImpl swap_grid_b = source_grid.make_similar();
@@ -265,9 +270,9 @@ class IOPipeStencilUpdateDesign
         std::size_t n_passes = int_ceil_div(n_iterations, temporal_parallelism * n_ranks);
         for (std::size_t i_pass = 0; i_pass < n_passes; i_pass++) {
             std::size_t i_iteration =
-                iteration_offset + (i_pass * n_ranks + rank) * temporal_parallelism;
+                iteration_offset + (i_pass * n_ranks + i_rank) * temporal_parallelism;
 
-            submit_pass(*pass_source, *pass_target, i_iteration, target_i_iteration, i_pass == 0);
+            submit_pass(*pass_source, *pass_target, i_iteration, target_i_iteration, i_rank == 0);
 
             if (i_pass == 0) {
                 pass_source = &swap_grid_b;

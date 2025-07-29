@@ -169,7 +169,8 @@ TEST_CASE("monotile::internal::LocalStencilUpdateDesign",
 }
 
 template <std::size_t temporal_parallelism, std::size_t spatial_parallelism>
-void test_monotile_io_pipe_stencil_update_design(bool test_root) {
+void test_monotile_io_pipe_stencil_update_design(std::size_t n_iterations, std::size_t i_rank,
+                                                 std::size_t n_ranks) {
     using namespace stencil::internal;
 
     using Design = stencil::monotile::internal::IOPipeStencilUpdateDesign<
@@ -180,11 +181,10 @@ void test_monotile_io_pipe_stencil_update_design(bool test_root) {
     using GridAccessor = typename Grid::template GridAccessor<sycl::access::mode::read_write>;
 
     std::vector<sycl::queue> queues = alloc_queues(Design::n_kernels);
-    Design design(FPGATransFunc<1>(), Cell::halo(), 0, 2 * temporal_parallelism, queues);
+    Design design(FPGATransFunc<1>(), Cell::halo(), 0, n_iterations, queues);
 
     Grid in_grid(max_grid_height, max_grid_width);
-    Grid out_grid = in_grid.make_similar();
-    if (test_root) {
+    if (i_rank == 0) {
         GridAccessor grid_ac(in_grid);
         for (std::size_t r = 0; r < max_grid_height; r++) {
             for (std::size_t c = 0; c < max_grid_width; c++) {
@@ -197,47 +197,51 @@ void test_monotile_io_pipe_stencil_update_design(bool test_root) {
         }
     }
     std::size_t vect_grid_width = int_ceil_div(max_grid_width, spatial_parallelism);
+    std::size_t n_passes = int_ceil_div(n_iterations, temporal_parallelism * n_ranks);
 
     {
         IOPipeDebugManager &manager = IOPipeDebugManager::get_instance();
         InputPipeWriter lower_in_pipe = manager.get_input_pipe_writer(0);
         InputPipeWriter upper_in_pipe = manager.get_input_pipe_writer(1);
 
-        for (std::size_t r = 0; r < max_grid_height; r++) {
-            for (std::size_t vect_c = 0; vect_c < vect_grid_width; vect_c++) {
-                CellVector vector;
-                for (std::size_t i_cell = 0; i_cell < spatial_parallelism; i_cell++) {
-                    vector.value[i_cell] =
-                        Cell{.r = int(r),
-                             .c = int(vect_c * spatial_parallelism + i_cell),
-                             .i_iteration = int(test_root ? 2 * int(temporal_parallelism)
-                                                          : int(temporal_parallelism)),
-                             .i_subiteration = 0,
-                             .status = CellStatus::Normal};
-                }
+        for (std::size_t i_pass = 0; i_pass < n_passes; i_pass++) {
+            std::size_t i_iteration =
+                ((i_rank == 0 ? n_ranks : i_rank) + i_pass * n_ranks) * temporal_parallelism;
 
-                auto pipeword = (pipeword_t *)&vector;
-                constexpr std::size_t n_pipewords_per_vector = sizeof(CellVector) / pipeword_size;
+            for (std::size_t r = 0; r < max_grid_height; r++) {
+                for (std::size_t vect_c = 0; vect_c < vect_grid_width; vect_c++) {
+                    CellVector vector;
+                    for (std::size_t i_cell = 0; i_cell < spatial_parallelism; i_cell++) {
+                        vector.value[i_cell] = Cell{.r = int(r),
+                                                    .c = int(vect_c * spatial_parallelism + i_cell),
+                                                    .i_iteration = int(i_iteration),
+                                                    .i_subiteration = 0,
+                                                    .status = CellStatus::Normal};
+                    }
 
-                for (std::size_t i_pipeword = 0; i_pipeword < n_pipewords_per_vector;
-                     i_pipeword++) {
-                    std::size_t global_i =
-                        (r * vect_grid_width + vect_c) * n_pipewords_per_vector + i_pipeword;
-                    if (global_i % 2 == 0) {
-                        lower_in_pipe.write<pipeword_t>(pipeword[i_pipeword]);
-                    } else {
-                        upper_in_pipe.write<pipeword_t>(pipeword[i_pipeword]);
+                    auto pipeword = (pipeword_t *)&vector;
+                    constexpr std::size_t n_pipewords_per_vector =
+                        sizeof(CellVector) / pipeword_size;
+
+                    for (std::size_t i_pipeword = 0; i_pipeword < n_pipewords_per_vector;
+                         i_pipeword++) {
+                        std::size_t global_i =
+                            (r * vect_grid_width + vect_c) * n_pipewords_per_vector + i_pipeword;
+                        if (global_i % 2 == 0) {
+                            lower_in_pipe.write<pipeword_t>(pipeword[i_pipeword]);
+                        } else {
+                            upper_in_pipe.write<pipeword_t>(pipeword[i_pipeword]);
+                        }
                     }
                 }
             }
         }
     }
 
-    design.submit_pass(in_grid, out_grid, test_root ? 0 : temporal_parallelism,
-                       2 * temporal_parallelism, test_root);
+    Grid out_grid = design.submit_simulation(in_grid, 0, n_iterations, i_rank, n_ranks);
     design.wait_for_queues();
 
-    if (test_root) {
+    if (i_rank == 0) {
         GridAccessor in_ac(in_grid);
         GridAccessor out_ac(out_grid);
         for (std::size_t r = 0; r < max_grid_height; r++) {
@@ -249,7 +253,7 @@ void test_monotile_io_pipe_stencil_update_design(bool test_root) {
                 REQUIRE(in_ac[r][c].status == CellStatus::Normal);
                 REQUIRE(out_ac[r][c].r == r);
                 REQUIRE(out_ac[r][c].c == c);
-                REQUIRE(out_ac[r][c].i_iteration == 2 * temporal_parallelism);
+                REQUIRE(out_ac[r][c].i_iteration == n_iterations);
                 REQUIRE(out_ac[r][c].i_subiteration == 0);
                 REQUIRE(out_ac[r][c].status == CellStatus::Normal);
             }
@@ -261,33 +265,38 @@ void test_monotile_io_pipe_stencil_update_design(bool test_root) {
         OutputPipeReader lower_out_pipe = manager.get_output_pipe_reader(2);
         OutputPipeReader upper_out_pipe = manager.get_output_pipe_reader(3);
 
-        for (std::size_t r = 0; r < max_grid_height; r++) {
-            for (std::size_t vect_c = 0; vect_c < vect_grid_width; vect_c++) {
-                CellVector vector;
-                auto pipeword = (pipeword_t *)&vector;
-                constexpr std::size_t n_pipewords_per_vector = sizeof(CellVector) / pipeword_size;
+        for (std::size_t i_pass = 0; i_pass < n_passes; i_pass++) {
+            std::size_t i_iteration =
+                std::min(n_iterations, (i_rank + 1 + i_pass * n_ranks) * temporal_parallelism);
 
-                for (std::size_t i_pipeword = 0; i_pipeword < n_pipewords_per_vector;
-                     i_pipeword++) {
-                    std::size_t global_i =
-                        (r * vect_grid_width + vect_c) * n_pipewords_per_vector + i_pipeword;
-                    if (global_i % 2 == 0) {
-                        pipeword[i_pipeword] = lower_out_pipe.read<pipeword_t>();
-                    } else {
-                        pipeword[i_pipeword] = upper_out_pipe.read<pipeword_t>();
+            for (std::size_t r = 0; r < max_grid_height; r++) {
+                for (std::size_t vect_c = 0; vect_c < vect_grid_width; vect_c++) {
+                    CellVector vector;
+                    auto pipeword = (pipeword_t *)&vector;
+                    constexpr std::size_t n_pipewords_per_vector =
+                        sizeof(CellVector) / pipeword_size;
+
+                    for (std::size_t i_pipeword = 0; i_pipeword < n_pipewords_per_vector;
+                         i_pipeword++) {
+                        std::size_t global_i =
+                            (r * vect_grid_width + vect_c) * n_pipewords_per_vector + i_pipeword;
+                        if (global_i % 2 == 0) {
+                            pipeword[i_pipeword] = lower_out_pipe.read<pipeword_t>();
+                        } else {
+                            pipeword[i_pipeword] = upper_out_pipe.read<pipeword_t>();
+                        }
                     }
-                }
 
-                for (std::size_t i_cell = 0; i_cell < spatial_parallelism; i_cell++) {
-                    std::size_t c = vect_c * spatial_parallelism + i_cell;
-                    if (c < max_grid_width) {
-                        Cell cell = vector.value[i_cell];
-                        REQUIRE(cell.r == r);
-                        REQUIRE(cell.c == c);
-                        REQUIRE(cell.i_iteration ==
-                                (test_root ? temporal_parallelism : 2 * temporal_parallelism));
-                        REQUIRE(cell.i_subiteration == 0);
-                        REQUIRE(cell.status == CellStatus::Normal);
+                    for (std::size_t i_cell = 0; i_cell < spatial_parallelism; i_cell++) {
+                        std::size_t c = vect_c * spatial_parallelism + i_cell;
+                        if (c < max_grid_width) {
+                            Cell cell = vector.value[i_cell];
+                            REQUIRE(cell.r == r);
+                            REQUIRE(cell.c == c);
+                            REQUIRE(cell.i_iteration == i_iteration);
+                            REQUIRE(cell.i_subiteration == 0);
+                            REQUIRE(cell.status == CellStatus::Normal);
+                        }
                     }
                 }
             }
@@ -297,17 +306,22 @@ void test_monotile_io_pipe_stencil_update_design(bool test_root) {
 
 TEST_CASE("monotile::internal::IOPipeStencilUpdateDesign",
           "[monotile::internal::IOPipeStencilUpdateDesign]") {
-    test_monotile_io_pipe_stencil_update_design<4, 1>(true);
-    test_monotile_io_pipe_stencil_update_design<4, 2>(true);
-    test_monotile_io_pipe_stencil_update_design<4, 3>(true);
-    test_monotile_io_pipe_stencil_update_design<4, 4>(true);
-    test_monotile_io_pipe_stencil_update_design<4, 5>(true);
-    test_monotile_io_pipe_stencil_update_design<4, 6>(true);
-
-    test_monotile_io_pipe_stencil_update_design<4, 1>(false);
-    test_monotile_io_pipe_stencil_update_design<4, 2>(false);
-    test_monotile_io_pipe_stencil_update_design<4, 3>(false);
-    test_monotile_io_pipe_stencil_update_design<4, 4>(false);
-    test_monotile_io_pipe_stencil_update_design<4, 5>(false);
-    test_monotile_io_pipe_stencil_update_design<4, 6>(false);
+    for (std::size_t n_passes = 1; n_passes <= 4; n_passes *= 2) {
+        for (std::size_t overhead_iterations = 0; overhead_iterations < 2; overhead_iterations++) {
+            for (std::size_t i_rank = 1; i_rank < 2; i_rank++) {
+                test_monotile_io_pipe_stencil_update_design<4, 1>(
+                    8 * n_passes - overhead_iterations, i_rank, 2);
+                test_monotile_io_pipe_stencil_update_design<4, 2>(
+                    8 * n_passes - overhead_iterations, i_rank, 2);
+                test_monotile_io_pipe_stencil_update_design<4, 3>(
+                    8 * n_passes - overhead_iterations, i_rank, 2);
+                test_monotile_io_pipe_stencil_update_design<4, 4>(
+                    8 * n_passes - overhead_iterations, i_rank, 2);
+                test_monotile_io_pipe_stencil_update_design<4, 5>(
+                    8 * n_passes - overhead_iterations, i_rank, 2);
+                test_monotile_io_pipe_stencil_update_design<4, 6>(
+                    8 * n_passes - overhead_iterations, i_rank, 2);
+            }
+        }
+    }
 }
