@@ -198,13 +198,15 @@ int main(int argc, char **argv) {
         std::cout << "Simulating..." << std::endl;
     }
 
-    if (rank == 0 && parameters.n_snap_timesteps().has_value()) {
+    if (parameters.n_snap_timesteps().has_value()) {
         size_t n_snap_timesteps = parameters.n_snap_timesteps().value();
         simulation.get_params().n_iterations = n_snap_timesteps;
         for (size_t &i = simulation.get_params().iteration_offset; i < parameters.n_timesteps();
              i += n_snap_timesteps) {
             grid = simulation(grid);
-            save_frame(grid, i + n_snap_timesteps, CellField::HZ, parameters);
+            if (rank == 0) {
+                save_frame(grid, i + n_snap_timesteps, CellField::HZ, parameters);
+            }
         }
     } else {
         grid = simulation(grid);
