@@ -333,6 +333,14 @@ class IOPipeStencilUpdateDesign
             });
         }
 
+        int mpi_initialized;
+        MPI_Initialized(&mpi_initialized);
+        if (mpi_initialized) {
+            // Barrier to eliminate the difference in programming times
+            // and to ensure all FPGAs start sending at the same time.
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
+
         using SendKernel =
             DualIOPipeSendKernel<CellVector, kernel_output_ch2, kernel_output_ch3, work_out_pipe>;
         send_queue.STENCILSTREAM_NAMED_SINGLE_TASK(send_kernel, SendKernel(n_vectors));
