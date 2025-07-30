@@ -31,7 +31,7 @@ template <typename F> class StencilUpdate {
 
         sycl::device device = sycl::device();
 
-        bool blocking = false;
+        bool blocking = true;
         bool profiling = true;
     };
 

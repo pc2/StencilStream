@@ -6,6 +6,9 @@
 #include <iomanip>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <oneapi/dpl/algorithm>
+#include <oneapi/dpl/execution>
+#include <oneapi/dpl/iterator>
 #include <sycl/ext/intel/fpga_extensions.hpp>
 
 using json = nlohmann::json;
@@ -363,6 +366,79 @@ int main(int argc, char **argv) {
 
             max_ErrV = max_ErrP = max_Vx = max_Vy = max_Pt =
                 -std::numeric_limits<double>::infinity();
+
+#if defined(STENCILSTREAM_BACKEND_CUDA)
+            sycl::queue q{sycl::gpu_selector_v};
+
+            int length1 = nx * ny;
+            int length2 = (nx + 1) * ny;
+            int length3 = nx * (ny + 1);
+
+            // USM memory for storing the different arrays to look for max values
+            double *Pt_out_max = malloc_shared<double>(length1, q);
+            double *Vx_out_max = malloc_shared<double>(length2, q);
+            double *Vy_out_max = malloc_shared<double>(length1, q);
+            double *ErrV_out_max = malloc_shared<double>(length3, q);
+            double *ErrP_out_max = malloc_shared<double>(length1, q);
+
+            // Extract the values from the cells to the arrays
+            q.submit([&](sycl::handler &cgh) {
+                sycl::accessor source_ac(grid.get_buffer(), cgh, sycl::read_only);
+
+                cgh.parallel_for(sycl::range<2>(nx + 1, ny + 1), [=](sycl::id<2> id) {
+                    int x = id[0];
+                    int y = id[1];
+                    PseudoTransientKernel::Cell cell = source_ac[x][y];
+
+                    size_t cell_id = x * ny + y;
+
+                    if (x < nx && y < ny) {
+                        Pt_out_max[cell_id] = std::abs(cell.Pt);
+                        Vy_out_max[cell_id] = std::abs(cell.Vy);
+                        ErrP_out_max[cell_id] = std::abs(cell.ErrP);
+                    }
+
+                    if (x < nx + 1 && y < ny) {
+                        Vx_out_max[cell_id] = std::abs(cell.Vx);
+                    }
+
+                    if (x < nx && y < ny + 1) {
+                        ErrV_out_max[cell_id] = std::abs(cell.ErrV);
+                    }
+                });
+            });
+
+            q.wait();
+
+            auto policy = oneapi::dpl::execution::make_device_policy<class MaxSearch>(q);
+
+            // Returns a pointer which is directly dereferenced
+            auto find_max_Pt = *oneapi::dpl::max_element(policy, Pt_out_max, Pt_out_max + length1);
+            auto find_max_ErrV =
+                *oneapi::dpl::max_element(policy, ErrV_out_max, ErrV_out_max + length3);
+            auto find_max_ErrP =
+                *oneapi::dpl::max_element(policy, ErrP_out_max, ErrP_out_max + length1);
+            auto find_max_Vx = *oneapi::dpl::max_element(policy, Vx_out_max, Vx_out_max + length2);
+            auto find_max_Vy = *oneapi::dpl::max_element(policy, Vy_out_max, Vy_out_max + length1);
+
+            // Check if the found value is bigger than the initialized value
+            max_Pt = std::max(max_Pt, find_max_Pt);
+            max_Vy = std::max(max_Vy, find_max_Vy);
+            max_Vx = std::max(max_Vx, find_max_Vx);
+            max_ErrV = std::max(max_ErrV, find_max_ErrV);
+            max_ErrP = std::max(max_ErrP, find_max_ErrP);
+
+            errV = max_ErrV / (1e-12 + max_Vy);
+            errP = max_ErrP / (1e-12 + max_Pt);
+
+            // Free USM memory
+            free(Pt_out_max, q);
+            free(Vx_out_max, q);
+            free(Vy_out_max, q);
+            free(ErrV_out_max, q);
+            free(ErrP_out_max, q);
+#else
+
             {
                 ThermalGrid::GridAccessor<sycl::access::mode::read> ac(grid);
                 for (size_t x = 0; x < nx + 1; x++) {
@@ -386,8 +462,10 @@ int main(int argc, char **argv) {
                     }
                 }
             }
+            std::cout << "Maximum value is " << max_Pt << std::endl;
             errV = max_ErrV / (1e-12 + max_Vy);
             errP = max_ErrP / (1e-12 + max_Pt);
+#endif
         }
         auto transients_end = std::chrono::high_resolution_clock::now();
         double kernel_time = pseudo_transient_update.get_kernel_runtime();
@@ -437,7 +515,7 @@ int main(int argc, char **argv) {
         std::chrono::duration<double> io_time_chrono = io_stop - io_start;
         io_time += io_time_chrono.count();
         thermal_solver_kernel_walltime += thermal_solver_update.get_kernel_runtime();
-        thermal_solver_walltime = thermal_solver_update.get_walltime();
+        thermal_solver_walltime += thermal_solver_update.get_walltime();
         thermal_solver_data_preperation_time_before =
             thermal_solver_update.get_data_preperation_time_before();
         // thermal_solver_data_preperation_time_after =
