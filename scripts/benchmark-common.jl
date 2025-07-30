@@ -43,6 +43,7 @@ struct BenchmarkInformation
     n_iters::Int
     n_grid_rows::Int
     n_grid_cols::Int
+    n_ranks::Int
 
     # Static/code parameters
     n_subiters::Int
@@ -53,68 +54,64 @@ struct BenchmarkInformation
     variant::Symbol
     temporal_parallelism::Int
     spatial_parallelism::Int
-    n_tile_rows::Union{Int, Nothing} # may be nothing for CUDA variant
-    n_tile_cols::Union{Int, Nothing} # may be nothing for CUDA variant
+    n_tile_rows::Union{Int,Nothing} # may be nothing for CUDA variant
+    n_tile_cols::Union{Int,Nothing} # may be nothing for CUDA variant
 
     # Synthesis results
-    f::Union{Float64, Nothing} # may be nothing for CUDA variant
+    f::Union{Float64,Nothing} # may be nothing for CUDA variant
 
     # Benchmark results
     runtime::Float64
 end
 
+function f_effective(info::BenchmarkInformation) 
+    s_link = 32 # pipeword size
+    f_link = 5.0e9 / s_link # clock rate of single IO pipe
+    if info.variant == :monotile
+        min(info.f, 2s_link / (info.cell_size * info.spatial_parallelism) * f_link)
+    else
+        info.f
+    end
+end
+
 grid_size(info::BenchmarkInformation) = info.n_grid_rows * info.n_grid_cols
 workload(info::BenchmarkInformation) = grid_size(info) * info.n_iters
-n_passes(info::BenchmarkInformation) = ceil(info.n_iters / info.temporal_parallelism)
+function n_passes(info::BenchmarkInformation)
+    if (info.variant == :monotile)
+        ceil(info.n_iters / info.temporal_parallelism / info.n_ranks)
+    else
+        ceil(info.n_iters / info.temporal_parallelism)
+    end
+end
 n_cus(info::BenchmarkInformation) = info.temporal_parallelism * info.n_subiters
-n_replications(info::BenchmarkInformation) = n_cus(info) * info.spatial_parallelism
+parallelity(info::BenchmarkInformation) = info.n_ranks * info.temporal_parallelism * info.spatial_parallelism
 
 halo_height(info::BenchmarkInformation) = (info.variant == :tiling) ? n_cus(info) : nothing
 halo_width(info::BenchmarkInformation) = (info.variant == :tiling) ? info.spatial_parallelism * n_cus(info) : nothing
 n_grid_col_vects(info::BenchmarkInformation) = ceil(info.n_grid_cols / info.spatial_parallelism)
 n_tile_col_vects(info::BenchmarkInformation) = info.n_tile_cols / info.spatial_parallelism
 
-function transfered_cells(info::BenchmarkInformation)
-    if info.variant == :monotile
-        return n_passes(info) * 2grid_size(info)
-    elseif info.variant == :tiling
-        transfered_cells = 0
-        for tile_start_r in 1:info.n_tile_rows:info.n_grid_rows
-            for tile_start_c in 1:info.n_tile_cols:info.n_grid_cols
-                output_tile_height = min(info.n_grid_rows, tile_start_r + info.n_tile_rows) - tile_start_r + 1
-                output_tile_width = min(info.n_grid_cols, tile_start_c + info.n_tile_cols) - tile_start_c + 1
-                transfered_cells +=
-                    (2halo_height(info) + output_tile_height) * (2halo_width(info) + output_tile_width)
-                transfered_cells += output_tile_height * output_tile_width
-            end
-        end
-        return n_passes(info) * transfered_cells
-    elseif info.variant == :cuda
-        throw("not implemented")
-    else
-        throw(KeyError(info.variant))
-    end
-end
-
 measured_throughput(info::BenchmarkInformation) = workload(info) / info.runtime
-# TODO: Correctly model the transfered data.
-measured_mem_throughput(info::BenchmarkInformation) = transfered_cells(info) * info.cell_size / info.runtime
 measured_flops(info::BenchmarkInformation) = measured_throughput(info) * info.ops_per_cell
 
 function model_runtime(info::BenchmarkInformation)
+    l_link = 0.5e-3 / info.f
+    
     if info.variant == :monotile
-        cu_latency = n_grid_col_vects(info) + 1
-        pipeline_latency = n_cus(info) * cu_latency
-        n_loop_iterations = pipeline_latency + (info.n_grid_rows * n_grid_col_vects(info))
-        n_cycles_per_pass = n_loop_iterations
+        l_compute_unit = n_grid_col_vects(info) + 1
+        l_fpga = n_cus(info) * l_compute_unit
+        l_cluster = (info.n_ranks - 1) * (l_fpga + l_link)
+
+        c_prime = l_fpga + (info.n_grid_rows * n_grid_col_vects(info))
+        c_pass = c_prime + l_cluster
     elseif info.variant == :tiling
-        n_cycles_per_pass = 0
+        c_pass = 0
         for tile_row in 1:ceil(info.n_grid_rows / info.n_tile_rows)
             for tile_col in 1:ceil(info.n_grid_cols / info.n_tile_cols)
                 tile_section_height = min(info.n_tile_rows, info.n_grid_rows - (tile_row - 1) * info.n_tile_rows)
                 tile_section_width = min(n_tile_col_vects(info), n_grid_col_vects(info) - (tile_col - 1) * n_tile_col_vects(info))
                 n_loop_iterations_per_tile = (tile_section_width + 2n_cus(info)) * (tile_section_height + 2n_cus(info))
-                n_cycles_per_pass += n_loop_iterations_per_tile
+                c_pass += n_loop_iterations_per_tile
             end
         end
     elseif info.variant == :cuda
@@ -123,10 +120,10 @@ function model_runtime(info::BenchmarkInformation)
         throw(KeyError(info.variant))
     end
 
-    return n_passes(info) * n_cycles_per_pass / info.f
+    return n_passes(info) * c_pass / f_effective(info)
 end
 model_throughput(info::BenchmarkInformation) = workload(info) / model_runtime(info)
-max_compute_throughput(info::BenchmarkInformation) = info.spatial_parallelism * info.temporal_parallelism * info.f
+max_compute_throughput(info::BenchmarkInformation) = parallelity(info) * info.f
 
 model_accurracy(info::BenchmarkInformation) = model_throughput(info) / measured_throughput(info)
 occupancy(info::BenchmarkInformation) = measured_throughput(info) / max_compute_throughput(info)
@@ -152,4 +149,26 @@ function render_model_error(df, file_name)
     record(fig, file_name, LinRange(0.0, 2.0π, 240); framerate=24) do a
         azimuth[] = a
     end
+end
+
+function setup_io_pipes(n_ranks, variant)
+    if variant != :monotile
+        throw("not implemented")
+    end
+    command = ["changeFPGAlinks"]
+    for i_rank in 0:(n_ranks-2)
+        i_node = i_rank ÷ 2
+        i_acl = i_rank % 2
+        i_next_node = (i_rank + 1) ÷ 2
+        i_next_acl = (i_rank + 1) % 2
+
+        push!(command, "--fpgalink=n$(lpad(i_node,2,'0')):acl$(i_acl):ch2-n$(lpad(i_next_node,2,'0')):acl$(i_next_acl):ch0")
+        push!(command, "--fpgalink=n$(lpad(i_node,2,'0')):acl$(i_acl):ch3-n$(lpad(i_next_node,2,'0')):acl$(i_next_acl):ch1")
+    end
+    i_last_node = (n_ranks - 1) ÷ 2
+    i_last_acl = (n_ranks - 1) % 2
+    push!(command, "--fpgalink=n$(lpad(i_last_node,2,'0')):acl$(i_last_acl):ch2-n00:acl0:ch0")
+    push!(command, "--fpgalink=n$(lpad(i_last_node,2,'0')):acl$(i_last_acl):ch3-n00:acl0:ch1")
+    command = Cmd(command)
+    run(command)
 end

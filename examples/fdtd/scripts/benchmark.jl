@@ -9,7 +9,9 @@ const SPATIAL_PARALLELISM = Dict(:monotile => 2, :tiling => 2, :cuda => 1)
 const TILE_HEIGHT = Dict(:monotile => 1024, :tiling => 2^16, :cuda => nothing)
 const TILE_WIDTH = Dict(:monotile => 1024, :tiling => 768, :cuda => nothing)
 
-function max_perf_benchmark(exe, variant)
+function max_perf_benchmark(exe, variant, n_ranks)
+    setup_io_pipes(n_ranks, variant)
+
     if variant == :monotile || variant == :cuda
         experiment_path = "./experiments/mono_benchmark.json"
         n_samples = 10
@@ -18,7 +20,8 @@ function max_perf_benchmark(exe, variant)
         n_samples = 3
     end
     out_dir = Base.Filesystem.mkpath("./out/")
-    command = `$exe -c $experiment_path -o $out_dir`
+    mpi_root = ENV["I_MPI_ROOT"]
+    command = `$mpi_root/bin/mpirun -n $n_ranks $exe -c $experiment_path -o $out_dir`
 
     runtime_re = Regex("Walltime: ([0-9]+\\.[0-9]+) s")
 
@@ -56,6 +59,7 @@ function max_perf_benchmark(exe, variant)
         n_timesteps,
         grid_wh,
         grid_wh,
+        n_ranks,
         N_SUBITERATIONS,
         CELL_SIZE,
         OPERATIONS_PER_CELL,
@@ -78,6 +82,7 @@ function max_perf_benchmark(exe, variant)
         metrics = Dict(
             "target" => (variant == :monotile) ? "FDTD, Monotile" : "FDTD, Tiling",
             "n_cus" => n_replications(info),
+            "n_ranks" => n_ranks,
             "f" => info.f,
             "occupancy" => occupancy(info),
             "measured" => measured_throughput(info),
@@ -87,13 +92,11 @@ function max_perf_benchmark(exe, variant)
         )
     end
 
-    open("metrics.$variant.json", "w") do metrics_file
-        JSON.print(metrics_file, metrics)
-    end
+    metrics
 end
 
-if size(ARGS) != (3,)
-    println(stderr, "Usage: $PROGRAM_FILE <benchmark> <path to executable> <variant>")
+if size(ARGS) != (4,)
+    println(stderr, "Usage: $PROGRAM_FILE <benchmark> <path to executable> <variant> <n_fpgas>")
     println(stderr, "Possible benchmarks: max_perf")
     println(stderr, "Possible variants: monotile, tiling, cuda")
     exit(1)
@@ -103,7 +106,9 @@ exe = ARGS[2]
 variant = Symbol(ARGS[3])
 
 if ARGS[1] == "max_perf"
-    max_perf_benchmark(exe, variant)
+    n_fpgas = parse(Int, ARGS[4])
+    metrics = max_perf_benchmark(exe, variant, n_fpgas)
+    open(f -> JSON.print(f, metrics), "metrics.$variant.json", "w")
 else
     println(stderr, "Unknown benchmark '$(ARGS[1])'")
     exit(1)

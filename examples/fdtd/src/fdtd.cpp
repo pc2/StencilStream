@@ -219,5 +219,6 @@ int main(int argc, char **argv) {
         save_frame(grid, n_timesteps, CellField::HZ_SUM, parameters);
     }
 
+    MPI_Finalize();
     return 0;
 }
