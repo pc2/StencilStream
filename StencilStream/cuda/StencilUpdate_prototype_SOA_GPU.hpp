@@ -33,7 +33,7 @@ template <typename F> class StencilUpdate {
 
         sycl::device device = sycl::device();
 
-        bool blocking = false;
+        bool blocking = true;
         bool profiling = true;
     };
 
@@ -79,16 +79,16 @@ template <typename F> class StencilUpdate {
                 size_t cell_id = id[0] * ac_source_grid.get_range()[1] + id[1];
 
                 T_out_ac_source_grid[cell_id] = cell.T;
-                /*   Pt_out_ac_source_grid[cell_id] = cell.Pt;
-                  Vx_out_ac_source_grid[cell_id] = cell.Vx;
-                  Vy_out_ac_source_grid[cell_id] = cell.Vy;
-                  tau_xx_out_ac_source_grid[cell_id] = cell.tau_xx;
-                  tau_yy_out_ac_source_grid[cell_id] = cell.tau_yy;
-                  sigma_xy_out_ac_source_grid[cell_id] = cell.sigma_xy;
-                  dVxd_tau_out_ac_source_grid[cell_id] = cell.dVxd_tau;
-                  dVyd_tau_out_ac_source_grid[cell_id] = cell.dVyd_tau;
-                  ErrV_out_ac_source_grid[cell_id] = cell.ErrV;
-                  ErrP_out_ac_source_grid[cell_id] = cell.ErrP; */
+                Pt_out_ac_source_grid[cell_id] = cell.Pt;
+                Vx_out_ac_source_grid[cell_id] = cell.Vx;
+                Vy_out_ac_source_grid[cell_id] = cell.Vy;
+                tau_xx_out_ac_source_grid[cell_id] = cell.tau_xx;
+                tau_yy_out_ac_source_grid[cell_id] = cell.tau_yy;
+                sigma_xy_out_ac_source_grid[cell_id] = cell.sigma_xy;
+                dVxd_tau_out_ac_source_grid[cell_id] = cell.dVxd_tau;
+                dVyd_tau_out_ac_source_grid[cell_id] = cell.dVyd_tau;
+                ErrV_out_ac_source_grid[cell_id] = cell.ErrV;
+                ErrP_out_ac_source_grid[cell_id] = cell.ErrP;
             });
         });
 

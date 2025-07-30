@@ -16,8 +16,8 @@ ml system/CUDA/12.6.0
 cd /scratch/hpc-lco-kenter/tstoehr/stencilstream-prototype/build
 echo "Starting program"
 
-for ((i = 0; i < 5; i++)); do
-    ./src/hotspot/hotspot_cuda_baseline 1024 1024 1000 temp_1024 power_1024 out.txt
-done
+cd /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/build
+./examples/hotspot/hotspot_cuda_baseline_bench
+
 
 

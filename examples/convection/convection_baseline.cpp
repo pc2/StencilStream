@@ -462,7 +462,6 @@ int main(int argc, char **argv) {
                     }
                 }
             }
-            std::cout << "Maximum value is " << max_Pt << std::endl;
             errV = max_ErrV / (1e-12 + max_Vy);
             errP = max_ErrP / (1e-12 + max_Pt);
 #endif
