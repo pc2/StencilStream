@@ -515,7 +515,7 @@ int main(int argc, char **argv) {
         io_time += io_time_chrono.count();
         thermal_solver_kernel_walltime += thermal_solver_update.get_kernel_runtime();
         thermal_solver_walltime += thermal_solver_update.get_walltime();
-        thermal_solver_data_preperation_time_before =
+        thermal_solver_data_preperation_time_before +=
             thermal_solver_update.get_data_preperation_time_before();
         // thermal_solver_data_preperation_time_after =
         //     thermal_solver_update.get_data_preperation_time_after();

@@ -11,8 +11,6 @@
 #include <sycl/range.hpp>
 #include <variant>
 
-// StencilUpdater with GPU data conversion
-
 template <typename F> class StencilUpdate {
   private:
     using Cell = typename F::Cell;
@@ -47,52 +45,51 @@ template <typename F> class StencilUpdate {
         auto data_preperation_start_before = std::chrono::high_resolution_clock::now();
 
         // Scatter the Grid into Arrays
+        {
+            sycl::host_accessor ac_source_grid(source_grid.get_buffer(), sycl::read_only);
 
-        update_kernel_queue.submit([&](sycl::handler &cgh) {
-            sycl::accessor ac_source_grid(source_grid.get_buffer(), cgh);
-
-            sycl::accessor T_out_ac_source_grid(source_grid.get_T_out_buffer(), cgh,
-                                                sycl::write_only);
-            sycl::accessor Pt_out_ac_source_grid(source_grid.get_Pt_out_buffer(), cgh,
-                                                 sycl::write_only);
-            sycl::accessor Vx_out_ac_source_grid(source_grid.get_Vx_out_buffer(), cgh,
-                                                 sycl::write_only);
-            sycl::accessor Vy_out_ac_source_grid(source_grid.get_Vy_out_buffer(), cgh,
-                                                 sycl::write_only);
-            sycl::accessor tau_xx_out_ac_source_grid(source_grid.get_tau_xx_out_buffer(), cgh,
+            sycl::host_accessor T_out_ac_source_grid(source_grid.get_T_out_buffer(),
                                                      sycl::write_only);
-            sycl::accessor tau_yy_out_ac_source_grid(source_grid.get_tau_yy_out_buffer(), cgh,
-                                                     sycl::write_only);
-            sycl::accessor sigma_xy_out_ac_source_grid(source_grid.get_sigma_xy_out_buffer(), cgh,
-                                                       sycl::write_only);
-            sycl::accessor dVxd_tau_out_ac_source_grid(source_grid.get_dVxd_tau_out_buffer(), cgh,
-                                                       sycl::write_only);
-            sycl::accessor dVyd_tau_out_ac_source_grid(source_grid.get_dVyd_tau_out_buffer(), cgh,
-                                                       sycl::write_only);
-            sycl::accessor ErrV_out_ac_source_grid(source_grid.get_ErrV_out_buffer(), cgh,
-                                                   sycl::write_only);
-            sycl::accessor ErrP_out_ac_source_grid(source_grid.get_ErrP_out_buffer(), cgh,
-                                                   sycl::write_only);
+            sycl::host_accessor Pt_out_ac_source_grid(source_grid.get_Pt_out_buffer(),
+                                                      sycl::write_only);
+            sycl::host_accessor Vx_out_ac_source_grid(source_grid.get_Vx_out_buffer(),
+                                                      sycl::write_only);
+            sycl::host_accessor Vy_out_ac_source_grid(source_grid.get_Vy_out_buffer(),
+                                                      sycl::write_only);
+            sycl::host_accessor tau_xx_out_ac_source_grid(source_grid.get_tau_xx_out_buffer(),
+                                                          sycl::write_only);
+            sycl::host_accessor tau_yy_out_ac_source_grid(source_grid.get_tau_yy_out_buffer(),
+                                                          sycl::write_only);
+            sycl::host_accessor sigma_xy_out_ac_source_grid(source_grid.get_sigma_xy_out_buffer(),
+                                                            sycl::write_only);
+            sycl::host_accessor dVxd_tau_out_ac_source_grid(source_grid.get_dVxd_tau_out_buffer(),
+                                                            sycl::write_only);
+            sycl::host_accessor dVyd_tau_out_ac_source_grid(source_grid.get_dVyd_tau_out_buffer(),
+                                                            sycl::write_only);
+            sycl::host_accessor ErrV_out_ac_source_grid(source_grid.get_ErrV_out_buffer(),
+                                                        sycl::write_only);
+            sycl::host_accessor ErrP_out_ac_source_grid(source_grid.get_ErrP_out_buffer(),
+                                                        sycl::write_only);
 
-            cgh.parallel_for(ac_source_grid.get_range(), [=](sycl::id<2> id) {
-                Cell cell = ac_source_grid[id[0]][id[1]];
-                size_t cell_id = id[0] * ac_source_grid.get_range()[1] + id[1];
+            for (size_t i = 0; i < source_grid.get_grid_height(); i++) {
+                for (size_t j = 0; j < source_grid.get_grid_width(); j++) {
+                    Cell cell = ac_source_grid[i][j];
+                    size_t cell_id = i * source_grid.get_grid_width() + j;
 
-                T_out_ac_source_grid[cell_id] = cell.T;
-                Pt_out_ac_source_grid[cell_id] = cell.Pt;
-                Vx_out_ac_source_grid[cell_id] = cell.Vx;
-                Vy_out_ac_source_grid[cell_id] = cell.Vy;
-                tau_xx_out_ac_source_grid[cell_id] = cell.tau_xx;
-                tau_yy_out_ac_source_grid[cell_id] = cell.tau_yy;
-                sigma_xy_out_ac_source_grid[cell_id] = cell.sigma_xy;
-                dVxd_tau_out_ac_source_grid[cell_id] = cell.dVxd_tau;
-                dVyd_tau_out_ac_source_grid[cell_id] = cell.dVyd_tau;
-                ErrV_out_ac_source_grid[cell_id] = cell.ErrV;
-                ErrP_out_ac_source_grid[cell_id] = cell.ErrP;
-            });
-        });
-
-        update_kernel_queue.wait();
+                    T_out_ac_source_grid[cell_id] = cell.T;
+                    Pt_out_ac_source_grid[cell_id] = cell.Pt;
+                    Vx_out_ac_source_grid[cell_id] = cell.Vx;
+                    Vy_out_ac_source_grid[cell_id] = cell.Vy;
+                    tau_xx_out_ac_source_grid[cell_id] = cell.tau_xx;
+                    tau_yy_out_ac_source_grid[cell_id] = cell.tau_yy;
+                    sigma_xy_out_ac_source_grid[cell_id] = cell.sigma_xy;
+                    dVxd_tau_out_ac_source_grid[cell_id] = cell.dVxd_tau;
+                    dVyd_tau_out_ac_source_grid[cell_id] = cell.dVyd_tau;
+                    ErrV_out_ac_source_grid[cell_id] = cell.ErrV;
+                    ErrP_out_ac_source_grid[cell_id] = cell.ErrP;
+                }
+            }
+        }
 
         GridImpl swap_grid_a = source_grid.make_similar();
         GridImpl swap_grid_b = source_grid.make_similar();
@@ -127,55 +124,53 @@ template <typename F> class StencilUpdate {
         auto data_preperation_start_after = std::chrono::high_resolution_clock::now();
 
         // Gather the Arrays into Grid
+        {
+            sycl::host_accessor ac_pass_grid(pass_source->get_buffer(), sycl::write_only);
 
-        update_kernel_queue.submit([&](sycl::handler &cgh) {
-            sycl::accessor ac_pass_grid(pass_source->get_buffer(), cgh, sycl::write_only);
-
-            sycl::accessor T_out_ac_pass_grid(pass_source->get_T_out_buffer(), cgh,
-                                              sycl::read_only);
-            sycl::accessor Pt_out_ac_pass_grid(pass_source->get_Pt_out_buffer(), cgh,
-                                               sycl::read_only);
-            sycl::accessor Vx_out_ac_pass_grid(pass_source->get_Vx_out_buffer(), cgh,
-                                               sycl::read_only);
-            sycl::accessor Vy_out_ac_pass_grid(pass_source->get_Vy_out_buffer(), cgh,
-                                               sycl::read_only);
-            sycl::accessor tau_xx_out_ac_pass_grid(pass_source->get_tau_xx_out_buffer(), cgh,
+            sycl::host_accessor T_out_ac_pass_grid(pass_source->get_T_out_buffer(),
                                                    sycl::read_only);
-            sycl::accessor tau_yy_out_ac_pass_grid(pass_source->get_tau_yy_out_buffer(), cgh,
-                                                   sycl::read_only);
-            sycl::accessor sigma_xy_out_ac_pass_grid(pass_source->get_sigma_xy_out_buffer(), cgh,
-                                                     sycl::read_only);
-            sycl::accessor dVxd_tau_out_ac_pass_grid(pass_source->get_dVxd_tau_out_buffer(), cgh,
-                                                     sycl::read_only);
-            sycl::accessor dVyd_tau_out_ac_pass_grid(pass_source->get_dVyd_tau_out_buffer(), cgh,
-                                                     sycl::read_only);
-            sycl::accessor ErrV_out_ac_pass_grid(pass_source->get_ErrV_out_buffer(), cgh,
-                                                 sycl::read_only);
-            sycl::accessor ErrP_out_ac_pass_grid(pass_source->get_ErrP_out_buffer(), cgh,
-                                                 sycl::read_only);
+            sycl::host_accessor Pt_out_ac_pass_grid(pass_source->get_Pt_out_buffer(),
+                                                    sycl::read_only);
+            sycl::host_accessor Vx_out_ac_pass_grid(pass_source->get_Vx_out_buffer(),
+                                                    sycl::read_only);
+            sycl::host_accessor Vy_out_ac_pass_grid(pass_source->get_Vy_out_buffer(),
+                                                    sycl::read_only);
+            sycl::host_accessor tau_xx_out_ac_pass_grid(pass_source->get_tau_xx_out_buffer(),
+                                                        sycl::read_only);
+            sycl::host_accessor tau_yy_out_ac_pass_grid(pass_source->get_tau_yy_out_buffer(),
+                                                        sycl::read_only);
+            sycl::host_accessor sigma_xy_out_ac_pass_grid(pass_source->get_sigma_xy_out_buffer(),
+                                                          sycl::read_only);
+            sycl::host_accessor dVxd_tau_out_ac_pass_grid(pass_source->get_dVxd_tau_out_buffer(),
+                                                          sycl::read_only);
+            sycl::host_accessor dVyd_tau_out_ac_pass_grid(pass_source->get_dVyd_tau_out_buffer(),
+                                                          sycl::read_only);
+            sycl::host_accessor ErrV_out_ac_pass_grid(pass_source->get_ErrV_out_buffer(),
+                                                      sycl::read_only);
+            sycl::host_accessor ErrP_out_ac_pass_grid(pass_source->get_ErrP_out_buffer(),
+                                                      sycl::read_only);
 
-            auto kernel = [=](sycl::id<2> id) {
-                Cell cell;
-                size_t cell_id = id[0] * ac_pass_grid.get_range()[1] + id[1];
+            for (size_t i = 0; i < pass_source->get_grid_height(); i++) {
+                for (size_t j = 0; j < pass_source->get_grid_width(); j++) {
+                    size_t cell_id = i * pass_source->get_grid_width() + j;
 
-                cell.T = T_out_ac_pass_grid[cell_id];
-                cell.Pt = Pt_out_ac_pass_grid[cell_id];
-                cell.Vx = Vx_out_ac_pass_grid[cell_id];
-                cell.Vy = Vy_out_ac_pass_grid[cell_id];
-                cell.tau_xx = tau_xx_out_ac_pass_grid[cell_id];
-                cell.tau_yy = tau_yy_out_ac_pass_grid[cell_id];
-                cell.sigma_xy = sigma_xy_out_ac_pass_grid[cell_id];
-                cell.dVxd_tau = dVxd_tau_out_ac_pass_grid[cell_id];
-                cell.dVyd_tau = dVyd_tau_out_ac_pass_grid[cell_id];
-                cell.ErrV = ErrV_out_ac_pass_grid[cell_id];
-                cell.ErrP = ErrP_out_ac_pass_grid[cell_id];
+                    Cell cell;
+                    cell.T = T_out_ac_pass_grid[cell_id];
+                    cell.Pt = Pt_out_ac_pass_grid[cell_id];
+                    cell.Vx = Vx_out_ac_pass_grid[cell_id];
+                    cell.Vy = Vy_out_ac_pass_grid[cell_id];
+                    cell.tau_xx = tau_xx_out_ac_pass_grid[cell_id];
+                    cell.tau_yy = tau_yy_out_ac_pass_grid[cell_id];
+                    cell.sigma_xy = sigma_xy_out_ac_pass_grid[cell_id];
+                    cell.dVxd_tau = dVxd_tau_out_ac_pass_grid[cell_id];
+                    cell.dVyd_tau = dVyd_tau_out_ac_pass_grid[cell_id];
+                    cell.ErrV = ErrV_out_ac_pass_grid[cell_id];
+                    cell.ErrP = ErrP_out_ac_pass_grid[cell_id];
 
-                ac_pass_grid[id[0]][id[1]] = cell;
-            };
-
-            cgh.parallel_for(ac_pass_grid.get_range(), kernel);
-        });
-        update_kernel_queue.wait();
+                    ac_pass_grid[i][j] = cell;
+                }
+            }
+        }
 
         auto data_preperation_end_after = std::chrono::high_resolution_clock::now();
 
