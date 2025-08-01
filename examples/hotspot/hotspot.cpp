@@ -94,9 +94,9 @@ struct HotspotKernel : public BaseTransitionFunction {
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
 const size_t max_grid_height = 4096;
 const size_t max_grid_width = 4096;
-const size_t temporal_parallelism = 128;
+const size_t temporal_parallelism = 96;
 const size_t spatial_parallelism = 4;
-const size_t n_kernels = 32;
+const size_t n_kernels = temporal_parallelism / 4;
 using StencilUpdate =
     monotile::StencilUpdate<HotspotKernel, temporal_parallelism, spatial_parallelism,
                             max_grid_height, max_grid_width, n_kernels,

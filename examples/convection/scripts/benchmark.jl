@@ -7,7 +7,7 @@ const CELL_SIZE = 88 # bytes
 const TEMPORAL_PARALLELISM = Dict(:monotile => 8, :cuda => 1)
 const SPATIAL_PARALLELISM = Dict(:monotile => 1, :cuda => 1)
 const TILE_NX = Dict(:monotile => 2^16, :cuda => nothing)
-const TILE_NY = Dict(:monotile => 1024, :cuda => nothing)
+const TILE_NY = Dict(:monotile => 512, :cuda => nothing)
 
 function analyze_log(logfile)
     iteration_re = r"it = ([0-9]+) \(iter = ([0-9]+), time = ([^)]+)\)"

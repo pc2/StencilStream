@@ -42,22 +42,20 @@ constexpr float sqrt_2 = 1.4142135623730951;
 constexpr float pi = 3.1415926535897932384626433;
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
-constexpr size_t temporal_parallelism = 128;
+constexpr size_t temporal_parallelism = 96;
 constexpr size_t spatial_parallelism = 1;
 constexpr size_t tile_width = 512;
 // monotile and CPU. More than a quadratic tile doesn't make sense.
 constexpr size_t tile_height = tile_width;
-constexpr size_t n_kernels = 32;
-
 #elif defined(STENCILSTREAM_BACKEND_TILING)
 constexpr size_t temporal_parallelism = 64;
 constexpr size_t spatial_parallelism = 2;
 constexpr size_t tile_width = 768;
 // tiling, make tile as wide as possible.
 constexpr size_t tile_height = 1 << 16;
-constexpr size_t n_kernels = 16;
 #endif
 
+constexpr size_t n_kernels = temporal_parallelism / 4;
 constexpr size_t max_n_rings = 15;
 constexpr size_t bits_max_n_rings = std::bit_width(max_n_rings + 1);
 using uindex_ring_t = ac_int<bits_max_n_rings, false>;
