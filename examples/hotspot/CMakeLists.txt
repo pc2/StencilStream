@@ -7,9 +7,14 @@ target_link_libraries(hotspot_cuda_baseline PUBLIC StencilStream_CUDA)
 add_executable(hotspot_cuda_baseline_bench hotspot_baseline_benchmark.cpp)
 target_link_libraries(hotspot_cuda_baseline_bench PUBLIC StencilStream_CUDA)
 
+add_executable(hotspot_cuda_prototype_bench hotspot_prototype_benchmark.cpp)
+target_link_libraries(hotspot_cuda_prototype_bench PUBLIC StencilStream_CUDA)
+
 FetchContent_Declare(googlebenchmark
   GIT_REPOSITORY https://github.com/google/benchmark.git
   GIT_TAG main)
 FetchContent_MakeAvailable(googlebenchmark)
 
 target_link_libraries(hotspot_cuda_baseline_bench PRIVATE benchmark::benchmark)
+
+target_link_libraries(hotspot_cuda_prototype_bench PRIVATE benchmark::benchmark)

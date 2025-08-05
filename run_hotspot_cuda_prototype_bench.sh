@@ -3,7 +3,7 @@
 #SBATCH --gres=gpu:a100:1
 #SBATCH --qos=devel --partition=dgx
 #SBATCH -c 32 --mem 32G -t 00:05:00
-#SBATCH --output=%j_hotspot_baseline.out
+#SBATCH --output=%j_hotspot_prototype.out
 
 
 ml reset
@@ -13,17 +13,8 @@ ml lang
 ml intel/oneapi/25.0.0
 ml system/CUDA/12.6.0
 
-cd /scratch/hpc-lco-kenter/tstoehr/stencilstream-prototype/build
-echo "Starting program"
-
 cd /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/build
-
-for ((i=0; i<5; i++)); do
-    ./examples/hotspot/hotspot_cuda_baseline 1024 1024 4 temp_1024 power_1024 out.txt
-done
-
-
-
+./examples/hotspot/hotspot_cuda_prototype_bench
 
 
 

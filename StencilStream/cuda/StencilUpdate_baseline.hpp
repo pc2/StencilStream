@@ -103,6 +103,8 @@ template <typename F> class StencilUpdate {
 
     void clear_work_events() { work_events.clear(); }
 
+    void reset_walltime() { walltime = 0.0; }
+
     double get_kernel_runtime() const {
         double kernel_runtime = 0.0;
         for (sycl::event work_event : work_events) {

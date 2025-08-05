@@ -1,4 +1,5 @@
-#include "../../StencilStream/cuda/StencilUpdate_baseline.hpp"
+#include "../../StencilStream/cuda/StencilUpdate_hotspot_prototype.hpp"
+#include <benchmark/benchmark.h>
 #include <chrono>
 #include <fstream>
 #include <sycl/sycl.hpp>
@@ -157,30 +158,17 @@ auto exception_handler = [](sycl::exception_list exceptions) {
     }
 };
 
-int main(int argc, char **argv) {
-    size_t n_rows, n_columns, sim_time;
-    bool benchmark_mode = false;
+static void BM_HotspotKernel(benchmark::State &state) {
+    // Args: 0=row, 1=col, 2=sim_time, 3=temp_file_index, 4=power_file_index
+    size_t n_rows = state.range(0);
+    size_t n_columns = state.range(1);
+    size_t sim_time = state.range(2);
+    std::string temp_file = "temp_" + std::to_string(state.range(3));
+    std::string power_file = "power_" + std::to_string(state.range(4));
+    std::string output_file = "/dev/null"; // Kein Output nötig beim Benchmark
 
-    /* check validity of inputs	*/
-    if (argc != 7)
-        usage(argc, argv);
-    if ((n_rows = atoi(argv[1])) <= 0)
-        usage(argc, argv);
-    if ((n_columns = atoi(argv[2])) <= 0)
-        usage(argc, argv);
-    if ((sim_time = atoi(argv[3])) <= 0)
-        usage(argc, argv);
-    /* read initial temperatures and input power	*/
-    std::string tfile = std::string(argv[4]);
-    std::string pfile = std::string(argv[5]);
-    std::string ofile = std::string(argv[6]);
-
-    bool binary_io = tfile.ends_with(".bin");
-    assert(!binary_io || pfile.ends_with(".bin"));
-
-    Grid<HotspotCell> grid = read_input(tfile, pfile, n_rows, n_columns, binary_io);
-
-    printf("Start computing the transient temperature\n");
+    bool binary_io = false;
+    Grid<HotspotCell> grid = read_input(temp_file, power_file, n_rows, n_columns, binary_io);
 
     FLOAT grid_height = chip_height / n_rows;
     FLOAT grid_width = chip_width / n_columns;
@@ -210,17 +198,42 @@ int main(int argc, char **argv) {
         .profiling = true,
     });
 
-    grid = update(grid);
+    for (auto _ : state) {
+        Grid<HotspotCell> local_grid = grid;
+        local_grid = update(local_grid);
+    }
+    /*
+    double data_prep_time_s =
+        (update.get_data_preperation_time_before() + update.get_data_preperation_time_after()) /
+            state.iterations() / 1.0e9; */
 
-    // std::cout << "Ending simulation" << std::endl;
-    // std::cout << "Walltime: " << update.get_walltime() << " s" << std::endl;
-    // std::cout << "Kerneltime: " << update.get_kernel_runtime() << " s" << std::endl;
-    std::cout << "GFlops: "
-              << ((n_rows * n_columns * sim_time * 15) / update.get_walltime()) / 1.0e9
-              << std::endl;
-    std::cout << "sim_time: " << sim_time << std::endl;
+    double kernel_time = update.get_kernel_runtime();
+    double avg_kernel_time = kernel_time / state.iterations();
+    double wall_time = update.get_walltime();
+    double avg_wall_time = wall_time / state.iterations();
+    double avg_data_prep_time =
+        (update.get_data_preperation_time_before() + update.get_data_preperation_time_after()) /
+        state.iterations();
 
-    write_output(grid, ofile, binary_io);
+    double flops = state.iterations() * 1.0 * n_rows * n_columns * 15.0 * sim_time;
+    double factor = avg_wall_time / avg_kernel_time; // >1 = Overhead
 
-    return 0;
+    state.counters["Avg_Kernel_time"] = avg_kernel_time;
+    state.counters["Avg_Wall_time"] = avg_wall_time;
+    state.counters["Sim_time"] = benchmark::Counter(sim_time, benchmark::Counter::kDefaults);
+    state.counters["Flops_walltime"] = flops / wall_time;
+    state.counters["Flops_kerneltime"] = flops / kernel_time;
+    state.counters["Kerneltime to walltime"] = factor;
+    state.counters["Data_prep_time"] = avg_data_prep_time;
 }
+
+void CustomArgs(benchmark::internal::Benchmark *b) {
+    for (int exp = 2; exp <= 12; ++exp) {
+        int size = 1 << exp;
+        b->Args({1024, 1024, size, 1024, 1024});
+    }
+}
+
+BENCHMARK(BM_HotspotKernel)->Apply(CustomArgs)->Unit(benchmark::kSecond);
+
+BENCHMARK_MAIN();

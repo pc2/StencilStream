@@ -188,46 +188,41 @@ static void BM_HotspotKernel(benchmark::State &state) {
 
     sycl::device device(sycl::gpu_selector_v);
 
+    StencilUpdate<HotspotKernel> update({
+        .transition_function =
+            HotspotKernel{.Rx_1 = Rx_1, .Ry_1 = Ry_1, .Rz_1 = Rz_1, .Cap_1 = Cap_1},
+        .halo_value = HotspotCell(0.0, 0.0),
+        .n_iterations = sim_time,
+        .device = device,
+        .blocking = true,
+        .profiling = true,
+    });
+
     for (auto _ : state) {
         Grid<HotspotCell> local_grid = grid;
-
-        StencilUpdate<HotspotKernel> update({
-            .transition_function =
-                HotspotKernel{.Rx_1 = Rx_1, .Ry_1 = Ry_1, .Rz_1 = Rz_1, .Cap_1 = Cap_1},
-            .halo_value = HotspotCell(0.0, 0.0),
-            .n_iterations = sim_time,
-            .device = device,
-            .blocking = true,
-            .profiling = true,
-        });
-
         local_grid = update(local_grid);
-
-        state.PauseTiming();
-
-        double walltime_time = update.get_walltime();
-        double kernel_time = update.get_kernel_runtime();
-
-        // Kernelzeit als Messzeit
-        state.SetIterationTime(kernel_time);
-
-        // Zusätzliche Infos
-        state.counters["Walltime_sec"] = walltime_time;
-        state.counters["Kernel_sec"] = kernel_time;
-
-        // FLOP/s berechnen
-        constexpr int flops_per_cell = 15;
-        double total_flops = static_cast<double>(n_rows) * n_columns * sim_time * flops_per_cell;
-        double gflops = total_flops / kernel_time;
-
-        state.counters["GFLOP/s"] = gflops;
-
-        update.clear_work_events();
-        state.ResumeTiming();
     }
+    /*
+        double data_prep_time_s =
+            (update.get_data_preperation_time_before() + update.get_data_preperation_time_after()) /
+            state.iterations() / 1.0e9; */
 
-    // Für throughput-Anzeige
-    state.SetItemsProcessed(int64_t(state.iterations()) * n_rows * n_columns * sim_time);
+    double kernel_time = update.get_kernel_runtime();
+    double avg_kernel_time = kernel_time / state.iterations();
+    double wall_time = update.get_walltime();
+    double avg_wall_time = wall_time / state.iterations();
+    double avg_data_prep_time = update.get_data_preperation_time_before() / state.iterations();
+
+    double flops = state.iterations() * 1.0 * n_rows * n_columns * 15.0 * sim_time;
+    double factor = avg_wall_time / avg_kernel_time; // >1 = Overhead
+
+    state.counters["Avg_Kernel_time"] = avg_kernel_time;
+    state.counters["Avg_Wall_time"] = avg_wall_time;
+    state.counters["Sim_time"] = benchmark::Counter(sim_time, benchmark::Counter::kDefaults);
+    state.counters["Flops_walltime"] = flops / wall_time;
+    state.counters["Flops_kerneltime"] = flops / kernel_time;
+    state.counters["Kerneltime to walltime"] = factor;
+    state.counters["Data_prep_time"] = avg_data_prep_time;
 }
 
 void CustomArgs(benchmark::internal::Benchmark *b) {
@@ -237,6 +232,6 @@ void CustomArgs(benchmark::internal::Benchmark *b) {
     }
 }
 
-BENCHMARK(BM_HotspotKernel)->Apply(CustomArgs)->Unit(benchmark::kMillisecond)->UseManualTime();
+BENCHMARK(BM_HotspotKernel)->Apply(CustomArgs)->Unit(benchmark::kMillisecond);
 
 BENCHMARK_MAIN();

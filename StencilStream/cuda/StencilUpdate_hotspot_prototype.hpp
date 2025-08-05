@@ -97,7 +97,7 @@ template <typename F> class StencilUpdate {
         std::chrono::duration<double> walltime = walltime_end - walltime_start;
         this->walltime += walltime.count();
 
-        // auto data_preperation_start_after = std::chrono::high_resolution_clock::now();
+        auto data_preperation_start_after = std::chrono::high_resolution_clock::now();
 
         // Gather the Arrays into Grid
 
@@ -147,6 +147,7 @@ template <typename F> class StencilUpdate {
     double get_data_preperation_time_after() const { return data_preperation_time_after; }
 
     void clear_work_events() { work_events.clear(); }
+    void reset_walltime() { walltime = 0.0; }
 
     double get_kernel_runtime() const {
         double kernel_runtime = 0.0;
@@ -201,8 +202,8 @@ template <typename F> class StencilUpdate {
                             size_t cell_id = (id[0] + rel_r - F::stencil_radius) * grid_width +
                                              (id[1] + rel_c - F::stencil_radius);
 
-                            cell[0] = T_out_ac_pass_source[cell_id];
-                            cell[1] = Pt_out_ac_pass_source[cell_id];
+                            cell[0] = temp_out_ac_pass_source[cell_id];
+                            cell[1] = power_out_ac_pass_source[cell_id];
 
                         } else {
                             cell = halo_value;

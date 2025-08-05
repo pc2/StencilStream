@@ -31,12 +31,12 @@ template <typename Cell> class Grid {
 
     std::size_t get_grid_width() const { return buffer.get_range()[1]; }
 
-    Grid make_similar() const { return Grid(buffer.get_range(), T_out.get_range()); }
+    Grid make_similar() const { return Grid(buffer.get_range(), temp_out.get_range()); }
 
     sycl::buffer<Cell, 2> &get_buffer() { return buffer; }
 
-    sycl::buffer<double, 1> &get_temp_out_buffer() { return temp_out; }
-    sycl::buffer<double, 1> &get_power_out_buffer() { return power_out; }
+    sycl::buffer<float, 1> &get_temp_out_buffer() { return temp_out; }
+    sycl::buffer<float, 1> &get_power_out_buffer() { return power_out; }
 
   private:
     sycl::buffer<Cell, 2> buffer;
