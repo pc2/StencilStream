@@ -15,6 +15,10 @@ target_link_libraries(convection_cuda PUBLIC StencilStream_CUDA)
 add_executable(convection_cuda_prototype convection_prototype.cpp)
 target_link_libraries(convection_cuda_prototype PUBLIC StencilStream_CUDA)
 
+add_executable(convection_cuda_prototype_bench convection_prototype_bench.cpp)
+target_link_libraries(convection_cuda_prototype_bench PUBLIC StencilStream_CUDA)
+
+
 add_executable(convection_cuda_prototype_dummy convection_prototype_dummy.cpp)
 target_link_libraries(convection_cuda_prototype_dummy PUBLIC StencilStream_CUDA)
 
@@ -38,7 +42,7 @@ FetchContent_Declare(json
 FetchContent_MakeAvailable(json)
 
 # Linking with the JSON library
-foreach(TARGET convection convection_cpu convection_cuda convection_emu convection_report convection_cuda_prototype convection_cuda_baseline convection_cuda_prototype_dummy)
+foreach(TARGET convection convection_cpu convection_cuda convection_emu convection_report convection_cuda_prototype convection_cuda_baseline convection_cuda_prototype_dummy convection_cuda_prototype_bench)
     target_link_libraries(${TARGET} PRIVATE nlohmann_json::nlohmann_json)
 endforeach()
 
@@ -46,3 +50,10 @@ endforeach()
 foreach(TARGET convection convection_report)
     target_link_options(${TARGET} PUBLIC -Xsseed=28494)
 endforeach()
+
+FetchContent_Declare(googlebenchmark
+  GIT_REPOSITORY https://github.com/google/benchmark.git
+  GIT_TAG main)
+FetchContent_MakeAvailable(googlebenchmark)
+
+target_link_libraries(convection_cuda_prototype_bench PRIVATE benchmark::benchmark)

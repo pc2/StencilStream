@@ -228,9 +228,11 @@ static void BM_HotspotKernel(benchmark::State &state) {
 }
 
 void CustomArgs(benchmark::internal::Benchmark *b) {
-    for (int exp = 2; exp <= 12; ++exp) {
-        int size = 1 << exp;
-        b->Args({1024, 1024, size, 1024, 1024});
+
+    int iter = 28;
+    while (iter > 18) {
+        b->Args({1024, 1024, iter, 1024, 1024});
+        iter -= 1;
     }
 }
 
