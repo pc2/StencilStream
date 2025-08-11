@@ -22,15 +22,13 @@ function max_perf_benchmark(exe, variant, n_ranks)
     out_dir = Base.Filesystem.mkpath("./out/")
     mpi_root = ENV["I_MPI_ROOT"]
     command = `$mpi_root/bin/mpirun -n $n_ranks $exe -c $experiment_path -o $out_dir`
+    warmup_cluster(command, n_ranks, variant)
 
     runtime_re = Regex("Walltime: ([0-9]+\\.[0-9]+) s")
 
     # Defining names here so that later definitions won't be dropped.
     grid_wh = n_timesteps = nothing
     runtimes = Vector()
-
-    # Warmup to exclude programming from the benchmark
-    run(command)
 
     for i_sample in 1:n_samples
         runtime, grid_wh, n_timesteps = open(command, "r") do process_in
@@ -81,14 +79,12 @@ function max_perf_benchmark(exe, variant, n_ranks)
     else
         metrics = Dict(
             "target" => (variant == :monotile) ? "FDTD, Monotile" : "FDTD, Tiling",
-            "n_cus" => n_replications(info),
-            "n_ranks" => n_ranks,
+            "parallelity" => parallelity(info),
             "f" => info.f,
             "occupancy" => occupancy(info),
             "measured" => measured_throughput(info),
             "accuracy" => model_accurracy(info),
-            "FLOPS" => measured_flops(info),
-            "mem_throughput" => measured_mem_throughput(info)
+            "FLOPS" => measured_flops(info)
         )
     end
 
@@ -104,11 +100,17 @@ end
 
 exe = ARGS[2]
 variant = Symbol(ARGS[3])
+n_ranks = parse(Int, ARGS[4])
 
 if ARGS[1] == "max_perf"
-    n_fpgas = parse(Int, ARGS[4])
-    metrics = max_perf_benchmark(exe, variant, n_fpgas)
+    metrics = max_perf_benchmark(exe, variant, n_ranks)
     open(f -> JSON.print(f, metrics), "metrics.$variant.json", "w")
+elseif ARGS[1] == "strong_scaling"
+    metrics = Dict()
+    for i in n_ranks:-1:1
+        metrics[i] = max_perf_benchmark(exe, variant, i)
+        open(f -> JSON.print(f, metrics), "metrics.$variant.json", "w")
+    end
 else
     println(stderr, "Unknown benchmark '$(ARGS[1])'")
     exit(1)

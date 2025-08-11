@@ -62,13 +62,8 @@ function max_perf_benchmark(exec, variant, n_ranks)
     println("Experiment created and written!")
 
     mpi_root = ENV["I_MPI_ROOT"]
-    command = `timeout 3m $mpi_root/bin/mpirun -n $n_ranks $exec $grid_height $grid_width $n_iters $temp_path $power_path $out_path`
-
-    # Warmup to exclude programming from the benchmark and to test for functionality
-    r = run(Cmd(command, ignorestatus=true))
-    if r.exitcode == 124
-        return nothing
-    end
+    command = `$mpi_root/bin/mpirun -n $n_ranks $exec $grid_height $grid_width $n_iters $temp_path $power_path $out_path`
+    warmup_cluster(command, n_ranks, variant)
 
     runtimes = Vector()
     for i_sample in 1:n_samples
@@ -146,15 +141,7 @@ if ARGS[1] == "max_perf"
 elseif ARGS[1] == "strong_scaling"
     metrics = Dict()
     for i in n_ranks:-1:1
-        try
-            metrics[i] = max_perf_benchmark(exec, variant, i)
-        catch e
-            if isa(e, ProcessFailedException)
-
-            else
-                throw(e)
-            end
-        end
+        metrics[i] = max_perf_benchmark(exec, variant, i)
         open(f -> JSON.print(f, metrics), "metrics.$variant.json", "w")
     end
 else

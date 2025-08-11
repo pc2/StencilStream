@@ -64,7 +64,7 @@ struct BenchmarkInformation
     runtime::Float64
 end
 
-function f_effective(info::BenchmarkInformation) 
+function f_effective(info::BenchmarkInformation)
     s_link = 32 # pipeword size
     f_link = 5.0e9 / s_link # clock rate of single IO pipe
     if info.variant == :monotile
@@ -96,7 +96,7 @@ measured_flops(info::BenchmarkInformation) = measured_throughput(info) * info.op
 
 function model_runtime(info::BenchmarkInformation)
     l_link = 0.5e-3 / info.f
-    
+
     if info.variant == :monotile
         l_compute_unit = n_grid_col_vects(info) + 1
         l_fpga = n_cus(info) * l_compute_unit
@@ -171,4 +171,22 @@ function setup_io_pipes(n_ranks, variant)
     push!(command, "--fpgalink=n$(lpad(i_last_node,2,'0')):acl$(i_last_acl):ch3-n00:acl0:ch1")
     command = Cmd(command)
     run(command)
+end
+
+function warmup_cluster(command, n_ranks, variant)
+    warmup_successful = false
+    for warmup_try in 1:3
+        r = run(Cmd(`timeout 1m $command`, ignorestatus=true))
+        if r.exitcode == 0
+            warmup_successful = true
+            break
+        elseif r.exitcode == 127
+            # try setting up the links again
+            setup_io_pipes(n_ranks, variant)
+        end
+    end
+    if !warmup_successful
+        println(stderr, "Failed to warmup links!")
+        exit(1)
+    end
 end
