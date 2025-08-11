@@ -76,6 +76,7 @@ FPGA/CPU unit test:
         - ./tests/unit_test_fpga
     artifacts:
         paths:
+            - build/
             - Manifest.toml
 
 # ==========
