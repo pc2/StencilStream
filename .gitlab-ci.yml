@@ -232,7 +232,7 @@ jacobi (monotile) synthesis:
         SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G --array=0-7
     script:
         - cd build
-        - ../examples/jacobi/synthesize.sh mono
+        - ../examples/jacobi/scripts/synthesize.sh mono
     artifacts:
         when: always
         paths:
