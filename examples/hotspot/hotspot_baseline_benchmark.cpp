@@ -225,10 +225,19 @@ static void BM_HotspotKernel(benchmark::State &state) {
     state.counters["Data_prep_time"] = avg_data_prep_time;
 }
 
-void CustomArgs(benchmark::internal::Benchmark *b) {
-    for (int exp = 2; exp <= 12; ++exp) {
-        int size = 1 << exp;
+/* void CustomArgs(benchmark::internal::Benchmark *b) {
+    for (int exp = 100; exp <= 1500; ++exp) {
+        int size = exp;
         b->Args({1024, 1024, size, 1024, 1024});
+    }
+} */
+
+void CustomArgs(benchmark::internal::Benchmark *b) {
+
+    int iter = 80;
+    while (iter <= 250) {
+        b->Args({1024, 1024, iter, 1024, 1024});
+        iter += 10;
     }
 }
 

@@ -1,5 +1,6 @@
-#include <StencilStream/cuda/StencilUpdate_prototype.hpp>
+#include <StencilStream/cuda/StencilUpdate_baseline.hpp>
 
+#include <benchmark/benchmark.h>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -218,41 +219,17 @@ using ThermalGrid = Grid<ThermalConvectionCell>;
 using PseudoTransientUpdate = StencilUpdate<PseudoTransientKernel>;
 using ThermalSolverUpdate = StencilUpdate<ThermalSolverKernel>;
 
-int main(int argc, char **argv) {
+static void BM_HotspotKernel(benchmark::State &state) {
     auto main_time_start = std::chrono::high_resolution_clock::now();
-    if (argc != 3) {
-        std::cerr << "Usage: " << argv[0] << " <path to experiment>.json <path to output directory>"
-                  << std::endl;
-        return 1;
-    }
 
-    std::filesystem::path experiment_file_path(argv[1]);
-    std::filesystem::path output_dir_path(argv[2]);
-
-    if (!std::filesystem::is_regular_file(experiment_file_path)) {
-        std::cerr << "The experiment file does not exist or is not a regular file." << std::endl;
-        return 1;
-    }
-
-    if (!std::filesystem::is_directory(output_dir_path)) {
-        std::cerr << "The output directory does not exist or is not a directory." << std::endl;
-        return 1;
-    }
-
-    std::ifstream experiment_file(experiment_file_path);
-    if (!experiment_file.is_open()) {
-        std::cerr << "Could not open experiment file!" << std::endl;
-        return 1;
-    }
+    std::filesystem::path experiment_file_path(
+        "/scratch/hpc-lco-kenter/tstoehr/sycl-stencil/examples/convection/experiments/"
+        "max-res-default.json");
+    std::filesystem::path output_dir_path("/scratch/hpc-lco-kenter/tstoehr/sycl-stencil/build/out");
 
     json experiment;
-    try {
-        experiment = json::parse(experiment_file);
-    } catch (json::parse_error e) {
-        std::cerr << "Could not parse experiment file:" << std::endl;
-        std::cerr << e.what() << std::endl;
-        return 1;
-    }
+    std::ifstream experiment_file(experiment_file_path);
+    experiment = json::parse(experiment_file);
 
     // Physics - dimentionally independent scales
     double lx = experiment.at("lx");         // horizontal domain extend, m
@@ -280,7 +257,10 @@ int main(int argc, char **argv) {
     size_t iterMax = experiment.at("iterMax"); // maximal number of pseudo-transient iterations
     size_t nt = experiment.at("nt");           // total number of timesteps
     size_t nout = experiment.at("nout");       // frequency of plotting
-    size_t nerr = experiment.at("nerr");       // frequency of error checking
+
+    // TODO: Changed nerr to custom benchmark args
+    size_t nerr = state.range(0); // frequency of error checking
+
     double epsilon = experiment.at("epsilon"); // nonlinear absolute tolerence
     double dmp = experiment.at("dmp");         // damping paramter
 
@@ -323,7 +303,7 @@ int main(int argc, char **argv) {
         .blocking = true,
     });
 
-    ThermalGrid grid(nx + 1, ny + 1 /*, ThermalConvectionCell::halo_value()*/);
+    ThermalGrid grid(nx + 1, ny + 1);
     {
         ThermalGrid::GridAccessor<sycl::access::mode::read_write> ac(grid);
         for (size_t x = 0; x < nx + 1; x++) {
@@ -345,7 +325,6 @@ int main(int argc, char **argv) {
     // Starting iteration with one and using an inclusive upper bound to stay compatible with the
     // reference.
 
-    double io_time = 0.0;
     double thermal_solver_kernel_walltime = 0.0;
     double thermal_solver_walltime = 0.0;
     double thermal_solver_data_preperation_time_before = 0.0;
@@ -353,96 +332,24 @@ int main(int argc, char **argv) {
     double error_check_time = 0.0;
     int total_iterations = 0;
 
-    auto computation_start = std::chrono::system_clock::now();
-    for (size_t it = 1; it <= nt; it++) {
-        double errV = 2 * epsilon;
-        double errP = 2 * epsilon;
-        double max_ErrV, max_ErrP, max_Vx, max_Vy, max_Pt;
-        size_t iter;
+    for (auto _ : state) {
+        ThermalGrid local_grid = grid;
+        total_iterations = 0;
 
-        auto transients_start = std::chrono::high_resolution_clock::now();
-        for (iter = 0; iter < iterMax && (errV > epsilon || errP > epsilon); iter += nerr) {
-            grid = pseudo_transient_update(grid);
+        for (size_t it = 1; it <= 5; it++) {
+            double errV = 2 * epsilon;
+            double errP = 2 * epsilon;
+            double max_ErrV, max_ErrP, max_Vx, max_Vy, max_Pt;
+            size_t iter;
 
-            max_ErrV = max_ErrP = max_Vx = max_Vy = max_Pt =
-                -std::numeric_limits<double>::infinity();
+            auto transients_start = std::chrono::high_resolution_clock::now();
+            for (iter = 0; iter < iterMax && (errV > epsilon || errP > epsilon); iter += nerr) {
+                local_grid = pseudo_transient_update(local_grid);
 
-#if 1 // defined(STENCILSTREAM_BACKEND_CUDA)
-            sycl::queue q{sycl::gpu_selector_v};
+                max_ErrV = max_ErrP = max_Vx = max_Vy = max_Pt =
+                    -std::numeric_limits<double>::infinity();
 
-            int length1 = nx * ny;
-            int length2 = (nx + 1) * ny;
-            int length3 = nx * (ny + 1);
-
-            // USM memory for storing the different arrays to look for max values
-            double *Pt_out_max = malloc_shared<double>(length1, q);
-            double *Vx_out_max = malloc_shared<double>(length2, q);
-            double *Vy_out_max = malloc_shared<double>(length1, q);
-            double *ErrV_out_max = malloc_shared<double>(length3, q);
-            double *ErrP_out_max = malloc_shared<double>(length1, q);
-
-            // Extract the values from the cells to the arrays
-            q.submit([&](sycl::handler &cgh) {
-                sycl::accessor source_ac(grid.get_buffer(), cgh, sycl::read_only);
-
-                cgh.parallel_for(sycl::range<2>(nx + 1, ny + 1), [=](sycl::id<2> id) {
-                    int x = id[0];
-                    int y = id[1];
-                    PseudoTransientKernel::Cell cell = source_ac[x][y];
-
-                    size_t cell_id = x * ny + y;
-
-                    if (x < nx && y < ny) {
-                        Pt_out_max[cell_id] = std::abs(cell.Pt);
-                        Vy_out_max[cell_id] = std::abs(cell.Vy);
-                        ErrP_out_max[cell_id] = std::abs(cell.ErrP);
-                    }
-
-                    if (x < nx + 1 && y < ny) {
-                        Vx_out_max[cell_id] = std::abs(cell.Vx);
-                    }
-
-                    if (x < nx && y < ny + 1) {
-                        ErrV_out_max[cell_id] = std::abs(cell.ErrV);
-                    }
-                });
-            });
-
-            q.wait();
-
-            auto policy = oneapi::dpl::execution::make_device_policy<class MaxSearch>(q);
-
-            // Returns a pointer which is directly dereferenced
-            auto find_max_Pt = *oneapi::dpl::max_element(policy, Pt_out_max, Pt_out_max + length1);
-            auto find_max_ErrV =
-                *oneapi::dpl::max_element(policy, ErrV_out_max, ErrV_out_max + length3);
-            auto find_max_ErrP =
-                *oneapi::dpl::max_element(policy, ErrP_out_max, ErrP_out_max + length1);
-            auto find_max_Vx = *oneapi::dpl::max_element(policy, Vx_out_max, Vx_out_max + length2);
-            auto find_max_Vy = *oneapi::dpl::max_element(policy, Vy_out_max, Vy_out_max + length1);
-
-            // Check if the found value is bigger than the initialized value
-            max_Pt = std::max(max_Pt, find_max_Pt);
-            max_Vy = std::max(max_Vy, find_max_Vy);
-            max_Vx = std::max(max_Vx, find_max_Vx);
-            max_ErrV = std::max(max_ErrV, find_max_ErrV);
-            max_ErrP = std::max(max_ErrP, find_max_ErrP);
-
-            errV = max_ErrV / (1e-12 + max_Vy);
-            errP = max_ErrP / (1e-12 + max_Pt);
-
-            // Free USM memory
-            free(Pt_out_max, q);
-            free(Vx_out_max, q);
-            free(Vy_out_max, q);
-            free(ErrV_out_max, q);
-            free(ErrP_out_max, q);
-#elif 0
-
-#else
-
-            {
-                ThermalGrid::GridAccessor<sycl::access::mode::read> ac(grid);
+                ThermalGrid::GridAccessor<sycl::access::mode::read> ac(local_grid);
                 for (size_t x = 0; x < nx + 1; x++) {
                     for (size_t y = 0; y < ny + 1; y++) {
                         auto cell = ac[x][y];
@@ -463,136 +370,63 @@ int main(int argc, char **argv) {
                         }
                     }
                 }
+                errV = max_ErrV / (1e-12 + max_Vy);
+                errP = max_ErrP / (1e-12 + max_Pt);
             }
-            errV = max_ErrV / (1e-12 + max_Vy);
-            errP = max_ErrP / (1e-12 + max_Pt);
-#endif
+
+            double dt_adv = std::min(dx / max_Vx, dy / max_Vy) / 2.1;
+            double dt = std::min(dt_diff, dt_adv);
+
+            ThermalSolverUpdate thermal_solver_update({
+                .transition_function =
+                    ThermalSolverKernel{
+                        .nx = nx, .ny = ny, .dx = dx, .dy = dy, .dt = dt, .DcT = DcT},
+                .halo_value = ThermalConvectionCell::halo_value(),
+                .n_iterations = 1,
+                .device = device,
+                .blocking = true,
+            });
+            local_grid = thermal_solver_update(local_grid);
+
+            total_iterations += iter;
+
+            printf("it = %zu (iter = %zu), errV=%1.3e, errP=%1.3e \n", it, iter, errV, errP);
         }
-        auto transients_end = std::chrono::high_resolution_clock::now();
-        double kernel_time = pseudo_transient_update.get_kernel_runtime();
-        auto transients_computation_time =
-            std::chrono::duration_cast<std::chrono::duration<double>>(transients_end -
-                                                                      transients_start);
-        printf("it = %zu (iter = %zu, time = %e), errV=%1.3e, errP=%1.3e \n", it, iter,
-               transients_computation_time.count(), errV, errP);
-
-        error_check_time += transients_computation_time.count();
-        total_iterations += iter;
-
-        double dt_adv = std::min(dx / max_Vx, dy / max_Vy) / 2.1;
-        double dt = std::min(dt_diff, dt_adv);
-
-        ThermalSolverUpdate thermal_solver_update({
-            .transition_function =
-                ThermalSolverKernel{.nx = nx, .ny = ny, .dx = dx, .dy = dy, .dt = dt, .DcT = DcT},
-            .halo_value = ThermalConvectionCell::halo_value(),
-            .n_iterations = 1,
-            .device = device,
-            .blocking = true,
-        });
-        grid = thermal_solver_update(grid);
-
-        auto io_start = std::chrono::high_resolution_clock::now();
-
-        if (it > 0 && it % nout == 0) {
-            std::filesystem::path output_file_path =
-                output_dir_path / std::filesystem::path(std::to_string(it) + "_SOA1D" + ".csv");
-            std::ofstream out_file(output_file_path);
-            {
-                ThermalGrid::GridAccessor<sycl::access::mode::read> ac(grid);
-                for (size_t x = 0; x < nx; x++) {
-                    for (size_t y = 0; y < ny; y++) {
-                        out_file << ac[x][y].T;
-                        if (y != ny - 1) {
-                            out_file << ",";
-                        }
-                    }
-                    out_file << "\n";
-                }
-            }
-            out_file.close();
-        }
-        auto io_stop = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> io_time_chrono = io_stop - io_start;
-        io_time += io_time_chrono.count();
-        thermal_solver_kernel_walltime += thermal_solver_update.get_kernel_runtime();
-        thermal_solver_walltime += thermal_solver_update.get_walltime();
-
-        // TODO: Delete prints
-
-        thermal_solver_data_preperation_time_before +=
-            thermal_solver_update.get_data_preperation_time_before();
-
-        thermal_solver_data_preperation_time_after +=
-            thermal_solver_update.get_data_preperation_time_after();
-
-        /*         std::cout << "thermal solver time from 1 iteration: "
-                          << thermal_solver_update.get_data_preperation_time_before() +
-                                 thermal_solver_update.get_data_preperation_time_after()
-                          << "\n";
-
-                std::cout << "thermal solver time accumulated: "
-                          << thermal_solver_data_preperation_time_before +
-                                 thermal_solver_data_preperation_time_after
-                          << "\n"; */
     }
 
-    // Time of all computations
-    auto computation_end = std::chrono::system_clock::now();
-    auto computation_time = std::chrono::duration_cast<std::chrono::duration<double>>(
-        computation_end - computation_start);
+    int bytes_per_cell = 88.0;
+    int operations_per_cell = 67.0;
 
-    // Time the main function takes from start to finish
-    auto main_time_end = std::chrono::high_resolution_clock::now();
-    auto main_time =
-        std::chrono::duration_cast<std::chrono::duration<double>>(main_time_end - main_time_start);
+    // Benchmark output
+    double kernel_time = pseudo_transient_update.get_kernel_runtime();
+    double avg_kernel_time = kernel_time / state.iterations();
+    double wall_time = pseudo_transient_update.get_walltime();
+    double avg_wall_time = wall_time / state.iterations();
+    double avg_data_prep_time =
+        pseudo_transient_update.get_data_preperation_time_before() / state.iterations();
 
-    // Prints
-    const int label_width = 80;
-    std::cout << "\n" << std::fixed << std::setprecision(6);
+    double flops = state.iterations() * 1.0 * nx * ny * operations_per_cell * total_iterations;
+    double factor = avg_wall_time / avg_kernel_time; // >1 = Overhead
+    int numbers_of_conversions = total_iterations / nerr;
 
-    std::cout << std::setw(label_width) << std::left << "Walltime (Main):" << main_time.count()
-              << " s\n";
-
-    std::cout << std::setw(label_width) << std::left
-              << "Walltime of all computations:" << computation_time.count() << " s\n";
-
-    std::cout << std::setw(label_width) << "    ↪ Of which transient computation wall time:"
-              << pseudo_transient_update.get_walltime() << " s\n";
-
-    std::cout << std::setw(label_width) << "    ↪ Of which transient kernel time:"
-              << pseudo_transient_update.get_kernel_runtime() << " s\n";
-
-    std::cout << std::setw(label_width) << "    ↪ Of which transient kernel data preperation:"
-              << pseudo_transient_update.get_data_preperation_time_before() +
-                     pseudo_transient_update.get_data_preperation_time_after()
-              << " s\n";
-
-    std::cout << std::setw(label_width) << "    ↪ Of which error checking:" << error_check_time
-              << " s\n";
-
-    std::cout << std::setw(label_width)
-              << "    ↪ Of which thermal solver computation wall time:" << thermal_solver_walltime
-              << " s\n";
-
-    std::cout << std::setw(label_width)
-              << "    ↪ Of which thermal solver kernel time:" << thermal_solver_kernel_walltime
-              << " s\n";
-
-    std::cout << std::setw(label_width) << "    ↪ Of which thermal solver kernel data preperation:"
-              << thermal_solver_data_preperation_time_before +
-                     thermal_solver_data_preperation_time_after
-              << " s\n";
-
-    std::cout << std::setw(label_width) << "Of which time to write csv:" << io_time << " s\n";
-
-    int bytes_per_cell = 88;
-    int operations_per_cell = 67;
-
-    std::cout << std::setw(label_width) << "GFLOP/s standard:"
-              << ((pseudo_transient_update.get_n_processed_cells() * operations_per_cell) /
-                  pseudo_transient_update.get_walltime()) /
-                     1.0e9;
-
-    return 0;
+    state.counters["Avg_Kernel_time"] = avg_kernel_time / numbers_of_conversions;
+    state.counters["Avg_Wall_time"] = avg_wall_time / numbers_of_conversions;
+    state.counters["Sim_time"] = benchmark::Counter(nerr, benchmark::Counter::kDefaults);
+    state.counters["Flops_walltime"] = flops / wall_time;
+    state.counters["Flops_kerneltime"] = flops / kernel_time;
+    state.counters["Kerneltime to walltime"] = factor;
+    state.counters["Data_prep_time"] = avg_data_prep_time / numbers_of_conversions;
+    state.counters["total_iterations"] = total_iterations;
 }
+
+void CustomArgs(benchmark::internal::Benchmark *b) {
+    int iter = 8;
+    while (iter <= 20) {
+        b->Args({iter});
+        iter += 1;
+    }
+}
+
+BENCHMARK(BM_HotspotKernel)->Apply(CustomArgs)->Unit(benchmark::kSecond);
+
+BENCHMARK_MAIN();

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-#SBATCH --account=hpc-lco-kenter   # Use your project's account name
+#SBATCH --account=pc2-shks   # Use your project's account name
 #SBATCH --gres=gpu:a100:1
 ##SBATCH --qos=devel --partition=dgx
-#SBATCH -c 32 --mem 32G -t 00:05:00
-#SBATCH --output=%j_hotspot_prototype.out
+#SBATCH -c 32 --mem 32G -t 00:20:00
+#SBATCH --output=%j_convection_baseline.out
 
 
 ml reset
@@ -14,7 +14,4 @@ ml intel/oneapi/25.0.0
 ml system/CUDA/12.6.0
 
 cd /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/build
-./examples/hotspot/hotspot_cuda_prototype_bench
-
-
-
+./examples/convection/convection_cuda_baseline_bench

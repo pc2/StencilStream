@@ -336,7 +336,7 @@ static void BM_HotspotKernel(benchmark::State &state) {
         ThermalGrid local_grid = grid;
         total_iterations = 0;
 
-        for (size_t it = 1; it <= 50; it++) {
+        for (size_t it = 1; it <= 5; it++) {
             double errV = 2 * epsilon;
             double errP = 2 * epsilon;
             double max_ErrV, max_ErrP, max_Vx, max_Vy, max_Pt;
@@ -421,10 +421,10 @@ static void BM_HotspotKernel(benchmark::State &state) {
 }
 
 void CustomArgs(benchmark::internal::Benchmark *b) {
-    int iter = 19;
-    while (iter > 17) {
+    int iter = 8;
+    while (iter <= 20) {
         b->Args({iter});
-        iter -= 1;
+        iter += 1;
     }
 }
 

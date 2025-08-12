@@ -1,15 +1,19 @@
-#include <StencilStream/cuda/StencilUpdate_prototype.hpp>
+#include <StencilStream/cuda/StencilUpdate_baseline.hpp>
 
 #include <chrono>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <nlohmann/json.hpp>
+#include <omp.h>
 #include <oneapi/dpl/algorithm>
 #include <oneapi/dpl/execution>
 #include <oneapi/dpl/iterator>
 #include <sycl/ext/intel/fpga_extensions.hpp>
+#include <vector>
 
 using json = nlohmann::json;
 
@@ -323,7 +327,7 @@ int main(int argc, char **argv) {
         .blocking = true,
     });
 
-    ThermalGrid grid(nx + 1, ny + 1 /*, ThermalConvectionCell::halo_value()*/);
+    ThermalGrid grid(nx + 1, ny + 1);
     {
         ThermalGrid::GridAccessor<sycl::access::mode::read_write> ac(grid);
         for (size_t x = 0; x < nx + 1; x++) {
@@ -353,12 +357,39 @@ int main(int argc, char **argv) {
     double error_check_time = 0.0;
     int total_iterations = 0;
 
+    // OpenMP default number of threads
+    int default_threads = omp_get_max_threads();
+
+    // Hardware concurrency (from std::thread)
+    unsigned int hw_threads = std::thread::hardware_concurrency();
+
+    std::cout << "Default OpenMP threads: " << default_threads << "\n";
+    std::cout << "Hardware-supported threads: " << hw_threads << "\n";
+
+    double max_ErrV = -std::numeric_limits<double>::infinity();
+    double max_ErrP = -std::numeric_limits<double>::infinity();
+    double max_Vx = -std::numeric_limits<double>::infinity();
+    double max_Vy = -std::numeric_limits<double>::infinity();
+    double max_Pt = -std::numeric_limits<double>::infinity();
+
+    std::vector<double> max_ErrV_partial(nx + 1, -std::numeric_limits<double>::infinity());
+    std::vector<double> max_ErrP_partial(nx + 1, -std::numeric_limits<double>::infinity());
+    std::vector<double> max_Vx_partial(nx + 1, -std::numeric_limits<double>::infinity());
+    std::vector<double> max_Vy_partial(nx + 1, -std::numeric_limits<double>::infinity());
+    std::vector<double> max_Pt_partial(nx + 1, -std::numeric_limits<double>::infinity());
+
     auto computation_start = std::chrono::system_clock::now();
     for (size_t it = 1; it <= nt; it++) {
         double errV = 2 * epsilon;
         double errP = 2 * epsilon;
-        double max_ErrV, max_ErrP, max_Vx, max_Vy, max_Pt;
+
         size_t iter;
+
+        max_ErrV = -std::numeric_limits<double>::infinity();
+        max_ErrP = -std::numeric_limits<double>::infinity();
+        max_Vx = -std::numeric_limits<double>::infinity();
+        max_Vy = -std::numeric_limits<double>::infinity();
+        max_Pt = -std::numeric_limits<double>::infinity();
 
         auto transients_start = std::chrono::high_resolution_clock::now();
         for (iter = 0; iter < iterMax && (errV > epsilon || errP > epsilon); iter += nerr) {
@@ -367,106 +398,94 @@ int main(int argc, char **argv) {
             max_ErrV = max_ErrP = max_Vx = max_Vy = max_Pt =
                 -std::numeric_limits<double>::infinity();
 
-#if 1 // defined(STENCILSTREAM_BACKEND_CUDA)
-            sycl::queue q{sycl::gpu_selector_v};
-
-            int length1 = nx * ny;
-            int length2 = (nx + 1) * ny;
-            int length3 = nx * (ny + 1);
-
-            // USM memory for storing the different arrays to look for max values
-            double *Pt_out_max = malloc_shared<double>(length1, q);
-            double *Vx_out_max = malloc_shared<double>(length2, q);
-            double *Vy_out_max = malloc_shared<double>(length1, q);
-            double *ErrV_out_max = malloc_shared<double>(length3, q);
-            double *ErrP_out_max = malloc_shared<double>(length1, q);
-
-            // Extract the values from the cells to the arrays
-            q.submit([&](sycl::handler &cgh) {
-                sycl::accessor source_ac(grid.get_buffer(), cgh, sycl::read_only);
-
-                cgh.parallel_for(sycl::range<2>(nx + 1, ny + 1), [=](sycl::id<2> id) {
-                    int x = id[0];
-                    int y = id[1];
-                    PseudoTransientKernel::Cell cell = source_ac[x][y];
-
-                    size_t cell_id = x * ny + y;
-
-                    if (x < nx && y < ny) {
-                        Pt_out_max[cell_id] = std::abs(cell.Pt);
-                        Vy_out_max[cell_id] = std::abs(cell.Vy);
-                        ErrP_out_max[cell_id] = std::abs(cell.ErrP);
+#if 0
+            ThermalGrid::GridAccessor<sycl::access::mode::read> ac(grid);
+            for (size_t x = 0; x < nx + 1; x++) {
+                for (size_t y = 0; y < ny + 1; y++) {
+                    auto cell = ac[x][y];
+                    if (x < nx && y < ny + 1 && std::abs(cell.ErrV) > max_ErrV) {
+                        max_ErrV = std::abs(cell.ErrV);
                     }
-
-                    if (x < nx + 1 && y < ny) {
-                        Vx_out_max[cell_id] = std::abs(cell.Vx);
+                    if (x < nx && y < ny && std::abs(cell.ErrP) > max_ErrP) {
+                        max_ErrP = std::abs(cell.ErrP);
                     }
-
-                    if (x < nx && y < ny + 1) {
-                        ErrV_out_max[cell_id] = std::abs(cell.ErrV);
+                    if (x < nx + 1 && y < ny && std::abs(cell.Vx) > max_Vx) {
+                        max_Vx = std::abs(cell.Vx);
                     }
-                });
-            });
-
-            q.wait();
-
-            auto policy = oneapi::dpl::execution::make_device_policy<class MaxSearch>(q);
-
-            // Returns a pointer which is directly dereferenced
-            auto find_max_Pt = *oneapi::dpl::max_element(policy, Pt_out_max, Pt_out_max + length1);
-            auto find_max_ErrV =
-                *oneapi::dpl::max_element(policy, ErrV_out_max, ErrV_out_max + length3);
-            auto find_max_ErrP =
-                *oneapi::dpl::max_element(policy, ErrP_out_max, ErrP_out_max + length1);
-            auto find_max_Vx = *oneapi::dpl::max_element(policy, Vx_out_max, Vx_out_max + length2);
-            auto find_max_Vy = *oneapi::dpl::max_element(policy, Vy_out_max, Vy_out_max + length1);
-
-            // Check if the found value is bigger than the initialized value
-            max_Pt = std::max(max_Pt, find_max_Pt);
-            max_Vy = std::max(max_Vy, find_max_Vy);
-            max_Vx = std::max(max_Vx, find_max_Vx);
-            max_ErrV = std::max(max_ErrV, find_max_ErrV);
-            max_ErrP = std::max(max_ErrP, find_max_ErrP);
-
-            errV = max_ErrV / (1e-12 + max_Vy);
-            errP = max_ErrP / (1e-12 + max_Pt);
-
-            // Free USM memory
-            free(Pt_out_max, q);
-            free(Vx_out_max, q);
-            free(Vy_out_max, q);
-            free(ErrV_out_max, q);
-            free(ErrP_out_max, q);
-#elif 0
-
-#else
-
-            {
-                ThermalGrid::GridAccessor<sycl::access::mode::read> ac(grid);
-                for (size_t x = 0; x < nx + 1; x++) {
-                    for (size_t y = 0; y < ny + 1; y++) {
-                        auto cell = ac[x][y];
-                        if (x < nx && y < ny + 1 && std::abs(cell.ErrV) > max_ErrV) {
-                            max_ErrV = std::abs(cell.ErrV);
-                        }
-                        if (x < nx && y < ny && std::abs(cell.ErrP) > max_ErrP) {
-                            max_ErrP = std::abs(cell.ErrP);
-                        }
-                        if (x < nx + 1 && y < ny && std::abs(cell.Vx) > max_Vx) {
-                            max_Vx = std::abs(cell.Vx);
-                        }
-                        if (x < nx && y < ny && std::abs(cell.Vy) > max_Vy) {
-                            max_Vy = std::abs(cell.Vy);
-                        }
-                        if (x < nx && y < ny && std::abs(cell.Pt) > max_Pt) {
-                            max_Pt = std::abs(cell.Pt);
-                        }
+                    if (x < nx && y < ny && std::abs(cell.Vy) > max_Vy) {
+                        max_Vy = std::abs(cell.Vy);
+                    }
+                    if (x < nx && y < ny && std::abs(cell.Pt) > max_Pt) {
+                        max_Pt = std::abs(cell.Pt);
                     }
                 }
             }
+
+#else
+            ThermalGrid::GridAccessor<sycl::access::mode::read> ac(grid);
+
+            // Spawn 128 Threads
+    #pragma omp parallel
+            {
+                /* #pragma omp single
+                            {
+                                std::cout << "Threads actually spawned: " << omp_get_num_threads()
+                   << std::endl;
+                            } */
+
+                // parallelize over x
+    #pragma omp for
+                for (size_t x = 0; x < nx + 1; x++) {
+                    double local_max_ErrV = -std::numeric_limits<double>::infinity();
+                    double local_max_ErrP = -std::numeric_limits<double>::infinity();
+                    double local_max_Vx = -std::numeric_limits<double>::infinity();
+                    double local_max_Vy = -std::numeric_limits<double>::infinity();
+                    double local_max_Pt = -std::numeric_limits<double>::infinity();
+
+                    for (size_t y = 0; y < ny + 1; y++) {
+                        auto cell = ac[x][y];
+
+                        if (x < nx && y < ny + 1)
+                            local_max_ErrV = std::max(local_max_ErrV, std::abs(cell.ErrV));
+
+                        if (x < nx && y < ny)
+                            local_max_ErrP = std::max(local_max_ErrP, std::abs(cell.ErrP));
+
+                        if (x < nx + 1 && y < ny)
+                            local_max_Vx = std::max(local_max_Vx, std::abs(cell.Vx));
+
+                        if (x < nx && y < ny)
+                            local_max_Vy = std::max(local_max_Vy, std::abs(cell.Vy));
+
+                        if (x < nx && y < ny)
+                            local_max_Pt = std::max(local_max_Pt, std::abs(cell.Pt));
+                    }
+
+                    max_ErrV_partial[x] = local_max_ErrV;
+                    max_ErrP_partial[x] = local_max_ErrP;
+                    max_Vx_partial[x] = local_max_Vx;
+                    max_Vy_partial[x] = local_max_Vy;
+                    max_Pt_partial[x] = local_max_Pt;
+                }
+            }
+
+            // Final reduction
+            for (size_t x = 0; x < nx + 1; x++) {
+                max_ErrV = std::max(max_ErrV, max_ErrV_partial[x]);
+                max_ErrP = std::max(max_ErrP, max_ErrP_partial[x]);
+                max_Vx = std::max(max_Vx, max_Vx_partial[x]);
+                max_Vy = std::max(max_Vy, max_Vy_partial[x]);
+                max_Pt = std::max(max_Pt, max_Pt_partial[x]);
+            }
+            /*            std::cout << "max_ErrV: " << max_ErrV << "\n"
+                                 << "max_ErrP: " << max_ErrP << "\n"
+                                 << "max_Vx: " << max_Vx << "\n"
+                                 << "max_Vy: " << max_Vy << "\n"
+                                 << "max_Pt: " << max_Pt << "\n"; */
+
+#endif
             errV = max_ErrV / (1e-12 + max_Vy);
             errP = max_ErrP / (1e-12 + max_Pt);
-#endif
         }
         auto transients_end = std::chrono::high_resolution_clock::now();
         double kernel_time = pseudo_transient_update.get_kernel_runtime();
@@ -496,7 +515,7 @@ int main(int argc, char **argv) {
 
         if (it > 0 && it % nout == 0) {
             std::filesystem::path output_file_path =
-                output_dir_path / std::filesystem::path(std::to_string(it) + "_SOA1D" + ".csv");
+                output_dir_path / std::filesystem::path(std::to_string(it) + "_base" + ".csv");
             std::ofstream out_file(output_file_path);
             {
                 ThermalGrid::GridAccessor<sycl::access::mode::read> ac(grid);
@@ -517,24 +536,10 @@ int main(int argc, char **argv) {
         io_time += io_time_chrono.count();
         thermal_solver_kernel_walltime += thermal_solver_update.get_kernel_runtime();
         thermal_solver_walltime += thermal_solver_update.get_walltime();
-
-        // TODO: Delete prints
-
         thermal_solver_data_preperation_time_before +=
             thermal_solver_update.get_data_preperation_time_before();
-
-        thermal_solver_data_preperation_time_after +=
-            thermal_solver_update.get_data_preperation_time_after();
-
-        /*         std::cout << "thermal solver time from 1 iteration: "
-                          << thermal_solver_update.get_data_preperation_time_before() +
-                                 thermal_solver_update.get_data_preperation_time_after()
-                          << "\n";
-
-                std::cout << "thermal solver time accumulated: "
-                          << thermal_solver_data_preperation_time_before +
-                                 thermal_solver_data_preperation_time_after
-                          << "\n"; */
+        // thermal_solver_data_preperation_time_after =
+        //     thermal_solver_update.get_data_preperation_time_after();
     }
 
     // Time of all computations
@@ -563,10 +568,12 @@ int main(int argc, char **argv) {
     std::cout << std::setw(label_width) << "    ↪ Of which transient kernel time:"
               << pseudo_transient_update.get_kernel_runtime() << " s\n";
 
-    std::cout << std::setw(label_width) << "    ↪ Of which transient kernel data preperation:"
-              << pseudo_transient_update.get_data_preperation_time_before() +
-                     pseudo_transient_update.get_data_preperation_time_after()
-              << " s\n";
+    std::cout
+        << std::setw(label_width) << "    ↪ Of which transient kernel data preperation:"
+        << pseudo_transient_update
+               .get_data_preperation_time_before() //+
+                                                   // pseudo_transient_update.get_data_preperation_time_after()
+        << " s\n";
 
     std::cout << std::setw(label_width) << "    ↪ Of which error checking:" << error_check_time
               << " s\n";
@@ -579,10 +586,11 @@ int main(int argc, char **argv) {
               << "    ↪ Of which thermal solver kernel time:" << thermal_solver_kernel_walltime
               << " s\n";
 
-    std::cout << std::setw(label_width) << "    ↪ Of which thermal solver kernel data preperation:"
-              << thermal_solver_data_preperation_time_before +
-                     thermal_solver_data_preperation_time_after
-              << " s\n";
+    std::cout
+        << std::setw(label_width) << "    ↪ Of which thermal solver kernel data preperation:"
+        << thermal_solver_data_preperation_time_before //+
+                                                       //  thermal_solver_data_preperation_time_after
+        << " s\n";
 
     std::cout << std::setw(label_width) << "Of which time to write csv:" << io_time << " s\n";
 

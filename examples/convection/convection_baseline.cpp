@@ -353,12 +353,28 @@ int main(int argc, char **argv) {
     double error_check_time = 0.0;
     int total_iterations = 0;
 
+    std::vector<double> max_ErrV_partial(nx + 1, -std::numeric_limits<double>::infinity());
+    std::vector<double> max_ErrP_partial(nx + 1, -std::numeric_limits<double>::infinity());
+    std::vector<double> max_Vx_partial(nx + 1, -std::numeric_limits<double>::infinity());
+    std::vector<double> max_Vy_partial(nx + 1, -std::numeric_limits<double>::infinity());
+    std::vector<double> max_Pt_partial(nx + 1, -std::numeric_limits<double>::infinity());
+    sycl::buffer<double> max_ErrV_partial_buf(max_ErrV_partial.data(), sycl::range<1>(nx + 1));
+    sycl::buffer<double> max_ErrP_partial_buf(max_ErrP_partial.data(), sycl::range<1>(nx + 1));
+    sycl::buffer<double> max_Vx_partial_buf(max_Vx_partial.data(), sycl::range<1>(nx + 1));
+    sycl::buffer<double> max_Vy_partial_buf(max_Vy_partial.data(), sycl::range<1>(nx + 1));
+    sycl::buffer<double> max_Pt_partial_buf(max_Pt_partial.data(), sycl::range<1>(nx + 1));
+
     auto computation_start = std::chrono::system_clock::now();
     for (size_t it = 1; it <= nt; it++) {
         double errV = 2 * epsilon;
         double errP = 2 * epsilon;
-        double max_ErrV, max_ErrP, max_Vx, max_Vy, max_Pt;
         size_t iter;
+
+        double max_ErrV = -std::numeric_limits<double>::infinity();
+        double max_ErrP = -std::numeric_limits<double>::infinity();
+        double max_Vx = -std::numeric_limits<double>::infinity();
+        double max_Vy = -std::numeric_limits<double>::infinity();
+        double max_Pt = -std::numeric_limits<double>::infinity();
 
         auto transients_start = std::chrono::high_resolution_clock::now();
         for (iter = 0; iter < iterMax && (errV > epsilon || errP > epsilon); iter += nerr) {
@@ -367,104 +383,170 @@ int main(int argc, char **argv) {
             max_ErrV = max_ErrP = max_Vx = max_Vy = max_Pt =
                 -std::numeric_limits<double>::infinity();
 
-#if defined(STENCILSTREAM_BACKEND_CUDA)
+            /* #if 0 // defined(STENCILSTREAM_BACKEND_CUDA)
+                        sycl::queue q{sycl::gpu_selector_v};
+
+                        int length1 = nx * ny;
+                        int length2 = (nx + 1) * ny;
+                        int length3 = nx * (ny + 1);
+
+                        // USM memory for storing the different arrays to look for max values
+                        double *Pt_out_max = malloc_shared<double>(length1, q);
+                        double *Vx_out_max = malloc_shared<double>(length2, q);
+                        double *Vy_out_max = malloc_shared<double>(length1, q);
+                        double *ErrV_out_max = malloc_shared<double>(length3, q);
+                        double *ErrP_out_max = malloc_shared<double>(length1, q);
+
+                        // Extract the values from the cells to the arrays
+                        q.submit([&](sycl::handler &cgh) {
+                            sycl::accessor source_ac(grid.get_buffer(), cgh, sycl::read_only);
+
+                            cgh.parallel_for(sycl::range<2>(nx + 1, ny + 1), [=](sycl::id<2> id) {
+                                int x = id[0];
+                                int y = id[1];
+                                PseudoTransientKernel::Cell cell = source_ac[x][y];
+
+                                size_t cell_id = x * ny + y;
+
+                                if (x < nx && y < ny) {
+                                    Pt_out_max[cell_id] = std::abs(cell.Pt);
+                                    Vy_out_max[cell_id] = std::abs(cell.Vy);
+                                    ErrP_out_max[cell_id] = std::abs(cell.ErrP);
+                                }
+
+                                if (x < nx + 1 && y < ny) {
+                                    Vx_out_max[cell_id] = std::abs(cell.Vx);
+                                }
+
+                                if (x < nx && y < ny + 1) {
+                                    ErrV_out_max[cell_id] = std::abs(cell.ErrV);
+                                }
+                            });
+                        });
+
+                        q.wait();
+
+                        auto policy = oneapi::dpl::execution::make_device_policy<class
+            MaxSearch>(q);
+
+                        // Returns a pointer which is directly dereferenced
+                        auto find_max_Pt = *oneapi::dpl::max_element(policy, Pt_out_max, Pt_out_max
+            + length1); auto find_max_ErrV = *oneapi::dpl::max_element(policy, ErrV_out_max,
+            ErrV_out_max + length3); auto find_max_ErrP = *oneapi::dpl::max_element(policy,
+            ErrP_out_max, ErrP_out_max + length1); auto find_max_Vx =
+            *oneapi::dpl::max_element(policy, Vx_out_max, Vx_out_max + length2); auto find_max_Vy =
+            *oneapi::dpl::max_element(policy, Vy_out_max, Vy_out_max + length1);
+
+                        // Check if the found value is bigger than the initialized value
+                        max_Pt = std::max(max_Pt, find_max_Pt);
+                        max_Vy = std::max(max_Vy, find_max_Vy);
+                        max_Vx = std::max(max_Vx, find_max_Vx);
+                        max_ErrV = std::max(max_ErrV, find_max_ErrV);
+                        max_ErrP = std::max(max_ErrP, find_max_ErrP);
+
+                        errV = max_ErrV / (1e-12 + max_Vy);
+                        errP = max_ErrP / (1e-12 + max_Pt);
+
+                        // Free USM memory
+                        free(Pt_out_max, q);
+                        free(Vx_out_max, q);
+                        free(Vy_out_max, q);
+                        free(ErrV_out_max, q);
+                        free(ErrP_out_max, q);
+
+            #elif 1 */
             sycl::queue q{sycl::gpu_selector_v};
 
-            int length1 = nx * ny;
-            int length2 = (nx + 1) * ny;
-            int length3 = nx * (ny + 1);
-
-            // USM memory for storing the different arrays to look for max values
-            double *Pt_out_max = malloc_shared<double>(length1, q);
-            double *Vx_out_max = malloc_shared<double>(length2, q);
-            double *Vy_out_max = malloc_shared<double>(length1, q);
-            double *ErrV_out_max = malloc_shared<double>(length3, q);
-            double *ErrP_out_max = malloc_shared<double>(length1, q);
-
-            // Extract the values from the cells to the arrays
             q.submit([&](sycl::handler &cgh) {
                 sycl::accessor source_ac(grid.get_buffer(), cgh, sycl::read_only);
+                sycl::accessor max_ErrV_partial_ac(max_ErrV_partial_buf, cgh, sycl::write_only);
+                sycl::accessor max_ErrP_partial_ac(max_ErrP_partial_buf, cgh, sycl::write_only);
+                sycl::accessor max_Vx_partial_ac(max_Vx_partial_buf, cgh, sycl::write_only);
+                sycl::accessor max_Vy_partial_ac(max_Vy_partial_buf, cgh, sycl::write_only);
+                sycl::accessor max_Pt_partial_ac(max_Pt_partial_buf, cgh, sycl::write_only);
 
-                cgh.parallel_for(sycl::range<2>(nx + 1, ny + 1), [=](sycl::id<2> id) {
+                cgh.parallel_for(sycl::range<1>(nx + 1), [=](sycl::id<1> id) {
                     int x = id[0];
-                    int y = id[1];
-                    PseudoTransientKernel::Cell cell = source_ac[x][y];
+                    double local_max_ErrV = -std::numeric_limits<double>::infinity();
+                    double local_max_ErrP = -std::numeric_limits<double>::infinity();
+                    double local_max_Vx = -std::numeric_limits<double>::infinity();
+                    double local_max_Vy = -std::numeric_limits<double>::infinity();
+                    double local_max_Pt = -std::numeric_limits<double>::infinity();
 
-                    size_t cell_id = x * ny + y;
+                    for (size_t y = 0; y < ny + 1; y++) {
+                        PseudoTransientKernel::Cell cell = source_ac[x][y];
 
-                    if (x < nx && y < ny) {
-                        Pt_out_max[cell_id] = std::abs(cell.Pt);
-                        Vy_out_max[cell_id] = std::abs(cell.Vy);
-                        ErrP_out_max[cell_id] = std::abs(cell.ErrP);
+                        if (x < nx && y < ny + 1)
+                            local_max_ErrV = std::max(local_max_ErrV, std::abs(cell.ErrV));
+
+                        if (x < nx && y < ny)
+                            local_max_ErrP = std::max(local_max_ErrP, std::abs(cell.ErrP));
+
+                        if (x < nx + 1 && y < ny)
+                            local_max_Vx = std::max(local_max_Vx, std::abs(cell.Vx));
+
+                        if (x < nx && y < ny)
+                            local_max_Vy = std::max(local_max_Vy, std::abs(cell.Vy));
+
+                        if (x < nx && y < ny)
+                            local_max_Pt = std::max(local_max_Pt, std::abs(cell.Pt));
                     }
 
-                    if (x < nx + 1 && y < ny) {
-                        Vx_out_max[cell_id] = std::abs(cell.Vx);
-                    }
-
-                    if (x < nx && y < ny + 1) {
-                        ErrV_out_max[cell_id] = std::abs(cell.ErrV);
-                    }
+                    max_ErrV_partial_ac[x] = local_max_ErrV;
+                    max_ErrP_partial_ac[x] = local_max_ErrP;
+                    max_Vx_partial_ac[x] = local_max_Vx;
+                    max_Vy_partial_ac[x] = local_max_Vy;
+                    max_Pt_partial_ac[x] = local_max_Pt;
                 });
             });
 
             q.wait();
 
-            auto policy = oneapi::dpl::execution::make_device_policy<class MaxSearch>(q);
+            sycl::host_accessor max_ErrV_partial_ac(max_ErrV_partial_buf, sycl::read_only);
+            sycl::host_accessor max_ErrP_partial_ac(max_ErrP_partial_buf, sycl::read_only);
+            sycl::host_accessor max_Vx_partial_ac(max_Vx_partial_buf, sycl::read_only);
+            sycl::host_accessor max_Vy_partial_ac(max_Vy_partial_buf, sycl::read_only);
+            sycl::host_accessor max_Pt_partial_ac(max_Pt_partial_buf, sycl::read_only);
 
-            // Returns a pointer which is directly dereferenced
-            auto find_max_Pt = *oneapi::dpl::max_element(policy, Pt_out_max, Pt_out_max + length1);
-            auto find_max_ErrV =
-                *oneapi::dpl::max_element(policy, ErrV_out_max, ErrV_out_max + length3);
-            auto find_max_ErrP =
-                *oneapi::dpl::max_element(policy, ErrP_out_max, ErrP_out_max + length1);
-            auto find_max_Vx = *oneapi::dpl::max_element(policy, Vx_out_max, Vx_out_max + length2);
-            auto find_max_Vy = *oneapi::dpl::max_element(policy, Vy_out_max, Vy_out_max + length1);
-
-            // Check if the found value is bigger than the initialized value
-            max_Pt = std::max(max_Pt, find_max_Pt);
-            max_Vy = std::max(max_Vy, find_max_Vy);
-            max_Vx = std::max(max_Vx, find_max_Vx);
-            max_ErrV = std::max(max_ErrV, find_max_ErrV);
-            max_ErrP = std::max(max_ErrP, find_max_ErrP);
-
-            errV = max_ErrV / (1e-12 + max_Vy);
-            errP = max_ErrP / (1e-12 + max_Pt);
-
-            // Free USM memory
-            free(Pt_out_max, q);
-            free(Vx_out_max, q);
-            free(Vy_out_max, q);
-            free(ErrV_out_max, q);
-            free(ErrP_out_max, q);
-#else
-
-            {
-                ThermalGrid::GridAccessor<sycl::access::mode::read> ac(grid);
-                for (size_t x = 0; x < nx + 1; x++) {
-                    for (size_t y = 0; y < ny + 1; y++) {
-                        auto cell = ac[x][y];
-                        if (x < nx && y < ny + 1 && std::abs(cell.ErrV) > max_ErrV) {
-                            max_ErrV = std::abs(cell.ErrV);
-                        }
-                        if (x < nx && y < ny && std::abs(cell.ErrP) > max_ErrP) {
-                            max_ErrP = std::abs(cell.ErrP);
-                        }
-                        if (x < nx + 1 && y < ny && std::abs(cell.Vx) > max_Vx) {
-                            max_Vx = std::abs(cell.Vx);
-                        }
-                        if (x < nx && y < ny && std::abs(cell.Vy) > max_Vy) {
-                            max_Vy = std::abs(cell.Vy);
-                        }
-                        if (x < nx && y < ny && std::abs(cell.Pt) > max_Pt) {
-                            max_Pt = std::abs(cell.Pt);
-                        }
-                    }
-                }
+            for (size_t x = 0; x < nx + 1; x++) {
+                max_ErrV = std::max(max_ErrV, max_ErrV_partial[x]);
+                max_ErrP = std::max(max_ErrP, max_ErrP_partial[x]);
+                max_Vx = std::max(max_Vx, max_Vx_partial[x]);
+                max_Vy = std::max(max_Vy, max_Vy_partial[x]);
+                max_Pt = std::max(max_Pt, max_Pt_partial[x]);
             }
+
             errV = max_ErrV / (1e-12 + max_Vy);
             errP = max_ErrP / (1e-12 + max_Pt);
-#endif
+
+            /* #else
+
+                        {
+                            ThermalGrid::GridAccessor<sycl::access::mode::read> ac(grid);
+                            for (size_t x = 0; x < nx + 1; x++) {
+                                for (size_t y = 0; y < ny + 1; y++) {
+                                    auto cell = ac[x][y];
+                                    if (x < nx && y < ny + 1 && std::abs(cell.ErrV) > max_ErrV) {
+                                        max_ErrV = std::abs(cell.ErrV);
+                                    }
+                                    if (x < nx && y < ny && std::abs(cell.ErrP) > max_ErrP) {
+                                        max_ErrP = std::abs(cell.ErrP);
+                                    }
+                                    if (x < nx + 1 && y < ny && std::abs(cell.Vx) > max_Vx) {
+                                        max_Vx = std::abs(cell.Vx);
+                                    }
+                                    if (x < nx && y < ny && std::abs(cell.Vy) > max_Vy) {
+                                        max_Vy = std::abs(cell.Vy);
+                                    }
+                                    if (x < nx && y < ny && std::abs(cell.Pt) > max_Pt) {
+                                        max_Pt = std::abs(cell.Pt);
+                                    }
+                                }
+                            }
+                        }
+                        errV = max_ErrV / (1e-12 + max_Vy);
+                        errP = max_ErrP / (1e-12 + max_Pt);
+            #endif */
         }
         auto transients_end = std::chrono::high_resolution_clock::now();
         double kernel_time = pseudo_transient_update.get_kernel_runtime();

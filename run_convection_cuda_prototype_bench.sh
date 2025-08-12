@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #SBATCH --account=pc2-shks   # Use your project's account name
 #SBATCH --gres=gpu:a100:1
-#SBATCH --qos=devel --partition=dgx
-#SBATCH -c 32 --mem 32G -t 00:25:00
+##SBATCH --qos=devel --partition=dgx
+#SBATCH -c 32 --mem 32G -t 00:20:00
 #SBATCH --output=%j_convection_prototype.out
 
 
