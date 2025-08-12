@@ -42,7 +42,7 @@ default:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 1-00:00:00 -c 8 --mem 120G
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
     script:
         - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "${STST_EXAMPLE}" "${STST_EXECUTABLE}"
     artifacts:
@@ -229,10 +229,10 @@ jacobi (monotile) synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -t 1-00:00:00 -c 8 --mem 120G --array=0-7
-        LIST_EXECUTABLES: "(Jacobi1General Jacobi2Constant Jacobi3Constant Jacobi4Constant Jacobi5Constant Jacobi4General Jacobi5General Jacobi9General)"
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G --array=0-7
     script:
-        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" jacobi "${LIST_EXECUTABLES[${SLURM_ARRAY_TASK_ID}]}$_mono"
+        - cd build
+        - ../examples/jacobi/synthesize.sh mono
     artifacts:
         when: always
         paths:
