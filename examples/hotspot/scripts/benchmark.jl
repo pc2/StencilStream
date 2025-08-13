@@ -26,8 +26,6 @@ function create_experiment(n_rows, n_columns, temp_file, power_file)
 end
 
 function max_perf_benchmark(exec, variant, n_ranks)
-    setup_io_pipes(n_ranks, variant)
-
     if variant == :monotile
         grid_height = TILE_HEIGHT[:monotile]
         grid_width = TILE_WIDTH[:monotile]

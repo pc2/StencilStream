@@ -1,10 +1,13 @@
 #!/usr/bin/env -S julia --project
 include("../../../scripts/benchmark-common.jl")
 
-function max_perf_benchmark(exe)
+function max_perf_benchmark(exe, n_ranks)
     exe_name = basename(exe)
+    mpi_root = ENV["I_MPI_ROOT"]
+    mpirun = "$mpi_root/bin/mpirun"
     
-    config = open(io -> JSON.parse(join(readlines(io))), `$exe show-config`, "r")
+    config_text = open(io -> join(readlines(io)), `$mpirun -n 1 $exe show-config`, "r")
+    config = JSON.parse(match(r"(\{[^\}\{]+\})$", config_text)[1])
     variant = Symbol(config["variant"])
     temporal_parallelism = config["temporal_parallelism"]
     spatial_parallelism = config["spatial_parallelism"]
@@ -17,16 +20,18 @@ function max_perf_benchmark(exe)
 
     # target runtime = 60s. Designs reach roughly 1 TFLOPS, so total operations are given as below:
     target_total_operations = 1e12 * 60
-    n_timesteps = target_total_operations / n_operations_per_cell / grid_wh^2
-    n_timesteps = Int(temporal_parallelism * ceil(n_timesteps / temporal_parallelism)) # round up for max utilization
+    #n_timesteps = target_total_operations / n_operations_per_cell / grid_wh^2
+    #n_timesteps = Int(temporal_parallelism * ceil(n_timesteps / temporal_parallelism)) # round up for max utilization
+    n_timesteps = n_ranks * temporal_parallelism
     n_samples = 3
 
     arguments = fill(1/n_coefficients, n_coefficients)
 
-    command = `$exe $(grid_wh) $(grid_wh) $(n_timesteps) /dev/null $(arguments)`
+    mpi_root = ENV["I_MPI_ROOT"]
+    command = `$mpirun -n $n_ranks $exe $(grid_wh) $(grid_wh) $(n_timesteps) /dev/null $(arguments)`
 
     # Warmup to exclude programming from the benchmark
-    run(`$exe 1024 1024 1024 /dev/null $(arguments)`)
+    warmup_cluster(command, n_ranks, variant)
 
     # Defining names here so that later definitions won't be dropped.
     runtimes = Vector()
@@ -51,6 +56,7 @@ function max_perf_benchmark(exe)
         n_timesteps,
         grid_wh,
         grid_wh,
+        n_ranks,
         1, # no. of subiterations
         4, # cell size
         n_operations_per_cell,
@@ -65,7 +71,7 @@ function max_perf_benchmark(exe)
 
     metrics = Dict(
         "target" => exe_name,
-        "n_cus" => n_replications(info),
+        "parallelity" => parallelity(info),
         "f" => info.f,
         "occupancy" => occupancy(info),
         "measured" => measured_throughput(info),
@@ -79,16 +85,17 @@ function max_perf_benchmark(exe)
     end
 end
 
-if size(ARGS) != (2,)
-    println(stderr, "Usage: $PROGRAM_FILE <benchmark> <path to executable> ")
+if size(ARGS) != (3,)
+    println(stderr, "Usage: $PROGRAM_FILE <benchmark> <path to executable> <n_tranks>")
     println(stderr, "Possible benchmarks: max_perf")
     exit(1)
 end
 
 exe = ARGS[2]
+n_ranks = parse(Int, ARGS[3])
 
 if ARGS[1] == "max_perf"
-    max_perf_benchmark(exe)
+    max_perf_benchmark(exe, n_ranks)
 else
     println(stderr, "Unknown benchmark '$(ARGS[1])'")
     exit(1)
