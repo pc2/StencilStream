@@ -4,4 +4,18 @@
 task_id=${SLURM_ARRAY_TASK_ID}
 variant=$1
 targets=("Jacobi1General" "Jacobi2Constant" "Jacobi3Constant" "Jacobi4Constant" "Jacobi5Constant" "Jacobi4General" "Jacobi5General" "Jacobi9General")
+
+mkdir -p build
+cd build
+
+if [ $task_id == 0 ];
+then
+    cmake -DCMAKE_BUILD_TYPE=Release ..
+else
+    until [ -f Makefile ]
+    do
+        sleep 60
+    done
+fi
+
 make "${targets[$task_id]}_$variant"

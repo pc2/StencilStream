@@ -12,6 +12,7 @@ TARGET=$4
 
 mkdir -p build
 cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
 CHANNEL_MAPPING_MODE=2 make $TARGET || exit 1
 cd examples/$APPLICATION
 tar -caf $TARGET.tar.gz $TARGET $TARGET.prj/reports || exit 1
