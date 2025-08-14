@@ -19,4 +19,4 @@ else
     done
 fi
 
-make "${targets[$task_id]}_$variant"
+CHANNEL_MAPPING_MODE=2 make "${targets[$task_id]}_$variant"
