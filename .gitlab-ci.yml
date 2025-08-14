@@ -228,7 +228,7 @@ jacobi (monotile) synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G --array=0-7
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p normal -q fpgasynthesis --array=0-4 -c 8 --mem 120G -t 1-00:00:00
     script:
         - ./examples/jacobi/scripts/synthesize.sh mono
     artifacts:
