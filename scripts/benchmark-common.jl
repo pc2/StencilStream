@@ -173,11 +173,13 @@ function setup_io_pipes(n_ranks, variant)
     run(command)
 end
 
-function warmup_cluster(command, n_ranks, variant)
+function warmup_cluster(command, n_ranks, variant; links_preconfigured=false)
     warmup_successful = false
     for warmup_try in 1:3
-        setup_io_pipes(n_ranks, variant)
-        r = run(Cmd(`timeout 1m $command`, ignorestatus=true))
+        if warmup_try > 1 || !links_preconfigured
+            setup_io_pipes(n_ranks, variant)
+        end
+        r = run(Cmd(`timeout 2m $command`, ignorestatus=true))
         if r.exitcode == 0
             warmup_successful = true
             break

@@ -1,5 +1,6 @@
 #!/usr/bin/env -S julia --project
 include("../../../scripts/benchmark-common.jl")
+using Glob
 
 function max_perf_benchmark(exe, n_ranks)
     exe_name = basename(exe)
@@ -15,14 +16,14 @@ function max_perf_benchmark(exe, n_ranks)
     tile_width = config["tile_width"]
     n_coefficients = config["n_coefficients"]
     n_operations_per_cell = config["n_operations"]
+    f = load_report_details(exe * ".prj/reports")
 
     grid_wh = min(tile_height, tile_width)
 
-    # target runtime = 60s. Designs reach roughly 1 TFLOPS, so total operations are given as below:
-    target_total_operations = 1e12 * 60
-    #n_timesteps = target_total_operations / n_operations_per_cell / grid_wh^2
-    #n_timesteps = Int(temporal_parallelism * ceil(n_timesteps / temporal_parallelism)) # round up for max utilization
-    n_timesteps = n_ranks * temporal_parallelism
+    # target runtime = 15s.
+    target_total_updates = 15 * temporal_parallelism * spatial_parallelism * n_ranks * f
+    n_timesteps = target_total_updates / grid_wh^2
+    n_timesteps = Int(temporal_parallelism * ceil(n_timesteps / temporal_parallelism)) # round up for max utilization
     n_samples = 3
 
     arguments = fill(1/n_coefficients, n_coefficients)
@@ -31,7 +32,7 @@ function max_perf_benchmark(exe, n_ranks)
     command = `$mpirun -n $n_ranks $exe $(grid_wh) $(grid_wh) $(n_timesteps) /dev/null $(arguments)`
 
     # Warmup to exclude programming from the benchmark
-    warmup_cluster(command, n_ranks, variant)
+    warmup_cluster(command, n_ranks, variant; links_preconfigured=true)
 
     # Defining names here so that later definitions won't be dropped.
     runtimes = Vector()
@@ -65,7 +66,7 @@ function max_perf_benchmark(exe, n_ranks)
         spatial_parallelism,
         tile_height,
         tile_width,
-        load_report_details(exe * ".prj/reports"),
+        f,
         mean(runtimes)
     )
 
@@ -76,8 +77,7 @@ function max_perf_benchmark(exe, n_ranks)
         "occupancy" => occupancy(info),
         "measured" => measured_throughput(info),
         "accuracy" => model_accurracy(info),
-        "FLOPS" => measured_flops(info),
-        "mem_throughput" => measured_mem_throughput(info)
+        "FLOPS" => measured_flops(info)
     )
 
     open("metrics.$exe_name.json", "w") do metrics_file
@@ -86,16 +86,24 @@ function max_perf_benchmark(exe, n_ranks)
 end
 
 if size(ARGS) != (3,)
-    println(stderr, "Usage: $PROGRAM_FILE <benchmark> <path to executable> <n_tranks>")
+    println(stderr, "Usage: $PROGRAM_FILE <benchmark> <path to executable or directory> <n_tranks>")
     println(stderr, "Possible benchmarks: max_perf")
     exit(1)
 end
 
-exe = ARGS[2]
+exe_or_dir = ARGS[2]
 n_ranks = parse(Int, ARGS[3])
 
 if ARGS[1] == "max_perf"
-    max_perf_benchmark(exe, n_ranks)
+    # TODO: Extend to tiling
+    setup_io_pipes(n_ranks, :monotile)
+    if isdir(exe_or_dir)
+        for exe in glob("$exe_or_dir/Jacobi*_mono")
+            max_perf_benchmark(exe, n_ranks)
+        end
+    else
+        max_perf_benchmark(exe_or_dir, n_ranks)
+    end
 else
     println(stderr, "Unknown benchmark '$(ARGS[1])'")
     exit(1)

@@ -240,7 +240,8 @@ jacobi (monotile) synthesis:
             - "build/examples/jacobi/*_mono.prj/quartus_sh_compile.log"
             - "build/examples/jacobi/*_mono.tar.gz"
 
-.jacobi benchmark:
+
+jacobi (monotile) benchmark:
     extends:
         - .expensive_job
         - .fpga_job
@@ -248,20 +249,13 @@ jacobi (monotile) synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_max -t 00:30:00
+        SCHEDULER_PARAMETERS: -A hpc-lco-kenter -p fpga --constraint=bittware_520n_20.4.0_max -n 24 -tasks-per-node=2 -x "n2fpga[20,22,23,26]" -t 01:00:00
     script:
         - cd examples/jacobi
-        - ./scripts/benchmark.jl max_perf ../../build/examples/jacobi/${STST_EXECUTABLE}
+        - ./scripts/benchmark.jl max_perf ../../build/examples/jacobi/ 24
     artifacts:
         paths:
             - examples/jacobi/metrics.*.json
-
-#jacobi (monotile) benchmark:
-#    extends: .jacobi benchmark
-#    needs: 
-#        - jacobi (monotile) synthesis
-#    variables:
-#        STST_EXECUTABLE: Jacobi4General_mono
 
 # ===============
 # Jacobi (Tiling)
