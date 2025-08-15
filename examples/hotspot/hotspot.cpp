@@ -94,7 +94,7 @@ struct HotspotKernel : public BaseTransitionFunction {
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
 const size_t max_grid_height = 4096;
 const size_t max_grid_width = 4096;
-const size_t temporal_parallelism = 118;
+const size_t temporal_parallelism = 112;
 const size_t spatial_parallelism = 4;
 const size_t n_kernels = temporal_parallelism / 4;
 using StencilUpdate =

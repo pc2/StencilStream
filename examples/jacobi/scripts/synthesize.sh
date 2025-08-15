@@ -10,7 +10,7 @@ cd build
 
 if [ $task_id == 0 ];
 then
-    cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=-O0 ..
+    cmake -DCMAKE_BUILD_TYPE=Release ..
 else
     until [ -f Makefile ]
     do
