@@ -43,7 +43,7 @@ struct BenchmarkInformation
     n_iters::Int
     n_grid_rows::Int
     n_grid_cols::Int
-    n_ranks::Int
+    n_ranks::Union{Int, Nothing}
 
     # Static/code parameters
     n_subiters::Int
@@ -65,26 +65,30 @@ struct BenchmarkInformation
 end
 
 function f_effective(info::BenchmarkInformation)
-    s_link = 32 # pipeword size
-    f_link = 5.0e9 / s_link # clock rate of single IO pipe
-    if info.variant == :monotile
-        min(info.f, 2s_link / (info.cell_size * info.spatial_parallelism) * f_link)
+    padded_vector_size =  2^ceil(log2(info.cell_size * info.spatial_parallelism))
+    if !isnothing(info.n_ranks) && info.variant == :monotile
+        s_link = 32 # pipeword size
+        f_link_single = 5.0e9 / s_link # clock rate of single IO pipe
+        f_link = 2f_link_single * s_link / padded_vector_size
     else
-        info.f
+        f_link = Inf
     end
+    mem_width = 64
+    f_mem = info.f * mem_width / padded_vector_size
+    minimum([f_link, f_mem, info.f])
 end
 
 grid_size(info::BenchmarkInformation) = info.n_grid_rows * info.n_grid_cols
 workload(info::BenchmarkInformation) = grid_size(info) * info.n_iters
 function n_passes(info::BenchmarkInformation)
-    if (info.variant == :monotile)
+    if (info.variant == :monotile && !isnothing(info.n_ranks))
         ceil(info.n_iters / info.temporal_parallelism / info.n_ranks)
     else
         ceil(info.n_iters / info.temporal_parallelism)
     end
 end
 n_cus(info::BenchmarkInformation) = info.temporal_parallelism * info.n_subiters
-parallelity(info::BenchmarkInformation) = info.n_ranks * info.temporal_parallelism * info.spatial_parallelism
+parallelity(info::BenchmarkInformation) = (isnothing(info.n_ranks) ? 1 : info.n_ranks) * info.temporal_parallelism * info.spatial_parallelism
 
 halo_height(info::BenchmarkInformation) = (info.variant == :tiling) ? n_cus(info) : nothing
 halo_width(info::BenchmarkInformation) = (info.variant == :tiling) ? info.spatial_parallelism * n_cus(info) : nothing
@@ -100,10 +104,12 @@ function model_runtime(info::BenchmarkInformation)
     if info.variant == :monotile
         l_compute_unit = n_grid_col_vects(info) + 1
         l_fpga = n_cus(info) * l_compute_unit
-        l_cluster = (info.n_ranks - 1) * (l_fpga + l_link)
 
         c_prime = l_fpga + (info.n_grid_rows * n_grid_col_vects(info))
-        c_pass = c_prime + l_cluster
+        c_pass = c_prime
+        if !isnothing(info.n_ranks)
+            c_pass += (info.n_ranks - 1) * (l_fpga + l_link)
+        end
     elseif info.variant == :tiling
         c_pass = 0
         for tile_row in 1:ceil(info.n_grid_rows / info.n_tile_rows)
