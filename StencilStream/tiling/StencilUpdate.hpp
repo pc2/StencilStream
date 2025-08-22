@@ -18,11 +18,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../fpga_io/MemoryKernels.hpp"
+#include "../internal/MemoryKernels.hpp"
 #include "../tdv/SinglePassStrategies.hpp"
 #include "Grid.hpp"
-#include "HaloInjectionKernel.hpp"
-#include "StencilUpdateKernel.hpp"
+#include "internal/HaloInjectionKernel.hpp"
+#include "internal/StencilUpdateKernel.hpp"
 
 #include <chrono>
 
@@ -69,7 +69,7 @@ template <concepts::TransitionFunction F, std::size_t temporal_parallelism = 1,
 class StencilUpdate {
   private:
     using Cell = F::Cell;
-    using CellVector = Padded<std::array<Cell, spatial_parallelism>>;
+    using CellVector = stencil::internal::Padded<std::array<Cell, spatial_parallelism>>;
 
     using TDVGlobalState = typename TDVStrategy::template GlobalState<F, temporal_parallelism>;
     using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
@@ -81,22 +81,25 @@ class StencilUpdate {
 
     // Never submitted, but necessary to compute total halo height and width.
     using FullExecutionKernelImpl =
-        StencilUpdateKernel<F, TDVKernelArgument, temporal_parallelism, 0, spatial_parallelism,
-                            max_tile_height, max_tile_width, in_pipe, out_pipe>;
+        internal::StencilUpdateKernel<F, TDVKernelArgument, temporal_parallelism, 0,
+                                      spatial_parallelism, max_tile_height, max_tile_width, in_pipe,
+                                      out_pipe>;
     static constexpr std::size_t halo_height = FullExecutionKernelImpl::get_halo_height();
     static constexpr std::size_t halo_width = FullExecutionKernelImpl::get_halo_width();
     static constexpr std::size_t max_haloed_tile_height = max_tile_height + 2 * halo_height;
     static constexpr std::size_t max_vect_tile_width = max_tile_width / spatial_parallelism;
     static constexpr std::size_t vect_halo_width = halo_width / spatial_parallelism;
 
-    using InputKernel = fpga_io::PartialBufferReadKernel<CellVector, incomplete_in_pipe,
-                                                         max_tile_height + 2 * halo_height,
-                                                         max_vect_tile_width + 2 * vect_halo_width>;
+    using InputKernel =
+        stencil::internal::PartialBufferReadKernel<CellVector, incomplete_in_pipe,
+                                                   max_tile_height + 2 * halo_height,
+                                                   max_vect_tile_width + 2 * vect_halo_width>;
     using HaloInjectionKernelImpl =
-        HaloInjectionKernel<Cell, spatial_parallelism, incomplete_in_pipe, in_pipe, max_tile_height,
-                            max_tile_width, halo_height, halo_width>;
+        internal::HaloInjectionKernel<Cell, spatial_parallelism, incomplete_in_pipe, in_pipe,
+                                      max_tile_height, max_tile_width, halo_height, halo_width>;
     using OutputKernel =
-        fpga_io::PartialBufferWriteKernel<CellVector, out_pipe, max_tile_height, max_tile_width>;
+        stencil::internal::PartialBufferWriteKernel<CellVector, out_pipe, max_tile_height,
+                                                    max_tile_width>;
 
   public:
     /**
@@ -132,16 +135,6 @@ class StencilUpdate {
          * \brief The number of iterations to compute.
          */
         std::size_t n_iterations = 1;
-
-        /**
-         * \brief The device to use for computations.
-         *
-         * For some setups, it might be necessary to explicitly select the device to use for
-         * computation. This can be done for example with the `sycl::ext::intel::fpga_selector_v`
-         * class in the `sycl/ext/intel/fpga_extensions.hpp` header. This selector will select the
-         * first FPGA it sees.
-         */
-        sycl::device device = sycl::device();
 
         /**
          * \brief Should the stencil updater block until completion, or return immediately after all
@@ -191,13 +184,22 @@ class StencilUpdate {
             return GridImpl(source_grid);
         }
 
-        sycl::queue input_queue = sycl::queue(params.device, {sycl::property::queue::in_order{}});
-        sycl::queue halo_injection_queue =
-            sycl::queue(params.device, {sycl::property::queue::in_order{}});
-        sycl::queue output_queue = sycl::queue(params.device, {sycl::property::queue::in_order{}});
+#if defined(STENCILSTREAM_TARGET_FPGA_EMU)
+        auto device_selector = sycl::ext::intel::fpga_emulator_selector_v;
+#elif defined(STENCILSTREAM_TARGET_FPGA)
+        auto device_selector = sycl::ext::intel::fpga_selector_v;
+#else
+    #error                                                                                         \
+        "Please link with the `StencilStream_Monotile`, `StencilStream_MonotileEmulator`, or `StencilStream_MonotileReport` targets!"
+#endif
+        sycl::device device(device_selector);
+
+        sycl::queue input_queue = sycl::queue(device, {sycl::property::queue::in_order{}});
+        sycl::queue halo_injection_queue = sycl::queue(device, {sycl::property::queue::in_order{}});
+        sycl::queue output_queue = sycl::queue(device, {sycl::property::queue::in_order{}});
         std::vector<sycl::queue> work_queues;
         for (std::size_t i_kernel = 0; i_kernel < n_kernels; i_kernel++) {
-            work_queues.push_back(sycl::queue(params.device, {sycl::property::queue::in_order{}}));
+            work_queues.push_back(sycl::queue(device, {sycl::property::queue::in_order{}}));
         }
 
         GridImpl swap_grid_a = source_grid.make_similar();
@@ -231,20 +233,12 @@ class StencilUpdate {
                         sycl::range<2> range = pass_source->get_haloed_tile_range(
                             tile_id, max_tile_range, halo_range, true, true);
                         InputKernel kernel(pass_source->get_internal(), cgh, offset, range);
-
-#if defined(STENCILSTREAM_NAMED_KERNELS)
-                        cgh.single_task<class input_kernel>(kernel);
-#else
-                        cgh.single_task(kernel);
-#endif
+                        cgh.STENCILSTREAM_NAMED_SINGLE_TASK(input_kernel, kernel);
                     });
 
                     HaloInjectionKernelImpl hik(*pass_source, tile_id, params.halo_value);
-#if defined(STENCILSTREAM_NAMED_KERNELS)
-                    halo_injection_queue.single_task<class halo_injection_kernel>(hik);
-#else
-                    halo_injection_queue.single_task(hik);
-#endif
+                    halo_injection_queue.STENCILSTREAM_NAMED_SINGLE_TASK(halo_injection_kernel,
+                                                                         hik);
 
                     submit_work_kernel<0>(work_queues, tdv_global_state, i, target_i_iteration,
                                           grid_range, tile_id);
@@ -255,11 +249,7 @@ class StencilUpdate {
                         sycl::range<2> range =
                             pass_target->get_tile_range(tile_id, max_tile_range, true);
                         OutputKernel kernel(pass_target->get_internal(), cgh, offset, range);
-#if defined(STENCILSTREAM_NAMED_KERNELS)
-                        cgh.single_task<class output_kernel>(kernel);
-#else
-                        cgh.single_task(kernel);
-#endif
+                        cgh.STENCILSTREAM_NAMED_SINGLE_TASK(output_kernel, kernel);
                     });
                 }
             }
@@ -335,9 +325,9 @@ class StencilUpdate {
             i_kernel * (temporal_parallelism / n_kernels);
 
         using ExecutionKernelImpl =
-            StencilUpdateKernel<F, TDVKernelArgument, local_temporal_parallelism,
-                                remaining_temporal_parallelism, spatial_parallelism,
-                                max_tile_height, max_tile_width, in_pipe, out_pipe>;
+            internal::StencilUpdateKernel<F, TDVKernelArgument, local_temporal_parallelism,
+                                          remaining_temporal_parallelism, spatial_parallelism,
+                                          max_tile_height, max_tile_width, in_pipe, out_pipe>;
 
         work_queues[i_kernel].submit([&](sycl::handler &cgh) {
             TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i_iteration,

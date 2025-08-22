@@ -18,7 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "Helpers.hpp"
+#include "internal/Helpers.hpp"
 #include <bit>
 #include <sycl/id.hpp>
 #include <sycl/range.hpp>

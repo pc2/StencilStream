@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../Helpers.hpp"
-#include "Grid.hpp"
+#include "../../internal/Helpers.hpp"
+#include "../Grid.hpp"
 #include <bit>
 #include <exception>
 #include <sycl/ext/intel/ac_types/ac_int.hpp>
@@ -28,6 +28,7 @@
 
 namespace stencil {
 namespace tiling {
+namespace internal {
 
 template <typename Cell, std::size_t spatial_parallelism, typename in_pipe, typename out_pipe,
           std::size_t max_tile_height, std::size_t max_tile_width, std::size_t halo_height,
@@ -39,7 +40,7 @@ class HaloInjectionKernel {
     static constexpr std::size_t vect_halo_width = halo_width / spatial_parallelism;
     static_assert(halo_width % spatial_parallelism == 0);
 
-    using CellVector = Padded<std::array<Cell, spatial_parallelism>>;
+    using CellVector = stencil::internal::Padded<std::array<Cell, spatial_parallelism>>;
     using GridImpl = Grid<Cell, spatial_parallelism>;
     using uindex_r_t = ac_int<std::bit_width(max_tile_height + 2 * halo_height), false>;
     using uindex_vect_c_t =
@@ -107,5 +108,6 @@ class HaloInjectionKernel {
     Cell halo_value;
 };
 
+} // namespace internal
 } // namespace tiling
 } // namespace stencil

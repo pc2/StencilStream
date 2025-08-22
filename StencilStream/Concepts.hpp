@@ -167,7 +167,6 @@ concept StencilUpdate =
         { params.halo_value } -> std::same_as<typename TF::Cell &>;
         { params.iteration_offset } -> std::same_as<std::size_t &>;
         { params.n_iterations } -> std::same_as<std::size_t &>;
-        { params.device } -> std::same_as<sycl::device &>;
     } && TransitionFunction<TF> && Grid<G, typename TF::Cell> &&
     (std::is_class<typename SU::Params>::value);
 

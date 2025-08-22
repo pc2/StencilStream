@@ -4,10 +4,10 @@ include("../../../scripts/benchmark-common.jl")
 const N_SUBITERATIONS = 3
 const OPERATIONS_PER_CELL = (5 + 5 + 3 + 6 + 6 + 6) + (10 + 3 + 2 + 14 + 3 + 2) + 2
 const CELL_SIZE = 88 # bytes
-const TEMPORAL_PARALLELISM = Dict(:monotile => 4, :cuda => 1)
+const TEMPORAL_PARALLELISM = Dict(:monotile => 6, :cuda => 1)
 const SPATIAL_PARALLELISM = Dict(:monotile => 1, :cuda => 1)
 const TILE_NX = Dict(:monotile => 2^16, :cuda => nothing)
-const TILE_NY = Dict(:monotile => 768, :cuda => nothing)
+const TILE_NY = Dict(:monotile => 512, :cuda => nothing)
 
 function analyze_log(logfile)
     iteration_re = r"it = ([0-9]+) \(iter = ([0-9]+), time = ([^)]+)\)"
@@ -52,6 +52,7 @@ function max_perf_benchmark(exe, variant)
             n_iterations,
             lx * res,
             ly * res,
+            nothing, # No multi-FPGA usage
             N_SUBITERATIONS,
             CELL_SIZE,
             OPERATIONS_PER_CELL,
@@ -73,13 +74,12 @@ function max_perf_benchmark(exe, variant)
         else
             metrics = Dict(
                 "target" => "Convection, Monotile",
-                "n_cus" => n_replications(info),
+                "parallelity" => parallelity(info),
                 "f" => info.f,
                 "occupancy" => occupancy(info),
                 "measured" => measured_throughput(info),
                 "accuracy" => model_accurracy(info),
-                "FLOPS" => measured_flops(info),
-                "mem_throughput" => measured_mem_throughput(info)
+                "FLOPS" => measured_flops(info)
             )
         end
 

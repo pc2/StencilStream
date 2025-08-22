@@ -18,13 +18,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../Concepts.hpp"
-#include "../Helpers.hpp"
-#include "../tdv/SinglePassStrategies.hpp"
+#include "../../Concepts.hpp"
+#include "../../internal/Helpers.hpp"
+#include "../../tdv/SinglePassStrategies.hpp"
 #include <sycl/ext/intel/ac_types/ac_int.hpp>
 
 namespace stencil {
 namespace monotile {
+namespace internal {
 
 /**
  * \brief The execution kernel of the monotile architecture
@@ -67,17 +68,17 @@ class StencilUpdateKernel {
     using TDV = typename TransFunc::TimeDependentValue;
     using TDVLocalState = typename TDVKernelArgument::LocalState;
     using StencilImpl = Stencil<Cell, TransFunc::stencil_radius, TDV>;
-    using CellVector = Padded<std::array<Cell, spatial_parallelism>>;
+    using CellVector = stencil::internal::Padded<std::array<Cell, spatial_parallelism>>;
 
     static constexpr std::size_t n_processing_elements =
         temporal_parallelism * TransFunc::n_subiterations;
 
     static constexpr std::size_t max_vect_grid_width =
-        int_ceil_div(max_grid_width, spatial_parallelism);
+        stencil::internal::int_ceil_div(max_grid_width, spatial_parallelism);
 
     // Round up the stencil buffer lead to the next integer multiple of the vector length.
     static constexpr std::size_t vect_stencil_buffer_lead =
-        int_ceil_div(TransFunc::stencil_radius, spatial_parallelism);
+        stencil::internal::int_ceil_div(TransFunc::stencil_radius, spatial_parallelism);
     static constexpr std::size_t stencil_buffer_lead =
         vect_stencil_buffer_lead * spatial_parallelism;
     static constexpr std::size_t stencil_buffer_height = 2 * TransFunc::stencil_radius + 1;
@@ -85,12 +86,14 @@ class StencilUpdateKernel {
         TransFunc::stencil_radius + spatial_parallelism + stencil_buffer_lead;
 
     template <typename T> static constexpr T calc_pipeline_latency(T grid_width) {
+        using namespace stencil::internal;
         T vect_grid_width = int_ceil_div<T>(grid_width, spatial_parallelism);
         return T(n_processing_elements * TransFunc::stencil_radius) * vect_grid_width +
                T(n_processing_elements * vect_stencil_buffer_lead);
     }
 
     template <typename T> static constexpr T calc_n_steps(T grid_height, T grid_width) {
+        using namespace stencil::internal;
         T vect_grid_width = int_ceil_div<T>(grid_width, spatial_parallelism);
         return grid_height * vect_grid_width + calc_pipeline_latency<T>(grid_width);
     }
@@ -145,6 +148,7 @@ class StencilUpdateKernel {
      * \brief Execute the kernel.
      */
     void operator()() const {
+        using namespace stencil::internal;
         uindex_vect_c_t vect_grid_width = int_ceil_div<uindex_c_t>(grid_width, spatial_parallelism);
 
         [[intel::fpga_register]] index_r_t r[n_processing_elements];
@@ -333,5 +337,6 @@ class StencilUpdateKernel {
     TDVKernelArgument tdv_kernel_argument;
 };
 
+} // namespace internal
 } // namespace monotile
 } // namespace stencil

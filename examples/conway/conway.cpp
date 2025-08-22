@@ -22,7 +22,6 @@
 #include <StencilStream/cpu/StencilUpdate.hpp>
 #include <StencilStream/cuda/StencilUpdate.hpp>
 #include <StencilStream/monotile/StencilUpdate.hpp>
-#include <sycl/ext/intel/fpga_extensions.hpp>
 
 using namespace stencil;
 #if defined(STENCILSTREAM_BACKEND_CPU)
@@ -100,18 +99,9 @@ int main(int argc, char **argv) {
 
     Grid<bool> grid = read(height, width);
 
-#if defined(STENCILSTREAM_TARGET_FPGA)
-    sycl::device device(sycl::ext::intel::fpga_selector_v);
-#elif defined(STENCILSTREAM_TARGET_CUDA)
-    sycl::device device(sycl::gpu_selector_v);
-#else
-    sycl::device device;
-#endif
-
     StencilUpdate<ConwayKernel> update({
         .transition_function = ConwayKernel(),
         .n_iterations = n_iterations,
-        .device = device,
     });
     grid = update(grid);
 

@@ -8,7 +8,7 @@
 
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     set(MAIN_PROJECT ON)
-    set(CMAKE_CXX_COMPILER icpx)
+    set(CMAKE_CXX_COMPILER mpiicpx)
 else()
     set(MAIN_PROJECT OFF)
 endif()

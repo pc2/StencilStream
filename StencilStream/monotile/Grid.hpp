@@ -66,7 +66,7 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
      */
     static constexpr std::size_t dimensions = 2;
 
-    using CellVector = Padded<std::array<Cell, spatial_parallelism>>;
+    using CellVector = stencil::internal::Padded<std::array<Cell, spatial_parallelism>>;
 
     /**
      * \brief Create a new, uninitialized grid with the given dimensions.
@@ -76,7 +76,8 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
      * \param grid_width The width, or number of columns, of the new grid.
      */
     Grid(std::size_t grid_height, std::size_t grid_width)
-        : tile_buffer(sycl::range<2>(grid_height, int_ceil_div(grid_width, spatial_parallelism))),
+        : tile_buffer(sycl::range<2>(
+              grid_height, stencil::internal::int_ceil_div(grid_width, spatial_parallelism))),
           grid_range(grid_height, grid_width) {}
 
     /**
@@ -86,7 +87,8 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
      * index will be the height of the grid.
      */
     Grid(sycl::range<2> range)
-        : tile_buffer(sycl::range<2>(range[0], int_ceil_div(range[1], spatial_parallelism))),
+        : tile_buffer(sycl::range<2>(
+              range[0], stencil::internal::int_ceil_div(range[1], spatial_parallelism))),
           grid_range(range) {}
 
     /**
@@ -98,8 +100,9 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
      * \param buffer The buffer with the contents of the new grid.
      */
     Grid(sycl::buffer<Cell, 2> buffer)
-        : tile_buffer(sycl::range<2>(buffer.get_range()[0],
-                                     int_ceil_div(buffer.get_range()[1], spatial_parallelism))),
+        : tile_buffer(sycl::range<2>(
+              buffer.get_range()[0],
+              stencil::internal::int_ceil_div(buffer.get_range()[1], spatial_parallelism))),
           grid_range(buffer.get_range()) {
         copy_from_buffer(buffer);
     }
@@ -132,6 +135,10 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
     std::size_t get_grid_width() const { return grid_range[1]; }
 
     sycl::range<2> get_grid_range() const { return grid_range; }
+
+    sycl::range<2> get_grid_range(bool vectorized) const {
+        return vectorized ? tile_buffer.get_range() : grid_range;
+    }
 
     /**
      * \brief An accessor for the monotile grid.
@@ -212,6 +219,7 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
      * \throws std::range_error The size of the buffer does not match the grid.
      */
     void copy_from_buffer(sycl::buffer<Cell, 2> input_buffer) {
+        using namespace stencil::internal;
         assert(tile_buffer.get_range()[1] == int_ceil_div(grid_range[1], spatial_parallelism));
         if (input_buffer.get_range() != grid_range) {
             throw std::range_error("The target buffer has not the same size as the grid");
@@ -236,6 +244,7 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
      * \throws std::range_error The size of the buffer does not match the grid.
      */
     void copy_to_buffer(sycl::buffer<Cell, 2> output_buffer) {
+        using namespace stencil::internal;
         assert(tile_buffer.get_range()[1] == int_ceil_div(grid_range[1], spatial_parallelism));
         if (output_buffer.get_range() != grid_range) {
             throw std::range_error("The target buffer has not the same size as the grid");

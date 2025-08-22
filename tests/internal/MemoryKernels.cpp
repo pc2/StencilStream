@@ -17,7 +17,7 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <StencilStream/fpga_io/MemoryKernels.hpp>
+#include <StencilStream/internal/MemoryKernels.hpp>
 #include <catch2/catch_all.hpp>
 
 constexpr std::size_t max_grid_height = 64;
@@ -26,8 +26,8 @@ constexpr std::size_t max_grid_width = 32;
 void test_complete_buffer_read_kernel(sycl::range<2> buffer_range) {
     using Cell = sycl::id<2>;
     using out_pipe = sycl::pipe<class complete_buffer_read_kernel_pipe_id, Cell>;
-    using Kernel =
-        stencil::fpga_io::CompleteBufferReadKernel<Cell, out_pipe, max_grid_height, max_grid_width>;
+    using Kernel = stencil::internal::CompleteBufferReadKernel<Cell, out_pipe, max_grid_height,
+                                                               max_grid_width>;
 
     sycl::buffer<Cell, 2> in_buffer(buffer_range);
     {
@@ -63,7 +63,7 @@ void test_complete_buffer_read_kernel(sycl::range<2> buffer_range) {
     }
 }
 
-TEST_CASE("fpga_io::CompleteBufferReadKernel", "[fpga_io]") {
+TEST_CASE("internal::CompleteBufferReadKernel", "[MemoryKernels]") {
     test_complete_buffer_read_kernel(sycl::range<2>(max_grid_height, max_grid_width));
     test_complete_buffer_read_kernel(sycl::range<2>(max_grid_height - 1, max_grid_width));
     test_complete_buffer_read_kernel(sycl::range<2>(max_grid_height, max_grid_width - 1));
@@ -73,8 +73,8 @@ TEST_CASE("fpga_io::CompleteBufferReadKernel", "[fpga_io]") {
 void test_complete_buffer_write_kernel(sycl::range<2> buffer_range) {
     using Cell = sycl::id<2>;
     using in_pipe = sycl::pipe<class complete_buffer_write_kernel_pipe_id, Cell>;
-    using Kernel =
-        stencil::fpga_io::CompleteBufferWriteKernel<Cell, in_pipe, max_grid_height, max_grid_width>;
+    using Kernel = stencil::internal::CompleteBufferWriteKernel<Cell, in_pipe, max_grid_height,
+                                                                max_grid_width>;
 
     sycl::queue queue;
     queue.single_task([=]() {
@@ -96,7 +96,7 @@ void test_complete_buffer_write_kernel(sycl::range<2> buffer_range) {
     }
 }
 
-TEST_CASE("fpga_io::CompleteBufferWriteKernel", "[fpga_io]") {
+TEST_CASE("internal::CompleteBufferWriteKernel", "[MemoryKernels]") {
     test_complete_buffer_write_kernel(sycl::range<2>(max_grid_height, max_grid_width));
     test_complete_buffer_write_kernel(sycl::range<2>(max_grid_height - 1, max_grid_width));
     test_complete_buffer_write_kernel(sycl::range<2>(max_grid_height, max_grid_width - 1));
@@ -108,7 +108,7 @@ void test_partial_buffer_read_kernel(sycl::range<2> buffer_range, sycl::id<2> of
     using Cell = sycl::id<2>;
     using out_pipe = sycl::pipe<class partial_buffer_read_kernel_pipe_id, Cell>;
     using Kernel =
-        stencil::fpga_io::PartialBufferReadKernel<Cell, out_pipe, max_grid_height, max_grid_width>;
+        stencil::internal::PartialBufferReadKernel<Cell, out_pipe, max_grid_height, max_grid_width>;
 
     sycl::buffer<Cell, 2> in_buffer(buffer_range);
     {
@@ -145,7 +145,7 @@ void test_partial_buffer_read_kernel(sycl::range<2> buffer_range, sycl::id<2> of
     }
 }
 
-TEST_CASE("fpga_io::PartialBufferReadKernel", "[fpga_io]") {
+TEST_CASE("internal::PartialBufferReadKernel", "[MemoryKernels]") {
     test_partial_buffer_read_kernel(sycl::range<2>(max_grid_height, max_grid_width),
                                     sycl::id<2>(0, 0),
                                     sycl::range<2>(max_grid_height, max_grid_width));
@@ -163,8 +163,8 @@ void test_partial_buffer_write_kernel(sycl::range<2> buffer_range, sycl::id<2> o
                                       sycl::range<2> tile_range) {
     using Cell = sycl::id<2>;
     using out_pipe = sycl::pipe<class partial_buffer_write_kernel_pipe_id, Cell>;
-    using Kernel =
-        stencil::fpga_io::PartialBufferWriteKernel<Cell, out_pipe, max_grid_height, max_grid_width>;
+    using Kernel = stencil::internal::PartialBufferWriteKernel<Cell, out_pipe, max_grid_height,
+                                                               max_grid_width>;
 
     sycl::buffer<Cell, 2> out_buffer(buffer_range);
     {
@@ -202,7 +202,7 @@ void test_partial_buffer_write_kernel(sycl::range<2> buffer_range, sycl::id<2> o
     }
 }
 
-TEST_CASE("fpga_io::PartialBufferWriteKernel", "[fpga_io]") {
+TEST_CASE("internal::PartialBufferWriteKernel", "[MemoryKernels]") {
     test_partial_buffer_write_kernel(sycl::range<2>(max_grid_height, max_grid_width),
                                      sycl::id<2>(0, 0),
                                      sycl::range<2>(max_grid_height, max_grid_width));
