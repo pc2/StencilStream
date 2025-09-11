@@ -65,7 +65,7 @@ template <typename Cell> class Grid {
      * \param c The width, or number of columns, of the new grid.
      */
     Grid(std::size_t r, std::size_t c)
-        : buffer(sycl::range<2>(r, c), buffers(make_buffers_from_member_ptrs<Cell>(r * c))) {}
+        : buffer(sycl::range<2>(r, c)), buffers(make_buffers_from_member_ptrs<Cell>(r * c)) {}
 
     /**
      * \brief Create a new, uninitialized grid with the given dimensions.
@@ -73,7 +73,8 @@ template <typename Cell> class Grid {
      * \param range The range of the new grid. The first index will be the height and the second
      * index will be the width of the grid.
      */
-    Grid(sycl::range<2> range) : buffer(range) {}
+    Grid(sycl::range<2> range)
+        : buffer(range), buffers(make_buffers_from_member_ptrs<Cell>(range[0] * range[1])) {}
 
     /**
      * \brief Create a new grid with the same size and contents as the given SYCL buffer.
@@ -96,7 +97,7 @@ template <typename Cell> class Grid {
      *
      * \param other_grid The other grid the new grid should reference.
      */
-    Grid(Grid const &other_grid) : buffer(other_grid.buffer) {}
+    Grid(Grid const &other_grid) : buffer(other_grid.buffer), buffers(other_grid.buffers) {}
 
     /**
      * \brief Copy the contents of the SYCL buffer into the grid.

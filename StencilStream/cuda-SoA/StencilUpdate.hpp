@@ -90,6 +90,8 @@ template <concepts::TransitionFunction F> class StencilUpdate {
          * it can actually provide you access to the data.
          */
         bool blocking = false;
+
+        bool profiling = true;
     };
 
     /**
@@ -256,6 +258,19 @@ template <concepts::TransitionFunction F> class StencilUpdate {
         queue.submit([&](sycl::handler &cgh) {
             sycl::accessor source_ac(pass_source->get_buffer(), cgh, sycl::read_only);
             sycl::accessor target_ac(pass_target->get_buffer(), cgh, sycl::write_only);
+
+            auto acc_tuple_pass_source = std::apply(
+                [&](auto &...buf) {
+                    return std::make_tuple(sycl::accessor(buf, cgh, sycl::read_only)...);
+                },
+                pass_source->get_buffers());
+
+            auto acc_tuple_pass_target = std::apply(
+                [&](auto &...buf) {
+                    return std::make_tuple(sycl::accessor(buf, cgh, sycl::write_only)...);
+                },
+                pass_target->get_buffers());
+
             std::size_t grid_height = source_ac.get_range()[0];
             std::size_t grid_width = source_ac.get_range()[1];
             Cell halo_value = params.halo_value;
@@ -272,8 +287,17 @@ template <concepts::TransitionFunction F> class StencilUpdate {
                             id[1] + rel_c >= F::stencil_radius &&
                             id[0] + rel_r < grid_height + F::stencil_radius &&
                             id[1] + rel_c < grid_width + F::stencil_radius) {
-                            cell = source_ac[id[0] + rel_r - F::stencil_radius]
-                                            [id[1] + rel_c - F::stencil_radius];
+                            size_t cell_id = (id[0] + rel_r - F::stencil_radius) * grid_width +
+                                             (id[1] + rel_c - F::stencil_radius);
+                            for_each_in_two_tuples(
+                                acc_tuple_pass_source, cell_members<Cell>::fields,
+                                [&](auto &acc, auto member_ptr, std::size_t /*idx*/) {
+                                    // member_ptr ist z.B. int Cell::*
+                                    cell.*member_ptr = static_cast<
+                                        std::remove_reference_t<decltype(acc[cell_id])>>(
+                                        acc[cell_id]);
+                                });
+
                         } else {
                             cell = halo_value;
                         }
@@ -281,11 +305,24 @@ template <concepts::TransitionFunction F> class StencilUpdate {
                     }
                 }
 
-                target_ac[id] = transition_function(stencil);
+                size_t cell_id = id[0] * grid_width + id[1];
+                Cell new_cell = transition_function(stencil);
+
+                for_each_in_two_tuples(
+                    acc_tuple_pass_target, cell_members<Cell>::fields,
+                    [&](auto &acc, auto member_ptr, std::size_t /*idx*/) {
+                        // member_ptr ist z.B. int Cell::*
+                        acc[cell_id] = static_cast<std::remove_reference_t<decltype(acc[cell_id])>>(
+                            new_cell.*member_ptr);
+                    });
             };
 
             cgh.parallel_for(source_ac.get_range(), kernel);
         });
+        // TODO: Implement logic
+        //  if (params.profiling) {
+        //      work_events.push_back(work_event);
+        //  }
     }
 
     Params params;
