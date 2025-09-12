@@ -70,12 +70,6 @@ template <> struct cell_members<ThermalConvectionCell> {
         &ThermalConvectionCell::ErrP);
 };
 
-/*
-auto tie_members(ThermalConvectionCell &tcc) {
-    return std::tie(tcc.T, tcc.Pt, tcc.Vx, tcc.Vy, tcc.tau_xx, tcc.tau_yy, tcc.sigma_xy,
-                    tcc.dVxd_tau, tcc.dVyd_tau, tcc.ErrV, tcc.ErrP);
-}
-*/
 #endif
 
 #define ALL(FIELD) (stencil[0][0].FIELD)
