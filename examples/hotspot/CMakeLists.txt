@@ -19,6 +19,9 @@ target_link_libraries(hotspot_cpu PUBLIC StencilStream_CPU)
 add_executable(hotspot_cuda hotspot.cpp)
 target_link_libraries(hotspot_cuda PUBLIC StencilStream_CUDA)
 
+add_executable(hotspot_cuda_soa hotspot.cpp)
+target_link_libraries(hotspot_cuda_soa PUBLIC StencilStream_CUDA_SoA)
+
 # Monotile versions
 add_executable(hotspot_mono hotspot.cpp)
 target_link_libraries(hotspot_mono PUBLIC StencilStream_Monotile)
