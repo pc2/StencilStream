@@ -18,7 +18,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "helper.hpp"
+#include "cell_member.hpp"
 #include <memory>
 
 namespace stencil {

@@ -24,7 +24,7 @@
 #include "../Concepts.hpp"
 #include "../Stencil.hpp"
 #include "Grid.hpp"
-#include "helper.hpp"
+#include "cell_member.hpp"
 #include <chrono>
 
 namespace stencil {
@@ -91,6 +91,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
          */
         bool blocking = false;
 
+        // TODO: Comment on what profiling is.
         bool profiling = true;
     };
 
@@ -111,11 +112,8 @@ template <concepts::TransitionFunction F> class StencilUpdate {
      */
 
     GridImpl operator()(GridImpl &source_grid) {
-        // GridImpl swap_grid_a = source_grid.make_similar();
-        // GridImpl swap_grid_b = source_grid.make_similar();
-        // GridImpl *pass_source = &source_grid;
-        // GridImpl *pass_target = &swap_grid_b;
-
+        // TODO: Implement timing functions.
+        // TODO: Comment on what the Scatter function does.
         sycl::queue update_kernel_queue =
             sycl::queue(params.device, {sycl::property::queue::enable_profiling()});
 
@@ -134,11 +132,8 @@ template <concepts::TransitionFunction F> class StencilUpdate {
                 Cell cell = ac_source_grid[id[0]][id[1]];
                 size_t cell_id = id[0] * ac_source_grid.get_range()[1] + id[1];
 
-                // nun die parallele Iteration über (acc_tuple, member_ptrs)
                 for_each_in_two_tuples(
-                    acc_tuple, cell_members<Cell>::fields,
-                    [&](auto &acc, auto member_ptr, std::size_t /*idx*/) {
-                        // member_ptr ist z.B. int Cell::*
+                    acc_tuple, cell_members<Cell>::fields, [&](auto &acc, auto member_ptr) {
                         acc[cell_id] = static_cast<std::remove_reference_t<decltype(acc[cell_id])>>(
                             cell.*member_ptr);
                     });
@@ -176,6 +171,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
         std::chrono::duration<double> walltime = walltime_end - walltime_start;
         this->walltime += walltime.count();
 
+        // TODO: Comment what the Gather function does.
         update_kernel_queue.submit([&](sycl::handler &cgh) {
             sycl::accessor ac_pass_grid(pass_source->get_buffer(), cgh, sycl::write_only);
 
@@ -190,9 +186,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
                 size_t cell_id = id[0] * ac_pass_grid.get_range()[1] + id[1];
 
                 for_each_in_two_tuples(
-                    acc_tuple, cell_members<Cell>::fields,
-                    [&](auto &acc, auto member_ptr, std::size_t /*idx*/) {
-                        // member_ptr ist z.B. int Cell::*
+                    acc_tuple, cell_members<Cell>::fields, [&](auto &acc, auto member_ptr) {
                         cell.*member_ptr =
                             static_cast<std::remove_reference_t<decltype(acc[cell_id])>>(
                                 acc[cell_id]);
@@ -291,8 +285,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
                                              (id[1] + rel_c - F::stencil_radius);
                             for_each_in_two_tuples(
                                 acc_tuple_pass_source, cell_members<Cell>::fields,
-                                [&](auto &acc, auto member_ptr, std::size_t /*idx*/) {
-                                    // member_ptr ist z.B. int Cell::*
+                                [&](auto &acc, auto member_ptr) {
                                     cell.*member_ptr = static_cast<
                                         std::remove_reference_t<decltype(acc[cell_id])>>(
                                         acc[cell_id]);
@@ -310,8 +303,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
 
                 for_each_in_two_tuples(
                     acc_tuple_pass_target, cell_members<Cell>::fields,
-                    [&](auto &acc, auto member_ptr, std::size_t /*idx*/) {
-                        // member_ptr ist z.B. int Cell::*
+                    [&](auto &acc, auto member_ptr) {
                         acc[cell_id] = static_cast<std::remove_reference_t<decltype(acc[cell_id])>>(
                             new_cell.*member_ptr);
                     });
@@ -319,7 +311,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
 
             cgh.parallel_for(source_ac.get_range(), kernel);
         });
-        // TODO: Implement logic
+        // TODO: Implement logic for profiling.
         //  if (params.profiling) {
         //      work_events.push_back(work_event);
         //  }
