@@ -21,6 +21,55 @@
 #include "../Cell.hpp"
 #include "../Parameters.hpp"
 #include "Material.hpp"
+#if defined(STENCILSTREAM_BACKEND_CUDA_SoA)
+    #include <StencilStream/cuda-SoA/StencilUpdate.hpp>
+
+class CoefResolver {
+  public:
+    struct MaterialCell {
+        float ex, ey, hz, hz_sum;
+        float ca, cb, da, db;
+
+        static MaterialCell halo() { return MaterialCell{0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0}; };
+
+        static MaterialCell from_parameters(Parameters const &parameters, size_t ring_index) {
+            if (ring_index >= parameters.rings.size()) {
+                return MaterialCell::halo();
+            } else {
+                MaterialCell cell = MaterialCell::halo();
+                CoefMaterial coefCell = CoefMaterial::from_relative_material(
+                    parameters.rings[ring_index].material, parameters.dx, parameters.dt());
+                cell.ca = coefCell.ca;
+                cell.cb = coefCell.cb;
+                cell.da = coefCell.da;
+                cell.db = coefCell.db;
+
+                return cell;
+            }
+        }
+    };
+
+    CoefResolver(Parameters const &parameters) {}
+
+    CoefMaterial get_material_coefficients(Stencil<MaterialCell, 1, float> const &stencil,
+                                           float distance_score) const {
+        CoefMaterial cell{.ca = stencil[0][0].ca,
+                          .cb = stencil[0][0].cb,
+                          .da = stencil[0][0].da,
+                          .db = stencil[0][0].db};
+        return cell;
+    }
+};
+
+template <> struct cell_members<CoefResolver::MaterialCell> {
+    static constexpr auto fields =
+        std::make_tuple(&CoefResolver::MaterialCell::ex, &CoefResolver::MaterialCell::ey,
+                        &CoefResolver::MaterialCell::hz, &CoefResolver::MaterialCell::hz_sum,
+                        &CoefResolver::MaterialCell::ca, &CoefResolver::MaterialCell::cb,
+                        &CoefResolver::MaterialCell::da, &CoefResolver::MaterialCell::db);
+};
+
+#else
 
 class CoefResolver {
   public:
@@ -53,3 +102,5 @@ class CoefResolver {
         return stencil[0][0].coefficients;
     }
 };
+
+#endif
