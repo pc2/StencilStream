@@ -61,7 +61,7 @@ template <typename MaterialResolver> class Kernel {
     }
 
 #if defined(STENCILSTREAM_BACKEND_CUDA_SoA)
-    ell operator()(Stencil<Cell, 1, float> const &stencil) const {
+    Cell operator()(Stencil<Cell, 1, float> const &stencil) const {
         Cell cell = stencil[0][0];
 
         float r = stencil.id[0];

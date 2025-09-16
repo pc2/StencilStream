@@ -60,7 +60,6 @@ struct ThermalConvectionCell {
 };
 
 #if defined(STENCILSTREAM_BACKEND_CUDA_SoA)
-
 template <> struct cell_members<ThermalConvectionCell> {
     static constexpr auto fields = std::make_tuple(
         &ThermalConvectionCell::T, &ThermalConvectionCell::Pt, &ThermalConvectionCell::Vx,
@@ -69,7 +68,6 @@ template <> struct cell_members<ThermalConvectionCell> {
         &ThermalConvectionCell::dVyd_tau, &ThermalConvectionCell::ErrV,
         &ThermalConvectionCell::ErrP);
 };
-
 #endif
 
 #define ALL(FIELD) (stencil[0][0].FIELD)

@@ -3,7 +3,7 @@
 #SBATCH --gres=gpu:a100:1
 ##SBATCH --qos=devel --partition=dgx
 #SBATCH -c 32 --mem 32G -t 00:05:00
-#SBATCH --output=%j_hotspot_baseline.out
+#SBATCH --output=%j_hotspot_cuda.out
 
 
 ml reset
@@ -19,7 +19,7 @@ echo "Starting program"
 cd /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/build_new
 
 for ((i=0; i<5; i++)); do
-    ./examples/hotspot/hotspot_cuda 1024 1024 10000 temp_1024 power_1024 out.txt
+    ./examples/hotspot/hotspot_cuda 1024 1024 1000 temp_1024 power_1024 out.txt
 done
 
 
