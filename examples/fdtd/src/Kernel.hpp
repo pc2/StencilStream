@@ -60,7 +60,7 @@ template <typename MaterialResolver> class Kernel {
         return sycl::cos(omega * current_time) * sycl::exp(-1 * wave_progress * wave_progress);
     }
 
-#if defined(STENCILSTREAM_BACKEND_CUDA_SoA)
+#if defined(STENCILSTREAM_BACKEND_CUDA_SOA)
     Cell operator()(Stencil<Cell, 1, float> const &stencil) const {
         Cell cell = stencil[0][0];
 

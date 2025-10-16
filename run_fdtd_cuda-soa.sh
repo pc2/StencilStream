@@ -3,7 +3,7 @@
 #SBATCH --gres=gpu:a100:1
 ##SBATCH --qos=devel --partition=dgx
 #SBATCH -c 32 --mem 64G -t 00:30:00
-#SBATCH --output=%j_fdtd_cuda-soa.out
+#SBATCH --output=%j_fdtd_cuda_soa.out
 
 
 ml reset
@@ -18,7 +18,7 @@ echo "Starting program"
 
 cd /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/build_new
 
-./examples/fdtd/fdtd_coef_device_cuda-soa -c ../examples/fdtd/experiments/max_grid.json 
+./examples/fdtd/fdtd_coef_device_cuda_soa -c ../examples/fdtd/experiments/max_grid.json 
 
 
 

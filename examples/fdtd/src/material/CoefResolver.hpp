@@ -21,8 +21,8 @@
 #include "../Cell.hpp"
 #include "../Parameters.hpp"
 #include "Material.hpp"
-#if defined(STENCILSTREAM_BACKEND_CUDA_SoA)
-    #include <StencilStream/cuda-SoA/StencilUpdate.hpp>
+#if defined(STENCILSTREAM_BACKEND_CUDA_SOA)
+    #include <StencilStream/cuda-soa/StencilUpdate.hpp>
 
 class CoefResolver {
   public:

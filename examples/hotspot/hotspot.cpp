@@ -30,8 +30,8 @@
     #include <StencilStream/cpu/StencilUpdate.hpp>
 #elif defined(STENCILSTREAM_BACKEND_CUDA)
     #include <StencilStream/cuda/StencilUpdate.hpp>
-#elif defined(STENCILSTREAM_BACKEND_CUDA_SoA)
-    #include <StencilStream/cuda-SoA/StencilUpdate.hpp>
+#elif defined(STENCILSTREAM_BACKEND_CUDA_SOA)
+    #include <StencilStream/cuda-soa/StencilUpdate.hpp>
 #endif
 
 using namespace std;
@@ -57,7 +57,7 @@ const FLOAT chip_width = 0.016;
 /* ambient temperature, assuming no package at all	*/
 const FLOAT amb_temp = 80.0;
 
-#if defined(STENCILSTREAM_BACKEND_CUDA_SoA)
+#if defined(STENCILSTREAM_BACKEND_CUDA_SOA)
 struct Cell {
     FLOAT temp{};
     FLOAT power{};
@@ -168,7 +168,7 @@ using Grid = StencilUpdate::GridImpl;
 using StencilUpdate = cpu::StencilUpdate<HotspotKernel>;
 using Grid = StencilUpdate::GridImpl;
 
-#elif defined(STENCILSTREAM_BACKEND_CUDA) || defined(STENCILSTREAM_BACKEND_CUDA_SoA)
+#elif defined(STENCILSTREAM_BACKEND_CUDA) || defined(STENCILSTREAM_BACKEND_CUDA_SOA)
 using StencilUpdate = cuda::StencilUpdate<HotspotKernel>;
 using Grid = StencilUpdate::GridImpl;
 #endif
@@ -188,7 +188,7 @@ void write_output(Grid vect, string file, bool binary) {
     Grid::GridAccessor<access::mode::read> vect_ac(vect);
 
     int i = 0;
-#if defined(STENCILSTREAM_BACKEND_CUDA_SoA)
+#if defined(STENCILSTREAM_BACKEND_CUDA_SOA)
     for (size_t r = 0; r < vect.get_grid_height(); r++) {
         for (size_t c = 0; c < vect.get_grid_width(); c++) {
             if (binary) {

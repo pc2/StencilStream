@@ -64,8 +64,8 @@ using StencilUpdate = cpu::StencilUpdate<KernelImpl>;
     #include <StencilStream/cuda/StencilUpdate.hpp>
 using Grid = cuda::Grid<CellImpl>;
 using StencilUpdate = cuda::StencilUpdate<KernelImpl>;
-#elif defined(STENCILSTREAM_BACKEND_CUDA_SoA)
-    #include <StencilStream/cuda-SoA/StencilUpdate.hpp>
+#elif defined(STENCILSTREAM_BACKEND_CUDA_SOA)
+    #include <StencilStream/cuda-soa/StencilUpdate.hpp>
 using Grid = cuda::Grid<CellImpl>;
 using StencilUpdate = cuda::StencilUpdate<KernelImpl>;
 #endif
@@ -116,7 +116,7 @@ void save_frame(Grid frame_buffer, size_t iteration_index, CellField field,
     for (size_t r = 0; r < parameters.grid_range()[1]; r++) {
         for (size_t c = 0; c < parameters.grid_range()[0]; c++) {
             switch (field) {
-#if defined(STENCILSTREAM_BACKEND_CUDA_SoA)
+#if defined(STENCILSTREAM_BACKEND_CUDA_SOA)
             case CellField::EX:
                 out << frame[r][c].ex;
                 break;
@@ -201,7 +201,7 @@ int main(int argc, char **argv) {
 
 #if defined(STENCILSTREAM_TARGET_FPGA)
     sycl::device device(sycl::ext::intel::fpga_selector_v);
-#elif defined(STENCILSTREAM_TARGET_CUDA) || defined(STENCILSTREAM_TARGET_CUDA_SoA)
+#elif defined(STENCILSTREAM_TARGET_CUDA) || defined(STENCILSTREAM_TARGET_CUDA_SOA)
     sycl::device device(sycl::gpu_selector_v);
 #else
         sycl::device device;
