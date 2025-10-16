@@ -29,7 +29,6 @@ Manifest.toml
 **/*.DS_Store
 
 build
-build_new
 doxygen
 **/.ipynb_checkpoints
 

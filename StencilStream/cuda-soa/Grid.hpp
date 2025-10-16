@@ -18,11 +18,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "cell_member.hpp"
+#include <cstddef>
 #include <memory>
+#include <utility>
+
+template <typename T> struct cell_members;
 
 namespace stencil {
 namespace cuda {
+
+// Create runtime tuple of sycl::buffer<T,1> for each member-pointer in cell_members<CellT>::fields.
+// The element type for each buffer is deduced from the member-pointer ptrs via:
+// decltype(std::declval<CellT>().*ptrs)
+// std::remove_reference_t<> strips references to get the raw field type.
+template <typename CellT> auto make_buffers_from_member_ptrs(std::size_t N) {
+    return std::apply(
+        [N](auto... ptrs) {
+            return std::make_tuple(
+                sycl::buffer<std::remove_reference_t<decltype(std::declval<CellT>().*ptrs)>, 1>(
+                    sycl::range<1>(N))...);
+        },
+        cell_members<CellT>::fields);
+}
+
+// buffers_t_for<CellT> is the tuple type returned by make_buffers_from_member_ptrs<CellT>(size_t).
+template <typename CellT>
+using buffers_t_for = decltype(make_buffers_from_member_ptrs<CellT>(std::declval<std::size_t>()));
 
 /**
  * \brief A grid class for the cuda backend
@@ -84,7 +105,10 @@ template <typename Cell> class Grid {
      *
      * \param other_buffer The buffer with the contents of the new grid.
      */
-    Grid(sycl::buffer<Cell, 2> other_buffer) : buffer(other_buffer.get_range()) {
+    Grid(sycl::buffer<Cell, 2> other_buffer)
+        : buffer(other_buffer.get_range()),
+          buffers(make_buffers_from_member_ptrs<Cell>(other_buffer.get_range()[0] *
+                                                      other_buffer.get_range()[1])) {
         copy_from_buffer(other_buffer);
     }
 

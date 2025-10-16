@@ -51,12 +51,12 @@ target_compile_definitions(StencilStream_CUDA INTERFACE STENCILSTREAM_TARGET_CUD
 target_compile_options(StencilStream_CUDA INTERFACE -fsycl-targets=nvptx64-nvidia-cuda -Xsycl-target-backend=nvptx64-nvidia-cuda --offload-arch=sm_80)
 target_link_options(StencilStream_CUDA INTERFACE -fsycl-targets=nvptx64-nvidia-cuda -Xsycl-target-backend=nvptx64-nvidia-cuda --offload-arch=sm_80)
 
-add_library(StencilStream_CUDA_SoA INTERFACE)
-target_link_libraries(StencilStream_CUDA_SoA INTERFACE StencilStream_Base)
-target_compile_definitions(StencilStream_CUDA_SoA INTERFACE STENCILSTREAM_BACKEND_CUDA_SoA=1)
-target_compile_definitions(StencilStream_CUDA_SoA INTERFACE STENCILSTREAM_TARGET_CUDA_SoA=1)
-target_compile_options(StencilStream_CUDA_SoA INTERFACE -fsycl-targets=nvptx64-nvidia-cuda -Xsycl-target-backend=nvptx64-nvidia-cuda --offload-arch=sm_80)
-target_link_options(StencilStream_CUDA_SoA INTERFACE -fsycl-targets=nvptx64-nvidia-cuda -Xsycl-target-backend=nvptx64-nvidia-cuda --offload-arch=sm_80)
+add_library(StencilStream_CUDA_SOA INTERFACE)
+target_link_libraries(StencilStream_CUDA_SOA INTERFACE StencilStream_Base)
+target_compile_definitions(StencilStream_CUDA_SOA INTERFACE STENCILSTREAM_BACKEND_CUDA_SOA=1)
+target_compile_definitions(StencilStream_CUDA_SOA INTERFACE STENCILSTREAM_TARGET_CUDA_SOA=1)
+target_compile_options(StencilStream_CUDA_SOA INTERFACE -fsycl-targets=nvptx64-nvidia-cuda -Xsycl-target-backend=nvptx64-nvidia-cuda --offload-arch=sm_80)
+target_link_options(StencilStream_CUDA_SOA INTERFACE -fsycl-targets=nvptx64-nvidia-cuda -Xsycl-target-backend=nvptx64-nvidia-cuda --offload-arch=sm_80)
 
 # Base target for FPGA-based backends
 

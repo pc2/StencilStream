@@ -13,7 +13,7 @@ add_executable(convection_cuda convection.cpp)
 target_link_libraries(convection_cuda PUBLIC StencilStream_CUDA)
 
 add_executable(convection_cuda_soa convection.cpp)
-target_link_libraries(convection_cuda_soa PUBLIC StencilStream_CUDA_SoA)
+target_link_libraries(convection_cuda_soa PUBLIC StencilStream_CUDA_SOA)
 
 add_executable(convection convection.cpp)
 target_link_libraries(convection PUBLIC StencilStream_Monotile)

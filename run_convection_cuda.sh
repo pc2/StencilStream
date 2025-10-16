@@ -12,8 +12,5 @@ ml lang
 ml intel/oneapi/25.0.0
 ml system/CUDA/12.6.0
 
-cd /scratch/hpc-lco-kenter/tstoehr/stencilstream-prototype/build
-echo "Starting program"
-
-cd /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/build_new
-./examples/convection/convection_cuda /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/examples/convection/experiments/max-res-default.json /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/build_new/out
+cd /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/build
+./examples/convection/convection_cuda /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/examples/convection/experiments/max-res-default.json /scratch/hpc-lco-kenter/tstoehr/sycl-stencil/build/out

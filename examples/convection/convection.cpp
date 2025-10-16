@@ -21,8 +21,8 @@
     #include <StencilStream/cpu/StencilUpdate.hpp>
 #elif defined(STENCILSTREAM_BACKEND_CUDA)
     #include <StencilStream/cuda/StencilUpdate.hpp>
-#elif defined(STENCILSTREAM_BACKEND_CUDA_SoA)
-    #include <StencilStream/cuda-SoA/StencilUpdate.hpp>
+#elif defined(STENCILSTREAM_BACKEND_CUDA_SOA)
+    #include <StencilStream/cuda-soa/StencilUpdate.hpp>
 #else
     #include <StencilStream/monotile/StencilUpdate.hpp>
 #endif
@@ -59,7 +59,7 @@ struct ThermalConvectionCell {
     }
 };
 
-#if defined(STENCILSTREAM_BACKEND_CUDA_SoA)
+#if defined(STENCILSTREAM_BACKEND_CUDA_SOA)
 template <> struct cell_members<ThermalConvectionCell> {
     static constexpr auto fields = std::make_tuple(
         &ThermalConvectionCell::T, &ThermalConvectionCell::Pt, &ThermalConvectionCell::Vx,
@@ -258,7 +258,7 @@ using Grid = cuda::Grid<ThermalConvectionCell>;
 using PseudoTransientUpdate = cuda::StencilUpdate<PseudoTransientKernel>;
 using ThermalSolverUpdate = cuda::StencilUpdate<ThermalSolverKernel>;
 
-#elif defined(STENCILSTREAM_BACKEND_CUDA_SoA)
+#elif defined(STENCILSTREAM_BACKEND_CUDA_SOA)
 using Grid = cuda::Grid<ThermalConvectionCell>;
 using PseudoTransientUpdate = cuda::StencilUpdate<PseudoTransientKernel>;
 using ThermalSolverUpdate = cuda::StencilUpdate<ThermalSolverKernel>;
