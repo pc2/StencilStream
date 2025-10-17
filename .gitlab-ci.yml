@@ -1,5 +1,5 @@
 stages:
-    # - preevaluation
+    - preevaluation
     # - synthesis
     - benchmark
     # - analysis
