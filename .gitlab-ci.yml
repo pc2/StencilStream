@@ -234,30 +234,30 @@ default:
 # CUDA benchmarks
 # ===============
 
-CUDA benchmark:
-    extends:
-        - .cuda_job
-        - .expensive_job
-    stage: benchmark
-    tags:
-        - noctua2
-    variables:
-        SCHEDULER_PARAMETERS: -A pc2-shks -p gpu --gres=gpu:a100:1 -c 16 --mem 16G --time=01:00:00
-    script:
-        - mkdir -p build
-        - cd build
-        - cmake ..
-        - make unit_test_cuda convection_cuda hotspot_cuda fdtd_coef_device_cuda -j16
-        - ./tests/unit_test_cuda
-        - cd ../examples/convection
-        - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection_cuda cuda
-        - cd ../fdtd
-        - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/fdtd_coef_device_cuda cuda
-        - cd ../hotspot
-        - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/hotspot_cuda cuda
-    artifacts:
-        paths:
-            - examples/*/metrics.cuda.json
+# CUDA benchmark:
+#     extends:
+#         - .cuda_job
+#         - .expensive_job
+#     stage: benchmark
+#     tags:
+#         - noctua2
+#     variables:
+#         SCHEDULER_PARAMETERS: -A pc2-shks -p gpu --gres=gpu:a100:1 -c 16 --mem 16G --time=01:00:00
+#     script:
+#         - mkdir -p build
+#         - cd build
+#         - cmake ..
+#         - make unit_test_cuda convection_cuda hotspot_cuda fdtd_coef_device_cuda -j16
+#         - ./tests/unit_test_cuda
+#         - cd ../examples/convection
+#         - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection_cuda cuda
+#         - cd ../fdtd
+#         - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/fdtd_coef_device_cuda cuda
+#         - cd ../hotspot
+#         - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/hotspot_cuda cuda
+#     artifacts:
+#         paths:
+#             - examples/*/metrics.cuda.json
 
 CUDA-SOA benchmark:
     extends:
@@ -282,7 +282,7 @@ CUDA-SOA benchmark:
         - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/hotspot_cuda_soa cuda
     artifacts:
         paths:
-            - examples/*/metrics.cuda.soa.json
+            - examples/*/metrics.cuda.json
 # =======
 # Release
 # =======
