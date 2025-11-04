@@ -1,14 +1,15 @@
 stages:
-    # - preevaluation
-    # - synthesis
+    - preevaluation
+    - synthesis
     - benchmark
-    # - analysis
-    # - release
+    - analysis
+    - release
 
 variables:
     TAG_NAME: cibuild-${CI_PIPELINE_IID}
     RELEASE_NAME: CI build ${CI_PIPELINE_IID}
     PACKAGE_REGISTRY_URL: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic
+    SLURM_ACCOUNT: pc2-mitarbeiter
 
 default:
     id_tokens:
@@ -25,241 +26,216 @@ default:
        - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_MERGE_REQUEST_TITLE !~ /^Draft:/ # Run for non-draft merge requests
        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH # Run on the main branch
 
-# .fpga_job:
-#     before_script:
-#         - source scripts/env_fpga.sh
+.fpga_job:
+    before_script:
+        - source scripts/env_fpga.sh
 
 .cuda_job:
     before_script:
         - source scripts/env_cuda.sh
 
 
-# .synthesis:
-#     extends:
-#         - .expensive_job
-#         - .fpga_job
-#     stage: synthesis
-#     tags:
-#         - noctua2
-#     variables:
-#         SCHEDULER_PARAMETERS: -A pc2-shks -p normal -t 1-00:00:00 -c 8 --mem 120G
-#     script:
-#         - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "${STST_EXAMPLE}" "${STST_EXECUTABLE}"
-#     artifacts:
-#         when: always
-#         paths:
-#             - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}"
-#             - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.prj/reports"
-#             - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.prj/quartuserr.tmp"
-#             - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.prj/quartus_sh_compile.log"
-#             - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.tar.gz"
+.synthesis:
+    extends:
+        - .expensive_job
+        - .fpga_job
+    stage: synthesis
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p normal -t 1-00:00:00 -c 8 --mem 120G
+    script:
+        - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "${STST_EXAMPLE}" "${STST_EXECUTABLE}"
+    artifacts:
+        when: always
+        paths:
+            - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}"
+            - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.prj/reports"
+            - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.prj/quartuserr.tmp"
+            - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.prj/quartus_sh_compile.log"
+            - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.tar.gz"
 
 # =============
 # Preevaluation
 # =============
 
-# documentation:
-#     extends: .cheap_job
-#     stage: preevaluation
-#     tags:
-#         - docker-shared
-#     image: alpine
-#     before_script:
-#         - apk add --no-cache doxygen graphviz font-noto
-#     script:
-#         - doxygen
-#     artifacts:
-#         paths:
-#             - doxygen/html
+documentation:
+    extends: .cheap_job
+    stage: preevaluation
+    tags:
+        - docker-shared
+    image: alpine
+    before_script:
+        - apk add --no-cache doxygen graphviz font-noto
+    script:
+        - doxygen
+    artifacts:
+        paths:
+            - doxygen/html
 
-# FPGA/CPU unit test:
-#     extends:
-#         - .cheap_job
-#         - .fpga_job
-#     stage: preevaluation
-#     tags:
-#         - noctua2
-#     variables:
-#         SCHEDULER_PARAMETERS: -A pc2-shks -p normal -t 0:10:00 -c 16 --mem 4G
-#     script:
-#         - mkdir -p build
-#         - cd build
-#         - cmake ..
-#         - make unit_test_cpu unit_test_fpga -j16
-#         - ./tests/unit_test_cpu
-#         - ./tests/unit_test_fpga
-#     artifacts:
-#         paths:
-#             - Manifest.toml
+FPGA/CPU unit test:
+    extends:
+        - .cheap_job
+        - .fpga_job
+    stage: preevaluation
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p normal -t 0:10:00 -c 16 --mem 4G
+    script:
+        - mkdir -p build
+        - cd build
+        - cmake ..
+        - make unit_test_cpu unit_test_fpga -j16
+        - ./tests/unit_test_cpu
+        - ./tests/unit_test_fpga
+    artifacts:
+        paths:
+            - Manifest.toml
 
 # ==========
 # Convection
 # ==========
 
-# convection synthesis:
-#     extends: .synthesis
-#     variables:
-#         STST_EXAMPLE: "convection"
-#         STST_EXECUTABLE: "convection"
+convection synthesis:
+    extends: .synthesis
+    variables:
+        STST_EXAMPLE: "convection"
+        STST_EXECUTABLE: "convection"
 
-# convection benchmark:
-#     extends:
-#         - .expensive_job
-#         - .fpga_job
-#     stage: benchmark
-#     needs: 
-#         - convection synthesis
-#     tags:
-#         - noctua2
-#     variables:
-#         SCHEDULER_PARAMETERS: -A pc2-shks -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
-#     script:
-#         - cd examples/convection
-#         - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection monotile
-#     artifacts:
-#         paths:
-#             - examples/convection/out
-#             - examples/convection/metrics.monotile.json
-#             - examples/convection/pseudo_transient_runtimes.csv
+convection benchmark:
+    extends:
+        - .expensive_job
+        - .fpga_job
+    stage: benchmark
+    needs: 
+        - convection synthesis
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
+    script:
+        - cd examples/convection
+        - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection monotile
+    artifacts:
+        paths:
+            - examples/convection/out
+            - examples/convection/metrics.monotile.json
+            - examples/convection/pseudo_transient_runtimes.csv
 
 # ==================
 # Hotspot (Monotile)
 # ==================
 
-# hotspot (monotile) synthesis:
-#     extends: .synthesis
-#     variables:
-#         STST_EXAMPLE: "hotspot"
-#         STST_EXECUTABLE: "hotspot_mono"
+hotspot (monotile) synthesis:
+    extends: .synthesis
+    variables:
+        STST_EXAMPLE: "hotspot"
+        STST_EXECUTABLE: "hotspot_mono"
 
-# .hotspot benchmark:
-#     extends:
-#         - .expensive_job
-#         - .fpga_job
-#     stage: benchmark
-#     tags:
-#         - noctua2
-#     variables:
-#         SCHEDULER_PARAMETERS: -A pc2-shks -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:30:00
-#     script:
-#         - cd examples/hotspot
-#         - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/${STST_EXECUTABLE} ${STST_VARIANT}
-#     artifacts:
-#         paths:
-#             - examples/hotspot/metrics.*.json
+.hotspot benchmark:
+    extends:
+        - .expensive_job
+        - .fpga_job
+    stage: benchmark
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:30:00
+    script:
+        - cd examples/hotspot
+        - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/${STST_EXECUTABLE} ${STST_VARIANT}
+    artifacts:
+        paths:
+            - examples/hotspot/metrics.*.json
 
-# hotspot (monotile) benchmark:
-#     extends: .hotspot benchmark
-#     needs: 
-#         - hotspot (monotile) synthesis
-#     variables:
-#         STST_EXECUTABLE: hotspot_mono
-#         STST_VARIANT: monotile
+hotspot (monotile) benchmark:
+    extends: .hotspot benchmark
+    needs: 
+        - hotspot (monotile) synthesis
+    variables:
+        STST_EXECUTABLE: hotspot_mono
+        STST_VARIANT: monotile
 
 # ================
 # Hotspot (Tiling)
 # ================
 
-# hotspot (tiling) synthesis:
-#     extends: .synthesis
-#     variables:
-#         STST_EXAMPLE: "hotspot"
-#         STST_EXECUTABLE: "hotspot_tiling"
+hotspot (tiling) synthesis:
+    extends: .synthesis
+    variables:
+        STST_EXAMPLE: "hotspot"
+        STST_EXECUTABLE: "hotspot_tiling"
 
-# hotspot (tiling) benchmark:
-#     extends: .hotspot benchmark
-#     needs: 
-#         - hotspot (tiling) synthesis
-#     variables:
-#         STST_EXECUTABLE: hotspot_tiling
-#         STST_VARIANT: tiling
-#     stage: benchmark
+hotspot (tiling) benchmark:
+    extends: .hotspot benchmark
+    needs: 
+        - hotspot (tiling) synthesis
+    variables:
+        STST_EXECUTABLE: hotspot_tiling
+        STST_VARIANT: tiling
+    stage: benchmark
 
 # ===============
 # FDTD (Monotile)
 # ===============
 
-# fdtd (monotile) synthesis:
-#     extends: .synthesis
-#     variables:
-#         STST_EXAMPLE: "fdtd"
-#         STST_EXECUTABLE: "fdtd_coef_device_mono"
+fdtd (monotile) synthesis:
+    extends: .synthesis
+    variables:
+        STST_EXAMPLE: "fdtd"
+        STST_EXECUTABLE: "fdtd_coef_device_mono"
 
-# .fdtd benchmark:
-#     extends:
-#         - .expensive_job
-#         - .fpga_job
-#     stage: benchmark
-#     tags:
-#         - noctua2
-#     variables:
-#         SCHEDULER_PARAMETERS: -A pc2-shks -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:30:00
-#     script:
-#         - cd examples/fdtd
-#         - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/${STST_EXECUTABLE} ${STST_VARIANT}
-#         - julia --project -O3 -t126 ./scripts/plot_frames.jl out/
-#     artifacts:
-#         paths:
-#             - examples/fdtd/out/*.csv
-#             - examples/fdtd/out/*.png
-#             - examples/fdtd/metrics.*.json
+.fdtd benchmark:
+    extends:
+        - .expensive_job
+        - .fpga_job
+    stage: benchmark
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:30:00
+    script:
+        - cd examples/fdtd
+        - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/${STST_EXECUTABLE} ${STST_VARIANT}
+        - julia --project -O3 -t126 ./scripts/plot_frames.jl out/
+    artifacts:
+        paths:
+            - examples/fdtd/out/*.csv
+            - examples/fdtd/out/*.png
+            - examples/fdtd/metrics.*.json
 
-# fdtd (monotile) benchmark:
-#     extends: .fdtd benchmark
-#     needs: 
-#         - fdtd (monotile) synthesis
-#     variables:
-#         STST_EXECUTABLE: fdtd_coef_device_mono
-#         STST_VARIANT: monotile
+fdtd (monotile) benchmark:
+    extends: .fdtd benchmark
+    needs: 
+        - fdtd (monotile) synthesis
+    variables:
+        STST_EXECUTABLE: fdtd_coef_device_mono
+        STST_VARIANT: monotile
 
 # =============
 # FDTD (Tiling)
 # =============
 
-# fdtd (tiling) synthesis:
-#     extends: .synthesis
-#     variables:
-#         STST_EXAMPLE: "fdtd"
-#         STST_EXECUTABLE: "fdtd_coef_device_tiling"
+fdtd (tiling) synthesis:
+    extends: .synthesis
+    variables:
+        STST_EXAMPLE: "fdtd"
+        STST_EXECUTABLE: "fdtd_coef_device_tiling"
 
-# fdtd (tiling) benchmark:
-#     extends: .fdtd benchmark
-#     needs: 
-#         - fdtd (tiling) synthesis
-#     variables:
-#         STST_EXECUTABLE: fdtd_coef_device_tiling
-#         STST_VARIANT: tiling
+fdtd (tiling) benchmark:
+    extends: .fdtd benchmark
+    needs: 
+        - fdtd (tiling) synthesis
+    variables:
+        STST_EXECUTABLE: fdtd_coef_device_tiling
+        STST_VARIANT: tiling
 
 # ===============
 # CUDA benchmarks
 # ===============
 
-# CUDA benchmark:
-#     extends:
-#         - .cuda_job
-#         - .expensive_job
-#     stage: benchmark
-#     tags:
-#         - noctua2
-#     variables:
-#         SCHEDULER_PARAMETERS: -A pc2-shks -p gpu --gres=gpu:a100:1 -c 16 --mem 16G --time=01:00:00
-#     script:
-#         - mkdir -p build
-#         - cd build
-#         - cmake ..
-#         - make unit_test_cuda convection_cuda hotspot_cuda fdtd_coef_device_cuda -j16
-#         - ./tests/unit_test_cuda
-#         - cd ../examples/convection
-#         - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection_cuda cuda
-#         - cd ../fdtd
-#         - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/fdtd_coef_device_cuda cuda
-#         - cd ../hotspot
-#         - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/hotspot_cuda cuda
-#     artifacts:
-#         paths:
-#             - examples/*/metrics.cuda.json
-
-CUDA-SOA benchmark:
+CUDA benchmark:
     extends:
         - .cuda_job
         - .expensive_job
@@ -267,12 +243,12 @@ CUDA-SOA benchmark:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A pc2-shks -p gpu --gres=gpu:a100:1 -c 16 --mem 16G --time=01:00:00
+        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p gpu --gres=gpu:a100:1 -c 16 --mem 16G --time=01:00:00
     script:
         - mkdir -p build
         - cd build
         - cmake ..
-        - make unit_test_cuda convection_cuda_soa hotspot_cuda_soa fdtd_coef_device_cuda_soa -j16
+        - make unit_test_cuda convection_cuda hotspot_cuda fdtd_coef_device_cuda convection_cuda_soa hotspot_cuda_soa fdtd_coef_device_cuda_soa -j16
         - ./tests/unit_test_cuda
         - cd ../examples/convection
         - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection_cuda_soa cuda
@@ -287,16 +263,16 @@ CUDA-SOA benchmark:
 # Release
 # =======
 
-# release:
-#     stage: release
-#     when: always
-#     rules:
-#         - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH # Only deploy the binaries on the main branch
-#     tags:
-#         - noctua2
-#     variables:
-#         SCHEDULER_PARAMETERS: -A pc2-shks -p normal -c 8 --mem 2G -t 00:05:00
-#     before_script:
-#         - source ./scripts/env_base.sh
-#     script:
-#         - ./scripts/publish-release.sh
+release:
+    stage: release
+    when: always
+    rules:
+        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH # Only deploy the binaries on the main branch
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p normal -c 8 --mem 2G -t 00:05:00
+    before_script:
+        - source ./scripts/env_base.sh
+    script:
+        - ./scripts/publish-release.sh
