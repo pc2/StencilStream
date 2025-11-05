@@ -18,9 +18,13 @@ function max_perf_benchmark(exe, variant, n_ranks)
         n_samples = 3
     end
     out_dir = Base.Filesystem.mkpath("./out/")
-    mpi_root = ENV["I_MPI_ROOT"]
-    command = `$mpi_root/bin/mpirun -n $n_ranks $exe -c $experiment_path -o $out_dir`
-    warmup_cluster(command, n_ranks, variant)
+    command = `$exe -c $experiment_path -o $out_dir`
+
+    if variant == :monotile
+        mpi_root = ENV["I_MPI_ROOT"]
+        command = `$mpi_root/bin/mpirun -n $n_ranks $exe -c $experiment_path -o $out_dir`
+        warmup_cluster(command, n_ranks, variant)
+    end
 
     runtime_re = Regex("Walltime: ([0-9]+\\.[0-9]+) s")
 

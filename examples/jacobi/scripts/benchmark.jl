@@ -6,7 +6,7 @@ function max_perf_benchmark(exe, n_ranks)
     exe_name = basename(exe)
     mpi_root = ENV["I_MPI_ROOT"]
     mpirun = "$mpi_root/bin/mpirun"
-    
+
     config_text = open(io -> join(readlines(io)), `$mpirun -n 1 $exe show-config`, "r")
     config = JSON.parse(match(r"(\{[^\}\{]+\})$", config_text)[1])
     variant = Symbol(config["variant"])
@@ -86,7 +86,7 @@ function max_perf_benchmark(exe, n_ranks)
 end
 
 if size(ARGS) != (3,)
-    println(stderr, "Usage: $PROGRAM_FILE <benchmark> <path to executable or directory> <n_tranks>")
+    println(stderr, "Usage: $PROGRAM_FILE <benchmark> <path to executable or directory> <n_ranks>")
     println(stderr, "Possible benchmarks: max_perf")
     exit(1)
 end

@@ -2,7 +2,6 @@ using DataFrames
 using CSV
 using Statistics
 using JSON
-using CairoMakie
 
 function parse_report_js(path)
     fields = Dict{String,Any}()
@@ -133,29 +132,6 @@ max_compute_throughput(info::BenchmarkInformation) = parallelity(info) * info.f
 
 model_accurracy(info::BenchmarkInformation) = model_throughput(info) / measured_throughput(info)
 occupancy(info::BenchmarkInformation) = measured_throughput(info) / max_compute_throughput(info)
-
-function render_model_error(df, file_name)
-    fig = Figure(size=(1600, 600))
-    azimuth = Observable(0.0)
-    ax = Axis3(fig[1, 1], xlabel="no. of timesteps", ylabel="grid width/height", zlabel="", title="relative model error [percent]", azimuth=azimuth)
-
-    new_df = DataFrame(n_timesteps=Int64[], grid_wh=Int64[], kernel_runtime=Float64[], model_runtime=Float64[])
-
-    for n_timesteps in Set(df.n_timesteps)
-        for grid_wh in Set(df.grid_wh)
-            sub_df = df[df.n_timesteps.==n_timesteps.&&df.grid_wh.==grid_wh, [:kernel_runtime, :model_runtime]]
-            kernel_runtime = mean(sub_df.kernel_runtime)
-            model_runtime = mean(sub_df.model_runtime)
-            push!(new_df, [n_timesteps, grid_wh, kernel_runtime, model_runtime])
-        end
-    end
-
-    surface!(ax, new_df.n_timesteps, new_df.grid_wh, new_df.kernel_runtime ./ new_df.model_runtime .* 100.0)
-
-    record(fig, file_name, LinRange(0.0, 2.0π, 240); framerate=24) do a
-        azimuth[] = a
-    end
-end
 
 function setup_io_pipes(n_ranks, variant)
     if variant != :monotile

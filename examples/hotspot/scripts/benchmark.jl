@@ -59,9 +59,13 @@ function max_perf_benchmark(exec, variant, n_ranks)
     create_experiment(grid_height, grid_width, temp_path, power_path)
     println("Experiment created and written!")
 
-    mpi_root = ENV["I_MPI_ROOT"]
-    command = `$mpi_root/bin/mpirun -n $n_ranks $exec $grid_height $grid_width $n_iters $temp_path $power_path $out_path`
-    warmup_cluster(command, n_ranks, variant)
+    command = `$exec $grid_height $grid_width $n_iters $temp_path $power_path $out_path`
+
+    if variant == :monotile
+        mpi_root = ENV["I_MPI_ROOT"]
+        command = `$mpi_root/bin/mpirun -n $n_ranks $command`
+        warmup_cluster(command, n_ranks, variant)
+    end
 
     runtimes = Vector()
     for i_sample in 1:n_samples
