@@ -19,7 +19,6 @@
  */
 #include "Kernel.hpp"
 #include <deque>
-#include <sycl/ext/intel/fpga_extensions.hpp>
 
 #if MATERIAL == 0
     #include "material/CoefResolver.hpp"
@@ -49,8 +48,9 @@ using TDVStrategy = tdv::single_pass::PrecomputeOnHostStrategy;
     #include <StencilStream/monotile/StencilUpdate.hpp>
 
 using Grid = monotile::Grid<CellImpl, spatial_parallelism>;
-using StencilUpdate = monotile::StencilUpdate<KernelImpl, temporal_parallelism, spatial_parallelism,
-                                              tile_height, tile_width, n_kernels, TDVStrategy>;
+using StencilUpdate =
+    monotile::StencilUpdate<KernelImpl, temporal_parallelism, spatial_parallelism, tile_height,
+                            tile_width, n_kernels, TDVStrategy, monotile::Connectivity::IO_PIPES>;
 #elif defined(STENCILSTREAM_BACKEND_TILING)
     #include <StencilStream/tiling/StencilUpdate.hpp>
 using StencilUpdate = tiling::StencilUpdate<KernelImpl, temporal_parallelism, spatial_parallelism,
@@ -139,6 +139,12 @@ void save_frame(Grid frame_buffer, size_t iteration_index, CellField field,
 }
 
 int main(int argc, char **argv) {
+    MPI_Init(NULL, NULL);
+
+    int rank, n_ranks;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &n_ranks);
+
     Parameters parameters(argc, argv);
     parameters.print_configuration();
 
@@ -177,27 +183,20 @@ int main(int argc, char **argv) {
         }
     }
 
-#if defined(STENCILSTREAM_TARGET_FPGA)
-    sycl::device device(sycl::ext::intel::fpga_selector_v);
-#elif defined(STENCILSTREAM_TARGET_CUDA)
-    sycl::device device(sycl::gpu_selector_v);
-#else
-    sycl::device device;
-#endif
-
     StencilUpdate simulation({
         .transition_function = KernelImpl(parameters, mat_resolver),
         .halo_value = CellImpl::halo(),
         .iteration_offset = 0,
         .n_iterations = parameters.n_timesteps(),
-        .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
     });
 
     size_t n_timesteps = parameters.n_timesteps();
     size_t last_saved_iteration = 0;
 
-    std::cout << "Simulating..." << std::endl;
+    if (rank == 0) {
+        std::cout << "Simulating..." << std::endl;
+    }
 
     if (parameters.n_snap_timesteps().has_value()) {
         size_t n_snap_timesteps = parameters.n_snap_timesteps().value();
@@ -205,16 +204,21 @@ int main(int argc, char **argv) {
         for (size_t &i = simulation.get_params().iteration_offset; i < parameters.n_timesteps();
              i += n_snap_timesteps) {
             grid = simulation(grid);
-            save_frame(grid, i + n_snap_timesteps, CellField::HZ, parameters);
+            if (rank == 0) {
+                save_frame(grid, i + n_snap_timesteps, CellField::HZ, parameters);
+            }
         }
     } else {
         grid = simulation(grid);
     }
 
-    std::cout << "Simulation complete!" << std::endl;
-    std::cout << "Walltime: " << simulation.get_walltime() << " s" << std::endl;
+    if (rank == 0) {
+        std::cout << "Simulation complete!" << std::endl;
+        std::cout << "Walltime: " << simulation.get_walltime() << " s" << std::endl;
 
-    save_frame(grid, n_timesteps, CellField::HZ_SUM, parameters);
+        save_frame(grid, n_timesteps, CellField::HZ_SUM, parameters);
+    }
 
+    MPI_Finalize();
     return 0;
 }

@@ -6,10 +6,10 @@ using Statistics
 const GLOBAL_MEMORY_SPACE = 32 * 2^30
 const OPERATIONS_PER_CELL = 15
 const CELL_SIZE = 8 # bytes
-const TEMPORAL_PARALLELISM = Dict(:monotile => 64, :tiling => 64, :cuda => 1)
-const SPATIAL_PARALLELISM = Dict(:monotile => 8, :tiling => 8, :cuda => 1)
-const TILE_HEIGHT = Dict(:monotile => 6144, :tiling => 2^16, :cuda => nothing)
-const TILE_WIDTH = Dict(:monotile => 6144, :tiling => 4096, :cuda => nothing)
+const TEMPORAL_PARALLELISM = Dict(:monotile => 112, :tiling => 64, :cuda => 1)
+const SPATIAL_PARALLELISM = Dict(:monotile => 4, :tiling => 8, :cuda => 1)
+const TILE_HEIGHT = Dict(:monotile => 4096, :tiling => 2^16, :cuda => nothing)
+const TILE_WIDTH = Dict(:monotile => 4096, :tiling => 4096, :cuda => nothing)
 
 function create_experiment(n_rows, n_columns, temp_file, power_file)
     begin
@@ -25,7 +25,7 @@ function create_experiment(n_rows, n_columns, temp_file, power_file)
     end
 end
 
-function max_perf_benchmark(exec, variant)
+function max_perf_benchmark(exec, variant, n_ranks)
     if variant == :monotile
         grid_height = TILE_HEIGHT[:monotile]
         grid_width = TILE_WIDTH[:monotile]
@@ -34,8 +34,8 @@ function max_perf_benchmark(exec, variant)
     elseif variant == :tiling
         max_n_cells = GLOBAL_MEMORY_SPACE / 3 / CELL_SIZE
         n_tiles = Int(floor(√max_n_cells / TILE_WIDTH[:tiling]))
-        grid_height = n_tiles*TILE_WIDTH[:tiling]
-        grid_width = n_tiles*TILE_WIDTH[:tiling]
+        grid_height = n_tiles * TILE_WIDTH[:tiling]
+        grid_width = n_tiles * TILE_WIDTH[:tiling]
         n_iters = 100 * TEMPORAL_PARALLELISM[:tiling]
         n_samples = 5
     elseif variant == :cuda
@@ -59,10 +59,9 @@ function max_perf_benchmark(exec, variant)
     create_experiment(grid_height, grid_width, temp_path, power_path)
     println("Experiment created and written!")
 
-    command = `$exec $grid_height $grid_width $n_iters $temp_path $power_path $out_path`
-
-    # Warmup to exclude programming from the benchmark
-    run(command)
+    mpi_root = ENV["I_MPI_ROOT"]
+    command = `$mpi_root/bin/mpirun -n $n_ranks $exec $grid_height $grid_width $n_iters $temp_path $power_path $out_path`
+    warmup_cluster(command, n_ranks, variant)
 
     runtimes = Vector()
     for i_sample in 1:n_samples
@@ -84,12 +83,13 @@ function max_perf_benchmark(exec, variant)
         end
         push!(runtimes, runtime)
     end
-    runtime = mean(runtimes)
+    runtime = minimum(runtimes)
 
     info = BenchmarkInformation(
         n_iters,
         grid_height,
         grid_width,
+        n_ranks,
         1,
         CELL_SIZE,
         OPERATIONS_PER_CELL,
@@ -108,26 +108,22 @@ function max_perf_benchmark(exec, variant)
             "measured" => measured_throughput(info),
             "FLOPS" => measured_flops(info)
         )
-    else 
+    else
         metrics = Dict(
             "target" => (variant == :monotile) ? "Hotspot, Monotile" : "Hotspot, Tiling",
-            "n_cus" => n_replications(info),
+            "parallelity" => parallelity(info),
             "f" => info.f,
             "occupancy" => occupancy(info),
             "measured" => measured_throughput(info),
             "accuracy" => model_accurracy(info),
-            "FLOPS" => measured_flops(info),
-            "mem_throughput" => measured_mem_throughput(info)
+            "FLOPS" => measured_flops(info)
         )
     end
-
-    open("metrics.$variant.json", "w") do metrics_file
-        JSON.print(metrics_file, metrics)
-    end
+    metrics
 end
 
-if size(ARGS) != (3,)
-    println(stderr, "Usage: $PROGRAM_FILE <benchmark> <path to executable> <variant>")
+if size(ARGS) != (4,)
+    println(stderr, "Usage: $PROGRAM_FILE <benchmark> <path to executable> <variant> <n_ranks>")
     println(stderr, "Possible benchmarks: max_perf")
     println(stderr, "Possible variants: monotile, tiling, cuda")
     exit(1)
@@ -135,9 +131,17 @@ end
 
 exec = ARGS[2]
 variant = Symbol(ARGS[3])
+n_ranks = parse(Int, ARGS[4])
 
 if ARGS[1] == "max_perf"
-    max_perf_benchmark(exec, variant)
+    metrics = max_perf_benchmark(exec, variant, n_ranks)
+    open(f -> JSON.print(f, metrics), "metrics.$variant.json", "w")
+elseif ARGS[1] == "strong_scaling"
+    metrics = Dict()
+    for i in n_ranks:-1:1
+        metrics[i] = max_perf_benchmark(exec, variant, i)
+        open(f -> JSON.print(f, metrics), "metrics.$variant.json", "w")
+    end
 else
     println(stderr, "Unknown benchmark '$(ARGS[1])'")
     exit(1)

@@ -20,7 +20,6 @@
 #include <StencilStream/BaseTransitionFunction.hpp>
 #include <chrono>
 #include <fstream>
-#include <sycl/ext/intel/fpga_extensions.hpp>
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
     #include <StencilStream/monotile/StencilUpdate.hpp>
@@ -93,14 +92,15 @@ struct HotspotKernel : public BaseTransitionFunction {
 };
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
-const size_t max_grid_height = 6144;
-const size_t max_grid_width = 6144;
-const size_t temporal_parallelism = 64;
-const size_t spatial_parallelism = 8;
-const size_t n_kernels = 16;
+const size_t max_grid_height = 4096;
+const size_t max_grid_width = 4096;
+const size_t temporal_parallelism = 112;
+const size_t spatial_parallelism = 4;
+const size_t n_kernels = temporal_parallelism / 4;
 using StencilUpdate =
     monotile::StencilUpdate<HotspotKernel, temporal_parallelism, spatial_parallelism,
-                            max_grid_height, max_grid_width, n_kernels>;
+                            max_grid_height, max_grid_width, n_kernels,
+                            tdv::single_pass::InlineStrategy, monotile::Connectivity::IO_PIPES>;
 using Grid = StencilUpdate::GridImpl;
 
 #elif defined(STENCILSTREAM_BACKEND_TILING)
@@ -217,6 +217,12 @@ auto exception_handler = [](sycl::exception_list exceptions) {
 };
 
 int main(int argc, char **argv) {
+    MPI_Init(NULL, NULL);
+
+    int rank, n_ranks;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &n_ranks);
+
     size_t n_rows, n_columns, sim_time;
     bool benchmark_mode = false;
 
@@ -248,7 +254,9 @@ int main(int argc, char **argv) {
 
     Grid grid = read_input(tfile, pfile, n_rows, n_columns, binary_io);
 
-    printf("Start computing the transient temperature\n");
+    if (rank == 0) {
+        printf("Start computing the transient temperature\n");
+    }
 
     FLOAT grid_height = chip_height / n_rows;
     FLOAT grid_width = chip_width / n_columns;
@@ -266,29 +274,22 @@ int main(int argc, char **argv) {
     FLOAT Rz_1 = 1.f / Rz;
     FLOAT Cap_1 = step / Cap;
 
-#if defined(STENCILSTREAM_TARGET_FPGA)
-    sycl::device device(sycl::ext::intel::fpga_selector_v);
-#elif defined(STENCILSTREAM_TARGET_CUDA)
-    sycl::device device(sycl::gpu_selector_v);
-#else
-    sycl::device device;
-#endif
-
     StencilUpdate update({
         .transition_function =
             HotspotKernel{.Rx_1 = Rx_1, .Ry_1 = Ry_1, .Rz_1 = Rz_1, .Cap_1 = Cap_1},
         .halo_value = HotspotCell(0.0, 0.0),
         .n_iterations = sim_time,
-        .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
     });
 
     grid = update(grid);
 
-    std::cout << "Ending simulation" << std::endl;
-    std::cout << "Walltime: " << update.get_walltime() << " s" << std::endl;
+    if (rank == 0) {
+        std::cout << "Ending simulation" << std::endl;
+        std::cout << "Walltime: " << update.get_walltime() << " s" << std::endl;
+        write_output(grid, ofile, binary_io);
+    }
 
-    write_output(grid, ofile, binary_io);
-
+    MPI_Finalize();
     return 0;
 }

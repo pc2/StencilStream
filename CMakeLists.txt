@@ -8,7 +8,7 @@
 
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     set(MAIN_PROJECT ON)
-    set(CMAKE_CXX_COMPILER icpx)
+    set(CMAKE_CXX_COMPILER mpiicpx)
 else()
     set(MAIN_PROJECT OFF)
 endif()
@@ -18,13 +18,12 @@ cmake_minimum_required(VERSION 3.22.1)
 project(StencilStream CXX)
 set(CMAKE_PROJECT_VERSION 4.0.0)
 
-option(StencilStream_VerboseSynthesis "Print some progress information during hardware synthesis" OFF)
-
 if(${MAIN_PROJECT})
     add_subdirectory(examples/convection)
     add_subdirectory(examples/conway)
     add_subdirectory(examples/fdtd)
     add_subdirectory(examples/hotspot)
+    add_subdirectory(examples/jacobi)
     add_subdirectory(tests)
 endif()
 
@@ -58,9 +57,11 @@ target_link_libraries(StencilStream_FPGABase INTERFACE StencilStream_Base)
 target_compile_options(StencilStream_FPGABase INTERFACE -qactypes -fintelfpga)
 target_link_options(StencilStream_FPGABase INTERFACE -fintelfpga)
 
-if(StencilStream_VerboseSynthesis)
-    target_link_options(StencilStream_FPGABase INTERFACE -Xsv)
-endif() 
+add_library(StencilStream_VerboseSynthesis INTERFACE)
+target_link_options(StencilStream_VerboseSynthesis INTERFACE -Xsv)
+
+add_library(StencilStream_NamedKernels INTERFACE)
+target_compile_definitions(StencilStream_NamedKernels INTERFACE -DSTENCILSTREAM_NAMED_KERNELS)
 
 # Monotile FPGA backends
 

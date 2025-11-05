@@ -29,7 +29,6 @@
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
-#include <sycl/ext/intel/fpga_extensions.hpp>
 
 using namespace stencil;
 using json = nlohmann::json;
@@ -247,8 +246,8 @@ using ThermalSolverUpdate = cuda::StencilUpdate<ThermalSolverKernel>;
 
 #else
 constexpr size_t max_nx = 1 << 16;
-constexpr size_t max_ny = 768;
-constexpr size_t temporal_parallelism = 8;
+constexpr size_t max_ny = 512;
+constexpr size_t temporal_parallelism = 6;
 constexpr size_t spatial_parallelism = 1;
 constexpr size_t n_kernels = 2;
 using Grid = monotile::Grid<ThermalConvectionCell, spatial_parallelism>;
@@ -347,12 +346,6 @@ int main(int argc, char **argv) {
     double dampX = 1.0 - dmp / nx; // damping term for the x-momentum equation
     double dampY = 1.0 - dmp / ny; // damping term for the y-momentum equation
 
-#if defined(STENCILSTREAM_TARGET_FPGA)
-    sycl::device device(sycl::ext::intel::fpga_selector_v);
-#else
-    sycl::device device;
-#endif
-
     PseudoTransientUpdate pseudo_transient_update({
         .transition_function =
             PseudoTransientKernel{
@@ -373,7 +366,6 @@ int main(int argc, char **argv) {
             },
         .halo_value = ThermalConvectionCell::halo_value(),
         .n_iterations = nerr,
-        .device = device,
         .blocking = true,
     });
 
@@ -454,7 +446,6 @@ int main(int argc, char **argv) {
                 ThermalSolverKernel{.nx = nx, .ny = ny, .dx = dx, .dy = dy, .dt = dt, .DcT = DcT},
             .halo_value = ThermalConvectionCell::halo_value(),
             .n_iterations = 1,
-            .device = device,
         });
         grid = thermal_solver_update(grid);
 
@@ -482,6 +473,7 @@ int main(int argc, char **argv) {
     auto computation_time = std::chrono::duration_cast<std::chrono::duration<double>>(
         computation_end - computation_start);
     std::cout << "Total time = " << computation_time.count() << std::endl;
-    std::cout << "Of which transient computation time: " << pseudo_transient_update.get_walltime() << " s" << std::endl;
+    std::cout << "Of which transient computation time: " << pseudo_transient_update.get_walltime()
+              << " s" << std::endl;
     return 0;
 }

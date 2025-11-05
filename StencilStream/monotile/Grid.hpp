@@ -66,7 +66,7 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
      */
     static constexpr std::size_t dimensions = 2;
 
-    using CellVector = Padded<std::array<Cell, spatial_parallelism>>;
+    using CellVector = stencil::internal::Padded<std::array<Cell, spatial_parallelism>>;
 
     /**
      * \brief Create a new, uninitialized grid with the given dimensions.
@@ -76,7 +76,8 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
      * \param grid_width The width, or number of columns, of the new grid.
      */
     Grid(std::size_t grid_height, std::size_t grid_width)
-        : tile_buffer(sycl::range<2>(grid_height, int_ceil_div(grid_width, spatial_parallelism))),
+        : tile_buffer(sycl::range<2>(
+              grid_height, stencil::internal::int_ceil_div(grid_width, spatial_parallelism))),
           grid_range(grid_height, grid_width) {}
 
     /**
@@ -86,7 +87,8 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
      * index will be the height of the grid.
      */
     Grid(sycl::range<2> range)
-        : tile_buffer(sycl::range<2>(range[0], int_ceil_div(range[1], spatial_parallelism))),
+        : tile_buffer(sycl::range<2>(
+              range[0], stencil::internal::int_ceil_div(range[1], spatial_parallelism))),
           grid_range(range) {}
 
     /**
@@ -98,8 +100,9 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
      * \param buffer The buffer with the contents of the new grid.
      */
     Grid(sycl::buffer<Cell, 2> buffer)
-        : tile_buffer(sycl::range<2>(buffer.get_range()[0],
-                                     int_ceil_div(buffer.get_range()[1], spatial_parallelism))),
+        : tile_buffer(sycl::range<2>(
+              buffer.get_range()[0],
+              stencil::internal::int_ceil_div(buffer.get_range()[1], spatial_parallelism))),
           grid_range(buffer.get_range()) {
         copy_from_buffer(buffer);
     }
@@ -132,6 +135,10 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
     std::size_t get_grid_width() const { return grid_range[1]; }
 
     sycl::range<2> get_grid_range() const { return grid_range; }
+
+    sycl::range<2> get_grid_range(bool vectorized) const {
+        return vectorized ? tile_buffer.get_range() : grid_range;
+    }
 
     /**
      * \brief An accessor for the monotile grid.
@@ -212,6 +219,7 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
      * \throws std::range_error The size of the buffer does not match the grid.
      */
     void copy_from_buffer(sycl::buffer<Cell, 2> input_buffer) {
+        using namespace stencil::internal;
         assert(tile_buffer.get_range()[1] == int_ceil_div(grid_range[1], spatial_parallelism));
         if (input_buffer.get_range() != grid_range) {
             throw std::range_error("The target buffer has not the same size as the grid");
@@ -236,6 +244,7 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
      * \throws std::range_error The size of the buffer does not match the grid.
      */
     void copy_to_buffer(sycl::buffer<Cell, 2> output_buffer) {
+        using namespace stencil::internal;
         assert(tile_buffer.get_range()[1] == int_ceil_div(grid_range[1], spatial_parallelism));
         if (output_buffer.get_range() != grid_range) {
             throw std::range_error("The target buffer has not the same size as the grid");
@@ -250,98 +259,7 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
         }
     }
 
-    /**
-     * \brief Submit a kernel that sends the contents of the grid into a pipe.
-     *
-     * The entirety of the grid will be send into the pipe in row-major order, meaning that the
-     * last index (which denotes the column) will change the quickest. The method returns the event
-     * of the launched kernel immediately.
-     *
-     * This method is explicitly part of the user-facing API: You are allowed and encouraged to use
-     * this method to feed custom kernels.
-     *
-     * \tparam in_pipe The pipe the data is sent into.
-     *
-     * \param queue The queue to submit the kernel to.
-     *
-     * \returns The event object of the submitted kernel.
-     */
-    template <typename in_pipe,
-              std::size_t max_grid_height = std::numeric_limits<std::size_t>::max(),
-              std::size_t max_grid_width = std::numeric_limits<std::size_t>::max()>
-    sycl::event submit_read(sycl::queue queue) {
-        constexpr std::size_t max_vect_grid_width =
-            int_ceil_div(max_grid_width, spatial_parallelism);
-
-        using uindex_r_t = ac_int<std::bit_width(max_grid_height), false>;
-        using uindex_vect_c_t = ac_int<std::bit_width(max_vect_grid_width), false>;
-        using uindex_cell_t = ac_int<std::bit_width(spatial_parallelism), false>;
-
-        assert(tile_buffer.get_range()[0] <= max_grid_height);
-        assert(tile_buffer.get_range()[1] <= max_vect_grid_width);
-
-        return queue.submit([&](sycl::handler &cgh) {
-            sycl::accessor tile_ac(tile_buffer, cgh, sycl::read_only);
-            uindex_r_t grid_height = tile_ac.get_range()[0];
-            uindex_vect_c_t vect_grid_width = tile_ac.get_range()[1];
-
-            cgh.single_task([=]() {
-                [[intel::loop_coalesce(2)]] for (uindex_r_t r = 0; r < grid_height; r++) {
-                    for (uindex_vect_c_t vect_c = 0; vect_c < vect_grid_width; vect_c++) {
-                        std::array<Cell, spatial_parallelism> vector = tile_ac[r][vect_c].value;
-                        in_pipe::write(vector);
-                    }
-                }
-            });
-        });
-    }
-
-    /**
-     * \brief Submit a kernel that receives cells from the pipe and writes them to the grid.
-     *
-     * The kernel expects that the entirety of the grid can be overwritten with the cells read from
-     * the pipe. Also, it expects that the cells are sent in row-major order, meaning that the
-     * last index (which denotes the column) will change the quickest. The method returns the event
-     * of the launched kernel immediately.
-     *
-     * This method is explicitly part of the user-facing API: You are allowed and encouraged to use
-     * this method to feed custom kernels.
-     *
-     * \tparam out_pipe The pipe the data is received from.
-     *
-     * \param queue The queue to submit the kernel to.
-     *
-     * \returns The event object of the submitted kernel.
-     */
-    template <typename out_pipe,
-              std::size_t max_grid_height = std::numeric_limits<std::size_t>::max(),
-              std::size_t max_grid_width = std::numeric_limits<std::size_t>::max()>
-    sycl::event submit_write(sycl::queue queue) {
-        constexpr std::size_t max_vect_grid_width =
-            int_ceil_div(max_grid_width, spatial_parallelism);
-
-        using uindex_r_t = ac_int<std::bit_width(max_grid_height), false>;
-        using uindex_vect_c_t = ac_int<std::bit_width(max_vect_grid_width), false>;
-        using uindex_cell_t = ac_int<std::bit_width(spatial_parallelism), false>;
-
-        assert(tile_buffer.get_range()[0] <= max_grid_height);
-        assert(tile_buffer.get_range()[1] <= max_vect_grid_width);
-
-        return queue.submit([&](sycl::handler &cgh) {
-            sycl::accessor tile_ac(tile_buffer, cgh, sycl::write_only);
-            uindex_r_t grid_height = tile_ac.get_range()[0];
-            uindex_vect_c_t vect_grid_width = tile_ac.get_range()[1];
-
-            cgh.single_task([=]() {
-                [[intel::loop_coalesce(2)]] for (uindex_r_t r = 0; r < grid_height; r++) {
-                    for (uindex_vect_c_t vect_c = 0; vect_c < vect_grid_width; vect_c++) {
-                        std::array<Cell, spatial_parallelism> vector = out_pipe::read();
-                        tile_ac[r][vect_c].value = vector;
-                    }
-                }
-            });
-        });
-    }
+    sycl::buffer<CellVector, 2> get_internal() const { return tile_buffer; }
 
   private:
     sycl::buffer<CellVector, 2> tile_buffer;
