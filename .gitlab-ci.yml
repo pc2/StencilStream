@@ -81,7 +81,7 @@ FPGA/CPU unit test:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p normal -t 0:10:00 -c 16 --mem 4G
+        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p normal -t 0:30:00 -c 16 --mem 16G
     script:
         - mkdir -p build
         - cd build
