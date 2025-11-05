@@ -21,6 +21,7 @@
 #include "Helpers.hpp"
 #include <bit>
 #include <exception>
+#include <sycl/sycl.hpp>
 #include <sycl/ext/intel/ac_types/ac_int.hpp>
 
 namespace stencil {

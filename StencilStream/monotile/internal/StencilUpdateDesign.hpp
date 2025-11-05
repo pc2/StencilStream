@@ -25,6 +25,7 @@
 #include "StencilUpdateKernel.hpp"
 #include <chrono>
 #include <type_traits>
+#include <mpi.h>
 
 namespace stencil {
 namespace monotile {

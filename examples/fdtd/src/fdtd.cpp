@@ -139,11 +139,16 @@ void save_frame(Grid frame_buffer, size_t iteration_index, CellField field,
 }
 
 int main(int argc, char **argv) {
+#if defined(STENCILSTREAM_BACKEND_MONOTILE)
     MPI_Init(NULL, NULL);
 
     int rank, n_ranks;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &n_ranks);
+#else
+    int rank = 0;
+    int n_ranks = 0;
+#endif
 
     Parameters parameters(argc, argv);
     parameters.print_configuration();
@@ -219,6 +224,8 @@ int main(int argc, char **argv) {
         save_frame(grid, n_timesteps, CellField::HZ_SUM, parameters);
     }
 
+#if defined(STENCILSTREAM_BACKEND_MONOTILE)
     MPI_Finalize();
+#endif
     return 0;
 }

@@ -19,6 +19,7 @@
  */
 #pragma once
 #include "Helpers.hpp"
+#include <sycl/sycl.hpp>
 
 namespace stencil {
 namespace internal {

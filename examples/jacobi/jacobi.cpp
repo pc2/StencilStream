@@ -25,6 +25,9 @@ const char *variant = "monotile";
 #elif defined(STENCILSTREAM_BACKEND_TILING)
     #include <StencilStream/tiling/StencilUpdate.hpp>
 const char *variant = "tiling";
+#elif defined(STENCILSTREAM_BACKEND_CUDA)
+    #include <StencilStream/cuda/StencilUpdate.hpp>
+const char *variant = "cuda";
 #endif
 #include <fstream>
 #include <iostream>
@@ -37,12 +40,12 @@ using StencilUpdate =
                             tile_width, n_kernels, tdv::single_pass::InlineStrategy,
                             monotile::Connectivity::IO_PIPES>;
 
-#elif defined(STENCILSTREAM_BACKEND_CPU)
-using StencilUpdate = cpu::StencilUpdate<JacobiKernel>;
-
 #elif defined(STENCILSTREAM_BACKEND_TILING)
 using StencilUpdate = tiling::StencilUpdate<JacobiKernel, temporal_parallelism, spatial_parallelism,
                                             tile_height, tile_width, n_kernels>;
+
+#elif defined(STENCILSTREAM_BACKEND_CUDA)
+using StencilUpdate = cuda::StencilUpdate<JacobiKernel>;
 #endif
 
 using Grid = StencilUpdate::GridImpl;
@@ -64,19 +67,26 @@ void print_usage(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
+#if defined(STENCILSTREAM_BACKEND_MONOTILE)
     MPI_Init(NULL, NULL);
 
     int rank, n_ranks;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &n_ranks);
+#else
+    int rank = 0;
+    int n_ranks = 0;
+#endif
 
     if (argc == 2 && std::strcmp(argv[1], "show-config") == 0) {
         std::cout << "{" << std::endl;
         std::cout << "    \"variant\": \"" << variant << "\"," << std::endl;
+#if defined(STENCILSTREAM_TARGET_FPGA)
         std::cout << "    \"temporal_parallelism\": " << temporal_parallelism << "," << std::endl;
         std::cout << "    \"spatial_parallelism\": " << spatial_parallelism << "," << std::endl;
         std::cout << "    \"tile_height\": " << tile_height << "," << std::endl;
         std::cout << "    \"tile_width\": " << tile_width << "," << std::endl;
+#endif
         std::cout << "    \"n_coefficients\": " << JacobiKernel::n_coefficients << "," << std::endl;
         std::cout << "    \"n_operations\": " << JacobiKernel::n_operations << std::endl;
         std::cout << "}" << std::endl;
@@ -135,6 +145,8 @@ int main(int argc, char **argv) {
         }
     }
 
+#if defined(STENCILSTREAM_BACKEND_MONOTILE)
     MPI_Finalize();
+#endif
     return 0;
 }

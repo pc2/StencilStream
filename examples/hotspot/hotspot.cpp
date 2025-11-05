@@ -217,11 +217,16 @@ auto exception_handler = [](sycl::exception_list exceptions) {
 };
 
 int main(int argc, char **argv) {
+#if defined(STENCILSTREAM_BACKEND_MONOTILE)
     MPI_Init(NULL, NULL);
 
     int rank, n_ranks;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &n_ranks);
+#else
+    int rank = 0;
+    int n_ranks = 1;
+#endif
 
     size_t n_rows, n_columns, sim_time;
     bool benchmark_mode = false;
@@ -290,6 +295,8 @@ int main(int argc, char **argv) {
         write_output(grid, ofile, binary_io);
     }
 
+#if defined(STENCILSTREAM_BACKEND_MONOTILE)
     MPI_Finalize();
+#endif
     return 0;
 }

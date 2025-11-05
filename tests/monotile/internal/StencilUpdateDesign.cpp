@@ -21,6 +21,7 @@
 #include "../../TransFuncs.hpp"
 #include <StencilStream/monotile/internal/StencilUpdateDesign.hpp>
 #include <catch2/catch_all.hpp>
+#include <sycl/ext/intel/fpga_extensions.hpp>
 
 constexpr std::size_t max_grid_height = 256;
 constexpr std::size_t max_grid_width = 128;

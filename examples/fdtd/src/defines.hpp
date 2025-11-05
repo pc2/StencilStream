@@ -41,6 +41,8 @@ constexpr float sqrt_2 = 1.4142135623730951;
 
 constexpr float pi = 3.1415926535897932384626433;
 
+#if defined(STENCILSTREAM_TARGET_FPGA) || defined(STENCILSTREAM_TARGET_FPGA_EMU)
+
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
 constexpr size_t temporal_parallelism = 100;
 constexpr size_t spatial_parallelism = 1;
@@ -56,6 +58,8 @@ constexpr size_t tile_height = 1 << 16;
 #endif
 
 constexpr size_t n_kernels = temporal_parallelism / 4;
+#endif
+
 constexpr size_t max_n_rings = 15;
 constexpr size_t bits_max_n_rings = std::bit_width(max_n_rings + 1);
 using uindex_ring_t = ac_int<bits_max_n_rings, false>;
