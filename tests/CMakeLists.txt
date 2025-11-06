@@ -27,6 +27,8 @@ set(UNIT_TEST_CPU_SOURCES
 set(UNIT_TEST_CUDA_SOURCES
     cuda/Grid.cpp
     cuda/StencilUpdate.cpp
+    cuda-soa/Grid.cpp
+    cuda-soa/StencilUpdate.cpp
 )
 
 set(UNIT_TEST_FPGA_SOURCES
