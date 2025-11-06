@@ -51,8 +51,8 @@ struct BenchmarkInformation
 
     # Implementation parameters
     variant::Symbol
-    temporal_parallelism::Int
-    spatial_parallelism::Int
+    temporal_parallelism::Union{Int,Nothing} # may be nothing for CUDA variant
+    spatial_parallelism::Union{Int,Nothing} # may be nothing for CUDA variant
     n_tile_rows::Union{Int,Nothing} # may be nothing for CUDA variant
     n_tile_cols::Union{Int,Nothing} # may be nothing for CUDA variant
 
@@ -80,14 +80,22 @@ end
 grid_size(info::BenchmarkInformation) = info.n_grid_rows * info.n_grid_cols
 workload(info::BenchmarkInformation) = grid_size(info) * info.n_iters
 function n_passes(info::BenchmarkInformation)
-    if (info.variant == :monotile && !isnothing(info.n_ranks))
+    if info.variant == :cuda
+        nothing
+    elseif (info.variant == :monotile && !isnothing(info.n_ranks))
         ceil(info.n_iters / info.temporal_parallelism / info.n_ranks)
     else
         ceil(info.n_iters / info.temporal_parallelism)
     end
 end
-n_cus(info::BenchmarkInformation) = info.temporal_parallelism * info.n_subiters
-parallelity(info::BenchmarkInformation) = (isnothing(info.n_ranks) ? 1 : info.n_ranks) * info.temporal_parallelism * info.spatial_parallelism
+n_cus(info::BenchmarkInformation) = info.variant == :cuda ? nothing : info.temporal_parallelism * info.n_subiters
+function parallelity(info::BenchmarkInformation)
+    if info.variant == :cuda
+        nothing
+    else
+        (isnothing(info.n_ranks) ? 1 : info.n_ranks) * info.temporal_parallelism * info.spatial_parallelism
+    end
+end
 
 halo_height(info::BenchmarkInformation) = (info.variant == :tiling) ? n_cus(info) : nothing
 halo_width(info::BenchmarkInformation) = (info.variant == :tiling) ? info.spatial_parallelism * n_cus(info) : nothing

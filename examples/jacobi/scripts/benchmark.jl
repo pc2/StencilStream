@@ -4,35 +4,55 @@ using Glob
 
 function max_perf_benchmark(exe, n_ranks)
     exe_name = basename(exe)
-    mpi_root = ENV["I_MPI_ROOT"]
-    mpirun = "$mpi_root/bin/mpirun"
 
-    config_text = open(io -> join(readlines(io)), `$mpirun -n 1 $exe show-config`, "r")
+    config_text = open(io -> join(readlines(io)), `$exe show-config`, "r")
     config = JSON.parse(match(r"(\{[^\}\{]+\})$", config_text)[1])
     variant = Symbol(config["variant"])
-    temporal_parallelism = config["temporal_parallelism"]
-    spatial_parallelism = config["spatial_parallelism"]
-    tile_height = config["tile_height"]
-    tile_width = config["tile_width"]
+    if variant != :cuda
+        temporal_parallelism = config["temporal_parallelism"]
+        spatial_parallelism = config["spatial_parallelism"]
+        tile_height = config["tile_height"]
+        tile_width = config["tile_width"]
+        grid_wh = min(tile_height, tile_width)
+        f = load_report_details(exe * ".prj/reports")
+    else
+        temporal_parallelism = 1
+        spatial_parallelism = 1
+        tile_height = nothing
+        tile_width = nothing
+        grid_wh = 8192
+        f = nothing
+    end
     n_coefficients = config["n_coefficients"]
     n_operations_per_cell = config["n_operations"]
-    f = load_report_details(exe * ".prj/reports")
-
-    grid_wh = min(tile_height, tile_width)
 
     # target runtime = 15s.
-    target_total_updates = 15 * temporal_parallelism * spatial_parallelism * n_ranks * f
+    target_runtime = 15.0
+    if variant == :cuda
+        mem_throughput = 1.935e12 # Max bandwidth of an A100
+        fp_throughput = 19.5e12 # Max FP32 throughput of an A100
+        cell_size = 4
+        target_total_updates = target_runtime * min(mem_throughput / cell_size, fp_throughput / n_operations_per_cell)
+    else
+        total_parallelism = temporal_parallelism * spatial_parallelism * n_ranks
+        target_total_updates = target_runtime * total_parallelism * f
+    end
     n_timesteps = target_total_updates / grid_wh^2
     n_timesteps = Int(temporal_parallelism * ceil(n_timesteps / temporal_parallelism)) # round up for max utilization
     n_samples = 3
 
     arguments = fill(1/n_coefficients, n_coefficients)
+    command = `$exe $(grid_wh) $(grid_wh) $(n_timesteps) /dev/null $(arguments)`
 
-    mpi_root = ENV["I_MPI_ROOT"]
-    command = `$mpirun -n $n_ranks $exe $(grid_wh) $(grid_wh) $(n_timesteps) /dev/null $(arguments)`
+    # Set up the multi-FPGA cluster
+    if variant == :monotile
+        mpi_root = ENV["I_MPI_ROOT"]
+        mpirun = "$mpi_root/bin/mpirun"
+        command = `$mpirun -n $n_ranks $command`
 
-    # Warmup to exclude programming from the benchmark
-    warmup_cluster(command, n_ranks, variant; links_preconfigured=true)
+        # Warmup to exclude programming from the benchmark
+        warmup_cluster(command, n_ranks, variant)
+    end
 
     # Defining names here so that later definitions won't be dropped.
     runtimes = Vector()
@@ -70,15 +90,24 @@ function max_perf_benchmark(exe, n_ranks)
         mean(runtimes)
     )
 
-    metrics = Dict(
-        "target" => exe_name,
-        "parallelity" => parallelity(info),
-        "f" => info.f,
-        "occupancy" => occupancy(info),
-        "measured" => measured_throughput(info),
-        "accuracy" => model_accurracy(info),
-        "FLOPS" => measured_flops(info)
-    )
+    if variant == :cuda
+        metrics = Dict(
+            "target" => "$exe_name, CUDA",
+            "measured" => measured_throughput(info),
+            "FLOPS" => measured_flops(info)
+        )
+    else
+        target_name = variant == :monotile ? "Monotile" : "Tiling"
+        metrics = Dict(
+            "target" => "$exe_name, $target_name",
+            "parallelity" => parallelity(info),
+            "f" => info.f,
+            "occupancy" => occupancy(info),
+            "measured" => measured_throughput(info),
+            "accuracy" => model_accurracy(info),
+            "FLOPS" => measured_flops(info)
+        )
+    end
 
     open("metrics.$exe_name.json", "w") do metrics_file
         JSON.print(metrics_file, metrics)
@@ -95,15 +124,7 @@ exe_or_dir = ARGS[2]
 n_ranks = parse(Int, ARGS[3])
 
 if ARGS[1] == "max_perf"
-    # TODO: Extend to tiling
-    setup_io_pipes(n_ranks, :monotile)
-    if isdir(exe_or_dir)
-        for exe in glob("$exe_or_dir/Jacobi*_mono")
-            max_perf_benchmark(exe, n_ranks)
-        end
-    else
-        max_perf_benchmark(exe_or_dir, n_ranks)
-    end
+    max_perf_benchmark(exe_or_dir, n_ranks)
 else
     println(stderr, "Unknown benchmark '$(ARGS[1])'")
     exit(1)

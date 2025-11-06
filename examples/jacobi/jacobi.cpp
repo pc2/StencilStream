@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
     if (argc == 2 && std::strcmp(argv[1], "show-config") == 0) {
         std::cout << "{" << std::endl;
         std::cout << "    \"variant\": \"" << variant << "\"," << std::endl;
-#if defined(STENCILSTREAM_TARGET_FPGA)
+#if defined(STENCILSTREAM_TARGET_FPGA) || defined(STENCILSTREAM_TARGET_FPGA_EMU)
         std::cout << "    \"temporal_parallelism\": " << temporal_parallelism << "," << std::endl;
         std::cout << "    \"spatial_parallelism\": " << spatial_parallelism << "," << std::endl;
         std::cout << "    \"tile_height\": " << tile_height << "," << std::endl;
