@@ -29,6 +29,8 @@
     #include <StencilStream/cpu/StencilUpdate.hpp>
 #elif defined(STENCILSTREAM_BACKEND_CUDA)
     #include <StencilStream/cuda/StencilUpdate.hpp>
+#elif defined(STENCILSTREAM_BACKEND_CUDA_SOA)
+    #include <StencilStream/cuda-soa/StencilUpdate.hpp>
 #endif
 
 using namespace std;
@@ -54,6 +56,53 @@ const FLOAT chip_width = 0.016;
 /* ambient temperature, assuming no package at all	*/
 const FLOAT amb_temp = 80.0;
 
+#if defined(STENCILSTREAM_BACKEND_CUDA_SOA)
+struct Cell {
+    FLOAT temp{};
+    FLOAT power{};
+};
+using HotspotCell = Cell;
+
+template <> struct cell_members<HotspotCell> {
+    static constexpr auto fields = std::make_tuple(&HotspotCell::temp, &HotspotCell::power);
+};
+
+struct HotspotKernel : public BaseTransitionFunction {
+    using Cell = HotspotCell;
+
+    float Rx_1, Ry_1, Rz_1, Cap_1;
+
+    Cell operator()(Stencil<HotspotCell, 1> const &stencil) const {
+        FLOAT power = stencil[0][0].power;
+        FLOAT old = stencil[0][0].temp;
+        FLOAT top = stencil[-1][0].temp;
+        FLOAT bottom = stencil[1][0].temp;
+        FLOAT left = stencil[0][-1].temp;
+        FLOAT right = stencil[0][1].temp;
+
+        if (stencil.id[0] == 0) {
+            top = old;
+        } else if (stencil.id[0] == stencil.grid_range[0] - 1) {
+            bottom = old;
+        }
+
+        if (stencil.id[1] == 0) {
+            left = old;
+        } else if (stencil.id[1] == stencil.grid_range[1] - 1) {
+            right = old;
+        }
+
+        // As in the OpenCL version of the rodinia "hotspot" benchmark.
+        FLOAT new_temp =
+            old + Cap_1 * (power + (bottom + top - 2.f * old) * Ry_1 +
+                           (right + left - 2.f * old) * Rx_1 + (amb_temp - old) * Rz_1);
+
+        HotspotCell new_cell{new_temp, power};
+        return new_cell;
+    }
+};
+
+#else
 /* stencil parameters */
 using HotspotCell = vec<FLOAT, 2>;
 
@@ -90,6 +139,7 @@ struct HotspotKernel : public BaseTransitionFunction {
         return vec(new_temp, power);
     }
 };
+#endif
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
 const size_t max_grid_height = 4096;
@@ -118,7 +168,7 @@ using Grid = StencilUpdate::GridImpl;
 using StencilUpdate = cpu::StencilUpdate<HotspotKernel>;
 using Grid = StencilUpdate::GridImpl;
 
-#elif defined(STENCILSTREAM_BACKEND_CUDA)
+#elif defined(STENCILSTREAM_BACKEND_CUDA) || defined(STENCILSTREAM_BACKEND_CUDA_SOA)
 using StencilUpdate = cuda::StencilUpdate<HotspotKernel>;
 using Grid = StencilUpdate::GridImpl;
 #endif
@@ -138,6 +188,18 @@ void write_output(Grid vect, string file, bool binary) {
     Grid::GridAccessor<access::mode::read> vect_ac(vect);
 
     int i = 0;
+#if defined(STENCILSTREAM_BACKEND_CUDA_SOA)
+    for (size_t r = 0; r < vect.get_grid_height(); r++) {
+        for (size_t c = 0; c < vect.get_grid_width(); c++) {
+            if (binary) {
+                out.write((char *)&vect_ac[r][c].temp, sizeof(float));
+            } else {
+                out << i << "\t" << vect_ac[r][c].temp << std::endl;
+            }
+            i++;
+        }
+    }
+#else
     for (size_t r = 0; r < vect.get_grid_height(); r++) {
         for (size_t c = 0; c < vect.get_grid_width(); c++) {
             if (binary) {
@@ -148,6 +210,7 @@ void write_output(Grid vect, string file, bool binary) {
             i++;
         }
     }
+#endif
 
     out.close();
 }
@@ -292,6 +355,9 @@ int main(int argc, char **argv) {
     if (rank == 0) {
         std::cout << "Ending simulation" << std::endl;
         std::cout << "Walltime: " << update.get_walltime() << " s" << std::endl;
+        std::cout << "GFlops: "
+                << ((n_rows * n_columns * sim_time * 15) / update.get_walltime()) / 1.0e9
+                << std::endl;
         write_output(grid, ofile, binary_io);
     }
 

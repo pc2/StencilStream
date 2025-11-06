@@ -64,6 +64,10 @@ using StencilUpdate = cpu::StencilUpdate<KernelImpl>;
     #include <StencilStream/cuda/StencilUpdate.hpp>
 using Grid = cuda::Grid<CellImpl>;
 using StencilUpdate = cuda::StencilUpdate<KernelImpl>;
+#elif defined(STENCILSTREAM_BACKEND_CUDA_SOA)
+    #include <StencilStream/cuda-soa/StencilUpdate.hpp>
+using Grid = cuda::Grid<CellImpl>;
+using StencilUpdate = cuda::StencilUpdate<KernelImpl>;
 #endif
 
 auto exception_handler = [](sycl::exception_list exceptions) {
@@ -112,6 +116,23 @@ void save_frame(Grid frame_buffer, size_t iteration_index, CellField field,
     for (size_t r = 0; r < parameters.grid_range()[1]; r++) {
         for (size_t c = 0; c < parameters.grid_range()[0]; c++) {
             switch (field) {
+#if defined(STENCILSTREAM_BACKEND_CUDA_SOA)
+            case CellField::EX:
+                out << frame[r][c].ex;
+                break;
+            case CellField::EY:
+                out << frame[r][c].ey;
+                break;
+            case CellField::HZ:
+                out << frame[r][c].hz;
+                break;
+            case CellField::HZ_SUM:
+                out << frame[r][c].hz_sum;
+                break;
+            default:
+                break;
+            }
+#else
             case CellField::EX:
                 out << frame[r][c].cell.ex;
                 break;
@@ -127,6 +148,7 @@ void save_frame(Grid frame_buffer, size_t iteration_index, CellField field,
             default:
                 break;
             }
+#endif
 
             if (c != parameters.grid_range()[0] - 1) {
                 out << ",";

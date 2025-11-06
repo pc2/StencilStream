@@ -17,35 +17,36 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <StencilStream/Stencil.hpp>
-#include <catch2/catch_all.hpp>
+#include "../GridTest_cuda_soa.hpp"
+#include <StencilStream/cuda-soa/Grid.hpp>
 
 using namespace stencil;
+using namespace stencil::cuda;
 
-constexpr std::size_t stencil_radius = 2;
-using StencilImpl = Stencil<int, stencil_radius>;
-
-TEST_CASE("Stencil::diameter", "[Stencil]") {
-    StencilImpl stencil(sycl::id<2>(0, 0), sycl::range<2>(42, 42), 0, 0, std::monostate());
-
-    REQUIRE(stencil.diameter == StencilImpl::diameter);
-    REQUIRE(stencil.diameter == 2 * stencil_radius + 1);
+struct TestCell {
+    sycl::id<2> id;
 };
 
-TEST_CASE("Stencil::operator[](int)", "[Stencil]") {
-    StencilImpl stencil(sycl::id<2>(0, 0), sycl::range<2>(42, 42), 0, 0, std::monostate());
-
-    for (std::size_t r = 0; r < stencil.diameter; r++) {
-        for (std::size_t c = 0; c < stencil.diameter; c++) {
-            stencil[sycl::id<2>(r, c)] =
-                static_cast<int>(r) + static_cast<int>(c) - 2 * stencil_radius;
-        }
-    }
-
-    for (int r = -static_cast<int>(stencil_radius); r <= static_cast<int>(stencil_radius); r++) {
-        for (int c = -static_cast<int>(stencil_radius); c <= static_cast<int>(stencil_radius);
-             c++) {
-            REQUIRE(stencil[r][c] == r + c);
-        }
-    }
+template <> struct cell_members<TestCell> {
+    static constexpr auto fields = std::make_tuple(&TestCell::id);
 };
+
+using TestGrid = Grid<TestCell>;
+
+static_assert(concepts::Grid<TestGrid, TestCell>);
+
+TEST_CASE("cuda-soa::Grid::Grid", "[cuda-soa::Grid]") {
+    grid_test::test_constructors<TestCell, TestGrid>(128, 128);
+}
+
+TEST_CASE("cuda-soa::Grid::copy_from_buffer", "[cuda-soa::Grid]") {
+    grid_test::test_copy_from_buffer<TestCell, TestGrid>(128, 128);
+}
+
+TEST_CASE("cuda-soa::Grid::copy_to_buffer", "[cuda-soa::Grid]") {
+    grid_test::test_copy_to_buffer<TestCell, TestGrid>(128, 128);
+}
+
+TEST_CASE("cuda-soa::Grid::make_similar", "[cuda-soa::Grid]") {
+    grid_test::test_make_similar<TestCell, TestGrid>(128, 128);
+}
