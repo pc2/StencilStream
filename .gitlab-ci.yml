@@ -248,14 +248,14 @@ CUDA benchmark:
         - mkdir -p build
         - cd build
         - cmake ..
-        - make unit_test_cuda convection_cuda_soa hotspot_cuda_soa fdtd_coef_device_cuda_soa -j16
+        - make unit_test_cuda convection_cuda hotspot_cuda fdtd_coef_device_cuda -j16
         - ./tests/unit_test_cuda
         - cd ../examples/convection
-        - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection_cuda_soa cuda
+        - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection_cuda cuda
         - cd ../fdtd
-        - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/fdtd_coef_device_cuda_soa cuda
+        - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/fdtd_coef_device_cuda cuda
         - cd ../hotspot
-        - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/hotspot_cuda_soa cuda
+        - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/hotspot_cuda cuda
     artifacts:
         paths:
             - examples/*/metrics.cuda.json

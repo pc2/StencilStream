@@ -24,15 +24,18 @@
 
 class RenderResolver {
   public:
-    struct MaterialCell {
-        Cell cell;
+    struct MaterialCell : public Cell {
+        MaterialCell() : Cell() {}
 
-        static MaterialCell halo() { return MaterialCell{Cell::halo()}; }
+        static MaterialCell halo() { return MaterialCell(); }
 
         static MaterialCell from_parameters(Parameters const &parameters, size_t material_index) {
             // No computations needed here, since no material information is stored in the cells.
-            return MaterialCell{Cell::halo()};
+            return MaterialCell();
         }
+
+        static constexpr auto fields = std::make_tuple(&MaterialCell::ex, &MaterialCell::ey,
+                                                       &MaterialCell::hz, &MaterialCell::hz_sum);
     };
 
     RenderResolver(Parameters const &parameters) : distance_bounds(), materials() {

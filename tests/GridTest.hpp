@@ -27,7 +27,7 @@ void test_constructors(std::size_t grid_height, std::size_t grid_width) {
     G grid(1, 1);
     REQUIRE(grid.get_grid_height() == 1);
     REQUIRE(grid.get_grid_width() == 1);
-    REQUIRE(grid.get_grid_range() == sycl::range<2>(1,1));
+    REQUIRE(grid.get_grid_range() == sycl::range<2>(1, 1));
 
     grid = G(grid_height / 2, grid_width / 2);
     REQUIRE(grid.get_grid_height() == grid_height / 2);
