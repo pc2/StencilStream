@@ -34,6 +34,24 @@ template <typename T> struct cell_members;
 namespace stencil {
 namespace cuda {
 
+// Create runtime tuple of sycl::buffer<T,1> for each member-pointer in cell_members<CellT>::fields.
+// The element type for each buffer is deduced from the member-pointer ptrs via:
+// decltype(std::declval<CellT>().*ptrs)
+// std::remove_reference_t<> strips references to get the raw field type.
+template <typename CellT> auto make_buffers_from_member_ptrs(std::size_t N) {
+    return std::apply(
+        [N](auto... ptrs) {
+            return std::make_tuple(
+                sycl::buffer<std::remove_reference_t<decltype(std::declval<CellT>().*ptrs)>, 1>(
+                    sycl::range<1>(N))...);
+        },
+        cell_members<CellT>::fields);
+}
+
+// buffers_t_for<CellT> is the tuple type returned by make_buffers_from_member_ptrs<CellT>(size_t).
+template <typename CellT>
+using buffers_t_for = decltype(make_buffers_from_member_ptrs<CellT>(std::declval<std::size_t>()));
+
 // Expand two tuples by using an index sequence.
 template <typename TupleA, typename TupleB, typename F, std::size_t... Is>
 void for_each_in_two_tuples_impl(TupleA &&a, TupleB &&b, F &&f, std::index_sequence<Is...>) {
@@ -142,6 +160,11 @@ template <concepts::TransitionFunction F> class StencilUpdate {
         sycl::queue queue_scatter_gather =
             sycl::queue(params.device, {sycl::property::queue::enable_profiling()});
 
+        buffers_t_for<Cell> buffers_a = make_buffers_from_member_ptrs<Cell>(
+            source_grid.get_grid_height() * source_grid.get_grid_width());
+        buffers_t_for<Cell> buffers_b = make_buffers_from_member_ptrs<Cell>(
+            source_grid.get_grid_height() * source_grid.get_grid_width());
+
         // Submit a kernel to scatter the data from the source Grid into individual buffers
         queue_scatter_gather.submit([&](sycl::handler &cgh) {
             sycl::accessor ac_source_grid(source_grid.get_buffer(), cgh);
@@ -151,7 +174,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
                 [&](auto &...buf) {
                     return std::make_tuple(sycl::accessor(buf, cgh, sycl::write_only)...);
                 },
-                source_grid.get_buffers());
+                buffers_a);
 
             cgh.parallel_for(ac_source_grid.get_range(), [=](sycl::id<2> id) {
                 Cell cell = ac_source_grid[id[0]][id[1]];
@@ -166,25 +189,17 @@ template <concepts::TransitionFunction F> class StencilUpdate {
             });
         });
 
-        queue_scatter_gather.wait();
-        GridImpl swap_grid_a = source_grid.make_similar();
-        GridImpl swap_grid_b = source_grid.make_similar();
-        GridImpl *pass_source = &source_grid;
-        GridImpl *pass_target = &swap_grid_b;
+        buffers_t_for<Cell> *pass_source = &buffers_a;
+        buffers_t_for<Cell> *pass_target = &buffers_b;
 
         sycl::queue queue(params.device);
         auto walltime_start = std::chrono::high_resolution_clock::now();
 
         for (std::size_t i_iter = 0; i_iter < params.n_iterations; i_iter++) {
             for (std::size_t i_subiter = 0; i_subiter < F::n_subiterations; i_subiter++) {
-                run_iter(queue, pass_source, pass_target, params.iteration_offset + i_iter,
-                         i_subiter);
-                if (i_iter == 0 && i_subiter == 0) {
-                    pass_source = &swap_grid_b;
-                    pass_target = &swap_grid_a;
-                } else {
-                    std::swap(pass_source, pass_target);
-                }
+                run_iter(queue, pass_source, pass_target, source_grid.get_grid_range(),
+                         params.iteration_offset + i_iter, i_subiter);
+                std::swap(pass_source, pass_target);
             }
         }
 
@@ -195,21 +210,24 @@ template <concepts::TransitionFunction F> class StencilUpdate {
         auto walltime_end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> walltime = walltime_end - walltime_start;
         this->walltime += walltime.count();
+        n_processed_cells +=
+            params.n_iterations * source_grid.get_grid_height() * source_grid.get_grid_width();
 
         // Submit a kernel to gather data from the separate member buffers back into the Grid
+        GridImpl target_buffer = source_grid.make_similar();
         queue_scatter_gather.submit([&](sycl::handler &cgh) {
-            sycl::accessor ac_pass_grid(pass_source->get_buffer(), cgh, sycl::write_only);
+            sycl::accessor target_ac(target_buffer.get_buffer(), cgh, sycl::write_only);
 
             // Create a tuple of read-only accessors for each member buffer
             auto acc_tuple = std::apply(
                 [&](auto &...buf) {
                     return std::make_tuple(sycl::accessor(buf, cgh, sycl::read_only)...);
                 },
-                pass_source->get_buffers());
+                *pass_source);
 
-            cgh.parallel_for(ac_pass_grid.get_range(), [=](sycl::id<2> id) {
+            cgh.parallel_for(target_ac.get_range(), [=](sycl::id<2> id) {
                 Cell cell;
-                size_t cell_id = id[0] * ac_pass_grid.get_range()[1] + id[1];
+                size_t cell_id = id[0] * target_ac.get_range()[1] + id[1];
 
                 // For each member of Cell, read its value from the corresponding buffer
                 for_each_in_two_tuples(
@@ -219,15 +237,15 @@ template <concepts::TransitionFunction F> class StencilUpdate {
                                 acc[cell_id]);
                     });
 
-                ac_pass_grid[id[0]][id[1]] = cell;
+                target_ac[id[0]][id[1]] = cell;
             });
         });
-        queue_scatter_gather.wait();
 
-        n_processed_cells +=
-            params.n_iterations * source_grid.get_grid_height() * source_grid.get_grid_width();
+        if (params.blocking) {
+            queue_scatter_gather.wait();
+        }
 
-        return *pass_source;
+        return target_buffer;
     }
 
     /**
@@ -301,35 +319,33 @@ template <concepts::TransitionFunction F> class StencilUpdate {
      *
      * \param i_subiter The index of the sub-iteration to compute.
      */
-    void run_iter(sycl::queue queue, GridImpl *pass_source, GridImpl *pass_target,
-                  std::size_t i_iter, std::size_t i_subiter) {
+    void run_iter(sycl::queue queue, buffers_t_for<Cell> *pass_source,
+                  buffers_t_for<Cell> *pass_target, sycl::range<2> grid_range, std::size_t i_iter,
+                  std::size_t i_subiter) {
         using TDV = typename F::TimeDependentValue;
         using StencilImpl = Stencil<Cell, F::stencil_radius, TDV>;
 
         sycl::event work_event = queue.submit([&](sycl::handler &cgh) {
-            sycl::accessor source_ac(pass_source->get_buffer(), cgh, sycl::read_only);
-            sycl::accessor target_ac(pass_target->get_buffer(), cgh, sycl::write_only);
-
             auto acc_tuple_pass_source = std::apply(
                 [&](auto &...buf) {
                     return std::make_tuple(sycl::accessor(buf, cgh, sycl::read_only)...);
                 },
-                pass_source->get_buffers());
+                *pass_source);
 
             auto acc_tuple_pass_target = std::apply(
                 [&](auto &...buf) {
                     return std::make_tuple(sycl::accessor(buf, cgh, sycl::write_only)...);
                 },
-                pass_target->get_buffers());
+                *pass_target);
 
-            std::size_t grid_height = source_ac.get_range()[0];
-            std::size_t grid_width = source_ac.get_range()[1];
+            std::size_t grid_height = grid_range[0];
+            std::size_t grid_width = grid_range[1];
             Cell halo_value = params.halo_value;
             F transition_function = params.transition_function;
             TDV tdv = transition_function.get_time_dependent_value(i_iter);
 
             auto kernel = [=](sycl::id<2> id) {
-                StencilImpl stencil(id, source_ac.get_range(), i_iter, i_subiter, tdv);
+                StencilImpl stencil(id, grid_range, i_iter, i_subiter, tdv);
 
                 for (std::size_t rel_r = 0; rel_r < 2 * F::stencil_radius + 1; rel_r++) {
                     for (std::size_t rel_c = 0; rel_c < 2 * F::stencil_radius + 1; rel_c++) {
@@ -366,7 +382,7 @@ template <concepts::TransitionFunction F> class StencilUpdate {
                     });
             };
 
-            cgh.parallel_for(source_ac.get_range(), kernel);
+            cgh.parallel_for(grid_range, kernel);
         });
         if (params.profiling) {
             work_events.push_back(work_event);

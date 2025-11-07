@@ -27,14 +27,17 @@ void test_constructors(std::size_t grid_height, std::size_t grid_width) {
     G grid(1, 1);
     REQUIRE(grid.get_grid_height() == 1);
     REQUIRE(grid.get_grid_width() == 1);
+    REQUIRE(grid.get_grid_range() == sycl::range<2>(1,1));
 
     grid = G(grid_height / 2, grid_width / 2);
     REQUIRE(grid.get_grid_height() == grid_height / 2);
     REQUIRE(grid.get_grid_width() == grid_width / 2);
+    REQUIRE(grid.get_grid_range() == sycl::range<2>(grid_height / 2, grid_width / 2));
 
     grid = G(grid_height, grid_width);
     REQUIRE(grid.get_grid_height() == grid_height);
     REQUIRE(grid.get_grid_width() == grid_width);
+    REQUIRE(grid.get_grid_range() == sycl::range<2>(grid_height, grid_width));
 
     sycl::buffer<sycl::id<2>, 2> grid_buffer = sycl::range<2>(grid_height, grid_width);
     {
@@ -49,6 +52,7 @@ void test_constructors(std::size_t grid_height, std::size_t grid_width) {
     grid = grid_buffer;
     REQUIRE(grid.get_grid_height() == grid_height);
     REQUIRE(grid.get_grid_width() == grid_width);
+    REQUIRE(grid.get_grid_range() == sycl::range<2>(grid_height, grid_width));
 
     {
         typename G::template GridAccessor<sycl::access::mode::read> out_buffer_ac(grid);
@@ -115,6 +119,7 @@ void test_make_similar(std::size_t grid_height, std::size_t grid_width) {
     G similar_grid = grid.make_similar();
     REQUIRE(similar_grid.get_grid_height() == grid_height);
     REQUIRE(similar_grid.get_grid_width() == grid_width);
+    REQUIRE(similar_grid.get_grid_range() == sycl::range<2>(grid_height, grid_width));
 }
 
 } // namespace grid_test

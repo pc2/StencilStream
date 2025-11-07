@@ -162,6 +162,8 @@ template <typename Cell> class Grid {
      */
     std::size_t get_grid_width() const { return buffer.get_range()[1]; }
 
+    sycl::range<2> get_grid_range() const { return buffer.get_range(); }
+
     /**
      * \brief Create an new, uninitialized grid with the same size as the current one.
      */

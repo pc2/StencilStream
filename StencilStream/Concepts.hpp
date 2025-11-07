@@ -121,6 +121,7 @@ concept Grid =
         { grid.copy_to_buffer(buffer) } -> std::same_as<void>;
         { grid.get_grid_height() } -> std::convertible_to<std::size_t>;
         { grid.get_grid_width() } -> std::convertible_to<std::size_t>;
+        { grid.get_grid_range() } -> std::convertible_to<sycl::range<2>>;
         { grid.make_similar() } -> std::same_as<G>;
         {
             typename G::template GridAccessor<sycl::access::mode::read_write>(grid)
