@@ -156,7 +156,7 @@ using Grid = StencilUpdate::GridImpl;
 #elif defined(STENCILSTREAM_BACKEND_TILING)
 const size_t tile_height = 1 << 16;
 const size_t tile_width = 4096;
-const size_t temporal_parallelism = 60;
+const size_t temporal_parallelism = 64;
 const size_t spatial_parallelism = 8;
 const size_t n_kernels = 16;
 using StencilUpdate =

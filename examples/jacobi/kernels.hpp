@@ -213,7 +213,7 @@ struct Jacobi5General : public stencil::BaseTransitionFunction {
         .cache_width = 8 * 1024,
     };
     static constexpr HardwareConfig tiling_config = {
-        .temporal_parallelism = 40,
+        .temporal_parallelism = 44,
         .spatial_parallelism = 16,
         .cache_width = 16 * 1024,
     };
