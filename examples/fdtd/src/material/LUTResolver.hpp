@@ -25,15 +25,22 @@
 
 class LUTResolver {
   public:
-    struct MaterialCell {
-        Cell cell;
+    struct MaterialCell : public Cell {
         uindex_ring_t index;
 
-        static MaterialCell halo() { return MaterialCell{Cell::halo(), 0}; }
+        MaterialCell() : Cell(), index(0) {}
+
+        static MaterialCell halo() { return MaterialCell(); }
 
         static MaterialCell from_parameters(Parameters const &parameters, size_t ring_index) {
-            return MaterialCell{Cell::halo(), uindex_ring_t(ring_index)};
+            MaterialCell cell;
+            cell.index = uindex_ring_t(ring_index);
+            return cell;
         }
+
+        static constexpr auto fields =
+            std::make_tuple(&MaterialCell::ex, &MaterialCell::ey, &MaterialCell::hz,
+                            &MaterialCell::hz_sum, &MaterialCell::index);
     };
 
     LUTResolver(Parameters const &parameters) : materials() {

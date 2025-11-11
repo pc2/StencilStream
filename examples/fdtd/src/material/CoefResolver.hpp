@@ -21,24 +21,23 @@
 #include "../Cell.hpp"
 #include "../Parameters.hpp"
 #include "Material.hpp"
-#if defined(STENCILSTREAM_BACKEND_CUDA_SOA)
-    #include <StencilStream/cuda-soa/StencilUpdate.hpp>
 
 class CoefResolver {
   public:
-    struct MaterialCell {
-        float ex, ey, hz, hz_sum;
+    struct MaterialCell : public Cell {
         float ca, cb, da, db;
 
-        static MaterialCell halo() { return MaterialCell{0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0}; };
+        MaterialCell() : Cell(), ca(0.0), cb(0.0), da(0.0), db(0.0) {}
+
+        static MaterialCell halo() { return MaterialCell(); };
 
         static MaterialCell from_parameters(Parameters const &parameters, size_t ring_index) {
             if (ring_index >= parameters.rings.size()) {
-                return MaterialCell::halo();
+                return MaterialCell();
             } else {
-                MaterialCell cell = MaterialCell::halo();
                 CoefMaterial coefCell = CoefMaterial::from_relative_material(
                     parameters.rings[ring_index].material, parameters.dx, parameters.dt());
+                MaterialCell cell = MaterialCell();
                 cell.ca = coefCell.ca;
                 cell.cb = coefCell.cb;
                 cell.da = coefCell.da;
@@ -47,6 +46,10 @@ class CoefResolver {
                 return cell;
             }
         }
+
+        static constexpr auto fields = std::make_tuple(
+            &MaterialCell::ex, &MaterialCell::ey, &MaterialCell::hz, &MaterialCell::hz_sum,
+            &MaterialCell::ca, &MaterialCell::cb, &MaterialCell::da, &MaterialCell::db);
     };
 
     CoefResolver(Parameters const &parameters) {}
@@ -60,47 +63,3 @@ class CoefResolver {
         return cell;
     }
 };
-
-template <> struct cell_members<CoefResolver::MaterialCell> {
-    static constexpr auto fields =
-        std::make_tuple(&CoefResolver::MaterialCell::ex, &CoefResolver::MaterialCell::ey,
-                        &CoefResolver::MaterialCell::hz, &CoefResolver::MaterialCell::hz_sum,
-                        &CoefResolver::MaterialCell::ca, &CoefResolver::MaterialCell::cb,
-                        &CoefResolver::MaterialCell::da, &CoefResolver::MaterialCell::db);
-};
-
-#else
-
-class CoefResolver {
-  public:
-    struct MaterialCell {
-        Cell cell;
-        CoefMaterial coefficients;
-
-        static MaterialCell halo() {
-            return MaterialCell{
-                Cell::halo(),
-                CoefMaterial::perfect_metal(),
-            };
-        }
-
-        static MaterialCell from_parameters(Parameters const &parameters, size_t ring_index) {
-            if (ring_index >= parameters.rings.size()) {
-                return MaterialCell{Cell::halo(), CoefMaterial::perfect_metal()};
-            } else {
-                return MaterialCell{Cell::halo(), CoefMaterial::from_relative_material(
-                                                      parameters.rings[ring_index].material,
-                                                      parameters.dx, parameters.dt())};
-            }
-        }
-    };
-
-    CoefResolver(Parameters const &parameters) {}
-
-    CoefMaterial get_material_coefficients(Stencil<MaterialCell, 1, float> const &stencil,
-                                           float distance_score) const {
-        return stencil[0][0].coefficients;
-    }
-};
-
-#endif

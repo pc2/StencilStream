@@ -23,4 +23,6 @@ struct Cell {
     float ex, ey, hz, hz_sum;
 
     static Cell halo() { return Cell{0.0, 0.0, 0.0, 0.0}; }
+
+    static constexpr auto fields = std::make_tuple(&Cell::ex, &Cell::ey, &Cell::hz, &Cell::hz_sum);
 };

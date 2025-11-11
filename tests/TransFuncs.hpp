@@ -41,9 +41,7 @@ struct Cell {
     CellStatus status;
 
     static Cell halo() { return Cell{0, 0, 0, 0, CellStatus::Halo}; }
-};
 
-template <> struct cell_members<Cell> {
     static constexpr auto fields = std::make_tuple(&Cell::r, &Cell::c, &Cell::i_iteration,
                                                    &Cell::i_subiteration, &Cell::status);
 };

@@ -60,7 +60,6 @@ template <typename MaterialResolver> class Kernel {
         return sycl::cos(omega * current_time) * sycl::exp(-1 * wave_progress * wave_progress);
     }
 
-#if defined(STENCILSTREAM_BACKEND_CUDA_SOA)
     Cell operator()(Stencil<Cell, 1, float> const &stencil) const {
         Cell cell = stencil[0][0];
 
@@ -104,52 +103,6 @@ template <typename MaterialResolver> class Kernel {
         }
         return cell;
     }
-#else
-    Cell operator()(Stencil<Cell, 1, float> const &stencil) const {
-        Cell cell = stencil[0][0];
-
-        float r = stencil.id[0];
-        float c = stencil.id[1];
-        float center_distance_score = r * (r - double_center_rc) + c * (c - double_center_rc);
-        float source_distance_score = r * (r - 2 * source_r) + c * (c - 2 * source_c);
-
-        CoefMaterial material =
-            mat_resolver.get_material_coefficients(stencil, center_distance_score);
-
-        if (stencil.subiteration == 0) {
-            cell.cell.ex *= material.ca;
-            cell.cell.ex += material.cb * (stencil[0][0].cell.hz - stencil[0][-1].cell.hz);
-
-            cell.cell.ey *= material.ca;
-            cell.cell.ey += material.cb * (stencil[-1][0].cell.hz - stencil[0][0].cell.hz);
-        } else {
-            cell.cell.hz *= material.da;
-            cell.cell.hz += material.db * (stencil[0][1].cell.ex - stencil[0][0].cell.ex +
-                                           stencil[0][0].cell.ey - stencil[1][0].cell.ey);
-
-            if (source_distance_score <= source_distance_bound &&
-                stencil.iteration <= cutoff_iteration) {
-                float interp_factor;
-                if (source_radius_squared != 0) {
-                    float cell_distance_squared =
-                        source_distance_score + source_c * source_c + source_r * source_r;
-                    // cell_distance_squared == (distance / dx)^2
-                    interp_factor = 1.0 - float(cell_distance_squared) / source_radius_squared;
-                } else {
-                    interp_factor = 1.0;
-                }
-
-                float source_amplitude = stencil.time_dependent_value;
-                cell.cell.hz += interp_factor * source_amplitude;
-            }
-
-            if (stencil.iteration > detect_iteration) {
-                cell.cell.hz_sum += cell.cell.hz * cell.cell.hz;
-            }
-        }
-        return cell;
-    }
-#endif
 
   private:
     float dt, t_0, tau, omega;
