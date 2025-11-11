@@ -24,8 +24,8 @@
 #include "../Grid.hpp"
 #include "StencilUpdateKernel.hpp"
 #include <chrono>
-#include <type_traits>
 #include <mpi.h>
+#include <type_traits>
 
 namespace stencil {
 namespace monotile {

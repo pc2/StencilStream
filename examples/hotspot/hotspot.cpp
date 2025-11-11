@@ -356,8 +356,8 @@ int main(int argc, char **argv) {
         std::cout << "Ending simulation" << std::endl;
         std::cout << "Walltime: " << update.get_walltime() << " s" << std::endl;
         std::cout << "GFlops: "
-                << ((n_rows * n_columns * sim_time * 15) / update.get_walltime()) / 1.0e9
-                << std::endl;
+                  << ((n_rows * n_columns * sim_time * 15) / update.get_walltime()) / 1.0e9
+                  << std::endl;
         write_output(grid, ofile, binary_io);
     }
 

@@ -21,7 +21,7 @@
 #include "../internal/MemoryKernels.hpp"
 #include "../tdv/SinglePassStrategies.hpp"
 #include "Grid.hpp"
-#include "internal/HaloInjectionKernel.hpp"
+#include "internal/HaloTiledInputKernel.hpp"
 #include "internal/StencilUpdateKernel.hpp"
 
 #include <chrono>
@@ -75,7 +75,6 @@ class StencilUpdate {
     using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
 
     template <std::size_t i> class PipeIdentifier;
-    using incomplete_in_pipe = sycl::pipe<class incomplete_in_pipe_id, CellVector>;
     using in_pipe = sycl::pipe<PipeIdentifier<0>, CellVector>;
     using out_pipe = sycl::pipe<PipeIdentifier<n_kernels>, CellVector>;
 
@@ -91,12 +90,8 @@ class StencilUpdate {
     static constexpr std::size_t vect_halo_width = halo_width / spatial_parallelism;
 
     using InputKernel =
-        stencil::internal::PartialBufferReadKernel<CellVector, incomplete_in_pipe,
-                                                   max_tile_height + 2 * halo_height,
-                                                   max_vect_tile_width + 2 * vect_halo_width>;
-    using HaloInjectionKernelImpl =
-        internal::HaloInjectionKernel<Cell, spatial_parallelism, incomplete_in_pipe, in_pipe,
-                                      max_tile_height, max_tile_width, halo_height, halo_width>;
+        internal::HaloTiledInputKernel<Cell, spatial_parallelism, in_pipe, max_tile_height,
+                                       max_tile_width, halo_height, halo_width>;
     using OutputKernel =
         stencil::internal::PartialBufferWriteKernel<CellVector, out_pipe, max_tile_height,
                                                     max_tile_width>;
@@ -195,7 +190,6 @@ class StencilUpdate {
         sycl::device device(device_selector);
 
         sycl::queue input_queue = sycl::queue(device, {sycl::property::queue::in_order{}});
-        sycl::queue halo_injection_queue = sycl::queue(device, {sycl::property::queue::in_order{}});
         sycl::queue output_queue = sycl::queue(device, {sycl::property::queue::in_order{}});
         std::vector<sycl::queue> work_queues;
         for (std::size_t i_kernel = 0; i_kernel < n_kernels; i_kernel++) {
@@ -226,19 +220,9 @@ class StencilUpdate {
                     sycl::id<2> tile_id(tile_r, tile_c);
 
                     input_queue.submit([&](sycl::handler &cgh) {
-                        std::array<std::ptrdiff_t, 2> raw_offset =
-                            pass_source->get_haloed_tile_offset(tile_id, max_tile_range, halo_range,
-                                                                true, true);
-                        sycl::id<2> offset = sycl::range<2>(raw_offset[0], raw_offset[1]);
-                        sycl::range<2> range = pass_source->get_haloed_tile_range(
-                            tile_id, max_tile_range, halo_range, true, true);
-                        InputKernel kernel(pass_source->get_internal(), cgh, offset, range);
+                        InputKernel kernel(*pass_source, cgh, tile_id, params.halo_value);
                         cgh.STENCILSTREAM_NAMED_SINGLE_TASK(input_kernel, kernel);
                     });
-
-                    HaloInjectionKernelImpl hik(*pass_source, tile_id, params.halo_value);
-                    halo_injection_queue.STENCILSTREAM_NAMED_SINGLE_TASK(halo_injection_kernel,
-                                                                         hik);
 
                     submit_work_kernel<0>(work_queues, tdv_global_state, i, target_i_iteration,
                                           grid_range, tile_id);

@@ -43,19 +43,19 @@ constexpr float pi = 3.1415926535897932384626433;
 
 #if defined(STENCILSTREAM_TARGET_FPGA) || defined(STENCILSTREAM_TARGET_FPGA_EMU)
 
-#if defined(STENCILSTREAM_BACKEND_MONOTILE)
+    #if defined(STENCILSTREAM_BACKEND_MONOTILE)
 constexpr size_t temporal_parallelism = 100;
 constexpr size_t spatial_parallelism = 1;
 constexpr size_t tile_width = 512;
 // monotile and CPU. More than a quadratic tile doesn't make sense.
 constexpr size_t tile_height = tile_width;
-#elif defined(STENCILSTREAM_BACKEND_TILING)
+    #elif defined(STENCILSTREAM_BACKEND_TILING)
 constexpr size_t temporal_parallelism = 64;
 constexpr size_t spatial_parallelism = 2;
 constexpr size_t tile_width = 768;
 // tiling, make tile as wide as possible.
 constexpr size_t tile_height = 1 << 16;
-#endif
+    #endif
 
 constexpr size_t n_kernels = temporal_parallelism / 4;
 #endif
