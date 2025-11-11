@@ -50,7 +50,7 @@ class HaloTiledInputKernel {
 
     HaloTiledInputKernel(GridImpl grid, sycl::handler &cgh, sycl::id<2> tile_id, Cell halo_value)
         : accessor(grid.get_internal().get_access(cgh, sycl::read_only)),
-          grid_range(grid.get_grid_range()), vect_tile_offset(0, 0), tile_height(0),
+          grid_height(grid.get_grid_height()), grid_width(grid.get_grid_width(false)), vect_grid_width(grid.get_grid_width(true)), vect_tile_offset(0, 0), tile_height(0),
           vect_tile_width(0), halo_value(halo_value) {
         sycl::range<2> max_tile_range(max_tile_height, max_tile_width);
         sycl::range<2> tile_id_range = grid.get_tile_id_range(max_tile_range);
@@ -76,15 +76,15 @@ class HaloTiledInputKernel {
                     (local_vect_c - vect_halo_width).to_ulong() + vect_tile_offset[1];
 
                 bool is_grid_halo;
-                if (local_r < halo_height) {
+                if (local_r < uindex_r_t(halo_height)) {
                     is_grid_halo = vect_tile_offset[0] < halo_height;
                 } else {
-                    is_grid_halo = r >= accessor.get_range()[0];
+                    is_grid_halo = r >= grid_height;
                 }
-                if (local_vect_c < vect_halo_width) {
+                if (local_vect_c < uindex_vect_c_t(vect_halo_width)) {
                     is_grid_halo |= vect_tile_offset[1] < vect_halo_width;
                 } else {
-                    is_grid_halo |= vect_c >= accessor.get_range()[1];
+                    is_grid_halo |= vect_c >= vect_grid_width;
                 }
 
                 CellVector cell_vector;
@@ -95,7 +95,7 @@ class HaloTiledInputKernel {
 #pragma unroll
                 for (std::size_t cell_i = 0; cell_i < spatial_parallelism; cell_i++) {
                     std::size_t c = vect_c * spatial_parallelism + cell_i;
-                    if (is_grid_halo || (local_vect_c >= vect_halo_width && c >= grid_range[1])) {
+                    if (is_grid_halo || (local_vect_c >= vect_halo_width && c >= grid_width)) {
                         cell_vector.value[cell_i] = halo_value;
                     }
                 }
@@ -107,7 +107,9 @@ class HaloTiledInputKernel {
 
   private:
     Accessor accessor;
-    sycl::range<2> grid_range;
+    std::size_t grid_height;
+    std::size_t grid_width;
+    std::size_t vect_grid_width;
     sycl::id<2> vect_tile_offset;
     uindex_r_t tile_height;
     uindex_vect_c_t vect_tile_width;
