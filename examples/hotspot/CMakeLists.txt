@@ -18,6 +18,11 @@ target_link_libraries(hotspot_cpu PUBLIC StencilStream_CPU)
 # Pure CUDA-based executable
 add_executable(hotspot_cuda hotspot.cpp)
 target_link_libraries(hotspot_cuda PUBLIC StencilStream_CUDA)
+target_compile_definitions(hotspot_cuda PUBLIC HOTSPOT_SPLIT_CELL_STRUCT=1)
+
+add_executable(hotspot_cuda_naive hotspot.cpp)
+target_link_libraries(hotspot_cuda_naive PUBLIC StencilStream_CUDA)
+target_compile_definitions(hotspot_cuda_naive PUBLIC HOTSPOT_SPLIT_CELL_STRUCT=0)
 
 # Monotile versions
 add_executable(hotspot_mono hotspot.cpp)

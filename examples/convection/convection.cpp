@@ -248,7 +248,7 @@ using ThermalSolverUpdate = cpu::StencilUpdate<ThermalSolverKernel>;
 
 #elif defined(STENCILSTREAM_BACKEND_CUDA)
 using Grid = cuda::Grid<ThermalConvectionCell>;
-constexpr bool split_cell_structure = true;
+constexpr bool split_cell_structure = CONVECTION_SPIT_CELL_STRUCT;
 using PseudoTransientUpdate = cuda::StencilUpdate<PseudoTransientKernel, split_cell_structure>;
 using ThermalSolverUpdate = cuda::StencilUpdate<ThermalSolverKernel, split_cell_structure>;
 

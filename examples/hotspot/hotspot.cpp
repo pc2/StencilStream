@@ -124,7 +124,7 @@ using StencilUpdate = cpu::StencilUpdate<HotspotKernel>;
 using Grid = StencilUpdate::GridImpl;
 
 #elif defined(STENCILSTREAM_BACKEND_CUDA)
-const bool split_cell_structure = true;
+const bool split_cell_structure = HOTSPOT_SPLIT_CELL_STRUCT;
 using StencilUpdate = cuda::StencilUpdate<HotspotKernel, split_cell_structure>;
 using Grid = StencilUpdate::GridImpl;
 #endif

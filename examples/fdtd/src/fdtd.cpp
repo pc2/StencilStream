@@ -63,7 +63,7 @@ using StencilUpdate = cpu::StencilUpdate<KernelImpl>;
 #elif defined(STENCILSTREAM_BACKEND_CUDA)
     #include <StencilStream/cuda/StencilUpdate.hpp>
 using Grid = cuda::Grid<CellImpl>;
-constexpr bool split_cell_structure = true;
+constexpr bool split_cell_structure = FDTD_SPLIT_CELL_STRUCT;
 using StencilUpdate = cuda::StencilUpdate<KernelImpl, split_cell_structure>;
 #endif
 
