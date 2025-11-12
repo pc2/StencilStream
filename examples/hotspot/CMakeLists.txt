@@ -33,6 +33,7 @@ target_link_libraries(hotspot_mono_report PUBLIC StencilStream_MonotileReport)
 # Tiling versions
 add_executable(hotspot_tiling hotspot.cpp)
 target_link_libraries(hotspot_tiling PUBLIC StencilStream_Tiling)
+target_link_options(hotspot_tiling PUBLIC -Xsseed=3644)
 
 add_executable(hotspot_tiling_emu hotspot.cpp)
 target_link_libraries(hotspot_tiling_emu PUBLIC StencilStream_TilingEmulator)

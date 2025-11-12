@@ -5,7 +5,10 @@ using Glob
 function max_perf_benchmark(exe, n_ranks)
     exe_name = basename(exe)
 
-    config_text = open(io -> join(readlines(io)), `$exe show-config`, "r")
+    mpi_root = ENV["I_MPI_ROOT"]
+    mpirun = "$mpi_root/bin/mpirun"
+    
+    config_text = open(io -> join(readlines(io)), `$mpirun -n 1 $exe show-config`, "r")
     config = JSON.parse(match(r"(\{[^\}\{]+\})$", config_text)[1])
     variant = Symbol(config["variant"])
     if variant != :cuda
@@ -46,8 +49,6 @@ function max_perf_benchmark(exe, n_ranks)
 
     # Set up the multi-FPGA cluster
     if variant == :monotile
-        mpi_root = ENV["I_MPI_ROOT"]
-        mpirun = "$mpi_root/bin/mpirun"
         command = `$mpirun -n $n_ranks $command`
 
         # Warmup to exclude programming from the benchmark

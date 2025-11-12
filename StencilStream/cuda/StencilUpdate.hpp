@@ -258,6 +258,7 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
         internal::FieldBuffers<Cell> buffers_b = internal::alloc_field_buffers<Cell>(
             source_grid.get_grid_height() * source_grid.get_grid_width());
         GridImpl target_buffer = source_grid.make_similar();
+        sycl::range<2> grid_range = source_grid.get_grid_range();
 
         internal::FieldBuffers<Cell> *pass_source = &buffers_a;
         internal::FieldBuffers<Cell> *pass_target = &buffers_b;
@@ -289,8 +290,70 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
         // Run the simulation.
         for (std::size_t i_iter = 0; i_iter < params.n_iterations; i_iter++) {
             for (std::size_t i_subiter = 0; i_subiter < F::n_subiterations; i_subiter++) {
-                run_iter(queue, pass_source, pass_target, source_grid.get_grid_range(),
-                         params.iteration_offset + i_iter, i_subiter);
+                sycl::event work_event = queue.submit([&](sycl::handler &cgh) {
+                    auto acc_tuple_pass_source = std::apply(
+                        [&](auto &...buf) {
+                            return std::make_tuple(sycl::accessor(buf, cgh, sycl::read_only)...);
+                        },
+                        *pass_source);
+
+                    auto acc_tuple_pass_target = std::apply(
+                        [&](auto &...buf) {
+                            return std::make_tuple(sycl::accessor(buf, cgh, sycl::write_only)...);
+                        },
+                        *pass_target);
+
+                    Cell halo_value = params.halo_value;
+                    F transition_function = params.transition_function;
+                    using TDV = typename F::TimeDependentValue;
+                    TDV tdv = transition_function.get_time_dependent_value(i_iter);
+
+                    cgh.parallel_for(grid_range, [=](sycl::id<2> id) {
+                        using StencilImpl = Stencil<Cell, F::stencil_radius, TDV>;
+                        StencilImpl stencil(id, grid_range, i_iter, i_subiter, tdv);
+
+                        for (std::size_t rel_r = 0; rel_r < 2 * F::stencil_radius + 1; rel_r++) {
+                            for (std::size_t rel_c = 0; rel_c < 2 * F::stencil_radius + 1;
+                                 rel_c++) {
+                                Cell cell;
+                                if (id[0] + rel_r >= F::stencil_radius &&
+                                    id[1] + rel_c >= F::stencil_radius &&
+                                    id[0] + rel_r < grid_range[0] + F::stencil_radius &&
+                                    id[1] + rel_c < grid_range[1] + F::stencil_radius) {
+                                    size_t cell_id =
+                                        (id[0] + rel_r - F::stencil_radius) * grid_range[1] +
+                                        (id[1] + rel_c - F::stencil_radius);
+                                    internal::for_each_in_two_tuples(
+                                        acc_tuple_pass_source, Cell::fields,
+                                        [&](auto &acc, auto member_ptr) {
+                                            cell.*member_ptr = static_cast<
+                                                std::remove_reference_t<decltype(acc[cell_id])>>(
+                                                acc[cell_id]);
+                                        });
+
+                                } else {
+                                    cell = halo_value;
+                                }
+                                stencil[sycl::id<2>(rel_r, rel_c)] = cell;
+                            }
+                        }
+
+                        size_t cell_id = id[0] * grid_range[1] + id[1];
+                        Cell new_cell = transition_function(stencil);
+
+                        internal::for_each_in_two_tuples(
+                            acc_tuple_pass_target, Cell::fields, [&](auto &acc, auto member_ptr) {
+                                acc[cell_id] =
+                                    static_cast<std::remove_reference_t<decltype(acc[cell_id])>>(
+                                        new_cell.*member_ptr);
+                            });
+                    });
+                });
+
+                if (params.profiling) {
+                    work_events.push_back(work_event);
+                }
+
                 std::swap(pass_source, pass_target);
             }
         }
@@ -322,90 +385,6 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
         });
 
         return target_buffer;
-    }
-
-    /**
-     * \brief Update the source grid by one iteration.
-     *
-     * This method will read the current state of the grid from the pass source and write the update
-     * the pass target.
-     *
-     * \param queue The queue to submit the kernel to.
-     *
-     * \param pass_source A pointer to a grid. The old state of the grid will be read from here.
-     *
-     * \param pass_target A pointer to a grid. The new state will be written to this grid.
-     *
-     * \param i_iter The index of the iteration to compute.
-     *
-     * \param i_subiter The index of the sub-iteration to compute.
-     */
-    void run_iter(sycl::queue queue, internal::FieldBuffers<Cell> *pass_source,
-                  internal::FieldBuffers<Cell> *pass_target, sycl::range<2> grid_range,
-                  std::size_t i_iter, std::size_t i_subiter)
-        requires(split_cell_structure)
-    {
-        using TDV = typename F::TimeDependentValue;
-        using StencilImpl = Stencil<Cell, F::stencil_radius, TDV>;
-
-        sycl::event work_event = queue.submit([&](sycl::handler &cgh) {
-            auto acc_tuple_pass_source = std::apply(
-                [&](auto &...buf) {
-                    return std::make_tuple(sycl::accessor(buf, cgh, sycl::read_only)...);
-                },
-                *pass_source);
-
-            auto acc_tuple_pass_target = std::apply(
-                [&](auto &...buf) {
-                    return std::make_tuple(sycl::accessor(buf, cgh, sycl::write_only)...);
-                },
-                *pass_target);
-
-            Cell halo_value = params.halo_value;
-            F transition_function = params.transition_function;
-            TDV tdv = transition_function.get_time_dependent_value(i_iter);
-
-            cgh.parallel_for(grid_range, [=](sycl::id<2> id) {
-                StencilImpl stencil(id, grid_range, i_iter, i_subiter, tdv);
-
-                for (std::size_t rel_r = 0; rel_r < 2 * F::stencil_radius + 1; rel_r++) {
-                    for (std::size_t rel_c = 0; rel_c < 2 * F::stencil_radius + 1; rel_c++) {
-                        Cell cell;
-                        if (id[0] + rel_r >= F::stencil_radius &&
-                            id[1] + rel_c >= F::stencil_radius &&
-                            id[0] + rel_r < grid_range[0] + F::stencil_radius &&
-                            id[1] + rel_c < grid_range[1] + F::stencil_radius) {
-                            size_t cell_id = (id[0] + rel_r - F::stencil_radius) * grid_range[1] +
-                                             (id[1] + rel_c - F::stencil_radius);
-                            internal::for_each_in_two_tuples(
-                                acc_tuple_pass_source, Cell::fields,
-                                [&](auto &acc, auto member_ptr) {
-                                    cell.*member_ptr = static_cast<
-                                        std::remove_reference_t<decltype(acc[cell_id])>>(
-                                        acc[cell_id]);
-                                });
-
-                        } else {
-                            cell = halo_value;
-                        }
-                        stencil[sycl::id<2>(rel_r, rel_c)] = cell;
-                    }
-                }
-
-                size_t cell_id = id[0] * grid_range[1] + id[1];
-                Cell new_cell = transition_function(stencil);
-
-                internal::for_each_in_two_tuples(
-                    acc_tuple_pass_target, Cell::fields, [&](auto &acc, auto member_ptr) {
-                        acc[cell_id] = static_cast<std::remove_reference_t<decltype(acc[cell_id])>>(
-                            new_cell.*member_ptr);
-                    });
-            });
-        });
-
-        if (params.profiling) {
-            work_events.push_back(work_event);
-        }
     }
 
     Params params;
