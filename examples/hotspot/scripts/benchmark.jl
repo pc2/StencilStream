@@ -11,20 +11,6 @@ const SPATIAL_PARALLELISM = Dict(:monotile => 4, :tiling => 8, :cuda => 1)
 const TILE_HEIGHT = Dict(:monotile => 4096, :tiling => 2^16, :cuda => nothing)
 const TILE_WIDTH = Dict(:monotile => 4096, :tiling => 4096, :cuda => nothing)
 
-function create_experiment(n_rows, n_columns, temp_file, power_file)
-    begin
-        temp = fill(30.0f0, n_rows * n_columns)
-        write(temp_file, temp)
-    end
-
-    begin
-        power = zeros(Float32, n_rows, n_columns)
-        power[(n_rows÷4):(3n_rows÷4), (n_columns÷4):(3n_columns÷4)] .= 0.5
-        power = reshape(power', n_rows * n_columns)
-        write(power_file, power)
-    end
-end
-
 function max_perf_benchmark(exec, variant, n_ranks)
     if variant == :monotile
         grid_height = TILE_HEIGHT[:monotile]
@@ -56,7 +42,7 @@ function max_perf_benchmark(exec, variant, n_ranks)
     println("temp: $temp_path, power: $power_path")
 
     println("Creating experiment...")
-    create_experiment(grid_height, grid_width, temp_path, power_path)
+    run(`./data/input_gen.jl $grid_height $grid_width $temp_path $power_path`)
     println("Experiment created and written!")
 
     command = `$exec $grid_height $grid_width $n_iters $temp_path $power_path $out_path`
