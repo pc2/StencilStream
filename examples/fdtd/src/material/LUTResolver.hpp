@@ -18,24 +18,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../Cell.hpp"
 #include "../Parameters.hpp"
 #include "Material.hpp"
 #include <StencilStream/Stencil.hpp>
 
 class LUTResolver {
   public:
-    struct MaterialCell : public Cell {
+    struct MaterialCell {
+        float ex, ey, hz, hz_sum;
         uindex_ring_t index;
 
-        MaterialCell() : Cell(), index(0) {}
-
-        static MaterialCell halo() { return MaterialCell(); }
+        static MaterialCell halo() { return MaterialCell{0.0, 0.0, 0.0, 0.0, 0}; }
 
         static MaterialCell from_parameters(Parameters const &parameters, size_t ring_index) {
-            MaterialCell cell;
-            cell.index = uindex_ring_t(ring_index);
-            return cell;
+            return MaterialCell{0.0, 0.0, 0.0, 0.0, uindex_ring_t(ring_index)};
         }
 
         static constexpr auto fields =

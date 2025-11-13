@@ -18,20 +18,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../Cell.hpp"
 #include "../Parameters.hpp"
 #include "Material.hpp"
 
 class RenderResolver {
   public:
-    struct MaterialCell : public Cell {
-        MaterialCell() : Cell() {}
+    struct MaterialCell {
+        float ex, ey, hz, hz_sum;
 
-        static MaterialCell halo() { return MaterialCell(); }
+        static MaterialCell halo() { return MaterialCell{0.0, 0.0, 0.0, 0.0}; }
 
         static MaterialCell from_parameters(Parameters const &parameters, size_t material_index) {
             // No computations needed here, since no material information is stored in the cells.
-            return MaterialCell();
+            return MaterialCell::halo();
         }
 
         static constexpr auto fields = std::make_tuple(&MaterialCell::ex, &MaterialCell::ey,

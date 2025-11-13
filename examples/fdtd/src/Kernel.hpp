@@ -26,15 +26,38 @@
 
 using namespace stencil;
 
-template <typename MaterialResolver> class Kernel {
+namespace concepts {
+template <typename T>
+concept FDTDCell =
+    std::same_as<decltype(T::ex), float> && std::same_as<decltype(T::ey), float> &&
+    std::same_as<decltype(T::hz), float> && std::same_as<decltype(T::hz_sum), float> &&
+    std::semiregular<T> && requires(Parameters const &parameters, std::size_t material_index) {
+        { T::from_parameters(parameters, material_index) } -> std::same_as<T>;
+    };
+
+template <typename M>
+concept MaterialResolver =
+    FDTDCell<typename M::MaterialCell> &&
+    requires(Parameters const &parameters) {
+        { M(parameters) } -> std::same_as<M>;
+    } &&
+    requires(M resolver, Stencil<typename M::MaterialCell, 1, float> const &stencil,
+             float distance_score) {
+        {
+            resolver.get_material_coefficients(stencil, distance_score)
+        } -> std::same_as<CoefMaterial>;
+    };
+} // namespace concepts
+
+template <::concepts::MaterialResolver M> class Kernel {
   public:
-    using Cell = typename MaterialResolver::MaterialCell;
+    using Cell = typename M::MaterialCell;
     using TimeDependentValue = float;
 
     static constexpr size_t stencil_radius = 1;
     static constexpr size_t n_subiterations = 2;
 
-    Kernel(Parameters const &parameters, MaterialResolver mat_resolver)
+    Kernel(Parameters const &parameters, M mat_resolver)
         : dt(parameters.dt()), t_0(parameters.t_0()), tau(parameters.tau),
           omega(parameters.omega()), cutoff_iteration(), detect_iteration(),
           source_radius_squared(), source_c(), source_r(), source_distance_bound(),
@@ -114,5 +137,5 @@ template <typename MaterialResolver> class Kernel {
     float source_r, source_c, source_distance_bound;
     float double_center_rc;
 
-    MaterialResolver mat_resolver;
+    M mat_resolver;
 };

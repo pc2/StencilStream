@@ -18,30 +18,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../Cell.hpp"
 #include "../Parameters.hpp"
 #include "Material.hpp"
 
 class CoefResolver {
   public:
-    struct MaterialCell : public Cell {
+    struct MaterialCell {
+        float ex, ey, hz, hz_sum;
         float ca, cb, da, db;
 
-        MaterialCell() : Cell(), ca(0.0), cb(0.0), da(0.0), db(0.0) {}
-
-        static MaterialCell halo() { return MaterialCell(); };
+        static MaterialCell halo() { return MaterialCell{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; }
 
         static MaterialCell from_parameters(Parameters const &parameters, size_t ring_index) {
             if (ring_index >= parameters.rings.size()) {
-                return MaterialCell();
+                return MaterialCell::halo();
             } else {
-                CoefMaterial coefCell = CoefMaterial::from_relative_material(
+                CoefMaterial material = CoefMaterial::from_relative_material(
                     parameters.rings[ring_index].material, parameters.dx, parameters.dt());
-                MaterialCell cell = MaterialCell();
-                cell.ca = coefCell.ca;
-                cell.cb = coefCell.cb;
-                cell.da = coefCell.da;
-                cell.db = coefCell.db;
+                MaterialCell cell{
+                    .ex = 0.0,
+                    .ey = 0.0,
+                    .hz = 0.0,
+                    .hz_sum = 0.0,
+                    .ca = material.ca,
+                    .cb = material.cb,
+                    .da = material.da,
+                    .db = material.db,
+                };
 
                 return cell;
             }
@@ -56,10 +59,10 @@ class CoefResolver {
 
     CoefMaterial get_material_coefficients(Stencil<MaterialCell, 1, float> const &stencil,
                                            float distance_score) const {
-        CoefMaterial cell{.ca = stencil[0][0].ca,
-                          .cb = stencil[0][0].cb,
-                          .da = stencil[0][0].da,
-                          .db = stencil[0][0].db};
-        return cell;
+        CoefMaterial material{.ca = stencil[0][0].ca,
+                              .cb = stencil[0][0].cb,
+                              .da = stencil[0][0].da,
+                              .db = stencil[0][0].db};
+        return material;
     }
 };
