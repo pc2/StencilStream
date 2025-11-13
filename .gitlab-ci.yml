@@ -267,7 +267,9 @@ jacobi (tiling) benchmark:
     needs:
         - jacobi (tiling) synthesis
     variables:
+        STST_EXAMPLE: "jacobi"
         STST_EXECUTABLE: Jacobi5General_tiling
+        STST_N_RANKS: 1
 
 # ===============
 # CUDA benchmarks
@@ -291,11 +293,11 @@ CUDA benchmark:
         - cd ../examples/convection
         - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection_cuda cuda
         - cd ../fdtd
-        - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/fdtd_coef_device_cuda cuda
+        - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/fdtd_coef_device_cuda cuda 1
         - cd ../hotspot
-        - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/hotspot_cuda cuda
+        - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/hotspot_cuda cuda 1
         - cd ../jacobi
-        - ./scripts/benchmark.jl max_perf ../../build/examples/jacobi/Jacobi5General_cuda
+        - ./scripts/benchmark.jl max_perf ../../build/examples/jacobi/Jacobi5General_cuda 1
     artifacts:
         paths:
             - examples/*/metrics.cuda.json
