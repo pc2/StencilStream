@@ -27,6 +27,7 @@ Manifest.toml
 **/*.gch
 **/*.zip
 **/*.DS_Store
+**/*.ncu-rep
 
 build
 doxygen
