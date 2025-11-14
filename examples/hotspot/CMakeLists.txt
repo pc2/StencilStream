@@ -27,7 +27,7 @@ target_compile_definitions(hotspot_cuda_naive PUBLIC HOTSPOT_SPLIT_CELL_STRUCT=0
 # Monotile versions
 add_executable(hotspot_mono hotspot.cpp)
 target_link_libraries(hotspot_mono PUBLIC StencilStream_Monotile)
-target_link_options(hotspot_mono PUBLIC -Xsseed=5441)
+target_link_options(hotspot_mono PUBLIC -Xsseed=3116)
 
 add_executable(hotspot_mono_emu hotspot.cpp)
 target_link_libraries(hotspot_mono_emu PUBLIC StencilStream_MonotileEmulator)
@@ -38,7 +38,7 @@ target_link_libraries(hotspot_mono_report PUBLIC StencilStream_MonotileReport)
 # Tiling versions
 add_executable(hotspot_tiling hotspot.cpp)
 target_link_libraries(hotspot_tiling PUBLIC StencilStream_Tiling)
-target_link_options(hotspot_tiling PUBLIC -Xsseed=3644)
+target_link_options(hotspot_tiling PUBLIC -Xsseed=15689)
 
 add_executable(hotspot_tiling_emu hotspot.cpp)
 target_link_libraries(hotspot_tiling_emu PUBLIC StencilStream_TilingEmulator)
@@ -49,11 +49,6 @@ target_link_libraries(hotspot_tiling_report PUBLIC StencilStream_TilingReport)
 # Enable named kernels
 foreach(TARGET hotspot_mono hotspot_mono_report hotspot_tiling hotspot_tiling_report)
     target_link_libraries(${TARGET} PUBLIC StencilStream_NamedKernels)
-endforeach()
-
-# Set hardware synthesis seeds
-foreach(TARGET hotspot_mono hotspot_mono_report)
-    target_link_options(${TARGET} PUBLIC -Xsseed=41505)
 endforeach()
 
 # Adding a custom target for all Hotspot reports
