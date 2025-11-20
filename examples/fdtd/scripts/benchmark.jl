@@ -10,11 +10,14 @@ const TILE_HEIGHT = Dict(:monotile => 512, :tiling => 2^16, :cuda => nothing)
 const TILE_WIDTH = Dict(:monotile => 1024, :tiling => 768, :cuda => nothing)
 
 function max_perf_benchmark(exe, variant, n_ranks)
-    if variant == :monotile || variant == :cuda
+    if variant == :monotile
         experiment_path = "./experiments/mono_benchmark.json"
         n_samples = 10
     elseif variant == :tiling
         experiment_path = "./experiments/tiling_benchmark.json"
+        n_samples = 3
+    elseif variant == :cuda
+        experiment_path = "./experiments/cuda_benchmark.json"
         n_samples = 3
     end
     out_dir = Base.Filesystem.mkpath("./out/")

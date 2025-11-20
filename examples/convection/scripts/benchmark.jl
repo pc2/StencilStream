@@ -36,7 +36,7 @@ function analyze_log(logfile)
 end
 
 function max_perf_benchmark(exe, variant)
-    experiment_path = "experiments/max-res-default.json"
+    experiment_path = variant == :cuda ? "experiments/cuda-benchmark.json" : "experiments/max-res-default.json"
     experiment_data = JSON.parsefile(experiment_path)
     lx = experiment_data["lx"]
     ly = experiment_data["ly"]
