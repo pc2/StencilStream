@@ -18,14 +18,16 @@ target_link_libraries(hotspot_cpu PUBLIC StencilStream_CPU)
 # Pure CUDA-based executable
 add_executable(hotspot_cuda hotspot.cpp)
 target_link_libraries(hotspot_cuda PUBLIC StencilStream_CUDA)
+target_compile_definitions(hotspot_cuda PUBLIC HOTSPOT_SPLIT_CELL_STRUCT=1)
 
-add_executable(hotspot_cuda_soa hotspot.cpp)
-target_link_libraries(hotspot_cuda_soa PUBLIC StencilStream_CUDA_SOA)
+add_executable(hotspot_cuda_naive hotspot.cpp)
+target_link_libraries(hotspot_cuda_naive PUBLIC StencilStream_CUDA)
+target_compile_definitions(hotspot_cuda_naive PUBLIC HOTSPOT_SPLIT_CELL_STRUCT=0)
 
 # Monotile versions
 add_executable(hotspot_mono hotspot.cpp)
 target_link_libraries(hotspot_mono PUBLIC StencilStream_Monotile)
-target_link_options(hotspot_mono PUBLIC -Xsseed=12177)
+target_link_options(hotspot_mono PUBLIC -Xsseed=3116)
 
 add_executable(hotspot_mono_emu hotspot.cpp)
 target_link_libraries(hotspot_mono_emu PUBLIC StencilStream_MonotileEmulator)
@@ -36,6 +38,7 @@ target_link_libraries(hotspot_mono_report PUBLIC StencilStream_MonotileReport)
 # Tiling versions
 add_executable(hotspot_tiling hotspot.cpp)
 target_link_libraries(hotspot_tiling PUBLIC StencilStream_Tiling)
+target_link_options(hotspot_tiling PUBLIC -Xsseed=15689)
 
 add_executable(hotspot_tiling_emu hotspot.cpp)
 target_link_libraries(hotspot_tiling_emu PUBLIC StencilStream_TilingEmulator)
@@ -43,9 +46,9 @@ target_link_libraries(hotspot_tiling_emu PUBLIC StencilStream_TilingEmulator)
 add_executable(hotspot_tiling_report hotspot.cpp)
 target_link_libraries(hotspot_tiling_report PUBLIC StencilStream_TilingReport)
 
-# Setting seeds for hardware synthesis.
-foreach(TARGET hotspot_tiling hotspot_tiling_report)
-    target_link_options(${TARGET} PUBLIC -Xsseed=1)
+# Enable named kernels
+foreach(TARGET hotspot_mono hotspot_mono_report hotspot_tiling hotspot_tiling_report)
+    target_link_libraries(${TARGET} PUBLIC StencilStream_NamedKernels)
 endforeach()
 
 # Adding a custom target for all Hotspot reports

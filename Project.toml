@@ -2,16 +2,8 @@
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 ColorSchemes = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
-Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
-ImageIO = "82e4d734-157c-48bb-816b-45c225c6df19"
-ImageMagick = "6218d12a-5da1-5696-b52f-db25d2ecc6d1"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
-OpenCV = "f878e3a2-a245-4720-8660-60795d644f2a"
-OpenSSL_jll = "458c3c95-2e84-50aa-8efc-19380b2a3a95"
 ParallelStencil = "94395366-693c-11ea-3b26-d9b7aac5d958"
-
-[compat]
-OpenSSL_jll = "~3.0" # Only OpenSSL 3.0 is available on Noctua 2

@@ -20,7 +20,6 @@
 #include <StencilStream/BaseTransitionFunction.hpp>
 #include <chrono>
 #include <fstream>
-#include <sycl/ext/intel/fpga_extensions.hpp>
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
     #include <StencilStream/monotile/StencilUpdate.hpp>
@@ -30,8 +29,6 @@
     #include <StencilStream/cpu/StencilUpdate.hpp>
 #elif defined(STENCILSTREAM_BACKEND_CUDA)
     #include <StencilStream/cuda/StencilUpdate.hpp>
-#elif defined(STENCILSTREAM_BACKEND_CUDA_SOA)
-    #include <StencilStream/cuda-soa/StencilUpdate.hpp>
 #endif
 
 using namespace std;
@@ -57,14 +54,10 @@ const FLOAT chip_width = 0.016;
 /* ambient temperature, assuming no package at all	*/
 const FLOAT amb_temp = 80.0;
 
-#if defined(STENCILSTREAM_BACKEND_CUDA_SOA)
-struct Cell {
-    FLOAT temp{};
-    FLOAT power{};
-};
-using HotspotCell = Cell;
+struct HotspotCell {
+    FLOAT temp;
+    FLOAT power;
 
-template <> struct cell_members<HotspotCell> {
     static constexpr auto fields = std::make_tuple(&HotspotCell::temp, &HotspotCell::power);
 };
 
@@ -103,60 +96,22 @@ struct HotspotKernel : public BaseTransitionFunction {
     }
 };
 
-#else
-/* stencil parameters */
-using HotspotCell = vec<FLOAT, 2>;
-
-struct HotspotKernel : public BaseTransitionFunction {
-    using Cell = HotspotCell;
-
-    float Rx_1, Ry_1, Rz_1, Cap_1;
-
-    Cell operator()(Stencil<HotspotCell, 1> const &temp) const {
-        FLOAT power = temp[0][0][1];
-        FLOAT old = temp[0][0][0];
-        FLOAT top = temp[-1][0][0];
-        FLOAT bottom = temp[1][0][0];
-        FLOAT left = temp[0][-1][0];
-        FLOAT right = temp[0][1][0];
-
-        if (temp.id[0] == 0) {
-            top = old;
-        } else if (temp.id[0] == temp.grid_range[0] - 1) {
-            bottom = old;
-        }
-
-        if (temp.id[1] == 0) {
-            left = old;
-        } else if (temp.id[1] == temp.grid_range[1] - 1) {
-            right = old;
-        }
-
-        // As in the OpenCL version of the rodinia "hotspot" benchmark.
-        FLOAT new_temp =
-            old + Cap_1 * (power + (bottom + top - 2.f * old) * Ry_1 +
-                           (right + left - 2.f * old) * Rx_1 + (amb_temp - old) * Rz_1);
-
-        return vec(new_temp, power);
-    }
-};
-#endif
-
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
-const size_t max_grid_height = 6144;
-const size_t max_grid_width = 6144;
-const size_t temporal_parallelism = 64;
-const size_t spatial_parallelism = 8;
-const size_t n_kernels = 16;
+const size_t max_grid_height = 4096;
+const size_t max_grid_width = 4096;
+const size_t temporal_parallelism = 108;
+const size_t spatial_parallelism = 4;
+const size_t n_kernels = temporal_parallelism / 4;
 using StencilUpdate =
     monotile::StencilUpdate<HotspotKernel, temporal_parallelism, spatial_parallelism,
-                            max_grid_height, max_grid_width, n_kernels>;
+                            max_grid_height, max_grid_width, n_kernels,
+                            tdv::single_pass::InlineStrategy, monotile::Connectivity::IO_PIPES>;
 using Grid = StencilUpdate::GridImpl;
 
 #elif defined(STENCILSTREAM_BACKEND_TILING)
 const size_t tile_height = 1 << 16;
 const size_t tile_width = 4096;
-const size_t temporal_parallelism = 64;
+const size_t temporal_parallelism = 48;
 const size_t spatial_parallelism = 8;
 const size_t n_kernels = 16;
 using StencilUpdate =
@@ -168,8 +123,9 @@ using Grid = StencilUpdate::GridImpl;
 using StencilUpdate = cpu::StencilUpdate<HotspotKernel>;
 using Grid = StencilUpdate::GridImpl;
 
-#elif defined(STENCILSTREAM_BACKEND_CUDA) || defined(STENCILSTREAM_BACKEND_CUDA_SOA)
-using StencilUpdate = cuda::StencilUpdate<HotspotKernel>;
+#elif defined(STENCILSTREAM_BACKEND_CUDA)
+const bool split_cell_structure = HOTSPOT_SPLIT_CELL_STRUCT;
+using StencilUpdate = cuda::StencilUpdate<HotspotKernel, split_cell_structure>;
 using Grid = StencilUpdate::GridImpl;
 #endif
 
@@ -188,7 +144,6 @@ void write_output(Grid vect, string file, bool binary) {
     Grid::GridAccessor<access::mode::read> vect_ac(vect);
 
     int i = 0;
-#if defined(STENCILSTREAM_BACKEND_CUDA_SOA)
     for (size_t r = 0; r < vect.get_grid_height(); r++) {
         for (size_t c = 0; c < vect.get_grid_width(); c++) {
             if (binary) {
@@ -199,18 +154,6 @@ void write_output(Grid vect, string file, bool binary) {
             i++;
         }
     }
-#else
-    for (size_t r = 0; r < vect.get_grid_height(); r++) {
-        for (size_t c = 0; c < vect.get_grid_width(); c++) {
-            if (binary) {
-                out.write((char *)&vect_ac[r][c][0], sizeof(float));
-            } else {
-                out << i << "\t" << vect_ac[r][c][0] << std::endl;
-            }
-            i++;
-        }
-    }
-#endif
 
     out.close();
 }
@@ -280,6 +223,17 @@ auto exception_handler = [](sycl::exception_list exceptions) {
 };
 
 int main(int argc, char **argv) {
+#if defined(STENCILSTREAM_BACKEND_MONOTILE)
+    MPI_Init(NULL, NULL);
+
+    int rank, n_ranks;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &n_ranks);
+#else
+    int rank = 0;
+    int n_ranks = 1;
+#endif
+
     size_t n_rows, n_columns, sim_time;
     bool benchmark_mode = false;
 
@@ -311,7 +265,9 @@ int main(int argc, char **argv) {
 
     Grid grid = read_input(tfile, pfile, n_rows, n_columns, binary_io);
 
-    printf("Start computing the transient temperature\n");
+    if (rank == 0) {
+        printf("Start computing the transient temperature\n");
+    }
 
     FLOAT grid_height = chip_height / n_rows;
     FLOAT grid_width = chip_width / n_columns;
@@ -329,32 +285,27 @@ int main(int argc, char **argv) {
     FLOAT Rz_1 = 1.f / Rz;
     FLOAT Cap_1 = step / Cap;
 
-#if defined(STENCILSTREAM_TARGET_FPGA)
-    sycl::device device(sycl::ext::intel::fpga_selector_v);
-#elif defined(STENCILSTREAM_TARGET_CUDA)
-    sycl::device device(sycl::gpu_selector_v);
-#else
-    sycl::device device;
-#endif
-
     StencilUpdate update({
         .transition_function =
             HotspotKernel{.Rx_1 = Rx_1, .Ry_1 = Ry_1, .Rz_1 = Rz_1, .Cap_1 = Cap_1},
         .halo_value = HotspotCell(0.0, 0.0),
         .n_iterations = sim_time,
-        .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
     });
 
     grid = update(grid);
 
-    std::cout << "Ending simulation" << std::endl;
-    std::cout << "Walltime: " << update.get_walltime() << " s" << std::endl;
-    std::cout << "GFlops: "
-              << ((n_rows * n_columns * sim_time * 15) / update.get_walltime()) / 1.0e9
-              << std::endl;
+    if (rank == 0) {
+        std::cout << "Ending simulation" << std::endl;
+        std::cout << "Walltime: " << update.get_walltime() << " s" << std::endl;
+        std::cout << "GFlops: "
+                  << ((n_rows * n_columns * sim_time * 15) / update.get_walltime()) / 1.0e9
+                  << std::endl;
+        write_output(grid, ofile, binary_io);
+    }
 
-    write_output(grid, ofile, binary_io);
-
+#if defined(STENCILSTREAM_BACKEND_MONOTILE)
+    MPI_Finalize();
+#endif
     return 0;
 }

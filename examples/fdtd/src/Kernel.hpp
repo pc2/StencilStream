@@ -26,15 +26,38 @@
 
 using namespace stencil;
 
-template <typename MaterialResolver> class Kernel {
+namespace concepts {
+template <typename T>
+concept FDTDCell =
+    std::same_as<decltype(T::ex), float> && std::same_as<decltype(T::ey), float> &&
+    std::same_as<decltype(T::hz), float> && std::same_as<decltype(T::hz_sum), float> &&
+    std::semiregular<T> && requires(Parameters const &parameters, std::size_t material_index) {
+        { T::from_parameters(parameters, material_index) } -> std::same_as<T>;
+    };
+
+template <typename M>
+concept MaterialResolver =
+    FDTDCell<typename M::MaterialCell> &&
+    requires(Parameters const &parameters) {
+        { M(parameters) } -> std::same_as<M>;
+    } &&
+    requires(M resolver, Stencil<typename M::MaterialCell, 1, float> const &stencil,
+             float distance_score) {
+        {
+            resolver.get_material_coefficients(stencil, distance_score)
+        } -> std::same_as<CoefMaterial>;
+    };
+} // namespace concepts
+
+template <::concepts::MaterialResolver M> class Kernel {
   public:
-    using Cell = typename MaterialResolver::MaterialCell;
+    using Cell = typename M::MaterialCell;
     using TimeDependentValue = float;
 
     static constexpr size_t stencil_radius = 1;
     static constexpr size_t n_subiterations = 2;
 
-    Kernel(Parameters const &parameters, MaterialResolver mat_resolver)
+    Kernel(Parameters const &parameters, M mat_resolver)
         : dt(parameters.dt()), t_0(parameters.t_0()), tau(parameters.tau),
           omega(parameters.omega()), cutoff_iteration(), detect_iteration(),
           source_radius_squared(), source_c(), source_r(), source_distance_bound(),
@@ -60,7 +83,6 @@ template <typename MaterialResolver> class Kernel {
         return sycl::cos(omega * current_time) * sycl::exp(-1 * wave_progress * wave_progress);
     }
 
-#if defined(STENCILSTREAM_BACKEND_CUDA_SOA)
     Cell operator()(Stencil<Cell, 1, float> const &stencil) const {
         Cell cell = stencil[0][0];
 
@@ -104,52 +126,6 @@ template <typename MaterialResolver> class Kernel {
         }
         return cell;
     }
-#else
-    Cell operator()(Stencil<Cell, 1, float> const &stencil) const {
-        Cell cell = stencil[0][0];
-
-        float r = stencil.id[0];
-        float c = stencil.id[1];
-        float center_distance_score = r * (r - double_center_rc) + c * (c - double_center_rc);
-        float source_distance_score = r * (r - 2 * source_r) + c * (c - 2 * source_c);
-
-        CoefMaterial material =
-            mat_resolver.get_material_coefficients(stencil, center_distance_score);
-
-        if (stencil.subiteration == 0) {
-            cell.cell.ex *= material.ca;
-            cell.cell.ex += material.cb * (stencil[0][0].cell.hz - stencil[0][-1].cell.hz);
-
-            cell.cell.ey *= material.ca;
-            cell.cell.ey += material.cb * (stencil[-1][0].cell.hz - stencil[0][0].cell.hz);
-        } else {
-            cell.cell.hz *= material.da;
-            cell.cell.hz += material.db * (stencil[0][1].cell.ex - stencil[0][0].cell.ex +
-                                           stencil[0][0].cell.ey - stencil[1][0].cell.ey);
-
-            if (source_distance_score <= source_distance_bound &&
-                stencil.iteration <= cutoff_iteration) {
-                float interp_factor;
-                if (source_radius_squared != 0) {
-                    float cell_distance_squared =
-                        source_distance_score + source_c * source_c + source_r * source_r;
-                    // cell_distance_squared == (distance / dx)^2
-                    interp_factor = 1.0 - float(cell_distance_squared) / source_radius_squared;
-                } else {
-                    interp_factor = 1.0;
-                }
-
-                float source_amplitude = stencil.time_dependent_value;
-                cell.cell.hz += interp_factor * source_amplitude;
-            }
-
-            if (stencil.iteration > detect_iteration) {
-                cell.cell.hz_sum += cell.cell.hz * cell.cell.hz;
-            }
-        }
-        return cell;
-    }
-#endif
 
   private:
     float dt, t_0, tau, omega;
@@ -161,5 +137,5 @@ template <typename MaterialResolver> class Kernel {
     float source_r, source_c, source_distance_bound;
     float double_center_rc;
 
-    MaterialResolver mat_resolver;
+    M mat_resolver;
 };

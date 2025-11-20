@@ -19,7 +19,6 @@
  */
 #include "Kernel.hpp"
 #include <deque>
-#include <sycl/ext/intel/fpga_extensions.hpp>
 
 #if MATERIAL == 0
     #include "material/CoefResolver.hpp"
@@ -49,8 +48,9 @@ using TDVStrategy = tdv::single_pass::PrecomputeOnHostStrategy;
     #include <StencilStream/monotile/StencilUpdate.hpp>
 
 using Grid = monotile::Grid<CellImpl, spatial_parallelism>;
-using StencilUpdate = monotile::StencilUpdate<KernelImpl, temporal_parallelism, spatial_parallelism,
-                                              tile_height, tile_width, n_kernels, TDVStrategy>;
+using StencilUpdate =
+    monotile::StencilUpdate<KernelImpl, temporal_parallelism, spatial_parallelism, tile_height,
+                            tile_width, n_kernels, TDVStrategy, monotile::Connectivity::IO_PIPES>;
 #elif defined(STENCILSTREAM_BACKEND_TILING)
     #include <StencilStream/tiling/StencilUpdate.hpp>
 using StencilUpdate = tiling::StencilUpdate<KernelImpl, temporal_parallelism, spatial_parallelism,
@@ -63,11 +63,8 @@ using StencilUpdate = cpu::StencilUpdate<KernelImpl>;
 #elif defined(STENCILSTREAM_BACKEND_CUDA)
     #include <StencilStream/cuda/StencilUpdate.hpp>
 using Grid = cuda::Grid<CellImpl>;
-using StencilUpdate = cuda::StencilUpdate<KernelImpl>;
-#elif defined(STENCILSTREAM_BACKEND_CUDA_SOA)
-    #include <StencilStream/cuda-soa/StencilUpdate.hpp>
-using Grid = cuda::Grid<CellImpl>;
-using StencilUpdate = cuda::StencilUpdate<KernelImpl>;
+constexpr bool split_cell_structure = FDTD_SPLIT_CELL_STRUCT;
+using StencilUpdate = cuda::StencilUpdate<KernelImpl, split_cell_structure>;
 #endif
 
 auto exception_handler = [](sycl::exception_list exceptions) {
@@ -116,7 +113,6 @@ void save_frame(Grid frame_buffer, size_t iteration_index, CellField field,
     for (size_t r = 0; r < parameters.grid_range()[1]; r++) {
         for (size_t c = 0; c < parameters.grid_range()[0]; c++) {
             switch (field) {
-#if defined(STENCILSTREAM_BACKEND_CUDA_SOA)
             case CellField::EX:
                 out << frame[r][c].ex;
                 break;
@@ -132,23 +128,6 @@ void save_frame(Grid frame_buffer, size_t iteration_index, CellField field,
             default:
                 break;
             }
-#else
-            case CellField::EX:
-                out << frame[r][c].cell.ex;
-                break;
-            case CellField::EY:
-                out << frame[r][c].cell.ey;
-                break;
-            case CellField::HZ:
-                out << frame[r][c].cell.hz;
-                break;
-            case CellField::HZ_SUM:
-                out << frame[r][c].cell.hz_sum;
-                break;
-            default:
-                break;
-            }
-#endif
 
             if (c != parameters.grid_range()[0] - 1) {
                 out << ",";
@@ -161,6 +140,17 @@ void save_frame(Grid frame_buffer, size_t iteration_index, CellField field,
 }
 
 int main(int argc, char **argv) {
+#if defined(STENCILSTREAM_BACKEND_MONOTILE)
+    MPI_Init(NULL, NULL);
+
+    int rank, n_ranks;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &n_ranks);
+#else
+    int rank = 0;
+    int n_ranks = 0;
+#endif
+
     Parameters parameters(argc, argv);
     parameters.print_configuration();
 
@@ -199,27 +189,20 @@ int main(int argc, char **argv) {
         }
     }
 
-#if defined(STENCILSTREAM_TARGET_FPGA)
-    sycl::device device(sycl::ext::intel::fpga_selector_v);
-#elif defined(STENCILSTREAM_TARGET_CUDA) || defined(STENCILSTREAM_TARGET_CUDA_SOA)
-    sycl::device device(sycl::gpu_selector_v);
-#else
-        sycl::device device;
-#endif
-
     StencilUpdate simulation({
         .transition_function = KernelImpl(parameters, mat_resolver),
         .halo_value = CellImpl::halo(),
         .iteration_offset = 0,
         .n_iterations = parameters.n_timesteps(),
-        .device = device,
         .blocking = true, // enable blocking for meaningful walltime measurements
     });
 
     size_t n_timesteps = parameters.n_timesteps();
     size_t last_saved_iteration = 0;
 
-    std::cout << "Simulating..." << std::endl;
+    if (rank == 0) {
+        std::cout << "Simulating..." << std::endl;
+    }
 
     if (parameters.n_snap_timesteps().has_value()) {
         size_t n_snap_timesteps = parameters.n_snap_timesteps().value();
@@ -227,16 +210,23 @@ int main(int argc, char **argv) {
         for (size_t &i = simulation.get_params().iteration_offset; i < parameters.n_timesteps();
              i += n_snap_timesteps) {
             grid = simulation(grid);
-            save_frame(grid, i + n_snap_timesteps, CellField::HZ, parameters);
+            if (rank == 0) {
+                save_frame(grid, i + n_snap_timesteps, CellField::HZ, parameters);
+            }
         }
     } else {
         grid = simulation(grid);
     }
 
-    std::cout << "Simulation complete!" << std::endl;
-    std::cout << "Walltime: " << simulation.get_walltime() << " s" << std::endl;
+    if (rank == 0) {
+        std::cout << "Simulation complete!" << std::endl;
+        std::cout << "Walltime: " << simulation.get_walltime() << " s" << std::endl;
 
-    save_frame(grid, n_timesteps, CellField::HZ_SUM, parameters);
+        save_frame(grid, n_timesteps, CellField::HZ_SUM, parameters);
+    }
 
+#if defined(STENCILSTREAM_BACKEND_MONOTILE)
+    MPI_Finalize();
+#endif
     return 0;
 }

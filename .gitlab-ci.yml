@@ -34,7 +34,6 @@ default:
     before_script:
         - source scripts/env_cuda.sh
 
-
 .synthesis:
     extends:
         - .expensive_job
@@ -43,7 +42,7 @@ default:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p normal -t 1-00:00:00 -c 8 --mem 120G
+        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p normal -q fpgasynthesis -t 1-00:00:00 -c 8 --mem 120G
     script:
         - ./scripts/synthesize.sh "${PACKAGE_REGISTRY_URL}" "${TAG_NAME}" "${STST_EXAMPLE}" "${STST_EXECUTABLE}"
     artifacts:
@@ -58,20 +57,6 @@ default:
 # =============
 # Preevaluation
 # =============
-
-documentation:
-    extends: .cheap_job
-    stage: preevaluation
-    tags:
-        - docker-shared
-    image: alpine
-    before_script:
-        - apk add --no-cache doxygen graphviz font-noto
-    script:
-        - doxygen
-    artifacts:
-        paths:
-            - doxygen/html
 
 FPGA/CPU unit test:
     extends:
@@ -108,12 +93,12 @@ convection benchmark:
         - .expensive_job
         - .fpga_job
     stage: benchmark
-    needs: 
+    needs:
         - convection synthesis
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:15:00
+        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p fpga --constraint=bittware_520n_20.4.0_max -t 00:15:00
     script:
         - cd examples/convection
         - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection monotile
@@ -141,21 +126,22 @@ hotspot (monotile) synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:30:00
+        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p fpga --constraint=bittware_520n_20.4.0_max -t 01:00:00 -n ${STST_N_RANKS} --ntasks-per-node=2 -x "n2fpga[20,22,23,26]"
     script:
         - cd examples/hotspot
-        - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/${STST_EXECUTABLE} ${STST_VARIANT}
+        - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/${STST_EXECUTABLE} ${STST_VARIANT} ${STST_N_RANKS}
     artifacts:
         paths:
             - examples/hotspot/metrics.*.json
 
 hotspot (monotile) benchmark:
     extends: .hotspot benchmark
-    needs: 
+    needs:
         - hotspot (monotile) synthesis
     variables:
         STST_EXECUTABLE: hotspot_mono
         STST_VARIANT: monotile
+        STST_N_RANKS: 2
 
 # ================
 # Hotspot (Tiling)
@@ -169,12 +155,12 @@ hotspot (tiling) synthesis:
 
 hotspot (tiling) benchmark:
     extends: .hotspot benchmark
-    needs: 
+    needs:
         - hotspot (tiling) synthesis
     variables:
         STST_EXECUTABLE: hotspot_tiling
         STST_VARIANT: tiling
-    stage: benchmark
+        STST_N_RANKS: 1
 
 # ===============
 # FDTD (Monotile)
@@ -194,11 +180,11 @@ fdtd (monotile) synthesis:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p fpga --constraint=bittware_520n_20.4.0_hpc -t 00:30:00
+        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p fpga --constraint=bittware_520n_20.4.0_max -t 00:15:00 -n ${STST_N_RANKS} --ntasks-per-node=2 -x "n2fpga[20,22,23,26]"
     script:
         - cd examples/fdtd
-        - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/${STST_EXECUTABLE} ${STST_VARIANT}
-        - julia --project -O3 -t126 ./scripts/plot_frames.jl out/
+        - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/${STST_EXECUTABLE} ${STST_VARIANT} ${STST_N_RANKS}
+        - julia --project -O3 -tauto ./scripts/plot_frames.jl out/
     artifacts:
         paths:
             - examples/fdtd/out/*.csv
@@ -207,11 +193,12 @@ fdtd (monotile) synthesis:
 
 fdtd (monotile) benchmark:
     extends: .fdtd benchmark
-    needs: 
+    needs:
         - fdtd (monotile) synthesis
     variables:
         STST_EXECUTABLE: fdtd_coef_device_mono
         STST_VARIANT: monotile
+        STST_N_RANKS: 2
 
 # =============
 # FDTD (Tiling)
@@ -225,11 +212,64 @@ fdtd (tiling) synthesis:
 
 fdtd (tiling) benchmark:
     extends: .fdtd benchmark
-    needs: 
+    needs:
         - fdtd (tiling) synthesis
     variables:
         STST_EXECUTABLE: fdtd_coef_device_tiling
         STST_VARIANT: tiling
+        STST_N_RANKS: 1
+
+# =================
+# Jacobi (Monotile)
+# =================
+
+jacobi (monotile) synthesis:
+    extends: .synthesis
+    variables:
+        STST_EXAMPLE: "jacobi"
+        STST_EXECUTABLE: "Jacobi5General_mono"
+
+.jacobi benchmark:
+    extends:
+        - .expensive_job
+        - .fpga_job
+    stage: benchmark
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p fpga --constraint=bittware_520n_20.4.0_max -t 00:15:00 -n ${STST_N_RANKS} --ntasks-per-node=2 -x "n2fpga[20,22,23,26]"
+    script:
+        - cd examples/jacobi
+        - ./scripts/benchmark.jl max_perf ../../build/examples/jacobi/${STST_EXECUTABLE} ${STST_N_RANKS}
+    artifacts:
+        paths:
+            - examples/jacobi/metrics.*.json
+
+jacobi (monotile) benchmark:
+    extends: .jacobi benchmark
+    variables:
+        STST_EXAMPLE: "jacobi"
+        STST_EXECUTABLE: "Jacobi5General_mono"
+        STST_N_RANKS: 2
+
+# ===============
+# Jacobi (Tiling)
+# ===============
+
+jacobi (tiling) synthesis:
+    extends: .synthesis
+    variables:
+        STST_EXAMPLE: "jacobi"
+        STST_EXECUTABLE: "Jacobi5General_tiling"
+
+jacobi (tiling) benchmark:
+    extends: .jacobi benchmark
+    needs:
+        - jacobi (tiling) synthesis
+    variables:
+        STST_EXAMPLE: "jacobi"
+        STST_EXECUTABLE: Jacobi5General_tiling
+        STST_N_RANKS: 1
 
 # ===============
 # CUDA benchmarks
@@ -248,17 +288,19 @@ CUDA benchmark:
         - mkdir -p build
         - cd build
         - cmake ..
-        - make unit_test_cuda convection_cuda_soa hotspot_cuda_soa fdtd_coef_device_cuda_soa -j16
+        - make unit_test_cuda convection_cuda hotspot_cuda fdtd_coef_device_cuda Jacobi5General_cuda -j16
         - ./tests/unit_test_cuda
         - cd ../examples/convection
-        - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection_cuda_soa cuda
+        - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection_cuda cuda
         - cd ../fdtd
-        - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/fdtd_coef_device_cuda_soa cuda
+        - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/fdtd_coef_device_cuda cuda 1
         - cd ../hotspot
-        - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/hotspot_cuda_soa cuda
+        - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/hotspot_cuda cuda 1
+        - cd ../jacobi
+        - ./scripts/benchmark.jl max_perf ../../build/examples/jacobi/Jacobi5General_cuda 1
     artifacts:
         paths:
-            - examples/*/metrics.cuda.json
+            - examples/*/metrics.*.json
 # =======
 # Release
 # =======

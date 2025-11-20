@@ -20,23 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "../TransFuncs.hpp"
+#include "../../TransFuncs.hpp"
 
 #include <StencilStream/BaseTransitionFunction.hpp>
-#include <StencilStream/tiling/StencilUpdateKernel.hpp>
+#include <StencilStream/tiling/Grid.hpp>
+#include <StencilStream/tiling/internal/StencilUpdateKernel.hpp>
 #include <catch2/catch_all.hpp>
 
 using namespace sycl;
 using namespace stencil;
 using namespace stencil::tiling;
+using namespace stencil::tiling::internal;
 
 template <std::size_t stencil_radius, std::size_t temporal_parallelism,
           std::size_t spatial_parallelism, std::size_t tile_height, std::size_t tile_width>
 void test_tiling_kernel(std::size_t grid_height, std::size_t grid_width, std::size_t tile_r,
                         std::size_t tile_c, std::size_t iteration_offset,
                         std::size_t target_i_iteration) {
+    using namespace stencil::internal;
+
     using TransFunc = FPGATransFunc<stencil_radius>;
-    using CellVector = std::array<typename TransFunc::Cell, spatial_parallelism>;
+    using CellVector =
+        stencil::internal::Padded<std::array<typename TransFunc::Cell, spatial_parallelism>>;
     using in_pipe = sycl::pipe<class TilingExecutionKernelInPipeID, CellVector>;
     using out_pipe = sycl::pipe<class TilingExecutionKernelOutPipeID, CellVector>;
     using TDVGlobalState =
@@ -45,43 +50,43 @@ void test_tiling_kernel(std::size_t grid_height, std::size_t grid_width, std::si
     using TestExecutionKernel =
         StencilUpdateKernel<TransFunc, TDVKernelArgument, temporal_parallelism, 0,
                             spatial_parallelism, tile_height, tile_width, in_pipe, out_pipe>;
+    using GridImpl = Grid<Cell, spatial_parallelism>;
 
     constexpr std::size_t n_processing_elements = temporal_parallelism * TransFunc::n_subiterations;
     constexpr std::size_t stencil_buffer_lead =
         int_ceil_div(stencil_radius, spatial_parallelism) * spatial_parallelism;
     constexpr std::size_t halo_height = stencil_radius * n_processing_elements;
     constexpr std::size_t halo_width = stencil_buffer_lead * n_processing_elements;
-    // Tile width has to be multiple of vector length.
-    constexpr std::size_t vect_tile_width = tile_width / spatial_parallelism;
 
-    std::size_t output_tile_section_height =
-        std::min(tile_height, grid_height - tile_r * tile_height);
-    std::size_t vect_output_tile_section_width = std::min(
-        vect_tile_width, int_ceil_div(grid_width - tile_c * tile_width, spatial_parallelism));
+    // Only used for input size calculations.
+    GridImpl grid(grid_height, grid_width);
+    sycl::id<2> tile_id(tile_r, tile_c);
+    sycl::range<2> max_tile_range(tile_height, tile_width);
+    sycl::range<2> halo_range(halo_height, halo_width);
 
     sycl::queue working_queue;
 
     working_queue.submit([&](sycl::handler &cgh) {
-        // Using negative numbers here to make life easier.
-        int start_row = tile_r * tile_height - halo_height;
-        int end_row = start_row + output_tile_section_height + 2 * halo_height;
-        int vect_start_column = tile_c * vect_tile_width - (halo_width / spatial_parallelism);
-        int vect_end_column = vect_start_column + vect_output_tile_section_width +
-                              2 * (halo_width / spatial_parallelism);
+        std::array<std::ptrdiff_t, 2> tile_offset =
+            grid.get_haloed_tile_offset(tile_id, max_tile_range, halo_range, true, false);
+        sycl::range<2> tile_range =
+            grid.get_haloed_tile_range(tile_id, max_tile_range, halo_range, true, false);
 
         cgh.single_task([=]() {
-            for (int r = start_row; r < end_row; r++) {
-                for (int vect_c = vect_start_column; vect_c < vect_end_column; vect_c++) {
+            for (std::size_t local_r = 0; local_r < tile_range[0]; local_r++) {
+                for (std::size_t local_vect_c = 0; local_vect_c < tile_range[1]; local_vect_c++) {
                     CellVector input_vector;
 
 #pragma unroll
                     for (int i_cell = 0; i_cell < spatial_parallelism; i_cell++) {
-                        int c = vect_c * spatial_parallelism + i_cell;
+                        std::ptrdiff_t r = local_r + tile_offset[0];
+                        std::ptrdiff_t c =
+                            (local_vect_c + tile_offset[1]) * spatial_parallelism + i_cell;
                         if (r >= 0 && c >= 0 && r < grid_height && c < grid_width) {
-                            input_vector[i_cell] =
-                                Cell{r, c, int(iteration_offset), 0, CellStatus::Normal};
+                            input_vector.value[i_cell] =
+                                Cell{int(r), int(c), int(iteration_offset), 0, CellStatus::Normal};
                         } else {
-                            input_vector[i_cell] = Cell::halo();
+                            input_vector.value[i_cell] = Cell::halo();
                         }
                     }
 
@@ -94,14 +99,14 @@ void test_tiling_kernel(std::size_t grid_height, std::size_t grid_width, std::si
     TDVGlobalState global_state(TransFunc(), iteration_offset, target_i_iteration);
     working_queue.submit([&](sycl::handler &cgh) {
         TDVKernelArgument kernel_argument(global_state, cgh, iteration_offset, target_i_iteration);
+        sycl::id<2> tile_offset = grid.get_tile_offset(tile_id, max_tile_range, false);
         TestExecutionKernel kernel(TransFunc(), iteration_offset, target_i_iteration,
-                                   tile_r * tile_height, tile_c * tile_width, grid_height,
-                                   grid_width, Cell::halo(), kernel_argument);
+                                   tile_offset[0], tile_offset[1], grid_height, grid_width,
+                                   Cell::halo(), kernel_argument);
         cgh.single_task(kernel);
     });
 
-    buffer<CellVector, 2> output_buffer(
-        range<2>(output_tile_section_height, vect_output_tile_section_width));
+    buffer<CellVector, 2> output_buffer(grid.get_tile_range(tile_id, max_tile_range, true));
 
     working_queue.submit([&](sycl::handler &cgh) {
         accessor output_buffer_ac(output_buffer, cgh, read_write);
@@ -115,14 +120,15 @@ void test_tiling_kernel(std::size_t grid_height, std::size_t grid_width, std::si
     });
 
     host_accessor output_buffer_ac(output_buffer, read_only);
+    sycl::id<2> vect_tile_offset = grid.get_tile_offset(tile_id, max_tile_range, true);
     for (std::size_t local_r = 0; local_r < output_buffer_ac.get_range()[0]; local_r++) {
         for (std::size_t vect_local_c = 0; vect_local_c < output_buffer_ac.get_range()[1];
              vect_local_c++) {
             for (std::size_t i_cell = 0; i_cell < spatial_parallelism; i_cell++) {
-                std::size_t r = tile_r * tile_height + local_r;
-                std::size_t c = tile_c * tile_width + vect_local_c * spatial_parallelism + i_cell;
+                std::size_t r = vect_tile_offset[0] + local_r;
+                std::size_t c = (vect_tile_offset[1] + vect_local_c) * spatial_parallelism + i_cell;
 
-                Cell cell = output_buffer_ac[local_r][vect_local_c][i_cell];
+                Cell cell = output_buffer_ac[local_r][vect_local_c].value[i_cell];
                 if (c < grid_width) {
                     REQUIRE(cell.r == r);
                     REQUIRE(cell.c == c);

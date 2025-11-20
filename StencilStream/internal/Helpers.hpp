@@ -18,21 +18,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include <numeric>
+#include <array>
+#include <stdint.h>
+
+#if defined(STENCILSTREAM_NAMED_KERNELS)
+    #define STENCILSTREAM_NAMED_SINGLE_TASK(Name, argument) single_task<class Name>(argument)
+#else
+    #define STENCILSTREAM_NAMED_SINGLE_TASK(Name, argument) single_task(argument)
+#endif
 
 namespace stencil {
-
-/**
- * \brief Compute the number of words necessary to store a given number of cells.
- *
- * Some backends store cells in groups called words. Each word contains a certain number of cells,
- * and this function computes how many words are needed to store a certain number of cells. This is
- * the total number of cells divided by the number of cells in a word, plus one additional word if
- * the word length doesn't divide the total number of cells.
- */
-inline constexpr std::size_t n_cells_to_n_words(std::size_t n_cells, std::size_t word_length) {
-    return n_cells / word_length + (n_cells % word_length == 0 ? 0 : 1);
-}
+namespace internal {
 
 /**
  * \brief A container with padding to the next power of two.
@@ -49,4 +45,40 @@ template <typename T> inline constexpr T int_ceil_div(T a, T b) {
     return a / b + ((a % b == 0) ? 0 : 1);
 }
 
+struct kernel_input_ch0 {
+    static constexpr unsigned id = 0;
+};
+
+struct kernel_output_ch0 {
+    static constexpr unsigned id = 1;
+};
+
+struct kernel_input_ch1 {
+    static constexpr unsigned id = 2;
+};
+
+struct kernel_output_ch1 {
+    static constexpr unsigned id = 3;
+};
+
+struct kernel_input_ch2 {
+    static constexpr unsigned id = 4;
+};
+
+struct kernel_output_ch2 {
+    static constexpr unsigned id = 5;
+};
+
+struct kernel_input_ch3 {
+    static constexpr unsigned id = 6;
+};
+
+struct kernel_output_ch3 {
+    static constexpr unsigned id = 7;
+};
+
+constexpr std::size_t pipeword_size = 32;
+using pipeword_t = std::array<uint8_t, pipeword_size> __attribute__((aligned(pipeword_size)));
+
+} // namespace internal
 } // namespace stencil

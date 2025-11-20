@@ -18,7 +18,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include "../Cell.hpp"
 #include "../Parameters.hpp"
 #include "Material.hpp"
 #include <StencilStream/Stencil.hpp>
@@ -26,14 +25,18 @@
 class LUTResolver {
   public:
     struct MaterialCell {
-        Cell cell;
+        float ex, ey, hz, hz_sum;
         uindex_ring_t index;
 
-        static MaterialCell halo() { return MaterialCell{Cell::halo(), 0}; }
+        static MaterialCell halo() { return MaterialCell{0.0, 0.0, 0.0, 0.0, 0}; }
 
         static MaterialCell from_parameters(Parameters const &parameters, size_t ring_index) {
-            return MaterialCell{Cell::halo(), uindex_ring_t(ring_index)};
+            return MaterialCell{0.0, 0.0, 0.0, 0.0, uindex_ring_t(ring_index)};
         }
+
+        static constexpr auto fields =
+            std::make_tuple(&MaterialCell::ex, &MaterialCell::ey, &MaterialCell::hz,
+                            &MaterialCell::hz_sum, &MaterialCell::index);
     };
 
     LUTResolver(Parameters const &parameters) : materials() {

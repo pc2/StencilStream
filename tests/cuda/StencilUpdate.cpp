@@ -27,12 +27,21 @@ using namespace sycl;
 using namespace stencil;
 using namespace stencil::cuda;
 
-using StencilUpdateImpl = StencilUpdate<FPGATransFunc<1>>;
-using GridImpl = Grid<Cell>;
+TEST_CASE("cuda::StencilUpdate (Normal)", "[cuda::StencilUpdate]") {
+    using StencilUpdateImpl = StencilUpdate<FPGATransFunc<1>, false>;
+    using GridImpl = Grid<Cell>;
 
-static_assert(concepts::StencilUpdate<StencilUpdateImpl, FPGATransFunc<1>, GridImpl>);
+    test_stencil_update<GridImpl, StencilUpdateImpl>(64, 64, 0, 1);
+    test_stencil_update<GridImpl, StencilUpdateImpl>(64, 64, 0, 1);
+    test_stencil_update<GridImpl, StencilUpdateImpl>(64, 64, 32, 64);
+    test_stencil_update<GridImpl, StencilUpdateImpl>(32, 64, 0, 1);
+    test_stencil_update<GridImpl, StencilUpdateImpl>(64, 32, 0, 1);
+}
 
-TEST_CASE("cuda::StencilUpdate", "[cuda::StencilUpdate]") {
+TEST_CASE("cuda::StencilUpdate (Split cell structure)", "[cuda::StencilUpdate]") {
+    using StencilUpdateImpl = StencilUpdate<FPGATransFunc<1>, true>;
+    using GridImpl = Grid<Cell>;
+
     test_stencil_update<GridImpl, StencilUpdateImpl>(64, 64, 0, 1);
     test_stencil_update<GridImpl, StencilUpdateImpl>(64, 64, 0, 1);
     test_stencil_update<GridImpl, StencilUpdateImpl>(64, 64, 32, 64);

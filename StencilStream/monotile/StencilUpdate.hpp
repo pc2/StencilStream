@@ -19,12 +19,18 @@
  */
 #pragma once
 #include "Grid.hpp"
-#include "StencilUpdateKernel.hpp"
+#include "internal/StencilUpdateDesign.hpp"
 #include <chrono>
+#include <pc2/queue_extensions.hpp>
 #include <type_traits>
 
 namespace stencil {
 namespace monotile {
+
+enum class Connectivity {
+    SINGLE_DEVICE,
+    IO_PIPES,
+};
 
 /**
  * \brief A grid updater that applies an iterative stencil code to a grid.
@@ -65,20 +71,23 @@ template <concepts::TransitionFunction F, std::size_t temporal_parallelism = 1,
           std::size_t spatial_parallelism = 1, std::size_t max_grid_height = 1024,
           std::size_t max_grid_width = 1024, std::size_t n_kernels = 1,
           tdv::single_pass::Strategy<F, temporal_parallelism> TDVStrategy =
-              tdv::single_pass::InlineStrategy>
+              tdv::single_pass::InlineStrategy,
+          Connectivity connectivity = Connectivity::SINGLE_DEVICE>
 class StencilUpdate {
   private:
     using Cell = F::Cell;
-    using TDV = typename F::TimeDependentValue;
-
-    template <std::size_t i> class PipeIdentifier;
-
-    using TDVGlobalState = TDVStrategy::template GlobalState<F, temporal_parallelism>;
-    using TDVKernelArgument = typename TDVGlobalState::KernelArgument;
+    using LocalDesign =
+        internal::LocalStencilUpdateDesign<F, temporal_parallelism, spatial_parallelism,
+                                           max_grid_height, max_grid_width, n_kernels, TDVStrategy>;
+    using IOPipeDesign =
+        internal::IOPipeStencilUpdateDesign<F, temporal_parallelism, spatial_parallelism,
+                                            max_grid_height, max_grid_width, n_kernels,
+                                            TDVStrategy>;
+    using Design =
+        std::conditional<connectivity == Connectivity::IO_PIPES, IOPipeDesign, LocalDesign>::type;
 
   public:
-    /// \brief Shorthand for the used and supported grid type.
-    using GridImpl = Grid<Cell, spatial_parallelism>;
+    using GridImpl = Grid<typename F::Cell, spatial_parallelism>;
 
     /**
      * \brief Parameters for the stencil updater.
@@ -110,16 +119,6 @@ class StencilUpdate {
         std::size_t n_iterations = 1;
 
         /**
-         * \brief The device to use for computations.
-         *
-         * For some setups, it might be necessary to explicitly select the device to use for
-         * computation. This can be done for example with the `sycl::ext::intel::fpga_selector_v`
-         * class in the `sycl/ext/intel/fpga_extensions.hpp` header. This selector will select the
-         * first FPGA it sees.
-         */
-        sycl::device device = sycl::device();
-
-        /**
          * \brief Should the stencil updater block until completion, or return immediately after all
          * kernels have been submitted.
          *
@@ -143,8 +142,28 @@ class StencilUpdate {
     /**
      * \brief Create a new stencil updater object.
      */
-    StencilUpdate(Params params)
-        : params(params), n_processed_cells(0), walltime(0.0) {}
+    StencilUpdate(Params params) : params(params), queues(), n_processed_cells(0), walltime(0.0) {
+#if defined(STENCILSTREAM_TARGET_FPGA_EMU)
+        std::function<int(const sycl::device &)> device_selector =
+            sycl::ext::intel::fpga_emulator_selector_v;
+#elif defined(STENCILSTREAM_TARGET_FPGA)
+        std::function<int(const sycl::device &)> device_selector =
+            sycl::ext::intel::fpga_selector_v;
+#else
+    #error                                                                                         \
+        "Please link with the `StencilStream_Monotile`, `StencilStream_MonotileEmulator`, or `StencilStream_MonotileReport` targets!"
+#endif
+
+        if (connectivity == Connectivity::IO_PIPES) {
+            queues = sycl::ext::pc2::mpi_queues<decltype(device_selector), sycl::property_list>(
+                device_selector, Design::n_kernels, {sycl::property::queue::in_order{}});
+        } else {
+            sycl::device device(device_selector);
+            for (std::size_t i_queue = 0; i_queue < Design::n_kernels; i_queue++) {
+                queues.push_back(sycl::queue(device, {sycl::property::queue::in_order{}}));
+            }
+        }
+    }
 
     /**
      * \brief Return a reference to the parameters.
@@ -164,6 +183,11 @@ class StencilUpdate {
      * complete. Otherwise, it will return as soon as all kernels are submitted.
      */
     GridImpl operator()(GridImpl &source_grid) {
+        using namespace stencil::internal;
+
+        int mpi_initialized;
+        MPI_Initialized(&mpi_initialized);
+
         if (source_grid.get_grid_width() < 2) {
             throw std::range_error("The grid is too narrow. The monotile backend can only process "
                                    "grids with at least two columns.");
@@ -174,58 +198,24 @@ class StencilUpdate {
         if (source_grid.get_grid_width() > max_grid_width) {
             throw std::range_error("The grid is too wide for the stencil update kernel.");
         }
-        using in_pipe = sycl::pipe<PipeIdentifier<0>, std::array<Cell, spatial_parallelism>>;
-        using out_pipe =
-            sycl::pipe<PipeIdentifier<n_kernels>, std::array<Cell, spatial_parallelism>>;
 
-        sycl::queue input_queue = sycl::queue(params.device, {sycl::property::queue::in_order{}});
-        sycl::queue output_queue = sycl::queue(params.device, {sycl::property::queue::in_order{}});
-        std::vector<sycl::queue> work_queues;
-        for (std::size_t i_kernel = 0; i_kernel < n_kernels; i_kernel++) {
-            work_queues.push_back(
-                sycl::queue(params.device, {sycl::property::queue::in_order{}}));
+        Design design(params.transition_function, params.halo_value, params.iteration_offset,
+                      params.n_iterations, queues);
+
+        if (mpi_initialized) {
+            MPI_Barrier(MPI_COMM_WORLD);
         }
-
-        GridImpl swap_grid_a = source_grid.make_similar();
-        GridImpl swap_grid_b = source_grid.make_similar();
-
-        GridImpl *pass_source = &source_grid;
-        GridImpl *pass_target = &swap_grid_b;
-
-        F trans_func = params.transition_function;
-        TDVGlobalState tdv_global_state(trans_func, params.iteration_offset, params.n_iterations);
-        sycl::range<2> grid_range = source_grid.get_grid_range();
-
         auto walltime_start = std::chrono::high_resolution_clock::now();
 
-        std::size_t target_i_iteration = params.iteration_offset + params.n_iterations;
-        for (std::size_t i = params.iteration_offset; i < target_i_iteration;
-             i += temporal_parallelism) {
-            pass_source->template submit_read<in_pipe, max_grid_height, max_grid_width>(
-                input_queue);
-
-            submit_work_kernel<0>(
-                work_queues, tdv_global_state, i, target_i_iteration, grid_range);
-
-            pass_target->template submit_write<out_pipe, max_grid_height, max_grid_width>(
-                output_queue);
-
-            if (i == params.iteration_offset) {
-                pass_source = &swap_grid_b;
-                pass_target = &swap_grid_a;
-            } else {
-                std::swap(pass_source, pass_target);
-            }
-        }
-
+        GridImpl result_grid =
+            design.submit_simulation(source_grid, params.iteration_offset, params.n_iterations);
         if (params.blocking) {
-            for (sycl::queue queue : work_queues) {
-                queue.wait();
-            }
-            input_queue.wait();
-            output_queue.wait();
+            design.wait_for_queues();
         }
 
+        if (mpi_initialized) {
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
         auto walltime_end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> walltime = walltime_end - walltime_start;
         this->walltime += walltime.count();
@@ -233,7 +223,7 @@ class StencilUpdate {
         n_processed_cells +=
             params.n_iterations * source_grid.get_grid_height() * source_grid.get_grid_width();
 
-        return *pass_source;
+        return result_grid;
     }
 
     /**
@@ -264,49 +254,8 @@ class StencilUpdate {
     double get_walltime() const { return walltime; }
 
   private:
-    template <std::size_t i_kernel>
-    void
-    submit_work_kernel(std::vector<sycl::queue> work_queues, TDVGlobalState &tdv_global_state,
-                       std::size_t i_iteration, std::size_t target_i_iteration,
-                       sycl::range<2> grid_range)
-        requires(i_kernel < n_kernels)
-    {
-        using in_pipe = sycl::pipe<PipeIdentifier<i_kernel>, std::array<Cell, spatial_parallelism>>;
-        using out_pipe =
-            sycl::pipe<PipeIdentifier<i_kernel + 1>, std::array<Cell, spatial_parallelism>>;
-        constexpr size_t local_temporal_parallelism =
-            temporal_parallelism / n_kernels +
-            ((i_kernel == n_kernels - 1) ? temporal_parallelism % n_kernels : 0);
-        using ExecutionKernelImpl =
-            StencilUpdateKernel<F, TDVKernelArgument, local_temporal_parallelism,
-                                spatial_parallelism, max_grid_height, max_grid_width, in_pipe,
-                                out_pipe>;
-
-        work_queues[i_kernel].submit([&](sycl::handler &cgh) {
-            TDVKernelArgument tdv_kernel_argument(tdv_global_state, cgh, i_iteration,
-                                                  local_temporal_parallelism);
-            ExecutionKernelImpl exec_kernel(params.transition_function, i_iteration,
-                                            target_i_iteration, grid_range[0], grid_range[1],
-                                            params.halo_value, tdv_kernel_argument);
-            cgh.single_task<ExecutionKernelImpl>(exec_kernel);
-        });
-
-        submit_work_kernel<i_kernel + 1>(
-            work_queues, tdv_global_state, i_iteration + local_temporal_parallelism,
-            target_i_iteration, grid_range);
-    }
-
-    template <std::size_t i_kernel>
-    void
-    submit_work_kernel(std::vector<sycl::queue> work_queues, TDVGlobalState &tdv_global_state,
-                       std::size_t i_iteration, std::size_t target_i_iteration,
-                       sycl::range<2> grid_range)
-        requires(i_kernel == n_kernels)
-    {
-        return;
-    }
-
     Params params;
+    std::vector<sycl::queue> queues;
     std::size_t n_processed_cells;
     double walltime;
 };

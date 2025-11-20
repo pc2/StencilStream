@@ -21,8 +21,6 @@
     #include <StencilStream/cpu/StencilUpdate.hpp>
 #elif defined(STENCILSTREAM_BACKEND_CUDA)
     #include <StencilStream/cuda/StencilUpdate.hpp>
-#elif defined(STENCILSTREAM_BACKEND_CUDA_SOA)
-    #include <StencilStream/cuda-soa/StencilUpdate.hpp>
 #else
     #include <StencilStream/monotile/StencilUpdate.hpp>
 #endif
@@ -31,7 +29,6 @@
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
-#include <sycl/ext/intel/fpga_extensions.hpp>
 
 using namespace stencil;
 using json = nlohmann::json;
@@ -57,10 +54,7 @@ struct ThermalConvectionCell {
             .ErrP = 0.0,
         };
     }
-};
 
-#if defined(STENCILSTREAM_BACKEND_CUDA_SOA)
-template <> struct cell_members<ThermalConvectionCell> {
     static constexpr auto fields = std::make_tuple(
         &ThermalConvectionCell::T, &ThermalConvectionCell::Pt, &ThermalConvectionCell::Vx,
         &ThermalConvectionCell::Vy, &ThermalConvectionCell::tau_xx, &ThermalConvectionCell::tau_yy,
@@ -68,7 +62,6 @@ template <> struct cell_members<ThermalConvectionCell> {
         &ThermalConvectionCell::dVyd_tau, &ThermalConvectionCell::ErrV,
         &ThermalConvectionCell::ErrP);
 };
-#endif
 
 #define ALL(FIELD) (stencil[0][0].FIELD)
 #define INN(FIELD) (stencil[1][1].FIELD)
@@ -255,18 +248,14 @@ using ThermalSolverUpdate = cpu::StencilUpdate<ThermalSolverKernel>;
 
 #elif defined(STENCILSTREAM_BACKEND_CUDA)
 using Grid = cuda::Grid<ThermalConvectionCell>;
-using PseudoTransientUpdate = cuda::StencilUpdate<PseudoTransientKernel>;
-using ThermalSolverUpdate = cuda::StencilUpdate<ThermalSolverKernel>;
-
-#elif defined(STENCILSTREAM_BACKEND_CUDA_SOA)
-using Grid = cuda::Grid<ThermalConvectionCell>;
-using PseudoTransientUpdate = cuda::StencilUpdate<PseudoTransientKernel>;
-using ThermalSolverUpdate = cuda::StencilUpdate<ThermalSolverKernel>;
+constexpr bool split_cell_structure = CONVECTION_SPIT_CELL_STRUCT;
+using PseudoTransientUpdate = cuda::StencilUpdate<PseudoTransientKernel, split_cell_structure>;
+using ThermalSolverUpdate = cuda::StencilUpdate<ThermalSolverKernel, split_cell_structure>;
 
 #else
 constexpr size_t max_nx = 1 << 16;
-constexpr size_t max_ny = 768;
-constexpr size_t temporal_parallelism = 8;
+constexpr size_t max_ny = 512;
+constexpr size_t temporal_parallelism = 6;
 constexpr size_t spatial_parallelism = 1;
 constexpr size_t n_kernels = 2;
 using Grid = monotile::Grid<ThermalConvectionCell, spatial_parallelism>;
@@ -365,12 +354,6 @@ int main(int argc, char **argv) {
     double dampX = 1.0 - dmp / nx; // damping term for the x-momentum equation
     double dampY = 1.0 - dmp / ny; // damping term for the y-momentum equation
 
-#if defined(STENCILSTREAM_TARGET_FPGA)
-    sycl::device device(sycl::ext::intel::fpga_selector_v);
-#else
-    sycl::device device;
-#endif
-
     PseudoTransientUpdate pseudo_transient_update({
         .transition_function =
             PseudoTransientKernel{
@@ -391,7 +374,6 @@ int main(int argc, char **argv) {
             },
         .halo_value = ThermalConvectionCell::halo_value(),
         .n_iterations = nerr,
-        .device = device,
         .blocking = true,
     });
 
@@ -472,7 +454,6 @@ int main(int argc, char **argv) {
                 ThermalSolverKernel{.nx = nx, .ny = ny, .dx = dx, .dy = dy, .dt = dt, .DcT = DcT},
             .halo_value = ThermalConvectionCell::halo_value(),
             .n_iterations = 1,
-            .device = device,
         });
         grid = thermal_solver_update(grid);
 

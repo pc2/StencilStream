@@ -121,6 +121,7 @@ concept Grid =
         { grid.copy_to_buffer(buffer) } -> std::same_as<void>;
         { grid.get_grid_height() } -> std::convertible_to<std::size_t>;
         { grid.get_grid_width() } -> std::convertible_to<std::size_t>;
+        { grid.get_grid_range() } -> std::convertible_to<sycl::range<2>>;
         { grid.make_similar() } -> std::same_as<G>;
         {
             typename G::template GridAccessor<sycl::access::mode::read_write>(grid)
@@ -167,7 +168,6 @@ concept StencilUpdate =
         { params.halo_value } -> std::same_as<typename TF::Cell &>;
         { params.iteration_offset } -> std::same_as<std::size_t &>;
         { params.n_iterations } -> std::same_as<std::size_t &>;
-        { params.device } -> std::same_as<sycl::device &>;
     } && TransitionFunction<TF> && Grid<G, typename TF::Cell> &&
     (std::is_class<typename SU::Params>::value);
 
