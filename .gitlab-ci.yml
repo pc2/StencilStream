@@ -300,7 +300,7 @@ CUDA benchmark:
         - ./scripts/benchmark.jl max_perf ../../build/examples/jacobi/Jacobi5General_cuda 1
     artifacts:
         paths:
-            - examples/*/metrics.cuda.json
+            - examples/*/metrics.*.json
 # =======
 # Release
 # =======
