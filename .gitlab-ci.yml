@@ -141,7 +141,7 @@ hotspot (monotile) benchmark:
     variables:
         STST_EXECUTABLE: hotspot_mono
         STST_VARIANT: monotile
-        STST_N_RANKS: 24
+        STST_N_RANKS: 2
 
 # ================
 # Hotspot (Tiling)
@@ -198,7 +198,7 @@ fdtd (monotile) benchmark:
     variables:
         STST_EXECUTABLE: fdtd_coef_device_mono
         STST_VARIANT: monotile
-        STST_N_RANKS: 24
+        STST_N_RANKS: 2
 
 # =============
 # FDTD (Tiling)
@@ -250,7 +250,7 @@ jacobi (monotile) benchmark:
     variables:
         STST_EXAMPLE: "jacobi"
         STST_EXECUTABLE: "Jacobi5General_mono"
-        STST_N_RANKS: 24
+        STST_N_RANKS: 2
 
 # ===============
 # Jacobi (Tiling)
@@ -300,7 +300,7 @@ CUDA benchmark:
         - ./scripts/benchmark.jl max_perf ../../build/examples/jacobi/Jacobi5General_cuda 1
     artifacts:
         paths:
-            - examples/*/metrics.cuda.json
+            - examples/*/metrics.*.json
 # =======
 # Release
 # =======
