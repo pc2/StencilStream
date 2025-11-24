@@ -26,14 +26,30 @@ target_compile_definitions(hotspot_cuda_naive PUBLIC HOTSPOT_SPLIT_CELL_STRUCT=0
 
 # Monotile versions
 add_executable(hotspot_mono hotspot.cpp)
+target_compile_definitions(hotspot_mono PUBLIC HOTSPOT_MULTI_FPGA=0)
 target_link_libraries(hotspot_mono PUBLIC StencilStream_Monotile)
 target_link_options(hotspot_mono PUBLIC -Xsseed=3116)
 
 add_executable(hotspot_mono_emu hotspot.cpp)
+target_compile_definitions(hotspot_mono_emu PUBLIC HOTSPOT_MULTI_FPGA=0)
 target_link_libraries(hotspot_mono_emu PUBLIC StencilStream_MonotileEmulator)
 
 add_executable(hotspot_mono_report hotspot.cpp)
+target_compile_definitions(hotspot_mono_report PUBLIC HOTSPOT_MULTI_FPGA=0)
 target_link_libraries(hotspot_mono_report PUBLIC StencilStream_MonotileReport)
+
+add_executable(hotspot_multi_mono hotspot.cpp)
+target_compile_definitions(hotspot_multi_mono PUBLIC HOTSPOT_MULTI_FPGA=1)
+target_link_libraries(hotspot_multi_mono PUBLIC StencilStream_Monotile)
+target_link_options(hotspot_multi_mono PUBLIC -Xsseed=3116)
+
+add_executable(hotspot_multi_mono_emu hotspot.cpp)
+target_compile_definitions(hotspot_multi_mono_emu PUBLIC HOTSPOT_MULTI_FPGA=1)
+target_link_libraries(hotspot_multi_mono_emu PUBLIC StencilStream_MonotileEmulator)
+
+add_executable(hotspot_multi_mono_report hotspot.cpp)
+target_compile_definitions(hotspot_multi_mono_report PUBLIC HOTSPOT_MULTI_FPGA=1)
+target_link_libraries(hotspot_multi_mono_report PUBLIC StencilStream_MonotileReport)
 
 # Tiling versions
 add_executable(hotspot_tiling hotspot.cpp)

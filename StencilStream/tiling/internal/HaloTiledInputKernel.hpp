@@ -50,7 +50,8 @@ class HaloTiledInputKernel {
 
     HaloTiledInputKernel(GridImpl grid, sycl::handler &cgh, sycl::id<2> tile_id, Cell halo_value)
         : accessor(grid.get_internal().get_access(cgh, sycl::read_only)),
-          grid_height(grid.get_grid_height()), grid_width(grid.get_grid_width(false)), vect_grid_width(grid.get_grid_width(true)), vect_tile_offset(0, 0), tile_height(0),
+          grid_height(grid.get_grid_height()), grid_width(grid.get_grid_width(false)),
+          vect_grid_width(grid.get_grid_width(true)), vect_tile_offset(0, 0), tile_height(0),
           vect_tile_width(0), halo_value(halo_value) {
         sycl::range<2> max_tile_range(max_tile_height, max_tile_width);
         sycl::range<2> tile_id_range = grid.get_tile_id_range(max_tile_range);

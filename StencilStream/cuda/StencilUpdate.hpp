@@ -290,7 +290,7 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
         // Run the simulation.
         for (std::size_t i_local_iter = 0; i_local_iter < params.n_iterations; i_local_iter++) {
             std::size_t i_iter = i_local_iter + params.iteration_offset;
-            
+
             for (std::size_t i_subiter = 0; i_subiter < F::n_subiterations; i_subiter++) {
                 sycl::event work_event = queue.submit([&](sycl::handler &cgh) {
                     auto acc_tuple_pass_source = std::apply(

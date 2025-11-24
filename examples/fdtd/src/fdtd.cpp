@@ -47,15 +47,41 @@ using TDVStrategy = tdv::single_pass::PrecomputeOnHostStrategy;
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
     #include <StencilStream/monotile/StencilUpdate.hpp>
 
+    #if FDTD_MULTI_FPGA == 1
+constexpr size_t temporal_parallelism = 100;
+constexpr size_t spatial_parallelism = 1;
+constexpr size_t tile_width = 512;
+// monotile and CPU. More than a quadratic tile doesn't make sense.
+constexpr size_t tile_height = tile_width;
+constexpr monotile::Connectivity connectivity = monotile::Connectivity::IO_PIPES;
+    #else
+constexpr size_t temporal_parallelism = 52;
+constexpr size_t spatial_parallelism = 2;
+constexpr size_t tile_width = 1024;
+// monotile and CPU. More than a quadratic tile doesn't make sense.
+constexpr size_t tile_height = tile_width;
+constexpr monotile::Connectivity connectivity = monotile::Connectivity::SINGLE_DEVICE;
+    #endif
+
 using Grid = monotile::Grid<CellImpl, spatial_parallelism>;
 using StencilUpdate =
     monotile::StencilUpdate<KernelImpl, temporal_parallelism, spatial_parallelism, tile_height,
-                            tile_width, n_kernels, TDVStrategy, monotile::Connectivity::IO_PIPES>;
+                            tile_width, temporal_parallelism / 4, TDVStrategy, connectivity>;
+
 #elif defined(STENCILSTREAM_BACKEND_TILING)
     #include <StencilStream/tiling/StencilUpdate.hpp>
-using StencilUpdate = tiling::StencilUpdate<KernelImpl, temporal_parallelism, spatial_parallelism,
-                                            tile_height, tile_width, n_kernels, TDVStrategy>;
+
+constexpr size_t temporal_parallelism = 52;
+constexpr size_t spatial_parallelism = 2;
+constexpr size_t tile_width = 768;
+// tiling, make tile as wide as possible.
+constexpr size_t tile_height = 1 << 16;
+
+using StencilUpdate =
+    tiling::StencilUpdate<KernelImpl, temporal_parallelism, spatial_parallelism, tile_height,
+                          tile_width, temporal_parallelism / 4, TDVStrategy>;
 using Grid = StencilUpdate::GridImpl;
+
 #elif defined(STENCILSTREAM_BACKEND_CPU)
     #include <StencilStream/cpu/StencilUpdate.hpp>
 using Grid = cpu::Grid<CellImpl>;
@@ -140,7 +166,7 @@ void save_frame(Grid frame_buffer, size_t iteration_index, CellField field,
 }
 
 int main(int argc, char **argv) {
-#if defined(STENCILSTREAM_BACKEND_MONOTILE)
+#if defined(STENCILSTREAM_BACKEND_MONOTILE) && FDTD_MULTI_FPGA == 1
     MPI_Init(NULL, NULL);
 
     int rank, n_ranks;
@@ -148,7 +174,7 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &n_ranks);
 #else
     int rank = 0;
-    int n_ranks = 0;
+    int n_ranks = 1;
 #endif
 
     Parameters parameters(argc, argv);
@@ -225,7 +251,7 @@ int main(int argc, char **argv) {
         save_frame(grid, n_timesteps, CellField::HZ_SUM, parameters);
     }
 
-#if defined(STENCILSTREAM_BACKEND_MONOTILE)
+#if defined(STENCILSTREAM_BACKEND_MONOTILE) && FDTD_MULTI_FPGA == 1
     MPI_Finalize();
 #endif
     return 0;
