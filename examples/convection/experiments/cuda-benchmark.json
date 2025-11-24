@@ -12,7 +12,7 @@
     "Pra": 1e3,
 
     "iterMax": 50000,
-    "nt": 10,
+    "nt": 100,
     "nout": 10,
     "nerr": 100,
     "epsilon": 1e-4,
