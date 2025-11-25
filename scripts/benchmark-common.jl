@@ -73,7 +73,13 @@ function f_effective(info::BenchmarkInformation)
         f_link = Inf
     end
     mem_width = 64
-    f_mem = info.f * mem_width / padded_vector_size
+    if mem_width == padded_vector_size
+        f_mem = info.f
+    elseif mem_width > padded_vector_size
+        f_mem = info.f * padded_vector_size / mem_width
+    else
+        f_mem = info.f * mem_width / padded_vector_size
+    end
     minimum([f_link, f_mem, info.f])
 end
 
@@ -115,7 +121,7 @@ function model_runtime(info::BenchmarkInformation)
         c_prime = l_fpga + (info.n_grid_rows * n_grid_col_vects(info))
         c_pass = c_prime
         if !isnothing(info.n_ranks)
-            c_pass += (info.n_ranks - 1) * (l_fpga + l_link)
+            c_pass += l_link + (info.n_ranks - 1) * (l_fpga + l_link)
         end
     elseif info.variant == :tiling
         c_pass = 0
@@ -163,13 +169,13 @@ function setup_io_pipes(n_ranks, variant)
     run(command)
 end
 
-function warmup_cluster(command, n_ranks, variant; links_preconfigured=false)
+function warmup_cluster(command, n_ranks, variant; links_preconfigured=false, warmup_time="2m")
     warmup_successful = false
     for warmup_try in 1:3
         if warmup_try > 1 || !links_preconfigured
             setup_io_pipes(n_ranks, variant)
         end
-        r = run(Cmd(`timeout 2m $command`, ignorestatus=true))
+        r = run(Cmd(`timeout $warmup_time $command`, ignorestatus=true))
         if r.exitcode == 0
             warmup_successful = true
             break
