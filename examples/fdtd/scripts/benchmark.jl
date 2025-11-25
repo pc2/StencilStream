@@ -114,7 +114,9 @@ t_max_for_n_iters(n_iters, experiment) = (n_iters * experiment_dt(experiment)) /
 function deep_grid_scaling_benchmark(exec, variant, n_ranks)
     experiment = open(JSON.parse, "./experiments/mono_benchmark.json")
     if variant == :cuda || variant == :tiling
-        max_grid_wh = √(MEMORY_SIZE[variant] / 3 / CELL_SIZE) # Maximal grid size that fits in global memory
+        # Maximal grid size that fits in global memory and is indexable with the 32-bit signed integers
+        max_n_cells = min(MEMORY_SIZE[config.variant] / 3 / CELL_SIZE, 2^31)
+        max_grid_wh = √(max_n_cells)
         # Round down to the next-lowest power of √2.
         # We scale in power-of-√2 steps, so that each grid is about half the size of the next-biggest
         grid_wh = (√2)^floor(log(√2, max_grid_wh))
