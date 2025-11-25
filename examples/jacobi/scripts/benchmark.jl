@@ -103,7 +103,7 @@ function max_perf_benchmark(exe, n_ranks, config::JacobiConfig)
         target_total_updates = target_runtime * min(mem_throughput / cell_size, fp_throughput / config.n_operations_per_cell)
     else
         total_parallelism = config.temporal_parallelism * config.spatial_parallelism * n_ranks
-        target_total_updates = target_runtime * total_parallelism * f
+        target_total_updates = target_runtime * total_parallelism * config.f
     end
     n_timesteps = target_total_updates / grid_wh^2
     if config.variant != :cuda
