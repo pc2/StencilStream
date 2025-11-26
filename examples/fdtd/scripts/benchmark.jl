@@ -4,7 +4,7 @@ include("../../../scripts/benchmark-common.jl")
 const N_SUBITERATIONS = 2
 const OPERATIONS_PER_CELL = 8 + (6 + 4 + 2 + 2 + 2) # Including all paths, excluding source wave computation
 const CELL_SIZE = 4 * (4 + 4) # bytes, including material coefficients
-const TEMPORAL_PARALLELISM = Dict(:mono => 52, :multi_mono => 100, :tiling => 52, :cuda => 1)
+const TEMPORAL_PARALLELISM = Dict(:mono => 88, :multi_mono => 100, :tiling => 52, :cuda => 1)
 const SPATIAL_PARALLELISM = Dict(:mono => 2, :multi_mono => 1, :tiling => 2, :cuda => 1)
 const TILE_HEIGHT = Dict(:mono => 1024, :multi_mono => 512, :tiling => 2^16, :cuda => nothing)
 const TILE_WIDTH = Dict(:mono => 1024, :multi_mono => 512, :tiling => 768, :cuda => nothing)
