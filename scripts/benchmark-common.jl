@@ -65,7 +65,7 @@ end
 
 function f_effective(info::BenchmarkInformation)
     padded_vector_size =  2^ceil(log2(info.cell_size * info.spatial_parallelism))
-    if !isnothing(info.n_ranks) && info.variant == :monotile
+    if !isnothing(info.n_ranks) && info.variant == :multi_mono
         s_link = 32 # pipeword size
         f_link_single = 5.0e9 / s_link # clock rate of single IO pipe
         f_link = 2f_link_single * s_link / padded_vector_size
@@ -82,7 +82,7 @@ workload(info::BenchmarkInformation) = grid_size(info) * info.n_iters
 function n_passes(info::BenchmarkInformation)
     if info.variant == :cuda
         nothing
-    elseif (info.variant == :monotile && !isnothing(info.n_ranks))
+    elseif (info.variant == :multi_mono && !isnothing(info.n_ranks))
         ceil(info.n_iters / info.temporal_parallelism / info.n_ranks)
     else
         ceil(info.n_iters / info.temporal_parallelism)
@@ -108,7 +108,7 @@ measured_flops(info::BenchmarkInformation) = measured_throughput(info) * info.op
 function model_runtime(info::BenchmarkInformation)
     l_link = 0.5e-3 / info.f
 
-    if info.variant == :monotile
+    if info.variant == :mono || info.variant == :multi_mono
         l_compute_unit = n_grid_col_vects(info) + 1
         l_fpga = n_cus(info) * l_compute_unit
 
@@ -142,7 +142,7 @@ model_accurracy(info::BenchmarkInformation) = model_throughput(info) / measured_
 occupancy(info::BenchmarkInformation) = measured_throughput(info) / max_compute_throughput(info)
 
 function setup_io_pipes(n_ranks, variant)
-    if variant != :monotile
+    if variant != :multi_mono
         throw("not implemented")
     end
     command = ["changeFPGAlinks"]

@@ -6,10 +6,10 @@ using Statistics
 const GLOBAL_MEMORY_SPACE = 32 * 2^30
 const OPERATIONS_PER_CELL = 15
 const CELL_SIZE = 8 # bytes
-const TEMPORAL_PARALLELISM = Dict(:monotile => 108, :tiling => 48, :cuda => 1)
-const SPATIAL_PARALLELISM = Dict(:monotile => 4, :tiling => 8, :cuda => 1)
-const TILE_HEIGHT = Dict(:monotile => 4096, :tiling => 2^16, :cuda => nothing)
-const TILE_WIDTH = Dict(:monotile => 4096, :tiling => 4096, :cuda => nothing)
+const TEMPORAL_PARALLELISM = Dict(:monotile => 54, :multi_mono => 108, :tiling => 48, :cuda => 1)
+const SPATIAL_PARALLELISM = Dict(:monotile => 8, :multi_mono => 4, :tiling => 8, :cuda => 1)
+const TILE_HEIGHT = Dict(:monotile => 8192, :multi_mono => 4096, :tiling => 2^16, :cuda => nothing)
+const TILE_WIDTH = Dict(:monotile => 8192, :multi_mono => 4096, :tiling => 4096, :cuda => nothing)
 
 function create_experiment(n_rows, n_columns, temp_file, power_file)
     begin
@@ -30,6 +30,11 @@ function max_perf_benchmark(exec, variant, n_ranks)
         grid_height = TILE_HEIGHT[:monotile]
         grid_width = TILE_WIDTH[:monotile]
         n_iters = 2_000 * TEMPORAL_PARALLELISM[:monotile]
+        n_samples = 5
+    elseif variant == :multi_mono
+        grid_height = TILE_HEIGHT[:multi_mono]
+        grid_width = TILE_WIDTH[:multi_mono]
+        n_iters = 2_000 * n_ranks * TEMPORAL_PARALLELISM[:multi_mono]
         n_samples = 5
     elseif variant == :tiling
         max_n_cells = GLOBAL_MEMORY_SPACE / 3 / CELL_SIZE
@@ -61,14 +66,14 @@ function max_perf_benchmark(exec, variant, n_ranks)
 
     command = `$exec $grid_height $grid_width $n_iters $temp_path $power_path $out_path`
 
-    if variant == :monotile
+    if variant == :multi_mono
         mpi_root = ENV["I_MPI_ROOT"]
         command = `$mpi_root/bin/mpirun -n $n_ranks $command`
         warmup_cluster(command, n_ranks, variant)
     end
 
     runtimes = Vector()
-    for i_sample in 1:n_samples
+    for _ in 1:n_samples
         runtime = open(command, "r") do process_in
             line_re = Regex("Walltime: ([0-9]+\\.[0-9]+) s")
             runtime = nothing
@@ -107,14 +112,24 @@ function max_perf_benchmark(exec, variant, n_ranks)
     )
 
     if variant == :cuda
+        target_name = "Hotspot, CUDA"
+    elseif variant == :monotile
+        target_name = "Hotspot, Single-FPGA Monotile"
+    elseif variant == :multi_mono
+        target_name = "Hotspot, Multi-FPGA Monotile"
+    elseif variant == :tiling
+        target_name = "Hotspot, Single-FPGA Tiling"
+    end
+
+    if variant == :cuda
         metrics = Dict(
-            "target" => "Hotspot, CUDA",
+            "target" => target_name,
             "measured" => measured_throughput(info),
             "FLOPS" => measured_flops(info)
         )
     else
         metrics = Dict(
-            "target" => (variant == :monotile) ? "Hotspot, Monotile" : "Hotspot, Tiling",
+            "target" => target_name,
             "parallelity" => parallelity(info),
             "f" => info.f,
             "occupancy" => occupancy(info),
@@ -129,7 +144,7 @@ end
 if size(ARGS) != (4,)
     println(stderr, "Usage: $PROGRAM_FILE <benchmark> <path to executable> <variant> <n_ranks>")
     println(stderr, "Possible benchmarks: max_perf")
-    println(stderr, "Possible variants: monotile, tiling, cuda")
+    println(stderr, "Possible variants: mono, multi_mono, tiling, cuda")
     exit(1)
 end
 

@@ -4,14 +4,17 @@ include("../../../scripts/benchmark-common.jl")
 const N_SUBITERATIONS = 2
 const OPERATIONS_PER_CELL = 8 + (6 + 4 + 2 + 2 + 2) # Including all paths, excluding source wave computation
 const CELL_SIZE = 4 * (4 + 4) # bytes, including material coefficients
-const TEMPORAL_PARALLELISM = Dict(:monotile => 100, :tiling => 52, :cuda => 1)
-const SPATIAL_PARALLELISM = Dict(:monotile => 1, :tiling => 2, :cuda => 1)
-const TILE_HEIGHT = Dict(:monotile => 512, :tiling => 2^16, :cuda => nothing)
-const TILE_WIDTH = Dict(:monotile => 1024, :tiling => 768, :cuda => nothing)
+const TEMPORAL_PARALLELISM = Dict(:mono => 52, :multi_mono => 100, :tiling => 52, :cuda => 1)
+const SPATIAL_PARALLELISM = Dict(:mono => 2, :multi_mono => 1, :tiling => 2, :cuda => 1)
+const TILE_HEIGHT = Dict(:mono => 1024, :multi_mono => 512, :tiling => 2^16, :cuda => nothing)
+const TILE_WIDTH = Dict(:mono => 1024, :multi_mono => 512, :tiling => 768, :cuda => nothing)
 
 function max_perf_benchmark(exe, variant, n_ranks)
-    if variant == :monotile 
+    if variant == :mono
         experiment_path = "./experiments/mono_benchmark.json"
+        n_samples = 10
+    elseif variant == :multi_mono
+        experiment_path = "./experiments/multi_mono_benchmark.json"
         n_samples = 10
     elseif variant == :tiling
         experiment_path = "./experiments/tiling_benchmark.json"
@@ -23,7 +26,7 @@ function max_perf_benchmark(exe, variant, n_ranks)
     out_dir = Base.Filesystem.mkpath("./out/")
     command = `$exe -c $experiment_path -o $out_dir`
 
-    if variant == :monotile
+    if variant == :multi_mono
         mpi_root = ENV["I_MPI_ROOT"]
         command = `$mpi_root/bin/mpirun -n $n_ranks $exe -c $experiment_path -o $out_dir`
         warmup_cluster(command, n_ranks, variant)
@@ -76,14 +79,24 @@ function max_perf_benchmark(exe, variant, n_ranks)
     )
 
     if variant == :cuda
+        target_name = "FDTD, CUDA"
+    elseif variant == :mono
+        target_name = "FDTD, Single-FPGA Monotile"
+    elseif variant == :multi_mono
+        target_name = "FDTD, Multi-FPGA Monotile"
+    elseif variant == :tiling
+        target_name = "FDTD, Tiling"
+    end
+
+    if variant == :cuda
         metrics = Dict(
-            "target" => "FDTD, CUDA",
+            "target" => target_name,
             "measured" => measured_throughput(info),
             "FLOPS" => measured_flops(info)
         )
     else
         metrics = Dict(
-            "target" => (variant == :monotile) ? "FDTD, Monotile" : "FDTD, Tiling",
+            "target" => target_name,
             "parallelity" => parallelity(info),
             "f" => info.f,
             "occupancy" => occupancy(info),
@@ -96,15 +109,25 @@ function max_perf_benchmark(exe, variant, n_ranks)
     metrics
 end
 
-if size(ARGS) != (4,)
+function print_usage()
     println(stderr, "Usage: $PROGRAM_FILE <benchmark> <path to executable> <variant> <n_fpgas>")
     println(stderr, "Possible benchmarks: max_perf")
-    println(stderr, "Possible variants: monotile, tiling, cuda")
+    println(stderr, "Possible variants: mono, multi_mono, tiling, cuda")
     exit(1)
+end
+
+if size(ARGS) != (4,)
+    print_usage()
 end
 
 exe = ARGS[2]
 variant = Symbol(ARGS[3])
+if variant ∉ [:mono, :multi_mono, :tiling, :cuda]
+    println(stderr, "Unsupported variant $variant")
+    println(stderr)
+    print_usage()
+end
+
 n_ranks = parse(Int, ARGS[4])
 
 if ARGS[1] == "max_perf"

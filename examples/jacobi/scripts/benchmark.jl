@@ -48,7 +48,7 @@ function max_perf_benchmark(exe, n_ranks)
     command = `$exe $(grid_wh) $(grid_wh) $(n_timesteps) /dev/null $(arguments)`
 
     # Set up the multi-FPGA cluster
-    if variant == :monotile
+    if variant == :multi_mono
         command = `$mpirun -n $n_ranks $command`
 
         # Warmup to exclude programming from the benchmark
@@ -91,16 +91,29 @@ function max_perf_benchmark(exe, n_ranks)
         mean(runtimes)
     )
 
+    name_components = match(r"Jacobi([0-9])((Constant)|(General))", basename(exe_name))
+    points = parse(Int, name_components[1])
+    coef_type = name_components[2]
+    if variant == :mono
+        backend = "Single-FPGA Monotile"
+    elseif variant == :multi_mono
+        backend = "Multi-FPGA Monotile"
+    elseif variant == :tiling
+        backend = "Single-FPGA Tiling"
+    elseif variant == :cuda
+        backend = "CUDA"
+    end
+    target_name = "$(points)-point $coef_type Jacobi, $backend"
+
     if variant == :cuda
         metrics = Dict(
-            "target" => "$exe_name, CUDA",
+            "target" => target_name,
             "measured" => measured_throughput(info),
             "FLOPS" => measured_flops(info)
         )
     else
-        target_name = variant == :monotile ? "Monotile" : "Tiling"
         metrics = Dict(
-            "target" => "$exe_name, $target_name",
+            "target" => target_name,
             "parallelity" => parallelity(info),
             "f" => info.f,
             "occupancy" => occupancy(info),

@@ -21,7 +21,11 @@
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
     #include <StencilStream/monotile/StencilUpdate.hpp>
-const char *variant = "monotile";
+    #if JACOBI_MULTI_FPGA
+const char *variant = "multi_mono";
+    #else
+const char *variant = "mono";
+    #endif
 #elif defined(STENCILSTREAM_BACKEND_TILING)
     #include <StencilStream/tiling/StencilUpdate.hpp>
 const char *variant = "tiling";

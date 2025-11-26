@@ -4,10 +4,10 @@ include("../../../scripts/benchmark-common.jl")
 const N_SUBITERATIONS = 3
 const OPERATIONS_PER_CELL = (5 + 5 + 3 + 6 + 6 + 6) + (10 + 3 + 2 + 14 + 3 + 2) + 2
 const CELL_SIZE = 88 # bytes
-const TEMPORAL_PARALLELISM = Dict(:monotile => 6, :cuda => 1)
-const SPATIAL_PARALLELISM = Dict(:monotile => 1, :cuda => 1)
-const TILE_NX = Dict(:monotile => 2^16, :cuda => nothing)
-const TILE_NY = Dict(:monotile => 512, :cuda => nothing)
+const TEMPORAL_PARALLELISM = Dict(:mono => 6, :cuda => 1)
+const SPATIAL_PARALLELISM = Dict(:mono => 1, :cuda => 1)
+const TILE_NX = Dict(:mono => 2^16, :cuda => nothing)
+const TILE_NY = Dict(:mono => 512, :cuda => nothing)
 
 function analyze_log(logfile)
     iteration_re = r"it = ([0-9]+) \(iter = ([0-9]+), time = ([^)]+)\)"
@@ -65,7 +65,7 @@ function max_perf_benchmark(exe, variant)
             SPATIAL_PARALLELISM[variant],
             TILE_NX[variant],
             TILE_NY[variant],
-            (variant == :monotile) ? load_report_details(exe * ".prj/reports") : nothing,
+            (variant == :mono) ? load_report_details(exe * ".prj/reports") : nothing,
             computation_time
         )
 
@@ -96,6 +96,11 @@ end
 mode = ARGS[1]
 exe = ARGS[2]
 variant = Symbol(ARGS[3])
+if variant ∉ [:mono, :cuda]
+    println(stderr, "Unsupported variant $variant")
+    exit(1)
+end
+
 if mode == "max_perf"
     max_perf_benchmark(exe, variant)
 end
