@@ -111,7 +111,7 @@ convection benchmark:
     variables:
         STST_EXAMPLE: "convection"
         STST_EXECUTABLE: "convection"
-        STST_N_RANKS: "" # Left empty, convection doesn't support multi-FPGA backends yet
+        STST_N_RANKS: "1"
         STST_VARIANT: "mono"
 
 # =======

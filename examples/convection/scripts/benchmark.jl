@@ -93,12 +93,25 @@ function max_perf_benchmark(exe, variant)
     end
 end
 
+function print_usage()
+    println(stderr, "Usage: $PROGRAM_FILE <benchmark> <path to executable> <variant> <n_fpgas>")
+    println(stderr, "Possible benchmarks: max_perf")
+    println(stderr, "Possible variants: mono, cuda")
+    exit(1)
+end
+
+if size(ARGS) != (4,)
+    print_usage()
+end
+
 mode = ARGS[1]
 exe = ARGS[2]
 variant = Symbol(ARGS[3])
+n_ranks = parse(Int, ARGS[4])
 if variant ∉ [:mono, :cuda]
     println(stderr, "Unsupported variant $variant")
-    exit(1)
+    println(stderr)
+    print_usage()
 end
 
 if mode == "max_perf"
