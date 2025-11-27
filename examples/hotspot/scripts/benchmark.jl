@@ -6,7 +6,7 @@ using Statistics
 const GLOBAL_MEMORY_SPACE = 32 * 2^30
 const OPERATIONS_PER_CELL = 15
 const CELL_SIZE = 8 # bytes
-const TEMPORAL_PARALLELISM = Dict(:monotile => 54, :multi_mono => 108, :tiling => 48, :cuda => 1)
+const TEMPORAL_PARALLELISM = Dict(:monotile => 56, :multi_mono => 108, :tiling => 48, :cuda => 1)
 const SPATIAL_PARALLELISM = Dict(:monotile => 8, :multi_mono => 4, :tiling => 8, :cuda => 1)
 const TILE_HEIGHT = Dict(:monotile => 8192, :multi_mono => 4096, :tiling => 2^16, :cuda => nothing)
 const TILE_WIDTH = Dict(:monotile => 8192, :multi_mono => 4096, :tiling => 4096, :cuda => nothing)

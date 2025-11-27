@@ -35,7 +35,7 @@ struct Jacobi1General : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     static constexpr HardwareConfig mono_config = {
-        .temporal_parallelism = 256,
+        .temporal_parallelism = 208,
         .spatial_parallelism = 16,
         .cache_width = 8 * 1024,
     };
@@ -70,7 +70,7 @@ struct Jacobi2Constant : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     static constexpr HardwareConfig mono_config = {
-        .temporal_parallelism = 120,
+        .temporal_parallelism = 108,
         .spatial_parallelism = 16,
         .cache_width = 8 * 1024,
     };
@@ -102,7 +102,7 @@ struct Jacobi3Constant : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     static constexpr HardwareConfig mono_config = {
-        .temporal_parallelism = 76,
+        .temporal_parallelism = 72,
         .spatial_parallelism = 16,
         .cache_width = 16 * 1024,
     };
@@ -166,7 +166,7 @@ struct Jacobi5Constant : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     static constexpr HardwareConfig mono_config = {
-        .temporal_parallelism = 68,
+        .temporal_parallelism = 52,
         .spatial_parallelism = 16,
         .cache_width = 16 * 1024,
     };
@@ -199,7 +199,7 @@ struct Jacobi4General : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     static constexpr HardwareConfig mono_config = {
-        .temporal_parallelism = 28,
+        .temporal_parallelism = 40,
         .spatial_parallelism = 16,
         .cache_width = 16 * 1024,
     };
@@ -237,7 +237,7 @@ struct Jacobi5General : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     static constexpr HardwareConfig mono_config = {
-        .temporal_parallelism = 28,
+        .temporal_parallelism = 40,
         .spatial_parallelism = 16,
         .cache_width = 16 * 1024,
     };
@@ -275,7 +275,7 @@ struct Jacobi9General : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     static constexpr HardwareConfig mono_config = {
-        .temporal_parallelism = 32,
+        .temporal_parallelism = 16,
         .spatial_parallelism = 16,
         .cache_width = 32 * 1024,
     };

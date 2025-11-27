@@ -106,7 +106,7 @@ const monotile::Connectivity connectivity = monotile::Connectivity::IO_PIPES;
     #else
 const size_t max_grid_height = 8192;
 const size_t max_grid_width = 8192;
-const size_t temporal_parallelism = 60;
+const size_t temporal_parallelism = 56;
 const size_t spatial_parallelism = 8;
 const monotile::Connectivity connectivity = monotile::Connectivity::SINGLE_DEVICE;
     #endif
@@ -122,7 +122,7 @@ const size_t tile_height = 1 << 16;
 const size_t tile_width = 4096;
 const size_t temporal_parallelism = 48;
 const size_t spatial_parallelism = 8;
-const size_t n_kernels = temporal_parallelism / 4;
+const size_t n_kernels = temporal_parallelism / 3;
 using StencilUpdate =
     tiling::StencilUpdate<HotspotKernel, temporal_parallelism, spatial_parallelism, tile_height,
                           tile_width, n_kernels>;
