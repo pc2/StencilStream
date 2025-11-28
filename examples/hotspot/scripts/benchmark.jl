@@ -6,10 +6,10 @@ using Statistics
 const GLOBAL_MEMORY_SPACE = 32 * 2^30
 const OPERATIONS_PER_CELL = 15
 const CELL_SIZE = 8 # bytes
-const TEMPORAL_PARALLELISM = Dict(:monotile => 56, :multi_mono => 108, :tiling => 48, :cuda => 1)
-const SPATIAL_PARALLELISM = Dict(:monotile => 8, :multi_mono => 4, :tiling => 8, :cuda => 1)
-const TILE_HEIGHT = Dict(:monotile => 8192, :multi_mono => 4096, :tiling => 2^16, :cuda => nothing)
-const TILE_WIDTH = Dict(:monotile => 8192, :multi_mono => 4096, :tiling => 4096, :cuda => nothing)
+const TEMPORAL_PARALLELISM = Dict(:mono => 54, :multi_mono => 108, :tiling => 48, :cuda => 1)
+const SPATIAL_PARALLELISM = Dict(:mono => 8, :multi_mono => 4, :tiling => 8, :cuda => 1)
+const TILE_HEIGHT = Dict(:mono => 8192, :multi_mono => 4096, :tiling => 2^16, :cuda => nothing)
+const TILE_WIDTH = Dict(:mono => 8192, :multi_mono => 4096, :tiling => 4096, :cuda => nothing)
 
 function create_experiment(n_rows, n_columns, temp_file, power_file)
     begin
@@ -26,10 +26,10 @@ function create_experiment(n_rows, n_columns, temp_file, power_file)
 end
 
 function max_perf_benchmark(exec, variant, n_ranks)
-    if variant == :monotile
-        grid_height = TILE_HEIGHT[:monotile]
-        grid_width = TILE_WIDTH[:monotile]
-        n_iters = 2_000 * TEMPORAL_PARALLELISM[:monotile]
+    if variant == :mono
+        grid_height = TILE_HEIGHT[:mono]
+        grid_width = TILE_WIDTH[:mono]
+        n_iters = 2_000 * TEMPORAL_PARALLELISM[:mono]
         n_samples = 5
     elseif variant == :multi_mono
         grid_height = TILE_HEIGHT[:multi_mono]
@@ -113,10 +113,10 @@ function max_perf_benchmark(exec, variant, n_ranks)
 
     if variant == :cuda
         target_name = "Hotspot, CUDA"
-    elseif variant == :monotile
-        target_name = "Hotspot, Single-FPGA Monotile"
+    elseif variant == :mono
+        target_name = "Hotspot, Single-FPGA mono"
     elseif variant == :multi_mono
-        target_name = "Hotspot, Multi-FPGA Monotile"
+        target_name = "Hotspot, Multi-FPGA mono"
     elseif variant == :tiling
         target_name = "Hotspot, Single-FPGA Tiling"
     end

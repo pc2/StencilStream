@@ -106,7 +106,7 @@ const monotile::Connectivity connectivity = monotile::Connectivity::IO_PIPES;
     #else
 const size_t max_grid_height = 8192;
 const size_t max_grid_width = 8192;
-const size_t temporal_parallelism = 56;
+const size_t temporal_parallelism = 54;
 const size_t spatial_parallelism = 8;
 const monotile::Connectivity connectivity = monotile::Connectivity::SINGLE_DEVICE;
     #endif
