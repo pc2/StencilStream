@@ -55,7 +55,7 @@ constexpr size_t tile_width = 512;
 constexpr size_t tile_height = tile_width;
 constexpr monotile::Connectivity connectivity = monotile::Connectivity::IO_PIPES;
     #else
-constexpr size_t temporal_parallelism = 60;
+constexpr size_t temporal_parallelism = 64;
 constexpr size_t spatial_parallelism = 2;
 constexpr size_t tile_width = 1024;
 // monotile and CPU. More than a quadratic tile doesn't make sense.

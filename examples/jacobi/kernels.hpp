@@ -35,7 +35,7 @@ struct Jacobi1General : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     static constexpr HardwareConfig mono_config = {
-        .temporal_parallelism = 182,
+        .temporal_parallelism = 172,
         .spatial_parallelism = 16,
         .cache_width = 8 * 1024,
     };
@@ -70,7 +70,7 @@ struct Jacobi2Constant : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     static constexpr HardwareConfig mono_config = {
-        .temporal_parallelism = 100,
+        .temporal_parallelism = 104,
         .spatial_parallelism = 16,
         .cache_width = 8 * 1024,
     };
@@ -166,7 +166,7 @@ struct Jacobi5Constant : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     static constexpr HardwareConfig mono_config = {
-        .temporal_parallelism = 60,
+        .temporal_parallelism = 56,
         .spatial_parallelism = 16,
         .cache_width = 16 * 1024,
     };
@@ -199,7 +199,7 @@ struct Jacobi4General : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     static constexpr HardwareConfig mono_config = {
-        .temporal_parallelism = 48,
+        .temporal_parallelism = 52,
         .spatial_parallelism = 16,
         .cache_width = 16 * 1024,
     };
@@ -237,7 +237,7 @@ struct Jacobi5General : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     static constexpr HardwareConfig mono_config = {
-        .temporal_parallelism = 32,
+        .temporal_parallelism = 28,
         .spatial_parallelism = 16,
         .cache_width = 16 * 1024,
     };
@@ -275,7 +275,7 @@ struct Jacobi9General : public stencil::BaseTransitionFunction {
     using Cell = float;
 
     static constexpr HardwareConfig mono_config = {
-        .temporal_parallelism = 8,
+        .temporal_parallelism = 4,
         .spatial_parallelism = 16,
         .cache_width = 32 * 1024,
     };
