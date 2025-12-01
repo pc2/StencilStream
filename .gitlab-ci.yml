@@ -147,7 +147,7 @@ hotspot_multi_mono benchmark:
     variables:
         STST_EXAMPLE: "hotspot"
         STST_EXECUTABLE: "hotspot_multi_mono"
-        STST_N_RANKS: 16
+        STST_N_RANKS: 24
         STST_VARIANT: "multi_mono"
 
 hotspot_tiling synthesis:
@@ -199,7 +199,7 @@ fdtd_coef_device_multi_mono benchmark:
     variables:
         STST_EXAMPLE: "fdtd"
         STST_EXECUTABLE: "fdtd_coef_device_multi_mono"
-        STST_N_RANKS: 1
+        STST_N_RANKS: 24
         STST_VARIANT: "multi_mono"
 
 fdtd_coef_device_tiling synthesis:
@@ -251,7 +251,7 @@ Jacobi5General_multi_mono benchmark:
     variables:
         STST_EXAMPLE: "jacobi"
         STST_EXECUTABLE: "Jacobi5General_multi_mono"
-        STST_N_RANKS: 16
+        STST_N_RANKS: 24
         STST_VARIANT: "" # Left empty, automatically supplied by binary
 
 Jacobi5General_tiling synthesis:

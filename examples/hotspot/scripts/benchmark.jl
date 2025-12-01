@@ -114,11 +114,11 @@ function max_perf_benchmark(exec, variant, n_ranks)
     if variant == :cuda
         target_name = "Hotspot, CUDA"
     elseif variant == :mono
-        target_name = "Hotspot, Single-FPGA mono"
+        target_name = "Hotspot, Single-FPGA Monotile"
     elseif variant == :multi_mono
-        target_name = "Hotspot, Multi-FPGA mono"
+        target_name = "Hotspot, Multi-FPGA Monotile"
     elseif variant == :tiling
-        target_name = "Hotspot, Single-FPGA Tiling"
+        target_name = "Hotspot, Tiling"
     end
 
     if variant == :cuda

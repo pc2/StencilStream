@@ -99,7 +99,7 @@ function max_perf_benchmark(exe, n_ranks)
     elseif variant == :multi_mono
         backend = "Multi-FPGA Monotile"
     elseif variant == :tiling
-        backend = "Single-FPGA Tiling"
+        backend = "Tiling"
     elseif variant == :cuda
         backend = "CUDA"
     end

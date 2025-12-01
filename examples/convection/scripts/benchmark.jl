@@ -77,7 +77,7 @@ function max_perf_benchmark(exe, variant)
             )
         else
             metrics = Dict(
-                "target" => "Convection, Monotile",
+                "target" => "Convection, Single-FPGA Monotile",
                 "parallelity" => parallelity(info),
                 "f" => info.f,
                 "occupancy" => occupancy(info),
