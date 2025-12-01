@@ -213,26 +213,35 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
                     TDV tdv = transition_function.get_time_dependent_value(i_iter);
 
                     auto kernel = [=](sycl::id<2> id) {
+                        std::size_t r = id[0];
+                        std::size_t c = id[1];
+                        if (r >= grid_height || c >= grid_width) {
+                            return;
+                        }
+
+                        sycl::global_ptr<Cell> source_ptr(source_ac);
+                        sycl::global_ptr<Cell> target_ptr(target_ac);
+
                         StencilImpl stencil(id, source_ac.get_range(), i_iter, i_subiter, tdv);
 
                         for (std::size_t rel_r = 0; rel_r < 2 * F::stencil_radius + 1; rel_r++) {
-                            for (std::size_t rel_c = 0; rel_c < 2 * F::stencil_radius + 1;
-                                 rel_c++) {
+                            std::size_t base_i = (r - F::stencil_radius + rel_r) * grid_width + c;
+                            bool is_halo_row = r + rel_r < F::stencil_radius || r + rel_r >= grid_height + F::stencil_radius;
+
+                            for (std::size_t rel_c = 0; rel_c < 2 * F::stencil_radius + 1; rel_c++) {
+                                bool is_halo_col = c + rel_c < F::stencil_radius || c + rel_c >= grid_width + F::stencil_radius;
+
                                 Cell cell;
-                                if (id[0] + rel_r >= F::stencil_radius &&
-                                    id[1] + rel_c >= F::stencil_radius &&
-                                    id[0] + rel_r < grid_height + F::stencil_radius &&
-                                    id[1] + rel_c < grid_width + F::stencil_radius) {
-                                    cell = source_ac[id[0] + rel_r - F::stencil_radius]
-                                                    [id[1] + rel_c - F::stencil_radius];
-                                } else {
+                                if (is_halo_row || is_halo_col) {
                                     cell = halo_value;
+                                } else {
+                                    cell = source_ptr[base_i + rel_c - F::stencil_radius];
                                 }
                                 stencil[sycl::id<2>(rel_r, rel_c)] = cell;
                             }
                         }
 
-                        target_ac[id] = transition_function(stencil);
+                        target_ptr[r * grid_width + c] = transition_function(stencil);
                     };
 
                     cgh.parallel_for(source_ac.get_range(), kernel);
@@ -311,30 +320,35 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
                     TDV tdv = transition_function.get_time_dependent_value(i_iter);
 
                     cgh.parallel_for(grid_range, [=](sycl::id<2> id) {
+                        std::size_t r = id[0];
+                        std::size_t c = id[1];
+                        if (r >= grid_range[0] || c >= grid_range[1]) {
+                            return;
+                        }
+
                         using StencilImpl = Stencil<Cell, F::stencil_radius, TDV>;
                         StencilImpl stencil(id, grid_range, i_iter, i_subiter, tdv);
 
                         for (std::size_t rel_r = 0; rel_r < 2 * F::stencil_radius + 1; rel_r++) {
+                            std::size_t base_i = (r - F::stencil_radius + rel_r) * grid_range[1] + c;
+                            bool is_halo_row = r + rel_r < F::stencil_radius || r + rel_r >= grid_range[0] + F::stencil_radius;
+
                             for (std::size_t rel_c = 0; rel_c < 2 * F::stencil_radius + 1;
                                  rel_c++) {
+                                bool is_halo_col = c + rel_c < F::stencil_radius || c + rel_c >= grid_range[1] + F::stencil_radius;
+
                                 Cell cell;
-                                if (id[0] + rel_r >= F::stencil_radius &&
-                                    id[1] + rel_c >= F::stencil_radius &&
-                                    id[0] + rel_r < grid_range[0] + F::stencil_radius &&
-                                    id[1] + rel_c < grid_range[1] + F::stencil_radius) {
-                                    size_t cell_id =
-                                        (id[0] + rel_r - F::stencil_radius) * grid_range[1] +
-                                        (id[1] + rel_c - F::stencil_radius);
+                                if (is_halo_row || is_halo_col) {
+                                    cell = halo_value;
+                                } else {
+                                    size_t i_cell = base_i + rel_c - F::stencil_radius;
                                     internal::for_each_in_two_tuples(
                                         acc_tuple_pass_source, Cell::fields,
                                         [&](auto &acc, auto member_ptr) {
                                             cell.*member_ptr = static_cast<
-                                                std::remove_reference_t<decltype(acc[cell_id])>>(
-                                                acc[cell_id]);
+                                                std::remove_reference_t<decltype(acc[i_cell])>>(
+                                                acc[i_cell]);
                                         });
-
-                                } else {
-                                    cell = halo_value;
                                 }
                                 stencil[sycl::id<2>(rel_r, rel_c)] = cell;
                             }
