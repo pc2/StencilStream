@@ -38,12 +38,13 @@ function run_benchmark(exe, n_ranks, config::JacobiConfig, grid_wh, n_timesteps;
     arguments = fill(1/config.n_coefficients, config.n_coefficients)
     command = `$exe $(grid_wh) $(grid_wh) $(n_timesteps) /dev/null $(arguments)`
 
-    if config.variant == :monotile
-        command = `$MPIRUN -n $n_ranks $command`
+    # Set up the multi-FPGA cluster
+    if variant == :multi_mono
+        command = `$mpirun -n $n_ranks $command`
     end
 
     if warmup
-        if config.variant == :monotile
+        if config.variant == :multi_mono
             # Warmup to exclude programming from the benchmark
             warmup_cluster(command, n_ranks, config.variant)
         else
@@ -88,44 +89,29 @@ function run_benchmark(exe, n_ranks, config::JacobiConfig, grid_wh, n_timesteps;
     )
 end
 
-function max_perf_benchmark(exe, n_ranks, config::JacobiConfig)    
-    if config.variant != :cuda
-        grid_wh = min(config.tile_height, config.tile_width)
-    else
-        grid_wh = 8192
+    name_components = match(r"Jacobi([0-9])((Constant)|(General))", basename(exe_name))
+    points = parse(Int, name_components[1])
+    coef_type = name_components[2]
+    if variant == :mono
+        backend = "Single-FPGA Monotile"
+    elseif variant == :multi_mono
+        backend = "Multi-FPGA Monotile"
+    elseif variant == :tiling
+        backend = "Tiling"
+    elseif variant == :cuda
+        backend = "CUDA"
     end
+    target_name = "$(points)-point $coef_type Jacobi, $backend"
 
-    target_runtime = 15.0
-    if config.variant == :cuda
-        mem_throughput = 1.935e12 # Max bandwidth of an A100
-        fp_throughput = 19.5e12 # Max FP32 throughput of an A100
-        cell_size = 4
-        target_total_updates = target_runtime * min(mem_throughput / cell_size, fp_throughput / config.n_operations_per_cell)
-    else
-        total_parallelism = config.temporal_parallelism * config.spatial_parallelism * n_ranks
-        target_total_updates = target_runtime * total_parallelism * config.f
-    end
-    n_timesteps = target_total_updates / grid_wh^2
-    if config.variant != :cuda
-        n_timesteps = Int(config.temporal_parallelism * ceil(n_timesteps / config.temporal_parallelism)) # round up for max utilization
-    else
-        n_timesteps = Int(round(n_timesteps))
-    end
-    n_samples = 3
-
-    info = run_benchmark(exe, n_ranks, config, grid_wh, n_timesteps; n_samples)
-
-    exe_name = basename(exe)
-    if config.variant == :cuda
+    if variant == :cuda
         metrics = Dict(
-            "target" => "$exe_name, CUDA",
+            "target" => target_name,
             "measured" => measured_throughput(info),
             "FLOPS" => measured_flops(info)
         )
     else
-        target_name = config.variant == :monotile ? "Monotile" : "Tiling"
         metrics = Dict(
-            "target" => "$exe_name, $target_name",
+            "target" => target_name,
             "parallelity" => parallelity(info),
             "f" => info.f,
             "occupancy" => occupancy(info),
@@ -159,7 +145,12 @@ function deep_grid_scaling_benchmark(exec, n_ranks, config::JacobiConfig)
     while grid_wh^2 >= 32
         true_grid_wh = Int(ceil(grid_wh))
         target_runtime = 30.0
-        if config.variant == :monotile || config.variant == :tiling
+        if config.variant == :cuda
+            mem_throughput = 1555.0 / 4 * 2^30
+            cell_rate = mem_throughput / 2CELL_SIZE
+            iteration_rate = cell_rate / true_grid_wh^2
+            n_iters = Int(ceil(iteration_rate * target_runtime))
+        else
             proto_info = BenchmarkInformation(
                 n_ranks * config.temporal_parallelism, # Dummy number of iterations for one pass
                 true_grid_wh,
@@ -182,11 +173,6 @@ function deep_grid_scaling_benchmark(exec, n_ranks, config::JacobiConfig)
             )
             n_passes = Int(ceil(target_runtime / model_runtime(proto_info)))
             n_iters = n_ranks * config.temporal_parallelism * n_passes
-        else
-            mem_throughput = 1555.0 / 4 * 2^30
-            cell_rate = mem_throughput / 2CELL_SIZE
-            iteration_rate = cell_rate / true_grid_wh^2
-            n_iters = Int(ceil(iteration_rate * target_runtime))
         end
 
         info = run_benchmark(exec, n_ranks, config, true_grid_wh, n_iters; n_samples=3, warmup=first_iteration)

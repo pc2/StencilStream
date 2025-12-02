@@ -21,7 +21,11 @@
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
     #include <StencilStream/monotile/StencilUpdate.hpp>
-const char *variant = "monotile";
+    #if JACOBI_MULTI_FPGA
+const char *variant = "multi_mono";
+    #else
+const char *variant = "mono";
+    #endif
 #elif defined(STENCILSTREAM_BACKEND_TILING)
     #include <StencilStream/tiling/StencilUpdate.hpp>
 const char *variant = "tiling";
@@ -35,10 +39,15 @@ const char *variant = "cuda";
 using namespace stencil;
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
+    #if JACOBI_MULTI_FPGA == 1
+constexpr monotile::Connectivity connectivity = monotile::Connectivity::IO_PIPES;
+    #else
+constexpr monotile::Connectivity connectivity = monotile::Connectivity::SINGLE_DEVICE;
+    #endif
+
 using StencilUpdate =
     monotile::StencilUpdate<JacobiKernel, temporal_parallelism, spatial_parallelism, tile_height,
-                            tile_width, n_kernels, tdv::single_pass::InlineStrategy,
-                            monotile::Connectivity::IO_PIPES>;
+                            tile_width, n_kernels, tdv::single_pass::InlineStrategy, connectivity>;
 
 #elif defined(STENCILSTREAM_BACKEND_TILING)
 using StencilUpdate = tiling::StencilUpdate<JacobiKernel, temporal_parallelism, spatial_parallelism,
@@ -67,7 +76,7 @@ void print_usage(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
-#if defined(STENCILSTREAM_BACKEND_MONOTILE)
+#if defined(STENCILSTREAM_BACKEND_MONOTILE) && JACOBI_MULTI_FPGA == 1
     MPI_Init(NULL, NULL);
 
     int rank, n_ranks;
@@ -75,7 +84,7 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &n_ranks);
 #else
     int rank = 0;
-    int n_ranks = 0;
+    int n_ranks = 1;
 #endif
 
     if (argc == 2 && std::strcmp(argv[1], "show-config") == 0) {
@@ -145,7 +154,7 @@ int main(int argc, char **argv) {
         }
     }
 
-#if defined(STENCILSTREAM_BACKEND_MONOTILE)
+#if defined(STENCILSTREAM_BACKEND_MONOTILE) && JACOBI_MULTI_FPGA == 1
     MPI_Finalize();
 #endif
     return 0;

@@ -21,10 +21,10 @@
  * SOFTWARE.
  */
 #pragma once
-#include <sycl/sycl.hpp>
-#include <stdint.h>
-#include <type_traits>
 #include <concepts>
+#include <stdint.h>
+#include <sycl/sycl.hpp>
+#include <type_traits>
 
 namespace stencil {
 namespace cuda {
@@ -66,6 +66,6 @@ void for_each_in_two_tuples(TupleA &&a, TupleB &&b, F &&f) {
                                 std::forward<F>(f), std::make_index_sequence<N>{});
 }
 
-}
-}
-}
+} // namespace internal
+} // namespace cuda
+} // namespace stencil

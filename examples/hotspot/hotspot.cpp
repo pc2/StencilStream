@@ -97,15 +97,24 @@ struct HotspotKernel : public BaseTransitionFunction {
 };
 
 #if defined(STENCILSTREAM_BACKEND_MONOTILE)
+    #if HOTSPOT_MULTI_FPGA == 1
 const size_t max_grid_height = 4096;
 const size_t max_grid_width = 4096;
 const size_t temporal_parallelism = 108;
 const size_t spatial_parallelism = 4;
+const monotile::Connectivity connectivity = monotile::Connectivity::IO_PIPES;
+    #else
+const size_t max_grid_height = 8192;
+const size_t max_grid_width = 8192;
+const size_t temporal_parallelism = 54;
+const size_t spatial_parallelism = 8;
+const monotile::Connectivity connectivity = monotile::Connectivity::SINGLE_DEVICE;
+    #endif
 const size_t n_kernels = temporal_parallelism / 4;
 using StencilUpdate =
     monotile::StencilUpdate<HotspotKernel, temporal_parallelism, spatial_parallelism,
                             max_grid_height, max_grid_width, n_kernels,
-                            tdv::single_pass::InlineStrategy, monotile::Connectivity::IO_PIPES>;
+                            tdv::single_pass::InlineStrategy, connectivity>;
 using Grid = StencilUpdate::GridImpl;
 
 #elif defined(STENCILSTREAM_BACKEND_TILING)
@@ -113,7 +122,7 @@ const size_t tile_height = 1 << 16;
 const size_t tile_width = 4096;
 const size_t temporal_parallelism = 48;
 const size_t spatial_parallelism = 8;
-const size_t n_kernels = 16;
+const size_t n_kernels = temporal_parallelism / 3;
 using StencilUpdate =
     tiling::StencilUpdate<HotspotKernel, temporal_parallelism, spatial_parallelism, tile_height,
                           tile_width, n_kernels>;
@@ -223,7 +232,7 @@ auto exception_handler = [](sycl::exception_list exceptions) {
 };
 
 int main(int argc, char **argv) {
-#if defined(STENCILSTREAM_BACKEND_MONOTILE)
+#if defined(STENCILSTREAM_BACKEND_MONOTILE) && HOTSPOT_MULTI_FPGA == 1
     MPI_Init(NULL, NULL);
 
     int rank, n_ranks;
@@ -304,7 +313,7 @@ int main(int argc, char **argv) {
         write_output(grid, ofile, binary_io);
     }
 
-#if defined(STENCILSTREAM_BACKEND_MONOTILE)
+#if defined(STENCILSTREAM_BACKEND_MONOTILE) && HOTSPOT_MULTI_FPGA == 1
     MPI_Finalize();
 #endif
     return 0;

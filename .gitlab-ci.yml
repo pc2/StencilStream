@@ -54,6 +54,22 @@ default:
             - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.prj/quartus_sh_compile.log"
             - "build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}.tar.gz"
 
+.fpga_benchmark:
+    extends:
+        - .expensive_job
+        - .fpga_job
+    stage: benchmark
+    tags:
+        - noctua2
+    variables:
+        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p fpga --constraint=bittware_520n_20.4.0_max -t 01:00:00 -n ${STST_N_RANKS} --ntasks-per-node=2 -x "n2fpga[20,22,23,26]"
+    script:
+        - cd "examples/${STST_EXAMPLE}"
+        - ./scripts/benchmark.jl max_perf "../../build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}" ${STST_VARIANT} ${STST_N_RANKS}
+    artifacts:
+        paths:
+            - examples/*/metrics.*.json
+
 # =============
 # Preevaluation
 # =============
@@ -89,187 +105,170 @@ convection synthesis:
         STST_EXECUTABLE: "convection"
 
 convection benchmark:
-    extends:
-        - .expensive_job
-        - .fpga_job
-    stage: benchmark
+    extends: .fpga_benchmark
     needs:
         - convection synthesis
-    tags:
-        - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p fpga --constraint=bittware_520n_20.4.0_max -t 00:15:00
-    script:
-        - cd examples/convection
-        - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection monotile
-    artifacts:
-        paths:
-            - examples/convection/out
-            - examples/convection/metrics.monotile.json
-            - examples/convection/pseudo_transient_runtimes.csv
+        STST_EXAMPLE: "convection"
+        STST_EXECUTABLE: "convection"
+        STST_N_RANKS: "1"
+        STST_VARIANT: "mono"
 
-# ==================
-# Hotspot (Monotile)
-# ==================
+# =======
+# Hotspot
+# =======
 
-hotspot (monotile) synthesis:
+hotspot_mono synthesis:
     extends: .synthesis
     variables:
         STST_EXAMPLE: "hotspot"
         STST_EXECUTABLE: "hotspot_mono"
 
-.hotspot benchmark:
-    extends:
-        - .expensive_job
-        - .fpga_job
-    stage: benchmark
-    tags:
-        - noctua2
-    variables:
-        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p fpga --constraint=bittware_520n_20.4.0_max -t 01:00:00 -n ${STST_N_RANKS} --ntasks-per-node=2 -x "n2fpga[20,22,23,26]"
-    script:
-        - cd examples/hotspot
-        - ./scripts/benchmark.jl max_perf ../../build/examples/hotspot/${STST_EXECUTABLE} ${STST_VARIANT} ${STST_N_RANKS}
-    artifacts:
-        paths:
-            - examples/hotspot/metrics.*.json
-
-hotspot (monotile) benchmark:
-    extends: .hotspot benchmark
+hotspot_mono benchmark:
+    extends: .fpga_benchmark
     needs:
-        - hotspot (monotile) synthesis
+        - hotspot_mono synthesis
     variables:
-        STST_EXECUTABLE: hotspot_mono
-        STST_VARIANT: monotile
-        STST_N_RANKS: 2
+        STST_EXAMPLE: "hotspot"
+        STST_EXECUTABLE: "hotspot_mono"
+        STST_N_RANKS: 1
+        STST_VARIANT: "mono"
 
-# ================
-# Hotspot (Tiling)
-# ================
+hotspot_multi_mono synthesis:
+    extends: .synthesis
+    variables:
+        STST_EXAMPLE: "hotspot"
+        STST_EXECUTABLE: "hotspot_multi_mono"
 
-hotspot (tiling) synthesis:
+hotspot_multi_mono benchmark:
+    extends: .fpga_benchmark
+    needs:
+        - hotspot_multi_mono synthesis
+    variables:
+        STST_EXAMPLE: "hotspot"
+        STST_EXECUTABLE: "hotspot_multi_mono"
+        STST_N_RANKS: 24
+        STST_VARIANT: "multi_mono"
+
+hotspot_tiling synthesis:
     extends: .synthesis
     variables:
         STST_EXAMPLE: "hotspot"
         STST_EXECUTABLE: "hotspot_tiling"
 
-hotspot (tiling) benchmark:
-    extends: .hotspot benchmark
+hotspot_tiling benchmark:
+    extends: .fpga_benchmark
     needs:
-        - hotspot (tiling) synthesis
+        - hotspot_tiling synthesis
     variables:
-        STST_EXECUTABLE: hotspot_tiling
-        STST_VARIANT: tiling
+        STST_EXAMPLE: "hotspot"
+        STST_EXECUTABLE: "hotspot_tiling"
         STST_N_RANKS: 1
+        STST_VARIANT: "tiling"
 
-# ===============
-# FDTD (Monotile)
-# ===============
+# ====
+# FDTD
+# ====
 
-fdtd (monotile) synthesis:
+fdtd_coef_device_mono synthesis:
     extends: .synthesis
     variables:
         STST_EXAMPLE: "fdtd"
         STST_EXECUTABLE: "fdtd_coef_device_mono"
 
-.fdtd benchmark:
-    extends:
-        - .expensive_job
-        - .fpga_job
-    stage: benchmark
-    tags:
-        - noctua2
-    variables:
-        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p fpga --constraint=bittware_520n_20.4.0_max -t 00:15:00 -n ${STST_N_RANKS} --ntasks-per-node=2 -x "n2fpga[20,22,23,26]"
-    script:
-        - cd examples/fdtd
-        - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/${STST_EXECUTABLE} ${STST_VARIANT} ${STST_N_RANKS}
-        - julia --project -O3 -tauto ./scripts/plot_frames.jl out/
-    artifacts:
-        paths:
-            - examples/fdtd/out/*.csv
-            - examples/fdtd/out/*.png
-            - examples/fdtd/metrics.*.json
-
-fdtd (monotile) benchmark:
-    extends: .fdtd benchmark
+fdtd_coef_device_mono benchmark:
+    extends: .fpga_benchmark
     needs:
-        - fdtd (monotile) synthesis
+        - fdtd_coef_device_mono synthesis
     variables:
-        STST_EXECUTABLE: fdtd_coef_device_mono
-        STST_VARIANT: monotile
-        STST_N_RANKS: 2
+        STST_EXAMPLE: "fdtd"
+        STST_EXECUTABLE: "fdtd_coef_device_mono"
+        STST_N_RANKS: 1
+        STST_VARIANT: "mono"
 
-# =============
-# FDTD (Tiling)
-# =============
+fdtd_coef_device_multi_mono synthesis:
+    extends: .synthesis
+    variables:
+        STST_EXAMPLE: "fdtd"
+        STST_EXECUTABLE: "fdtd_coef_device_multi_mono"
 
-fdtd (tiling) synthesis:
+fdtd_coef_device_multi_mono benchmark:
+    extends: .fpga_benchmark
+    needs:
+        - fdtd_coef_device_multi_mono synthesis
+    variables:
+        STST_EXAMPLE: "fdtd"
+        STST_EXECUTABLE: "fdtd_coef_device_multi_mono"
+        STST_N_RANKS: 24
+        STST_VARIANT: "multi_mono"
+
+fdtd_coef_device_tiling synthesis:
     extends: .synthesis
     variables:
         STST_EXAMPLE: "fdtd"
         STST_EXECUTABLE: "fdtd_coef_device_tiling"
 
-fdtd (tiling) benchmark:
-    extends: .fdtd benchmark
+fdtd_coef_device_tiling benchmark:
+    extends: .fpga_benchmark
     needs:
-        - fdtd (tiling) synthesis
+        - fdtd_coef_device_tiling synthesis
     variables:
-        STST_EXECUTABLE: fdtd_coef_device_tiling
-        STST_VARIANT: tiling
+        STST_EXAMPLE: "fdtd"
+        STST_EXECUTABLE: "fdtd_coef_device_tiling"
         STST_N_RANKS: 1
+        STST_VARIANT: "tiling"
 
-# =================
-# Jacobi (Monotile)
-# =================
+# ======
+# Jacobi
+# ======
 
-jacobi (monotile) synthesis:
+Jacobi5General_mono synthesis:
     extends: .synthesis
     variables:
         STST_EXAMPLE: "jacobi"
         STST_EXECUTABLE: "Jacobi5General_mono"
 
-.jacobi benchmark:
-    extends:
-        - .expensive_job
-        - .fpga_job
-    stage: benchmark
-    tags:
-        - noctua2
-    variables:
-        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p fpga --constraint=bittware_520n_20.4.0_max -t 00:15:00 -n ${STST_N_RANKS} --ntasks-per-node=2 -x "n2fpga[20,22,23,26]"
-    script:
-        - cd examples/jacobi
-        - ./scripts/benchmark.jl max_perf ../../build/examples/jacobi/${STST_EXECUTABLE} ${STST_N_RANKS}
-    artifacts:
-        paths:
-            - examples/jacobi/metrics.*.json
-
-jacobi (monotile) benchmark:
-    extends: .jacobi benchmark
+Jacobi5General_mono benchmark:
+    extends: .fpga_benchmark
+    needs:
+        - Jacobi5General_mono synthesis
     variables:
         STST_EXAMPLE: "jacobi"
         STST_EXECUTABLE: "Jacobi5General_mono"
-        STST_N_RANKS: 2
+        STST_N_RANKS: 1
+        STST_VARIANT: "" # Left empty, automatically supplied by binary
 
-# ===============
-# Jacobi (Tiling)
-# ===============
+Jacobi5General_multi_mono synthesis:
+    extends: .synthesis
+    variables:
+        STST_EXAMPLE: "jacobi"
+        STST_EXECUTABLE: "Jacobi5General_multi_mono"
 
-jacobi (tiling) synthesis:
+Jacobi5General_multi_mono benchmark:
+    extends: .fpga_benchmark
+    needs:
+        - Jacobi5General_multi_mono synthesis
+    variables:
+        STST_EXAMPLE: "jacobi"
+        STST_EXECUTABLE: "Jacobi5General_multi_mono"
+        STST_N_RANKS: 24
+        STST_VARIANT: "" # Left empty, automatically supplied by binary
+
+Jacobi5General_tiling synthesis:
     extends: .synthesis
     variables:
         STST_EXAMPLE: "jacobi"
         STST_EXECUTABLE: "Jacobi5General_tiling"
 
-jacobi (tiling) benchmark:
-    extends: .jacobi benchmark
+Jacobi5General_tiling benchmark:
+    extends: .fpga_benchmark
     needs:
-        - jacobi (tiling) synthesis
+        - Jacobi5General_tiling synthesis
     variables:
         STST_EXAMPLE: "jacobi"
-        STST_EXECUTABLE: Jacobi5General_tiling
+        STST_EXECUTABLE: "Jacobi5General_tiling"
         STST_N_RANKS: 1
+        STST_VARIANT: "" # Left empty, automatically supplied by binary
 
 # ===============
 # CUDA benchmarks
@@ -279,7 +278,7 @@ CUDA benchmark:
     extends:
         - .cuda_job
         - .expensive_job
-    stage: benchmark
+    stage: preevaluation
     tags:
         - noctua2
     variables:
@@ -291,7 +290,7 @@ CUDA benchmark:
         - make unit_test_cuda convection_cuda hotspot_cuda fdtd_coef_device_cuda Jacobi5General_cuda -j16
         - ./tests/unit_test_cuda
         - cd ../examples/convection
-        - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection_cuda cuda
+        - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection_cuda cuda 1
         - cd ../fdtd
         - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/fdtd_coef_device_cuda cuda 1
         - cd ../hotspot
@@ -301,6 +300,7 @@ CUDA benchmark:
     artifacts:
         paths:
             - examples/*/metrics.*.json
+
 # =======
 # Release
 # =======

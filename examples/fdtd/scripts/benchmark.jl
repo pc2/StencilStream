@@ -5,17 +5,16 @@ using JSON
 const N_SUBITERATIONS = 2
 const OPERATIONS_PER_CELL = 8 + (6 + 4 + 2 + 2 + 2) # Including all paths, excluding source wave computation
 const CELL_SIZE = 4 * (4 + 4) # bytes, including material coefficients
-const TEMPORAL_PARALLELISM = Dict(:monotile => 100, :tiling => 52, :cuda => 1)
-const SPATIAL_PARALLELISM = Dict(:monotile => 1, :tiling => 2, :cuda => 1)
-const TILE_HEIGHT = Dict(:monotile => 512, :tiling => 2^16, :cuda => nothing)
-const TILE_WIDTH = Dict(:monotile => 512, :tiling => 768, :cuda => nothing)
-const MEMORY_SIZE = Dict(:monotile => 32*2^(30), :tiling => 32*2^(30), :cuda => 40*2^(30))
+const TEMPORAL_PARALLELISM = Dict(:mono => 64, :multi_mono => 100, :tiling => 52, :cuda => 1)
+const SPATIAL_PARALLELISM = Dict(:mono => 2, :multi_mono => 1, :tiling => 2, :cuda => 1)
+const TILE_HEIGHT = Dict(:mono => 1024, :multi_mono => 512, :tiling => 2^16, :cuda => nothing)
+const TILE_WIDTH = Dict(:mono => 1024, :multi_mono => 512, :tiling => 768, :cuda => nothing)
 
 function run_benchmark(exe, variant, n_ranks, experiment_path; n_samples=3)
     out_dir = Base.Filesystem.mkpath("./out/")
     command = `$exe -c $experiment_path -o $out_dir`
 
-    if variant == :monotile
+    if variant == :multi_mono
         mpi_root = ENV["I_MPI_ROOT"]
         command = `$mpi_root/bin/mpirun -n $n_ranks $exe -c $experiment_path -o $out_dir`
         warmup_cluster(command, n_ranks, variant)
@@ -69,8 +68,11 @@ function run_benchmark(exe, variant, n_ranks, experiment_path; n_samples=3)
 end
 
 function max_perf_benchmark(exe, variant, n_ranks)
-    if variant == :monotile 
+    if variant == :mono 
         experiment_path = "./experiments/mono_benchmark.json"
+        n_samples = 10
+    if variant == :multi_mono 
+        experiment_path = "./experiments/multi_mono_benchmark.json"
         n_samples = 10
     elseif variant == :tiling
         experiment_path = "./experiments/tiling_benchmark.json"
@@ -83,14 +85,24 @@ function max_perf_benchmark(exe, variant, n_ranks)
     info = run_benchmark(exe, variant, n_ranks, experiment_path; n_samples)
 
     if variant == :cuda
+        target_name = "FDTD, CUDA"
+    elseif variant == :mono
+        target_name = "FDTD, Single-FPGA Monotile"
+    elseif variant == :multi_mono
+        target_name = "FDTD, Multi-FPGA Monotile"
+    elseif variant == :tiling
+        target_name = "FDTD, Tiling"
+    end
+
+    if variant == :cuda
         metrics = Dict(
-            "target" => "FDTD, CUDA",
+            "target" => target_name,
             "measured" => measured_throughput(info),
             "FLOPS" => measured_flops(info)
         )
     else
         metrics = Dict(
-            "target" => (variant == :monotile) ? "FDTD, Monotile" : "FDTD, Tiling",
+            "target" => target_name,
             "parallelity" => parallelity(info),
             "f" => info.f,
             "occupancy" => occupancy(info),
@@ -121,7 +133,7 @@ function deep_grid_scaling_benchmark(exec, variant, n_ranks)
         # We scale in power-of-√2 steps, so that each grid is about half the size of the next-biggest
         grid_wh = (√2)^floor(log(√2, max_grid_wh))
     else
-        grid_wh = TILE_WIDTH[:monotile]
+        grid_wh = TILE_WIDTH[variant]
     end
 
     experiment_path, _ = mktemp()
@@ -132,7 +144,12 @@ function deep_grid_scaling_benchmark(exec, variant, n_ranks)
         experiment["dx"] = dx_for_grid_wh(round(grid_wh), experiment)
 
         target_runtime = 30.0
-        if variant == :monotile || variant == :tiling
+        if variant == :cuda
+            mem_throughput = 1555.0 * 2^30
+            cell_rate = mem_throughput / 2CELL_SIZE
+            iteration_rate = cell_rate / round(grid_wh)^2 / N_SUBITERATIONS
+            n_iters = Int(ceil(iteration_rate * target_runtime))
+        else
             proto_info = BenchmarkInformation(
                 n_ranks * TEMPORAL_PARALLELISM[variant], # Dummy number of iterations for one pass
                 round(grid_wh),
@@ -155,11 +172,6 @@ function deep_grid_scaling_benchmark(exec, variant, n_ranks)
             )
             n_passes = Int(ceil(target_runtime / model_runtime(proto_info)))
             n_iters = n_ranks * TEMPORAL_PARALLELISM[variant] * n_passes
-        else
-            mem_throughput = 1555.0 * 2^30
-            cell_rate = mem_throughput / 2CELL_SIZE
-            iteration_rate = cell_rate / round(grid_wh)^2 / N_SUBITERATIONS
-            n_iters = Int(ceil(iteration_rate * target_runtime))
         end
         experiment["time"]["t_max"] = t_max_for_n_iters(n_iters, experiment)
 
@@ -173,15 +185,25 @@ function deep_grid_scaling_benchmark(exec, variant, n_ranks)
     end
 end
 
-if size(ARGS) != (4,)
+function print_usage()
     println(stderr, "Usage: $PROGRAM_FILE <benchmark> <path to executable> <variant> <n_fpgas>")
     println(stderr, "Possible benchmarks: max_perf")
-    println(stderr, "Possible variants: monotile, tiling, cuda")
+    println(stderr, "Possible variants: mono, multi_mono, tiling, cuda")
     exit(1)
+end
+
+if size(ARGS) != (4,)
+    print_usage()
 end
 
 exe = ARGS[2]
 variant = Symbol(ARGS[3])
+if variant ∉ [:mono, :multi_mono, :tiling, :cuda]
+    println(stderr, "Unsupported variant $variant")
+    println(stderr)
+    print_usage()
+end
+
 n_ranks = parse(Int, ARGS[4])
 
 if ARGS[1] == "max_perf"
