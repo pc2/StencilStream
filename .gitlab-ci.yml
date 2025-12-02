@@ -278,7 +278,7 @@ CUDA benchmark:
     extends:
         - .cuda_job
         - .expensive_job
-    stage: benchmark
+    stage: preevaluation
     tags:
         - noctua2
     variables:
@@ -290,7 +290,7 @@ CUDA benchmark:
         - make unit_test_cuda convection_cuda hotspot_cuda fdtd_coef_device_cuda Jacobi5General_cuda -j16
         - ./tests/unit_test_cuda
         - cd ../examples/convection
-        - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection_cuda cuda
+        - ./scripts/benchmark.jl max_perf ../../build/examples/convection/convection_cuda cuda 1
         - cd ../fdtd
         - ./scripts/benchmark.jl max_perf ../../build/examples/fdtd/fdtd_coef_device_cuda cuda 1
         - cd ../hotspot
