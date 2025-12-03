@@ -125,7 +125,7 @@ function run_benchmark(exe, n_ranks, config::JacobiConfig, grid_wh, n_timesteps;
 end
 
 function deep_grid_scaling_benchmark(exec, n_ranks, config::JacobiConfig)
-    grid_wh = max_grid_wh(config.variant, CELL_SIZE; clip_to_base=√2)
+    grid_wh = config.variant == :mono ? config.tile_width : max_grid_wh(config.variant, CELL_SIZE; clip_to_base=√2)
 
     df_path = "scaling.$(config.variant).csv"
     df = DataFrame(grid_wh=Int64[], n_iters=Int64[], runtime=Float64[], measured_throughput=Float64[])

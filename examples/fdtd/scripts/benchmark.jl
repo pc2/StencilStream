@@ -132,7 +132,7 @@ t_max_for_n_iters(n_iters, experiment) = (n_iters * experiment_dt(experiment)) /
 
 function deep_grid_scaling_benchmark(exec, variant, n_ranks)
     experiment = open(JSON.parse, "./experiments/mono_benchmark.json")
-    grid_wh = max_grid_wh(variant, CELL_SIZE; clip_to_base=√2)
+    grid_wh = variant == :mono ? TILE_WIDTH[:mono] : max_grid_wh(variant, CELL_SIZE; clip_to_base=√2)
 
     experiment_path, _ = mktemp()
 
@@ -170,7 +170,7 @@ function deep_grid_scaling_benchmark(exec, variant, n_ranks)
 
         open(f -> JSON.print(f, experiment), experiment_path, "w")
 
-        info = run_benchmark(exec, variant, n_ranks, experiment_path; n_samples=3, warmup=first_iteration)
+        info = run_benchmark(exec, variant, n_ranks, experiment_path; n_samples=3, run_warmup=first_iteration)
         push!(df, [info.n_grid_rows, info.n_iters, info.runtime, measured_throughput(info)])
         CSV.write("scaling.$variant.csv", df)
 

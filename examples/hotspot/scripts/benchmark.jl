@@ -131,7 +131,7 @@ function max_perf_benchmark(exec, variant, n_ranks)
 end
 
 function deep_grid_scaling_benchmark(exec, variant, n_ranks)
-    grid_wh = max_grid_wh(variant, CELL_SIZE; clip_to_base=√2)
+    grid_wh = variant == :mono ? TILE_WIDTH[:mono] : max_grid_wh(variant, CELL_SIZE; clip_to_base=√2)
 
     df_path = "scaling.$variant.csv"
     df = DataFrame(grid_wh=Int64[], n_iters=Int64[], runtime=Float64[], measured_throughput=Float64[])

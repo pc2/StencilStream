@@ -178,13 +178,10 @@ end
 function max_grid_wh(variant, cell_size; clip_to_base=nothing)
     # Using the Bittware 520N for FPGA targets and Nvidia A100 for CUDA
     memory_size = Dict(:mono => 32 * 2^30, :multi_mono => 32 * 2^30, :tiling => 32 * 2^30, :cuda => 40 * 2^30)
-    if variant == :cuda || variant == :tiling
-        # Maximal grid size that fits in global memory and is indexable with the 32-bit signed integers
-        max_n_cells = min(memory_size[variant] / 3 / cell_size, 2^31)
-        grid_wh = √(max_n_cells)
-    else
-        grid_wh = TILE_WIDTH[variant]
-    end
+    
+    # Maximal grid size that fits in global memory and is indexable with the 32-bit signed integers
+    max_n_cells = min(memory_size[variant] / 3 / cell_size, 2^31)
+    grid_wh = √(max_n_cells)
 
     if !isnothing(clip_to_base)
         grid_wh = clip_to_base^floor(log(clip_to_base, grid_wh))
