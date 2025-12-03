@@ -5,7 +5,6 @@ using Glob
 const MPI_ROOT = ENV["I_MPI_ROOT"]
 const MPIRUN = "$MPI_ROOT/bin/mpirun"
 const CELL_SIZE = 4 # bytes, including material coefficients
-const MEMORY_SIZE = Dict(:monotile => 32*2^(30), :tiling => 32*2^(30), :cuda => 40*2^(30))
 
 struct JacobiConfig
     variant::Symbol
@@ -34,16 +33,16 @@ function load_config(exe)
     )
 end
 
-function run_benchmark(exe, n_ranks, config::JacobiConfig, grid_wh, n_timesteps; n_samples=3, warmup=true)
+function run_benchmark(exe, n_ranks, config::JacobiConfig, grid_wh, n_timesteps; n_samples=3, run_warmup=true)
     arguments = fill(1/config.n_coefficients, config.n_coefficients)
     command = `$exe $(grid_wh) $(grid_wh) $(n_timesteps) /dev/null $(arguments)`
 
     # Set up the multi-FPGA cluster
-    if variant == :multi_mono
+    if config.variant == :multi_mono
         command = `$mpirun -n $n_ranks $command`
     end
 
-    if warmup
+    if run_warmup
         if config.variant == :multi_mono
             # Warmup to exclude programming from the benchmark
             warmup_cluster(command, n_ranks, config.variant)
@@ -87,7 +86,6 @@ function run_benchmark(exe, n_ranks, config::JacobiConfig, grid_wh, n_timesteps;
         config.f,
         minimum(runtimes)
     )
-end
 
     name_components = match(r"Jacobi([0-9])((Constant)|(General))", basename(exe_name))
     points = parse(Int, name_components[1])
@@ -127,55 +125,41 @@ end
 end
 
 function deep_grid_scaling_benchmark(exec, n_ranks, config::JacobiConfig)
-    if config.variant == :cuda || config.variant == :tiling
-        # Maximal grid size that fits in global memory and is indexable with the 32-bit signed integers
-        max_n_cells = min(MEMORY_SIZE[config.variant] / 3 / CELL_SIZE, 2^31)
-        max_grid_wh = √(max_n_cells)
-        # Round down to the next-lowest power of √2.
-        # We scale in power-of-√2 steps, so that each grid is about half the size of the next-biggest
-        grid_wh = (√2)^floor(log(√2, max_grid_wh))
-    else
-        grid_wh = config.tile_width
-    end
+    grid_wh = max_grid_wh(config.variant, CELL_SIZE; clip_to_base=√2)
 
     df_path = "scaling.$(config.variant).csv"
     df = DataFrame(grid_wh=Int64[], n_iters=Int64[], runtime=Float64[], measured_throughput=Float64[])
 
     first_iteration = true
-    while grid_wh^2 >= 32
+    while grid_wh >= 32
         true_grid_wh = Int(ceil(grid_wh))
+
+        proto_info = BenchmarkInformation(
+            # No. of iterations of one pass
+            (config.variant == :cuda) ? 1 : n_ranks * config.temporal_parallelism,
+            true_grid_wh,
+            true_grid_wh,
+            n_ranks,
+
+            1, # No. of subiterations
+            CELL_SIZE,
+            config.n_operations_per_cell,
+
+            config.variant,
+            config.temporal_parallelism,
+            config.spatial_parallelism,
+            config.tile_height,
+            config.tile_width,
+
+            (config.variant == :cuda) ? nothing : load_report_details(exec * ".prj/reports"), # Clock frequency
+
+            42.0 # Dummy runtime
+        )
         target_runtime = 30.0
-        if config.variant == :cuda
-            mem_throughput = 1555.0 / 4 * 2^30
-            cell_rate = mem_throughput / 2CELL_SIZE
-            iteration_rate = cell_rate / true_grid_wh^2
-            n_iters = Int(ceil(iteration_rate * target_runtime))
-        else
-            proto_info = BenchmarkInformation(
-                n_ranks * config.temporal_parallelism, # Dummy number of iterations for one pass
-                true_grid_wh,
-                true_grid_wh,
-                n_ranks,
+        n_passes = Int(ceil(target_runtime / model_runtime(proto_info)))
+        n_iters = n_passes * proto_info.n_iters
 
-                1, # No. of subiterations
-                CELL_SIZE,
-                config.n_operations_per_cell,
-
-                config.variant,
-                config.temporal_parallelism,
-                config.spatial_parallelism,
-                config.tile_height,
-                config.tile_width,
-
-                load_report_details(exec * ".prj/reports"), # Clock frequency
-
-                42.0 # Dummy runtime
-            )
-            n_passes = Int(ceil(target_runtime / model_runtime(proto_info)))
-            n_iters = n_ranks * config.temporal_parallelism * n_passes
-        end
-
-        info = run_benchmark(exec, n_ranks, config, true_grid_wh, n_iters; n_samples=3, warmup=first_iteration)
+        info = run_benchmark(exec, n_ranks, config, true_grid_wh, n_iters; n_samples=3, run_warmup=first_iteration)
         push!(df, [true_grid_wh, n_iters, info.runtime, measured_throughput(info)])
         CSV.write(df_path, df)
 

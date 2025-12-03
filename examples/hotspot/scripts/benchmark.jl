@@ -11,7 +11,7 @@ const SPATIAL_PARALLELISM = Dict(:mono => 8, :multi_mono => 4, :tiling => 8, :cu
 const TILE_HEIGHT = Dict(:mono => 8192, :multi_mono => 4096, :tiling => 2^16, :cuda => nothing)
 const TILE_WIDTH = Dict(:mono => 8192, :multi_mono => 4096, :tiling => 4096, :cuda => nothing)
 
-function run_benchmark(exec, variant, n_ranks, grid_height, grid_width, n_iters; n_samples=5, warmup_time="2m", run_warmup=true)
+function run_benchmark(exec, variant, n_ranks, grid_height, grid_width, n_iters; n_samples=5, run_warmup=true)
     experiment_dir = mktempdir("/dev/shm/")
     temp_path = experiment_dir * "/temp.bin"
     power_path = experiment_dir * "/power.bin"
@@ -28,7 +28,7 @@ function run_benchmark(exec, variant, n_ranks, grid_height, grid_width, n_iters;
 
     if run_warmup
         if variant == :multi_mono
-            warmup_cluster(command, n_ranks, variant; warmup_time)
+            warmup_cluster(command, n_ranks, variant)
         else
             run(command)
         end
@@ -131,50 +131,39 @@ function max_perf_benchmark(exec, variant, n_ranks)
 end
 
 function deep_grid_scaling_benchmark(exec, variant, n_ranks)
-    if variant == :mono || variant == :multi_mono
-        grid_wh = TILE_WIDTH[variant] # Maximum the design can support
-    elseif variant == :tiling
-        grid_wh = 32768 # Maximum would be 36864, 32768 is next-lowest power of two
-    elseif variant == :cuda
-        grid_wh = 32768 # Maximum, given 40 GB global memory
-    end
+    grid_wh = max_grid_wh(variant, CELL_SIZE; clip_to_base=√2)
 
     df_path = "scaling.$variant.csv"
     df = DataFrame(grid_wh=Int64[], n_iters=Int64[], runtime=Float64[], measured_throughput=Float64[])
 
     first_iteration = true
-    while grid_wh^2 >= 32
+    while grid_wh >= 32
         true_grid_wh = Int(ceil(grid_wh))
+
+        proto_info = BenchmarkInformation(
+            # No. of iterations of one pass
+            (variant == :cuda) ? 1 : n_ranks * TEMPORAL_PARALLELISM[variant],
+            true_grid_wh,
+            true_grid_wh,
+            n_ranks,
+
+            1, # No. of subiterations
+            CELL_SIZE,
+            OPERATIONS_PER_CELL,
+
+            variant,
+            TEMPORAL_PARALLELISM[variant],
+            SPATIAL_PARALLELISM[variant],
+            TILE_HEIGHT[variant],
+            TILE_WIDTH[variant],
+
+            (variant == :cuda) ? 1 : load_report_details(exec * ".prj/reports"), # Clock frequency
+
+            42.0 # Dummy runtime
+        )
         target_runtime = 30.0
-        if variant == :cuda
-            mem_throughput = 1555.0 * 2^30
-            cell_rate = mem_throughput / 2CELL_SIZE
-            iteration_rate = cell_rate / true_grid_wh^2
-            n_iters = Int(ceil(iteration_rate * target_runtime))
-        else
-            proto_info = BenchmarkInformation(
-                n_ranks * TEMPORAL_PARALLELISM[variant], # Dummy number of iterations for one pass
-                true_grid_wh,
-                true_grid_wh,
-                n_ranks,
-
-                1, # No. of subiterations
-                CELL_SIZE,
-                OPERATIONS_PER_CELL,
-
-                variant,
-                TEMPORAL_PARALLELISM[variant],
-                SPATIAL_PARALLELISM[variant],
-                TILE_HEIGHT[variant],
-                TILE_WIDTH[variant],
-
-                load_report_details(exec * ".prj/reports"), # Clock frequency
-
-                42.0 # Dummy runtime
-            )
-            n_passes = Int(ceil(target_runtime / model_runtime(proto_info)))
-            n_iters = n_ranks * TEMPORAL_PARALLELISM[variant] * n_passes
-        end
+        n_passes = Int(ceil(target_runtime / model_runtime(proto_info)))
+        n_iters = n_passes * proto_info.n_iters
 
         info = run_benchmark(exec, variant, n_ranks, true_grid_wh, true_grid_wh, n_iters; n_samples=3, run_warmup=first_iteration)
         push!(df, [true_grid_wh, n_iters, info.runtime, measured_throughput(info)])

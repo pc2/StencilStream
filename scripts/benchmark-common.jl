@@ -64,6 +64,10 @@ struct BenchmarkInformation
 end
 
 function f_effective(info::BenchmarkInformation)
+    if info.variant == :cuda
+        return nothing
+    end
+
     padded_vector_size =  2^ceil(log2(info.cell_size * info.spatial_parallelism))
     if !isnothing(info.n_ranks) && info.variant == :multi_mono
         s_link = 32 # pipeword size
@@ -87,7 +91,7 @@ grid_size(info::BenchmarkInformation) = info.n_grid_rows * info.n_grid_cols
 workload(info::BenchmarkInformation) = grid_size(info) * info.n_iters
 function n_passes(info::BenchmarkInformation)
     if info.variant == :cuda
-        nothing
+        info.n_iters
     elseif (info.variant == :multi_mono && !isnothing(info.n_ranks))
         ceil(info.n_iters / info.temporal_parallelism / info.n_ranks)
     else
@@ -112,8 +116,6 @@ measured_throughput(info::BenchmarkInformation) = workload(info) / info.runtime
 measured_flops(info::BenchmarkInformation) = measured_throughput(info) * info.ops_per_cell
 
 function model_runtime(info::BenchmarkInformation)
-    l_link = 0.5e-3 / info.f
-
     if info.variant == :mono || info.variant == :multi_mono
         l_compute_unit = n_grid_col_vects(info) + 1
         l_fpga = n_cus(info) * l_compute_unit
@@ -121,8 +123,10 @@ function model_runtime(info::BenchmarkInformation)
         c_prime = l_fpga + (info.n_grid_rows * n_grid_col_vects(info))
         c_pass = c_prime
         if !isnothing(info.n_ranks)
+            l_link = 0.5e-3 / f_effective(info)
             c_pass += l_link + (info.n_ranks - 1) * (l_fpga + l_link)
         end
+        return n_passes(info) * c_pass / f_effective(info)
     elseif info.variant == :tiling
         c_pass = 0
         for tile_row in 1:ceil(info.n_grid_rows / info.n_tile_rows)
@@ -133,13 +137,15 @@ function model_runtime(info::BenchmarkInformation)
                 c_pass += n_loop_iterations_per_tile
             end
         end
+        return n_passes(info) * c_pass / f_effective(info)
     elseif info.variant == :cuda
-        throw("not implemented")
+        MEM_THROUGHPUT = 1555.0 * 2^30 # Hard-coded for the Nvidia A100 for now
+        cell_rate = MEM_THROUGHPUT / (2*info.cell_size)
+        iteration_rate = cell_rate / (info.n_grid_rows * info.n_grid_cols) / info.n_subiters
+        return info.n_iters / iteration_rate
     else
         throw(KeyError(info.variant))
     end
-
-    return n_passes(info) * c_pass / f_effective(info)
 end
 model_throughput(info::BenchmarkInformation) = workload(info) / model_runtime(info)
 max_compute_throughput(info::BenchmarkInformation) = parallelity(info) * info.f
@@ -167,6 +173,24 @@ function setup_io_pipes(n_ranks, variant)
     push!(command, "--fpgalink=n$(lpad(i_last_node,2,'0')):acl$(i_last_acl):ch3-n00:acl0:ch1")
     command = Cmd(command)
     run(command)
+end
+
+function max_grid_wh(variant, cell_size; clip_to_base=nothing)
+    # Using the Bittware 520N for FPGA targets and Nvidia A100 for CUDA
+    memory_size = Dict(:mono => 32 * 2^30, :multi_mono => 32 * 2^30, :tiling => 32 * 2^30, :cuda => 40 * 2^30)
+    if variant == :cuda || variant == :tiling
+        # Maximal grid size that fits in global memory and is indexable with the 32-bit signed integers
+        max_n_cells = min(memory_size[variant] / 3 / cell_size, 2^31)
+        grid_wh = √(max_n_cells)
+    else
+        grid_wh = TILE_WIDTH[variant]
+    end
+
+    if !isnothing(clip_to_base)
+        grid_wh = clip_to_base^floor(log(clip_to_base, grid_wh))
+    end
+
+    Int(floor(grid_wh))
 end
 
 function warmup_cluster(command, n_ranks, variant; links_preconfigured=false, warmup_time="2m")
