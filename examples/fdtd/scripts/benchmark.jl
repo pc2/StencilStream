@@ -136,17 +136,30 @@ function deep_grid_scaling_benchmark(exec, variant, n_ranks)
 
     experiment_path, _ = mktemp()
 
-    df = DataFrame(grid_wh=Int64[], n_iters=Int64[], runtime=Float64[], measured_throughput=Float64[])
+    df_path = "scaling.$variant.csv"
+    if isfile(df_path)
+        df = CSV.read(df_path, DataFrame)
+    else
+        df = DataFrame(grid_wh=Int64[], n_iters=Int64[], runtime=Float64[], measured_throughput=Float64[], model_throughput=Float64[])
+    end
 
     first_iteration = true
-    while grid_wh >= 32
-        experiment["dx"] = dx_for_grid_wh(round(grid_wh), experiment)
+    while round(grid_wh) >= 32
+        true_grid_wh = Int(round(grid_wh))
+
+        if true_grid_wh ∈ df.grid_wh
+            grid_wh /= √2
+            continue
+        end
+
+        experiment["dx"] = dx_for_grid_wh(true_grid_wh, experiment)
 
         proto_info = BenchmarkInformation(
             # No. of iterations of one pass
             (variant == :cuda) ? 1 : (n_ranks * TEMPORAL_PARALLELISM[variant]), 
-            round(grid_wh),
-            round(grid_wh),
+            # 1024 appears to be the cut-off point where the performance models just become too wrong to yield acceptable iteration counts.
+            max(1024, true_grid_wh),
+            max(1024, true_grid_wh),
             n_ranks,
 
             N_SUBITERATIONS, # No. of subiterations
@@ -171,9 +184,9 @@ function deep_grid_scaling_benchmark(exec, variant, n_ranks)
         open(f -> JSON.print(f, experiment), experiment_path, "w")
 
         info = run_benchmark(exec, variant, n_ranks, experiment_path; n_samples=3, run_warmup=first_iteration)
-        push!(df, [info.n_grid_rows, info.n_iters, info.runtime, measured_throughput(info)])
-        CSV.write("scaling.$variant.csv", df)
-
+        push!(df, [info.n_grid_rows, info.n_iters, info.runtime, measured_throughput(info), model_throughput(info)])
+        
+        CSV.write(df_path, df)
         grid_wh /= √2
         first_iteration = false
     end

@@ -86,22 +86,53 @@ function run_benchmark(exe, n_ranks, config::JacobiConfig, grid_wh, n_timesteps;
         config.f,
         minimum(runtimes)
     )
+end
 
-    name_components = match(r"Jacobi([0-9])((Constant)|(General))", basename(exe_name))
+function max_perf_benchmark(exe, n_ranks, config::JacobiConfig)
+    grid_wh = (config.variant == :mono :config.variant == :multi_mono) ? config.tile_width : max_grid_wh(config.variant, CELL_SIZE; clip_to_base=√2)
+
+    proto_info = BenchmarkInformation(
+        # No. of iterations of one pass
+        (config.variant == :cuda) ? 1 : n_ranks * config.temporal_parallelism,
+        grid_wh,
+        grid_wh,
+        n_ranks,
+
+        1, # No. of subiterations
+        CELL_SIZE,
+        config.n_operations_per_cell,
+
+        config.variant,
+        config.temporal_parallelism,
+        config.spatial_parallelism,
+        config.tile_height,
+        config.tile_width,
+
+        (config.variant == :cuda) ? nothing : load_report_details(exec * ".prj/reports"), # Clock frequency
+
+        42.0 # Dummy runtime
+    )
+    target_runtime = 30.0
+    n_passes = Int(ceil(target_runtime / model_runtime(proto_info)))
+    n_iters = n_passes * proto_info.n_iters
+
+    info = run_benchmark(exe, n_ranks, config, grid_wh, n_iters)
+
+    name_components = match(r"Jacobi([0-9])((Constant)|(General))", basename(exe))
     points = parse(Int, name_components[1])
     coef_type = name_components[2]
-    if variant == :mono
+    if config.variant == :mono
         backend = "Single-FPGA Monotile"
-    elseif variant == :multi_mono
+    elseif config.variant == :multi_mono
         backend = "Multi-FPGA Monotile"
-    elseif variant == :tiling
+    elseif config.variant == :tiling
         backend = "Tiling"
-    elseif variant == :cuda
+    elseif config.variant == :cuda
         backend = "CUDA"
     end
     target_name = "$(points)-point $coef_type Jacobi, $backend"
 
-    if variant == :cuda
+    if config.variant == :cuda
         metrics = Dict(
             "target" => target_name,
             "measured" => measured_throughput(info),
@@ -119,7 +150,7 @@ function run_benchmark(exe, n_ranks, config::JacobiConfig, grid_wh, n_timesteps;
         )
     end
 
-    open("metrics.$exe_name.json", "w") do metrics_file
+    open("metrics.$exe.json", "w") do metrics_file
         JSON.print(metrics_file, metrics)
     end
 end
@@ -128,17 +159,27 @@ function deep_grid_scaling_benchmark(exec, n_ranks, config::JacobiConfig)
     grid_wh = config.variant == :mono ? config.tile_width : max_grid_wh(config.variant, CELL_SIZE; clip_to_base=√2)
 
     df_path = "scaling.$(config.variant).csv"
-    df = DataFrame(grid_wh=Int64[], n_iters=Int64[], runtime=Float64[], measured_throughput=Float64[])
+    if isfile(df_path)
+        df = CSV.read(df_path, DataFrame)
+    else
+        df = DataFrame(grid_wh=Int64[], n_iters=Int64[], runtime=Float64[], measured_throughput=Float64[], model_throughput=Float64[])
+    end
 
     first_iteration = true
-    while grid_wh >= 32
-        true_grid_wh = Int(ceil(grid_wh))
+    while round(grid_wh) >= 32
+        true_grid_wh = Int(round(grid_wh))
+
+        if true_grid_wh ∈ df.grid_wh
+            grid_wh /= √2
+            continue
+        end
 
         proto_info = BenchmarkInformation(
             # No. of iterations of one pass
             (config.variant == :cuda) ? 1 : n_ranks * config.temporal_parallelism,
-            true_grid_wh,
-            true_grid_wh,
+            # 1024 appears to be the cut-off point where the performance models just become too wrong to yield acceptable iteration counts.
+            max(1024, true_grid_wh),
+            max(1024, true_grid_wh),
             n_ranks,
 
             1, # No. of subiterations
@@ -160,7 +201,7 @@ function deep_grid_scaling_benchmark(exec, n_ranks, config::JacobiConfig)
         n_iters = n_passes * proto_info.n_iters
 
         info = run_benchmark(exec, n_ranks, config, true_grid_wh, n_iters; n_samples=3, run_warmup=first_iteration)
-        push!(df, [true_grid_wh, n_iters, info.runtime, measured_throughput(info)])
+        push!(df, [true_grid_wh, n_iters, info.runtime, measured_throughput(info), model_throughput(info)])
         CSV.write(df_path, df)
 
         grid_wh /= √2
