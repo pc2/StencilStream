@@ -126,7 +126,7 @@ function model_runtime(info::BenchmarkInformation)
             l_link = 0.5e-3 / f_effective(info)
             c_pass += l_link + (info.n_ranks - 1) * (l_fpga + l_link)
         end
-        return n_passes(info) * c_pass / f_effective(info)
+        computation_runtime = n_passes(info) * c_pass / f_effective(info)
     elseif info.variant == :tiling
         c_pass = 0
         for tile_row in 1:ceil(info.n_grid_rows / info.n_tile_rows)
@@ -137,15 +137,26 @@ function model_runtime(info::BenchmarkInformation)
                 c_pass += n_loop_iterations_per_tile
             end
         end
-        return n_passes(info) * c_pass / f_effective(info)
+        computation_runtime = n_passes(info) * c_pass / f_effective(info)
     elseif info.variant == :cuda
-        MEM_THROUGHPUT = 1555.0 * 2^30 # Hard-coded for the Nvidia A100 for now
+        MEM_THROUGHPUT = 0.8 * 1555.0 * 2^30 # Hard-coded for the Nvidia A100 for now
         cell_rate = MEM_THROUGHPUT / (2*info.cell_size)
         iteration_rate = cell_rate / (info.n_grid_rows * info.n_grid_cols) / info.n_subiters
-        return info.n_iters / iteration_rate
+        computation_runtime = info.n_iters / iteration_rate
     else
         throw(KeyError(info.variant))
     end
+
+    if info.variant == :cuda
+        scheduling_latency_per_pass = 0.5 / 50_000 # According to https://dl.acm.org/doi/abs/10.1145/3648115.3648120
+        scheduling_runtime = (info.n_iters * info.n_subiters + 2) * scheduling_latency_per_pass
+    elseif info.variant == :mono
+        scheduling_latency_per_pass = 10.0 / 50_000 # My own fit
+        scheduling_runtime = n_passes(info) * scheduling_latency_per_pass
+    else
+        scheduling_runtime = 0.0
+    end
+    max(scheduling_runtime, computation_runtime)
 end
 model_throughput(info::BenchmarkInformation) = workload(info) / model_runtime(info)
 max_compute_throughput(info::BenchmarkInformation) = parallelity(info) * info.f
