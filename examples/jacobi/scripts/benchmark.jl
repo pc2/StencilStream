@@ -177,9 +177,8 @@ function deep_grid_scaling_benchmark(exec, n_ranks, config::JacobiConfig)
         proto_info = BenchmarkInformation(
             # No. of iterations of one pass
             (config.variant == :cuda) ? 1 : n_ranks * config.temporal_parallelism,
-            # 1024 appears to be the cut-off point where the performance models just become too wrong to yield acceptable iteration counts.
-            max(1024, true_grid_wh),
-            max(1024, true_grid_wh),
+            true_grid_wh,
+            true_grid_wh,
             n_ranks,
 
             1, # No. of subiterations

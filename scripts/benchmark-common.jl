@@ -149,10 +149,10 @@ function model_runtime(info::BenchmarkInformation)
 
     if info.variant == :cuda
         scheduling_latency_per_pass = 0.5 / 50_000 # According to https://dl.acm.org/doi/abs/10.1145/3648115.3648120
-        scheduling_runtime = (info.n_iters * info.n_subiters + 2) * scheduling_latency_per_pass
+        scheduling_runtime = info.n_iters * info.n_subiters * scheduling_latency_per_pass
     elseif info.variant == :mono
         scheduling_latency_per_pass = 10.0 / 50_000 # My own fit
-        scheduling_runtime = n_passes(info) * scheduling_latency_per_pass
+        scheduling_runtime = n_passes(info) * info.n_subiters * scheduling_latency_per_pass
     else
         scheduling_runtime = 0.0
     end
