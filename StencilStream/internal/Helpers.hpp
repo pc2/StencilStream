@@ -23,8 +23,10 @@
 
 #if defined(STENCILSTREAM_NAMED_KERNELS)
     #define STENCILSTREAM_NAMED_SINGLE_TASK(Name, argument) single_task<class Name>(argument)
+    #define STENCILSTREAM_NAMED_PARALLEL_FOR(Name, range, kernel) parallel_for<class Name>(range, kernel)
 #else
     #define STENCILSTREAM_NAMED_SINGLE_TASK(Name, argument) single_task(argument)
+    #define STENCILSTREAM_NAMED_PARALLEL_FOR(Name, range, kernel) parallel_for(range, kernel)
 #endif
 
 namespace stencil {

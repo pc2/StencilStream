@@ -28,7 +28,6 @@ foreach(KERNEL Jacobi1General Jacobi2Constant Jacobi3Constant Jacobi4Constant Ja
                 target_link_libraries(${EXECUTABLE} PUBLIC StencilStream_Monotile)
             endif()
             target_link_options(${EXECUTABLE} PUBLIC -Xsclock=350MHz)
-            target_link_libraries(${EXECUTABLE} PUBLIC StencilStream_NamedKernels)
             if(${BACKEND} MATCHES "multi")
                 target_compile_definitions(${EXECUTABLE} PUBLIC JACOBI_MULTI_FPGA=1)
             else()
@@ -43,7 +42,6 @@ foreach(KERNEL Jacobi1General Jacobi2Constant Jacobi3Constant Jacobi4Constant Ja
                 target_link_libraries(${EXECUTABLE} PUBLIC StencilStream_Tiling)
             endif()
             target_link_options(${EXECUTABLE} PUBLIC -Xsclock=350MHz)
-            target_link_libraries(${EXECUTABLE} PUBLIC StencilStream_NamedKernels)
         elseif(${BACKEND} STREQUAL "cuda")
             target_link_libraries(${EXECUTABLE} PUBLIC StencilStream_CUDA)
         endif()
@@ -51,6 +49,8 @@ foreach(KERNEL Jacobi1General Jacobi2Constant Jacobi3Constant Jacobi4Constant Ja
         if(${BACKEND} MATCHES "report")
             add_dependencies(jacobi_reports ${EXECUTABLE})
         endif()
+
+        target_link_libraries(${EXECUTABLE} PUBLIC StencilStream_NamedKernels)
     endforeach()
 endforeach()
 
