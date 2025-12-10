@@ -197,6 +197,9 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
         GridImpl swap_grid_b = source_grid.make_similar();
         GridImpl *pass_source = &source_grid;
         GridImpl *pass_target = &swap_grid_b;
+        sycl::range<2> grid_range = source_grid.get_grid_range();
+        sycl::range<2> work_item_range(
+            grid_range[0], 32 * stencil::internal::int_ceil_div<std::size_t>(grid_range[1], 32));
 
         for (std::size_t i_local_iter = 0; i_local_iter < params.n_iterations; i_local_iter++) {
             std::size_t i_iter = i_local_iter + params.iteration_offset;
@@ -216,7 +219,7 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
                     auto kernel = [=](sycl::id<2> id) {
                         std::size_t r = id[0];
                         std::size_t c = id[1];
-                        if (r >= grid_height || c >= grid_width) {
+                        if (c >= grid_width) {
                             return;
                         }
 
@@ -248,7 +251,8 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
                         target_ptr[r * grid_width + c] = transition_function(stencil);
                     };
 
-                    cgh.STENCILSTREAM_NAMED_PARALLEL_FOR(aos_stencil_kernel, source_range, kernel);
+                    cgh.STENCILSTREAM_NAMED_PARALLEL_FOR(aos_stencil_kernel, work_item_range,
+                                                         kernel);
                 });
 
                 if (i_local_iter == 0 && i_subiter == 0) {
@@ -272,6 +276,8 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
             source_grid.get_grid_height() * source_grid.get_grid_width());
         GridImpl target_buffer = source_grid.make_similar();
         sycl::range<2> grid_range = source_grid.get_grid_range();
+        sycl::range<2> work_item_range(
+            grid_range[0], 32 * stencil::internal::int_ceil_div<std::size_t>(grid_range[1], 32));
 
         internal::FieldBuffers<Cell> *pass_source = &buffers_a;
         internal::FieldBuffers<Cell> *pass_target = &buffers_b;
@@ -288,6 +294,10 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
                 buffers_a);
             auto source_range = ac_source_grid.get_range();
             auto scatter_kernel = [=](sycl::id<2> id) {
+                if (id[1] >= grid_range[1]) {
+                    return;
+                }
+
                 Cell cell = ac_source_grid[id[0]][id[1]];
                 size_t cell_id = id[0] * ac_source_grid.get_range()[1] + id[1];
 
@@ -299,7 +309,7 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
                     });
             };
 
-            cgh.STENCILSTREAM_NAMED_PARALLEL_FOR(scatter_kernel, source_range, scatter_kernel);
+            cgh.STENCILSTREAM_NAMED_PARALLEL_FOR(scatter_kernel, work_item_range, scatter_kernel);
         });
 
         // Run the simulation.
@@ -328,7 +338,7 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
                     auto stencil_kernel = [=](sycl::id<2> id) {
                         std::size_t r = id[0];
                         std::size_t c = id[1];
-                        if (r >= grid_range[0] || c >= grid_range[1]) {
+                        if (c >= grid_range[1]) {
                             return;
                         }
 
@@ -374,7 +384,7 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
                             });
                     };
 
-                    cgh.STENCILSTREAM_NAMED_PARALLEL_FOR(soa_stencil_kernel, grid_range,
+                    cgh.STENCILSTREAM_NAMED_PARALLEL_FOR(soa_stencil_kernel, work_item_range,
                                                          stencil_kernel);
                 });
 
@@ -399,6 +409,10 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
 
             auto target_range = target_ac.get_range();
             auto gather_kernel = [=](sycl::id<2> id) {
+                if (id[1] >= grid_range[1]) {
+                    return;
+                }
+                
                 Cell cell;
                 size_t cell_id = id[0] * target_ac.get_range()[1] + id[1];
 
@@ -412,7 +426,7 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
                 target_ac[id[0]][id[1]] = cell;
             };
 
-            cgh.STENCILSTREAM_NAMED_PARALLEL_FOR(gather_kernel, target_range, gather_kernel);
+            cgh.STENCILSTREAM_NAMED_PARALLEL_FOR(gather_kernel, work_item_range, gather_kernel);
         });
 
         return target_buffer;
