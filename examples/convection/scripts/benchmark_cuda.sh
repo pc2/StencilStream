@@ -3,3 +3,5 @@
 #SBATCH --mail-type=ALL --mail-user=joo@mail.upb.de -J convection_cuda
 
 ./scripts/benchmark.jl deep_grid_scaling ../../build/examples/convection/convection_cuda cuda 1
+./scripts/benchmark.jl deep_grid_scaling_ncu ../../build/examples/convection/convection_cuda cuda 1
+./scripts/benchmark.jl deep_grid_scaling_ncu ../../build/examples/convection/convection_cuda_naive cuda_naive 1

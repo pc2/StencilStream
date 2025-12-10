@@ -218,3 +218,59 @@ function warmup_cluster(command, n_ranks, variant; links_preconfigured=false, wa
         exit(1)
     end
 end
+
+function extract_ncu_profiling_data(io)
+    data_io_buffer = IOBuffer()
+    program_complete = false
+    while !eof(io)
+        line = readline(io)
+
+        if !program_complete
+            program_complete = match(r"^==PROF== Disconnected from process", line) !== nothing
+        else
+            if match(r"^==WARNING==", line) === nothing
+                println(data_io_buffer, line)
+            end
+        end
+    end
+    CSV.read(take!(data_io_buffer), DataFrame)
+end
+
+function ncu_profile_command(command; launch_id=nothing)
+    base_data = open(extract_ncu_profiling_data, `ncu \
+        --csv \
+        $command`)
+    base_data = base_data[
+        (launch_id === nothing) .|| (base_data.ID .== launch_id),
+        ["Metric Name", "Metric Unit", "Metric Value"]]
+
+    memory_data = open(extract_ncu_profiling_data, `ncu \
+        --section=MemoryWorkloadAnalysis_Tables \
+        --print-details all \
+        --csv \
+        $command`)
+    memory_data = memory_data[
+        (launch_id === nothing) .|| (memory_data.ID .== launch_id),
+        ["Metric Name", "Metric Unit", "Metric Value"]]
+
+    get_metric(data, metric) = first(data[data."Metric Name" .== metric, "Metric Value"])
+    get_float_metric(data, metric) = parse(Float64, get_metric(data, metric))
+
+    n_load_sectors_to_l1 = get_metric(memory_data, "l1tex__t_sectors_pipe_lsu_mem_global_op_ld.sum")
+    n_load_requests_to_l1 = get_metric(memory_data, "l1tex__t_requests_pipe_lsu_mem_global_op_ld.sum")
+    n_store_sectors_to_l1 = get_metric(memory_data, "l1tex__t_sectors_pipe_lsu_mem_global_op_st.sum")
+    n_store_requests_to_l1 = get_metric(memory_data, "l1tex__t_requests_pipe_lsu_mem_global_op_st.sum")
+    
+    Dict(
+        :achieved_occupancy => get_float_metric(base_data, "Achieved Occupancy"),
+        :compute_throughput => get_float_metric(base_data, "Compute (SM) Throughput"),
+        :dram_throughput => get_float_metric(base_data, "DRAM Throughput"),
+        :l1_throughput => get_float_metric(base_data, "L1/TEX Cache Throughput"),
+        :l2_throughput => get_float_metric(base_data, "L2 Cache Throughput"),
+        :theoretical_occupancy => get_float_metric(base_data, "Theoretical Occupancy"),
+        :read_volume => get_metric(memory_data, "dram__bytes_read.sum"),
+        :write_volume => get_metric(memory_data, "dram__bytes_write.sum"),
+        :sectors_per_load_request => n_load_sectors_to_l1 / n_load_requests_to_l1,
+        :sectors_per_store_request => n_store_sectors_to_l1 / n_store_requests_to_l1
+    )
+end

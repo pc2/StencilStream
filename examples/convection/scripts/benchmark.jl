@@ -65,6 +65,11 @@ function run_benchmark(exe, variant, experiment)
 end
 
 function max_perf_benchmark(exe, variant)
+    if variant == :cuda_naive
+        println(stderr, "Benchmarking the cuda_naive variant doesn't make sense!")
+        exit(1)
+    end
+
     if variant == :cuda
         experiment_path = "experiments/cuda-benchmark.json"
     else
@@ -98,6 +103,11 @@ function max_perf_benchmark(exe, variant)
 end
 
 function deep_grid_scaling_benchmark(exe, variant)
+    if variant == :cuda_naive
+        println(stderr, "Benchmarking the cuda_naive variant doesn't make sense!")
+        exit(1)
+    end
+
     grid_wh = variant == :mono ? TILE_NY[:mono] : max_grid_wh(variant, CELL_SIZE; clip_to_base=2)
 
     df_path = "scaling.$variant.csv"
@@ -143,7 +153,7 @@ function deep_grid_scaling_benchmark(exe, variant)
             "ly" => 1.0,
             "lx" => 1.0,
             "py" => 1.0,
-            "px" => 1.5,
+            "px" => 1.0,
             "res" => true_grid_wh,
 
             "eta0" => 1.0,
@@ -174,10 +184,58 @@ function deep_grid_scaling_benchmark(exe, variant)
     end
 end
 
+function deep_grid_scaling_ncu_profile(exe, variant)
+    grid_wh = max_grid_wh(:cuda, CELL_SIZE; clip_to_base=2)
+
+    df_path = "scaling.ncu.$variant.csv"
+    df = nothing
+
+    while round(grid_wh) >= 32
+        true_grid_wh = Int(round(grid_wh))
+
+        experiment = Dict(
+            "ly" => 1.0,
+            "lx" => 1.0,
+            "py" => 1.0,
+            "px" => 1.0,
+            "res" => true_grid_wh,
+
+            "eta0" => 1.0,
+            "DcT" => 1.0,
+            "deltaT" => 1.0,
+            "Ra" => 1e7,
+            "Pra" => 1e3,
+
+            "iterMax" => 1,
+            "nt" => 1,
+            "nout" => 1,
+            "nerr" => 1,
+            "epsilon" => 1e-4,
+            "dmp" => 2
+        )
+        (experiment_path, experiment_file) = mktemp()
+        JSON.print(experiment_file, experiment)
+        flush(experiment_file)
+        out_path = Base.Filesystem.mkpath("./out/")
+
+        data = ncu_profile_command(`$exe $experiment_path $out_path`; launch_id=(variant == :cuda) ? 1 : 0)
+        data[:grid_wh] = true_grid_wh
+
+        if df === nothing
+            df = DataFrame(data)
+        else
+            push!(df, data)
+        end
+        CSV.write(df_path, df)
+
+        grid_wh /= √2
+    end
+end
+
 function print_usage()
     println(stderr, "Usage: $PROGRAM_FILE <benchmark> <path to executable> <variant> <n_fpgas>")
-    println(stderr, "Possible benchmarks: max_perf, deep_grid_scaling")
-    println(stderr, "Possible variants: mono, cuda")
+    println(stderr, "Possible benchmarks: max_perf, deep_grid_scaling, deep_grid_scaling_ncu")
+    println(stderr, "Possible variants: mono, cuda, cuda_naive")
     exit(1)
 end
 
@@ -189,7 +247,7 @@ mode = ARGS[1]
 exe = ARGS[2]
 variant = Symbol(ARGS[3])
 n_ranks = parse(Int, ARGS[4])
-if variant ∉ [:mono, :cuda]
+if variant ∉ [:mono, :cuda, :cuda_naive]
     println(stderr, "Unsupported variant $variant")
     println(stderr)
     print_usage()
@@ -199,4 +257,6 @@ if mode == "max_perf"
     max_perf_benchmark(exe, variant)
 elseif mode == "deep_grid_scaling"
     deep_grid_scaling_benchmark(exe, variant)
+elseif mode == "deep_grid_scaling_ncu"
+    deep_grid_scaling_ncu_profile(exe, variant)
 end
