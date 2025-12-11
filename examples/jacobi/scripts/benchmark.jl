@@ -208,6 +208,32 @@ function deep_grid_scaling_benchmark(exec, n_ranks, config::JacobiConfig)
     end
 end
 
+function deep_grid_scaling_ncu_profile(exe, config::JacobiConfig)
+    grid_wh = max_grid_wh(:cuda, CELL_SIZE; clip_to_base=2)
+    arguments = fill(1/config.n_coefficients, config.n_coefficients)
+
+    df_path = "scaling.ncu.$(config.variant).csv"
+    df = nothing
+
+    while round(grid_wh) >= 32
+        true_grid_wh = Int(round(grid_wh))
+
+        command = `$exe $true_grid_wh $true_grid_wh 1 /dev/null $arguments`
+
+        data = ncu_profile_command(command; launch_id=0)
+        data[:grid_wh] = true_grid_wh
+
+        if df === nothing
+            df = DataFrame(data)
+        else
+            push!(df, data)
+        end
+        CSV.write(df_path, df)
+
+        grid_wh /= √2
+    end
+end
+
 if size(ARGS) != (3,)
     println(stderr, "Usage: $PROGRAM_FILE <benchmark> <path to executable or directory> <n_ranks>")
     println(stderr, "Possible benchmarks: max_perf deep_grid_scaling")
@@ -222,6 +248,8 @@ if ARGS[1] == "max_perf"
     max_perf_benchmark(exe, n_ranks, config)
 elseif ARGS[1] == "deep_grid_scaling"
     deep_grid_scaling_benchmark(exe, n_ranks, config)
+elseif ARGS[1] == "deep_grid_scaling_ncu"
+    deep_grid_scaling_ncu_profile(exe, config)
 else
     println(stderr, "Unknown benchmark '$(ARGS[1])'")
     exit(1)

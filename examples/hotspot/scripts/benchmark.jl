@@ -12,6 +12,11 @@ const TILE_HEIGHT = Dict(:mono => 8192, :multi_mono => 4096, :tiling => 2^16, :c
 const TILE_WIDTH = Dict(:mono => 8192, :multi_mono => 4096, :tiling => 4096, :cuda => nothing)
 
 function run_benchmark(exec, variant, n_ranks, grid_height, grid_width, n_iters; n_samples=5, run_warmup=true)
+    if variant == :cuda_naive
+        println(stderr, "Benchmarking the cuda_naive variant doesn't make sense!")
+        exit(1)
+    end
+
     experiment_dir = mktempdir("/dev/shm/")
     temp_path = experiment_dir * "/temp.bin"
     power_path = experiment_dir * "/power.bin"
@@ -131,6 +136,11 @@ function max_perf_benchmark(exec, variant, n_ranks)
 end
 
 function deep_grid_scaling_benchmark(exec, variant, n_ranks)
+    if variant == :cuda_naive
+        println(stderr, "Benchmarking the cuda_naive variant doesn't make sense!")
+        exit(1)
+    end
+
     grid_wh = variant == :mono ? TILE_WIDTH[:mono] : max_grid_wh(variant, CELL_SIZE; clip_to_base=√2)
 
     df_path = "scaling.$variant.csv"
@@ -183,10 +193,40 @@ function deep_grid_scaling_benchmark(exec, variant, n_ranks)
     end
 end
 
+function deep_grid_scaling_ncu_profile(exe, variant)
+    grid_wh = max_grid_wh(:cuda, CELL_SIZE; clip_to_base=2)
+
+    df_path = "scaling.ncu.$variant.csv"
+    df = nothing
+
+    experiment_dir = mktempdir("/dev/shm/")
+    temp_path = experiment_dir * "/temp.bin"
+    power_path = experiment_dir * "/power.bin"
+
+
+    while round(grid_wh) >= 32
+        true_grid_wh = Int(round(grid_wh))
+        run(`./data/input_gen.jl $true_grid_wh $true_grid_wh $temp_path $power_path`)
+        command = `$exe $true_grid_wh $true_grid_wh 1 $temp_path $power_path /dev/null`
+
+        data = ncu_profile_command(command; launch_id= variant == :cuda ? 1 : 0)
+        data[:grid_wh] = true_grid_wh
+
+        if df === nothing
+            df = DataFrame(data)
+        else
+            push!(df, data)
+        end
+        CSV.write(df_path, df)
+
+        grid_wh /= √2
+    end
+end
+
 if size(ARGS) != (4,)
     println(stderr, "Usage: $PROGRAM_FILE <benchmark> <path to executable> <variant> <n_ranks>")
     println(stderr, "Possible benchmarks: max_perf, strong_scaling, deep_grid_scaling")
-    println(stderr, "Possible variants: mono, multi_mono, tiling, cuda")
+    println(stderr, "Possible variants: mono, multi_mono, tiling, cuda, cuda_naive")
     exit(1)
 end
 
@@ -199,6 +239,8 @@ if ARGS[1] == "max_perf"
     open(f -> JSON.print(f, metrics), "metrics.$variant.json", "w")
 elseif ARGS[1] == "deep_grid_scaling"
     deep_grid_scaling_benchmark(exec, variant, n_ranks)
+elseif ARGS[1] == "deep_grid_scaling_ncu"
+    deep_grid_scaling_ncu_profile(exec, variant)
 elseif ARGS[1] == "strong_scaling"
     metrics = Dict()
     for i in n_ranks:-1:1
