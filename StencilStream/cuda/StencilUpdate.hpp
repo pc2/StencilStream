@@ -197,6 +197,9 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
         GridImpl swap_grid_b = source_grid.make_similar();
         GridImpl *pass_source = &source_grid;
         GridImpl *pass_target = &swap_grid_b;
+        sycl::range<2> grid_range = source_grid.get_grid_range();
+        sycl::range<2> work_item_range(
+            grid_range[0], 32 * stencil::internal::int_ceil_div<std::size_t>(grid_range[1], 32));
 
         for (std::size_t i_local_iter = 0; i_local_iter < params.n_iterations; i_local_iter++) {
             std::size_t i_iter = i_local_iter + params.iteration_offset;
@@ -212,10 +215,11 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
                     F transition_function = params.transition_function;
                     TDV tdv = transition_function.get_time_dependent_value(i_iter);
 
+                    auto source_range = source_ac.get_range();
                     auto kernel = [=](sycl::id<2> id) {
                         std::size_t r = id[0];
                         std::size_t c = id[1];
-                        if (r >= grid_height || c >= grid_width) {
+                        if (c >= grid_width) {
                             return;
                         }
 
@@ -226,10 +230,13 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
 
                         for (std::size_t rel_r = 0; rel_r < 2 * F::stencil_radius + 1; rel_r++) {
                             std::size_t base_i = (r - F::stencil_radius + rel_r) * grid_width + c;
-                            bool is_halo_row = r + rel_r < F::stencil_radius || r + rel_r >= grid_height + F::stencil_radius;
+                            bool is_halo_row = r + rel_r < F::stencil_radius ||
+                                               r + rel_r >= grid_height + F::stencil_radius;
 
-                            for (std::size_t rel_c = 0; rel_c < 2 * F::stencil_radius + 1; rel_c++) {
-                                bool is_halo_col = c + rel_c < F::stencil_radius || c + rel_c >= grid_width + F::stencil_radius;
+                            for (std::size_t rel_c = 0; rel_c < 2 * F::stencil_radius + 1;
+                                 rel_c++) {
+                                bool is_halo_col = c + rel_c < F::stencil_radius ||
+                                                   c + rel_c >= grid_width + F::stencil_radius;
 
                                 Cell cell;
                                 if (is_halo_row || is_halo_col) {
@@ -244,7 +251,8 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
                         target_ptr[r * grid_width + c] = transition_function(stencil);
                     };
 
-                    cgh.parallel_for(source_ac.get_range(), kernel);
+                    cgh.STENCILSTREAM_NAMED_PARALLEL_FOR(aos_stencil_kernel, work_item_range,
+                                                         kernel);
                 });
 
                 if (i_local_iter == 0 && i_subiter == 0) {
@@ -268,6 +276,8 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
             source_grid.get_grid_height() * source_grid.get_grid_width());
         GridImpl target_buffer = source_grid.make_similar();
         sycl::range<2> grid_range = source_grid.get_grid_range();
+        sycl::range<2> work_item_range(
+            grid_range[0], 32 * stencil::internal::int_ceil_div<std::size_t>(grid_range[1], 32));
 
         internal::FieldBuffers<Cell> *pass_source = &buffers_a;
         internal::FieldBuffers<Cell> *pass_target = &buffers_b;
@@ -282,8 +292,12 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
                     return std::make_tuple(sycl::accessor(buf, cgh, sycl::write_only)...);
                 },
                 buffers_a);
+            auto source_range = ac_source_grid.get_range();
+            auto scatter_kernel = [=](sycl::id<2> id) {
+                if (id[1] >= grid_range[1]) {
+                    return;
+                }
 
-            cgh.parallel_for(ac_source_grid.get_range(), [=](sycl::id<2> id) {
                 Cell cell = ac_source_grid[id[0]][id[1]];
                 size_t cell_id = id[0] * ac_source_grid.get_range()[1] + id[1];
 
@@ -293,7 +307,9 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
                         acc[cell_id] = static_cast<std::remove_reference_t<decltype(acc[cell_id])>>(
                             cell.*member_ptr);
                     });
-            });
+            };
+
+            cgh.STENCILSTREAM_NAMED_PARALLEL_FOR(scatter_kernel, work_item_range, scatter_kernel);
         });
 
         // Run the simulation.
@@ -319,10 +335,10 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
                     using TDV = typename F::TimeDependentValue;
                     TDV tdv = transition_function.get_time_dependent_value(i_iter);
 
-                    cgh.parallel_for(grid_range, [=](sycl::id<2> id) {
+                    auto stencil_kernel = [=](sycl::id<2> id) {
                         std::size_t r = id[0];
                         std::size_t c = id[1];
-                        if (r >= grid_range[0] || c >= grid_range[1]) {
+                        if (c >= grid_range[1]) {
                             return;
                         }
 
@@ -330,12 +346,15 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
                         StencilImpl stencil(id, grid_range, i_iter, i_subiter, tdv);
 
                         for (std::size_t rel_r = 0; rel_r < 2 * F::stencil_radius + 1; rel_r++) {
-                            std::size_t base_i = (r - F::stencil_radius + rel_r) * grid_range[1] + c;
-                            bool is_halo_row = r + rel_r < F::stencil_radius || r + rel_r >= grid_range[0] + F::stencil_radius;
+                            std::size_t base_i =
+                                (r - F::stencil_radius + rel_r) * grid_range[1] + c;
+                            bool is_halo_row = r + rel_r < F::stencil_radius ||
+                                               r + rel_r >= grid_range[0] + F::stencil_radius;
 
                             for (std::size_t rel_c = 0; rel_c < 2 * F::stencil_radius + 1;
                                  rel_c++) {
-                                bool is_halo_col = c + rel_c < F::stencil_radius || c + rel_c >= grid_range[1] + F::stencil_radius;
+                                bool is_halo_col = c + rel_c < F::stencil_radius ||
+                                                   c + rel_c >= grid_range[1] + F::stencil_radius;
 
                                 Cell cell;
                                 if (is_halo_row || is_halo_col) {
@@ -363,7 +382,10 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
                                     static_cast<std::remove_reference_t<decltype(acc[cell_id])>>(
                                         new_cell.*member_ptr);
                             });
-                    });
+                    };
+
+                    cgh.STENCILSTREAM_NAMED_PARALLEL_FOR(soa_stencil_kernel, work_item_range,
+                                                         stencil_kernel);
                 });
 
                 if (params.profiling) {
@@ -385,7 +407,12 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
                 },
                 *pass_source);
 
-            cgh.parallel_for(target_ac.get_range(), [=](sycl::id<2> id) {
+            auto target_range = target_ac.get_range();
+            auto gather_kernel = [=](sycl::id<2> id) {
+                if (id[1] >= grid_range[1]) {
+                    return;
+                }
+                
                 Cell cell;
                 size_t cell_id = id[0] * target_ac.get_range()[1] + id[1];
 
@@ -397,7 +424,9 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
                                 acc[cell_id]);
                     });
                 target_ac[id[0]][id[1]] = cell;
-            });
+            };
+
+            cgh.STENCILSTREAM_NAMED_PARALLEL_FOR(gather_kernel, work_item_range, gather_kernel);
         });
 
         return target_buffer;

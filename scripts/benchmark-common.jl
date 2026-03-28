@@ -64,6 +64,10 @@ struct BenchmarkInformation
 end
 
 function f_effective(info::BenchmarkInformation)
+    if info.variant == :cuda
+        return nothing
+    end
+
     padded_vector_size =  2^ceil(log2(info.cell_size * info.spatial_parallelism))
     if !isnothing(info.n_ranks) && info.variant == :multi_mono
         s_link = 32 # pipeword size
@@ -73,7 +77,13 @@ function f_effective(info::BenchmarkInformation)
         f_link = Inf
     end
     mem_width = 64
-    f_mem = info.f * mem_width / padded_vector_size
+    if mem_width == padded_vector_size
+        f_mem = info.f
+    elseif mem_width > padded_vector_size
+        f_mem = info.f * padded_vector_size / mem_width
+    else
+        f_mem = info.f * mem_width / padded_vector_size
+    end
     minimum([f_link, f_mem, info.f])
 end
 
@@ -81,7 +91,7 @@ grid_size(info::BenchmarkInformation) = info.n_grid_rows * info.n_grid_cols
 workload(info::BenchmarkInformation) = grid_size(info) * info.n_iters
 function n_passes(info::BenchmarkInformation)
     if info.variant == :cuda
-        nothing
+        info.n_iters
     elseif (info.variant == :multi_mono && !isnothing(info.n_ranks))
         ceil(info.n_iters / info.temporal_parallelism / info.n_ranks)
     else
@@ -106,8 +116,6 @@ measured_throughput(info::BenchmarkInformation) = workload(info) / info.runtime
 measured_flops(info::BenchmarkInformation) = measured_throughput(info) * info.ops_per_cell
 
 function model_runtime(info::BenchmarkInformation)
-    l_link = 0.5e-3 / info.f
-
     if info.variant == :mono || info.variant == :multi_mono
         l_compute_unit = n_grid_col_vects(info) + 1
         l_fpga = n_cus(info) * l_compute_unit
@@ -115,8 +123,10 @@ function model_runtime(info::BenchmarkInformation)
         c_prime = l_fpga + (info.n_grid_rows * n_grid_col_vects(info))
         c_pass = c_prime
         if !isnothing(info.n_ranks)
-            c_pass += (info.n_ranks - 1) * (l_fpga + l_link)
+            l_link = 0.5e-3 / f_effective(info)
+            c_pass += l_link + (info.n_ranks - 1) * (l_fpga + l_link)
         end
+        computation_runtime = n_passes(info) * c_pass / f_effective(info)
     elseif info.variant == :tiling
         c_pass = 0
         for tile_row in 1:ceil(info.n_grid_rows / info.n_tile_rows)
@@ -127,13 +137,26 @@ function model_runtime(info::BenchmarkInformation)
                 c_pass += n_loop_iterations_per_tile
             end
         end
+        computation_runtime = n_passes(info) * c_pass / f_effective(info)
     elseif info.variant == :cuda
-        throw("not implemented")
+        MEM_THROUGHPUT = 0.8 * 1555.0 * 2^30 # Hard-coded for the Nvidia A100 for now
+        cell_rate = MEM_THROUGHPUT / (2*info.cell_size)
+        iteration_rate = cell_rate / (info.n_grid_rows * info.n_grid_cols) / info.n_subiters
+        computation_runtime = info.n_iters / iteration_rate
     else
         throw(KeyError(info.variant))
     end
 
-    return n_passes(info) * c_pass / f_effective(info)
+    if info.variant == :cuda
+        scheduling_latency_per_pass = 0.5 / 50_000 # According to https://dl.acm.org/doi/abs/10.1145/3648115.3648120
+        scheduling_runtime = info.n_iters * info.n_subiters * scheduling_latency_per_pass
+    elseif info.variant == :mono
+        scheduling_latency_per_pass = 10.0 / 50_000 # My own fit
+        scheduling_runtime = n_passes(info) * info.n_subiters * scheduling_latency_per_pass
+    else
+        scheduling_runtime = 0.0
+    end
+    max(scheduling_runtime, computation_runtime)
 end
 model_throughput(info::BenchmarkInformation) = workload(info) / model_runtime(info)
 max_compute_throughput(info::BenchmarkInformation) = parallelity(info) * info.f
@@ -163,13 +186,28 @@ function setup_io_pipes(n_ranks, variant)
     run(command)
 end
 
-function warmup_cluster(command, n_ranks, variant; links_preconfigured=false)
+function max_grid_wh(variant, cell_size; clip_to_base=nothing)
+    # Using the Bittware 520N for FPGA targets and Nvidia A100 for CUDA
+    memory_size = Dict(:mono => 32 * 2^30, :multi_mono => 32 * 2^30, :tiling => 32 * 2^30, :cuda => 40 * 2^30)
+    
+    # Maximal grid size that fits in global memory and is indexable with the 32-bit signed integers
+    max_n_cells = min(memory_size[variant] / 3 / cell_size, 2^31)
+    grid_wh = √(max_n_cells)
+
+    if !isnothing(clip_to_base)
+        grid_wh = clip_to_base^floor(log(clip_to_base, grid_wh))
+    end
+
+    Int(floor(grid_wh))
+end
+
+function warmup_cluster(command, n_ranks, variant; links_preconfigured=false, warmup_time="2m")
     warmup_successful = false
     for warmup_try in 1:3
         if warmup_try > 1 || !links_preconfigured
             setup_io_pipes(n_ranks, variant)
         end
-        r = run(Cmd(`timeout 2m $command`, ignorestatus=true))
+        r = run(Cmd(`timeout $warmup_time $command`, ignorestatus=true))
         if r.exitcode == 0
             warmup_successful = true
             break
@@ -179,4 +217,60 @@ function warmup_cluster(command, n_ranks, variant; links_preconfigured=false)
         println(stderr, "Failed to warmup links!")
         exit(1)
     end
+end
+
+function extract_ncu_profiling_data(io)
+    data_io_buffer = IOBuffer()
+    program_complete = false
+    while !eof(io)
+        line = readline(io)
+
+        if !program_complete
+            program_complete = match(r"^==PROF== Disconnected from process", line) !== nothing
+        else
+            if match(r"^==WARNING==", line) === nothing
+                println(data_io_buffer, line)
+            end
+        end
+    end
+    CSV.read(take!(data_io_buffer), DataFrame)
+end
+
+function ncu_profile_command(command; launch_id=nothing)
+    base_data = open(extract_ncu_profiling_data, `ncu \
+        --csv \
+        $command`)
+    base_data = base_data[
+        (launch_id === nothing) .|| (base_data.ID .== launch_id),
+        ["Metric Name", "Metric Unit", "Metric Value"]]
+
+    memory_data = open(extract_ncu_profiling_data, `ncu \
+        --section=MemoryWorkloadAnalysis_Tables \
+        --print-details all \
+        --csv \
+        $command`)
+    memory_data = memory_data[
+        (launch_id === nothing) .|| (memory_data.ID .== launch_id),
+        ["Metric Name", "Metric Unit", "Metric Value"]]
+
+    get_metric(data, metric) = first(data[data."Metric Name" .== metric, "Metric Value"])
+    get_float_metric(data, metric) = parse(Float64, get_metric(data, metric))
+
+    n_load_sectors_to_l1 = get_metric(memory_data, "l1tex__t_sectors_pipe_lsu_mem_global_op_ld.sum")
+    n_load_requests_to_l1 = get_metric(memory_data, "l1tex__t_requests_pipe_lsu_mem_global_op_ld.sum")
+    n_store_sectors_to_l1 = get_metric(memory_data, "l1tex__t_sectors_pipe_lsu_mem_global_op_st.sum")
+    n_store_requests_to_l1 = get_metric(memory_data, "l1tex__t_requests_pipe_lsu_mem_global_op_st.sum")
+    
+    Dict(
+        :achieved_occupancy => get_float_metric(base_data, "Achieved Occupancy"),
+        :compute_throughput => get_float_metric(base_data, "Compute (SM) Throughput"),
+        :dram_throughput => get_float_metric(base_data, "DRAM Throughput"),
+        :l1_throughput => get_float_metric(base_data, "L1/TEX Cache Throughput"),
+        :l2_throughput => get_float_metric(base_data, "L2 Cache Throughput"),
+        :theoretical_occupancy => get_float_metric(base_data, "Theoretical Occupancy"),
+        :read_volume => get_metric(memory_data, "dram__bytes_read.sum"),
+        :write_volume => get_metric(memory_data, "dram__bytes_write.sum"),
+        :sectors_per_load_request => n_load_sectors_to_l1 / n_load_requests_to_l1,
+        :sectors_per_store_request => n_store_sectors_to_l1 / n_store_requests_to_l1
+    )
 end

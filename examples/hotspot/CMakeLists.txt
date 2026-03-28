@@ -63,7 +63,7 @@ add_executable(hotspot_tiling_report hotspot.cpp)
 target_link_libraries(hotspot_tiling_report PUBLIC StencilStream_TilingReport)
 
 # Enable named kernels
-foreach(TARGET hotspot_mono hotspot_mono_report hotspot_tiling hotspot_tiling_report)
+foreach(TARGET hotspot_cuda hotspot_cuda_naive hotspot_mono hotspot_mono_report hotspot_tiling hotspot_tiling_report)
     target_link_libraries(${TARGET} PUBLIC StencilStream_NamedKernels)
 endforeach()
 
