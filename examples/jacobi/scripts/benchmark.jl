@@ -89,7 +89,7 @@ function run_benchmark(exe, n_ranks, config::JacobiConfig, grid_wh, n_timesteps;
 end
 
 function max_perf_benchmark(exe, n_ranks, config::JacobiConfig)
-    grid_wh = (config.variant == :mono :config.variant == :multi_mono) ? config.tile_width : max_grid_wh(config.variant, CELL_SIZE; clip_to_base=√2)
+    grid_wh = (config.variant == :mono || config.variant == :multi_mono) ? config.tile_width : max_grid_wh(config.variant, CELL_SIZE; clip_to_base=√2)
 
     proto_info = BenchmarkInformation(
         # No. of iterations of one pass
