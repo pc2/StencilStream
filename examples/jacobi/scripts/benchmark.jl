@@ -150,7 +150,7 @@ function max_perf_benchmark(exe, n_ranks, config::JacobiConfig)
         )
     end
 
-    open("metrics.$exe.json", "w") do metrics_file
+    open("metrics.$(basename(exe)).json", "w") do metrics_file
         JSON.print(metrics_file, metrics)
     end
 end
