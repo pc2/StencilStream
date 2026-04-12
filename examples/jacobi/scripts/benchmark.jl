@@ -39,7 +39,7 @@ function run_benchmark(exe, n_ranks, config::JacobiConfig, grid_wh, n_timesteps;
 
     # Set up the multi-FPGA cluster
     if config.variant == :multi_mono
-        command = `$mpirun -n $n_ranks $command`
+        command = `$MPIRUN -n $n_ranks $command`
     end
 
     if run_warmup
@@ -108,7 +108,7 @@ function max_perf_benchmark(exe, n_ranks, config::JacobiConfig)
         config.tile_height,
         config.tile_width,
 
-        (config.variant == :cuda) ? nothing : load_report_details(exec * ".prj/reports"), # Clock frequency
+        (config.variant == :cuda) ? nothing : load_report_details(exe * ".prj/reports"), # Clock frequency
 
         42.0 # Dummy runtime
     )
@@ -155,7 +155,7 @@ function max_perf_benchmark(exe, n_ranks, config::JacobiConfig)
     end
 end
 
-function deep_grid_scaling_benchmark(exec, n_ranks, config::JacobiConfig)
+function deep_grid_scaling_benchmark(exe, n_ranks, config::JacobiConfig)
     grid_wh = config.variant == :mono ? config.tile_width : max_grid_wh(config.variant, CELL_SIZE; clip_to_base=√2)
 
     df_path = "scaling.$(config.variant).csv"
@@ -191,7 +191,7 @@ function deep_grid_scaling_benchmark(exec, n_ranks, config::JacobiConfig)
             config.tile_height,
             config.tile_width,
 
-            (config.variant == :cuda) ? nothing : load_report_details(exec * ".prj/reports"), # Clock frequency
+            (config.variant == :cuda) ? nothing : load_report_details(exe * ".prj/reports"), # Clock frequency
 
             42.0 # Dummy runtime
         )
@@ -199,7 +199,7 @@ function deep_grid_scaling_benchmark(exec, n_ranks, config::JacobiConfig)
         n_passes = Int(ceil(target_runtime / model_runtime(proto_info)))
         n_iters = n_passes * proto_info.n_iters
 
-        info = run_benchmark(exec, n_ranks, config, true_grid_wh, n_iters; n_samples=3, run_warmup=first_iteration)
+        info = run_benchmark(exe, n_ranks, config, true_grid_wh, n_iters; n_samples=3, run_warmup=first_iteration)
         push!(df, [true_grid_wh, n_iters, info.runtime, measured_throughput(info), model_throughput(info)])
         CSV.write(df_path, df)
 

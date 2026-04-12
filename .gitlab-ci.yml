@@ -62,13 +62,25 @@ default:
     tags:
         - noctua2
     variables:
-        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p fpga --constraint=bittware_520n_20.4.0_max -t 01:00:00 -n ${STST_N_RANKS} --ntasks-per-node=2 -x "n2fpga[20,22,23,26]"
+        SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p fpga --constraint=bittware_520n_20.4.0_max -t 01:00:00
     script:
         - cd "examples/${STST_EXAMPLE}"
         - ./scripts/benchmark.jl max_perf "../../build/examples/${STST_EXAMPLE}/${STST_EXECUTABLE}" ${STST_VARIANT} ${STST_N_RANKS}
     artifacts:
         paths:
             - examples/*/metrics.*.json
+
+.single_fpga_benchmark:
+    extends:
+        - .single_fpga_benchmark
+    variables:
+        STST_N_RANKS: 1
+
+.multi_fpga_benchmark:
+    extends:
+        - .multi_fpga_benchmark
+    variables:
+        SCHEDULER_PARAMETERS: ${SCHEDULER_PARAMETERS} -n ${STST_N_RANKS} --ntasks-per-node=2 -x "n2fpga[20,22,23,26]"
 
 # =============
 # Preevaluation
@@ -105,13 +117,12 @@ convection synthesis:
         STST_EXECUTABLE: "convection"
 
 convection benchmark:
-    extends: .fpga_benchmark
+    extends: .single_fpga_benchmark
     needs:
         - convection synthesis
     variables:
         STST_EXAMPLE: "convection"
         STST_EXECUTABLE: "convection"
-        STST_N_RANKS: "1"
         STST_VARIANT: "mono"
 
 # =======
@@ -125,13 +136,12 @@ hotspot_mono synthesis:
         STST_EXECUTABLE: "hotspot_mono"
 
 hotspot_mono benchmark:
-    extends: .fpga_benchmark
+    extends: .single_fpga_benchmark
     needs:
         - hotspot_mono synthesis
     variables:
         STST_EXAMPLE: "hotspot"
         STST_EXECUTABLE: "hotspot_mono"
-        STST_N_RANKS: 1
         STST_VARIANT: "mono"
 
 hotspot_multi_mono synthesis:
@@ -141,7 +151,7 @@ hotspot_multi_mono synthesis:
         STST_EXECUTABLE: "hotspot_multi_mono"
 
 hotspot_multi_mono benchmark:
-    extends: .fpga_benchmark
+    extends: .multi_fpga_benchmark
     needs:
         - hotspot_multi_mono synthesis
     variables:
@@ -157,13 +167,12 @@ hotspot_tiling synthesis:
         STST_EXECUTABLE: "hotspot_tiling"
 
 hotspot_tiling benchmark:
-    extends: .fpga_benchmark
+    extends: .single_fpga_benchmark
     needs:
         - hotspot_tiling synthesis
     variables:
         STST_EXAMPLE: "hotspot"
         STST_EXECUTABLE: "hotspot_tiling"
-        STST_N_RANKS: 1
         STST_VARIANT: "tiling"
 
 # ====
@@ -177,13 +186,12 @@ fdtd_coef_device_mono synthesis:
         STST_EXECUTABLE: "fdtd_coef_device_mono"
 
 fdtd_coef_device_mono benchmark:
-    extends: .fpga_benchmark
+    extends: .single_fpga_benchmark
     needs:
         - fdtd_coef_device_mono synthesis
     variables:
         STST_EXAMPLE: "fdtd"
         STST_EXECUTABLE: "fdtd_coef_device_mono"
-        STST_N_RANKS: 1
         STST_VARIANT: "mono"
 
 fdtd_coef_device_multi_mono synthesis:
@@ -193,7 +201,7 @@ fdtd_coef_device_multi_mono synthesis:
         STST_EXECUTABLE: "fdtd_coef_device_multi_mono"
 
 fdtd_coef_device_multi_mono benchmark:
-    extends: .fpga_benchmark
+    extends: .multi_fpga_benchmark
     needs:
         - fdtd_coef_device_multi_mono synthesis
     variables:
@@ -209,13 +217,12 @@ fdtd_coef_device_tiling synthesis:
         STST_EXECUTABLE: "fdtd_coef_device_tiling"
 
 fdtd_coef_device_tiling benchmark:
-    extends: .fpga_benchmark
+    extends: .single_fpga_benchmark
     needs:
         - fdtd_coef_device_tiling synthesis
     variables:
         STST_EXAMPLE: "fdtd"
         STST_EXECUTABLE: "fdtd_coef_device_tiling"
-        STST_N_RANKS: 1
         STST_VARIANT: "tiling"
 
 # ======
@@ -229,13 +236,12 @@ Jacobi5General_mono synthesis:
         STST_EXECUTABLE: "Jacobi5General_mono"
 
 Jacobi5General_mono benchmark:
-    extends: .fpga_benchmark
+    extends: .single_fpga_benchmark
     needs:
         - Jacobi5General_mono synthesis
     variables:
         STST_EXAMPLE: "jacobi"
         STST_EXECUTABLE: "Jacobi5General_mono"
-        STST_N_RANKS: 1
         STST_VARIANT: "" # Left empty, automatically supplied by binary
 
 Jacobi5General_multi_mono synthesis:
@@ -245,7 +251,7 @@ Jacobi5General_multi_mono synthesis:
         STST_EXECUTABLE: "Jacobi5General_multi_mono"
 
 Jacobi5General_multi_mono benchmark:
-    extends: .fpga_benchmark
+    extends: .multi_fpga_benchmark
     needs:
         - Jacobi5General_multi_mono synthesis
     variables:
@@ -261,13 +267,12 @@ Jacobi5General_tiling synthesis:
         STST_EXECUTABLE: "Jacobi5General_tiling"
 
 Jacobi5General_tiling benchmark:
-    extends: .fpga_benchmark
+    extends: .single_fpga_benchmark
     needs:
         - Jacobi5General_tiling synthesis
     variables:
         STST_EXAMPLE: "jacobi"
         STST_EXECUTABLE: "Jacobi5General_tiling"
-        STST_N_RANKS: 1
         STST_VARIANT: "" # Left empty, automatically supplied by binary
 
 # ===============
