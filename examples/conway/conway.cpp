@@ -19,16 +19,16 @@
  */
 
 #include <StencilStream/BaseTransitionFunction.hpp>
-#include <StencilStream/cpu/StencilUpdate.hpp>
-#include <StencilStream/cuda/StencilUpdate.hpp>
-#include <StencilStream/monotile/StencilUpdate.hpp>
 
 using namespace stencil;
 #if defined(STENCILSTREAM_BACKEND_CPU)
+#include <StencilStream/cpu/StencilUpdate.hpp>
 using namespace stencil::cpu;
 #elif defined(STENCILSTREAM_BACKEND_CUDA)
+#include <StencilStream/cuda/StencilUpdate.hpp>
 using namespace stencil::cuda;
 #else
+#include <StencilStream/monotile/StencilUpdate.hpp>
 using namespace stencil::monotile;
 #endif
 
