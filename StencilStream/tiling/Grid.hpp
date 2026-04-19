@@ -56,10 +56,6 @@ namespace tiling {
  * method \ref copy_from_buffer. The method \ref copy_to_buffer does the reverse: It writes the
  * contents of the grid into a SYCL buffer.
  *
- * On the device side, the data can be read or written with the help of the method templates \ref
- * submit_read and \ref submit_write. Those take a SYCL pipe as a template argument and enqueue
- * kernels that read/write the contents of the grid to/from the pipes.
- *
  * \tparam Cell The cell type to store.
  *
  * \tparam spatial_parallelism The number of cells to load and store in parallel. Has to match the
@@ -74,6 +70,13 @@ template <typename Cell, std::size_t spatial_parallelism> class Grid {
      */
     static constexpr std::size_t dimensions = 2;
 
+    /**
+     * \brief The vectorized cell type used for internal storage.
+     *
+     * Groups `spatial_parallelism` cells into a single padded value for memory-aligned bulk
+     * access. The padding ensures that the memory word boundary is respected when loading or
+     * storing multiple cells at once.
+     */
     using CellVector = stencil::internal::Padded<std::array<Cell, spatial_parallelism>>;
 
     /**
@@ -192,7 +195,7 @@ template <typename Cell, std::size_t spatial_parallelism> class Grid {
      * \brief Copy the contents of the SYCL buffer into the grid.
      *
      * The SYCL buffer will be accessed read-only one the host; It may be used elsewhere too. The
-     * buffer however has to have the same size as the grid, otherwise a \ref std::range_error is
+     * buffer however has to have the same size as the grid, otherwise a std::range_error is
      * thrown.
      *
      * \param input_buffer The buffer to copy the data from.
@@ -216,7 +219,7 @@ template <typename Cell, std::size_t spatial_parallelism> class Grid {
      * \brief Copy the contents of the grid into the SYCL buffer.
      *
      * The contents of the SYCL buffer will be overwritten on the host. The buffer also has to have
-     * the same size as the grid, otherwise a \ref std::range_error is thrown.
+     * the same size as the grid, otherwise a std::range_error is thrown.
      *
      * \param output_buffer The buffer to copy the data to.
      * \throws std::range_error The size of the buffer does not match the grid.
@@ -251,13 +254,33 @@ template <typename Cell, std::size_t spatial_parallelism> class Grid {
      */
     std::size_t get_grid_width() const { return grid_range[1]; }
 
+    /**
+     * \brief Return the width of the grid, optionally in vectorized units.
+     *
+     * \param vectorized If true, returns the number of \ref CellVector columns (i.e., the grid
+     * width divided by `spatial_parallelism`, rounded up). If false, returns the width in
+     * individual cells, identical to `get_grid_width()`.
+     */
     std::size_t get_grid_width(bool vectorized) const {
         using namespace stencil::internal;
         return vectorized ? int_ceil_div(grid_range[1], spatial_parallelism) : grid_range[1];
     }
 
+    /**
+     * \brief Return the dimensions of the grid as a two-element range.
+     *
+     * The first element is the height (number of rows) and the second element is the width (number
+     * of columns), both measured in individual cells.
+     */
     sycl::range<2> get_grid_range() const { return grid_range; }
 
+    /**
+     * \brief Return the dimensions of the grid, optionally in vectorized units.
+     *
+     * \param vectorized If true, the column dimension is expressed in \ref CellVector units
+     * (i.e., divided by `spatial_parallelism`, rounded up). If false, individual cell units are
+     * used and the result is identical to the no-argument overload.
+     */
     sycl::range<2> get_grid_range(bool vectorized) const {
         if (vectorized) {
             return sycl::range<2>(grid_range[0], get_grid_width(true));
@@ -266,6 +289,19 @@ template <typename Cell, std::size_t spatial_parallelism> class Grid {
         }
     }
 
+    /**
+     * \brief Return the number of tiles in each dimension when the grid is partitioned into tiles.
+     *
+     * The grid is logically divided into a rectangular arrangement of tiles, each at most
+     * `max_tile_range` in size. Boundary tiles may be smaller. This method returns the number of
+     * tile columns and tile rows.
+     *
+     * \param max_tile_range The maximum dimensions of a single tile, in individual cells. The
+     * column dimension must be a multiple of `spatial_parallelism`.
+     * \return A two-element range whose first element is the number of tile rows and whose second
+     * element is the number of tile columns.
+     * \throws std::invalid_argument The tile width is not a multiple of `spatial_parallelism`.
+     */
     sycl::range<2> get_tile_id_range(sycl::range<2> max_tile_range) const {
         using namespace stencil::internal;
         if (max_tile_range[1] % spatial_parallelism != 0) {
@@ -276,6 +312,16 @@ template <typename Cell, std::size_t spatial_parallelism> class Grid {
                               int_ceil_div(get_grid_width(), max_tile_range[1]));
     }
 
+    /**
+     * \brief Return the grid offset of the top-left corner of a tile.
+     *
+     * \param tile_id The row/column index of the tile in the tile grid.
+     * \param max_tile_range The maximum dimensions of a single tile, in individual cells.
+     * \param vectorized If true, the returned column offset is expressed in \ref CellVector units.
+     * If false, it is expressed in individual cells.
+     * \return The offset (row, column) of the tile's top-left corner within the grid.
+     * \throws std::out_of_range `tile_id` is outside the tile grid.
+     */
     sycl::id<2> get_tile_offset(sycl::id<2> tile_id, sycl::range<2> max_tile_range,
                                 bool vectorized) const {
         sycl::range<2> tile_id_range = get_tile_id_range(max_tile_range);
@@ -290,6 +336,24 @@ template <typename Cell, std::size_t spatial_parallelism> class Grid {
         return sycl::id<2>(row_offset, column_offset);
     }
 
+    /**
+     * \brief Return the grid offset of the top-left corner of a tile including its halo region.
+     *
+     * The halo region extends `halo_range` cells beyond each edge of the tile, providing the
+     * stencil neighborhood for cells at tile boundaries. For the first tile row/column the haloed
+     * offset may be negative (i.e., before the grid boundary).
+     *
+     * \param tile_id The row/column index of the tile in the tile grid.
+     * \param max_tile_range The maximum dimensions of a single tile, in individual cells.
+     * \param halo_range The halo size in each dimension, in individual cells. The column dimension
+     * must be a multiple of `spatial_parallelism`.
+     * \param vectorized If true, the returned column offset is expressed in \ref CellVector units.
+     * If false, it is expressed in individual cells.
+     * \param only_valid_cells If true, clamp the returned offset so it is never negative (i.e.,
+     * never before the grid origin).
+     * \return A two-element array {row_offset, column_offset} of the haloed tile's top-left corner.
+     * \throws std::invalid_argument The halo width is not a multiple of `spatial_parallelism`.
+     */
     std::array<std::ptrdiff_t, 2> get_haloed_tile_offset(sycl::id<2> tile_id,
                                                          sycl::range<2> max_tile_range,
                                                          sycl::range<2> halo_range, bool vectorized,
@@ -309,6 +373,19 @@ template <typename Cell, std::size_t spatial_parallelism> class Grid {
         return {haloed_row_offset, haloed_column_offset};
     }
 
+    /**
+     * \brief Return the core dimensions of a tile.
+     *
+     * Interior tiles have the dimensions given by `max_tile_range`. South and east boundary tiles
+     * that do not fill a full `max_tile_range` region are smaller.
+     *
+     * \param tile_id The row/column index of the tile in the tile grid.
+     * \param max_tile_range The maximum dimensions of a single tile, in individual cells.
+     * \param vectorized If true, the returned column dimension is expressed in \ref CellVector
+     * units. If false, it is expressed in individual cells.
+     * \return The actual range (height, width) of the tile.
+     * \throws std::out_of_range `tile_id` is outside the tile grid.
+     */
     sycl::range<2> get_tile_range(sycl::id<2> tile_id, sycl::range<2> max_tile_range,
                                   bool vectorized) const {
         using namespace stencil::internal;
@@ -326,6 +403,24 @@ template <typename Cell, std::size_t spatial_parallelism> class Grid {
         return sycl::range<2>(tile_height, tile_width);
     }
 
+    /**
+     * \brief Return the dimensions of a tile including its halo region.
+     *
+     * The returned range covers the tile core itself plus `halo_range` extra cells on each side.
+     * At grid boundaries, the halo may extend beyond the grid; `only_valid_cells` controls
+     * whether those out-of-bounds portions are clipped.
+     *
+     * \param tile_id The row/column index of the tile in the tile grid.
+     * \param max_tile_range The maximum dimensions of a single tile, in individual cells.
+     * \param halo_range The halo size in each dimension, in individual cells. The column dimension
+     * must be a multiple of `spatial_parallelism`.
+     * \param vectorized If true, the returned column dimension is expressed in \ref CellVector
+     * units. If false, it is expressed in individual cells.
+     * \param only_valid_cells If true, clip the haloed range so it does not extend beyond the
+     * grid boundaries.
+     * \return The range (height, width) of the haloed tile.
+     * \throws std::invalid_argument The halo width is not a multiple of `spatial_parallelism`.
+     */
     sycl::range<2> get_haloed_tile_range(sycl::id<2> tile_id, sycl::range<2> max_tile_range,
                                          sycl::range<2> halo_range, bool vectorized,
                                          bool only_valid_cells) const {
@@ -354,6 +449,13 @@ template <typename Cell, std::size_t spatial_parallelism> class Grid {
         }
     }
 
+    /**
+     * \brief Return the underlying vectorized grid buffer.
+     *
+     * Returns the internal SYCL buffer whose cells are stored in \ref CellVector units.
+     * This is used by the \ref StencilUpdate backend to submit read and write kernels directly
+     * against the vectorized storage layout.
+     */
     sycl::buffer<CellVector, 2> get_internal() const { return grid_buffer; }
 
   private:

@@ -27,8 +27,16 @@
 namespace stencil {
 namespace monotile {
 
+/**
+ * \brief Selects the inter-device communication mode for a StencilUpdate instance.
+ *
+ * When more than one FPGA is involved in a computation (e.g., via MPI-based multi-FPGA execution),
+ * this enum controls how grids are transferred between devices between kernel invocations.
+ */
 enum class Connectivity {
+    /// \brief A single FPGA handles the entire computation; no inter-device communication.
     SINGLE_DEVICE,
+    /// \brief Multiple FPGAs are connected via Intel I/O pipes; data is streamed between devices.
     IO_PIPES,
 };
 
@@ -87,6 +95,7 @@ class StencilUpdate {
         std::conditional<connectivity == Connectivity::IO_PIPES, IOPipeDesign, LocalDesign>::type;
 
   public:
+    /// \brief Shorthand for the used and supported grid type.
     using GridImpl = Grid<typename F::Cell, spatial_parallelism>;
 
     /**

@@ -39,11 +39,42 @@ namespace stencil {
  */
 class BaseTransitionFunction {
   public:
+    /**
+     * \brief The type of values provided by the time-dependent value (TDV) system.
+     *
+     * This default definition uses `std::monostate`, which effectively disables the TDV feature:
+     * the type carries no data and has exactly one value.
+     */
     using TimeDependentValue = std::monostate;
 
+    /**
+     * \brief The radius of the stencil neighborhood.
+     *
+     * Defines how far the stencil extends from the central cell in each direction. A radius of 1
+     * gives a 3×3 neighborhood; a radius of 2 gives a 5×5 neighborhood, and so on. This default
+     * value of 1 can be overridden in a derived class.
+     */
     static constexpr std::size_t stencil_radius = 1;
+
+    /**
+     * \brief The number of sub-iterations per iteration.
+     *
+     * Some stencil algorithms require multiple sub-passes per logical iteration (e.g., alternating
+     * update schemes). This default value of 1 disables sub-iterations. It can be overridden in a
+     * derived class.
+     */
     static constexpr std::size_t n_subiterations = 1;
 
+    /**
+     * \brief Return the time-dependent value for the given iteration.
+     *
+     * This default implementation returns `std::monostate()`, which carries no information.
+     * Override this method in a derived class to supply iteration-specific data to the transition
+     * function.
+     *
+     * \param i_iteration The current (global) iteration index.
+     * \return A `std::monostate` value.
+     */
     std::monostate get_time_dependent_value(std::size_t i_iteration) const {
         return std::monostate();
     }

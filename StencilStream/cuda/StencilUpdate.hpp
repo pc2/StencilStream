@@ -93,6 +93,14 @@ template <concepts::TransitionFunction F, bool split_cell_structure = false> cla
          */
         bool blocking = false;
 
+        /**
+         * \brief Enable kernel profiling.
+         *
+         * Setting this to true creates the SYCL queue with
+         * `sycl::property::queue::enable_profiling` and records each kernel's execution event.
+         * The accumulated device-side kernel runtime can then be retrieved via \ref
+         * get_kernel_runtime().
+         */
         bool profiling = false;
     };
 

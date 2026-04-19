@@ -87,12 +87,36 @@ class Stencil {
         }
     }
 
+    /**
+     * \brief Helper returned by the signed-index subscript operator to support two-dimensional
+     * indexing with signed integers.
+     *
+     * An expression like `stencil[-1][2]` first calls `Stencil::operator[](-1)`, which returns a
+     * `StencilSubscript` holding the row index. The second `operator[](2)` on that object then
+     * performs the actual cell lookup. The origin is the central cell, so row and column indices
+     * range from `-stencil_radius` to `+stencil_radius` (inclusive).
+     *
+     * \tparam index_t A signed integer type used for indexing. Must be wide enough to represent
+     * `stencil_radius`.
+     */
     template <std::signed_integral index_t>
         requires(stencil_radius <= std::numeric_limits<index_t>::max())
     class StencilSubscript {
       public:
+        /**
+         * \brief Construct a subscript helper for the given row.
+         *
+         * \param stencil The stencil buffer being indexed.
+         * \param r The signed row index relative to the central cell.
+         */
         StencilSubscript(Stencil const &stencil, index_t r) : stencil(stencil), r(r) {}
 
+        /**
+         * \brief Access a cell at the given column offset.
+         *
+         * \param c The signed column index relative to the central cell.
+         * \return A constant reference to the cell at row `r`, column `c`.
+         */
         Cell const &operator[](index_t c) const {
             return stencil[sycl::id<2>(r + stencil_radius, c + stencil_radius)];
         }
@@ -102,6 +126,18 @@ class Stencil {
         index_t r;
     };
 
+    /**
+     * \brief Access a row of the stencil buffer using a signed row index.
+     *
+     * The returned \ref StencilSubscript object can be indexed with a signed column index to
+     * obtain the desired cell. Index `0` refers to the central cell's row; negative values refer
+     * to rows above it and positive values to rows below it.
+     *
+     * \tparam index_t A signed integer type used for indexing.
+     * \param r The signed row index relative to the central cell, in the range
+     * `[-stencil_radius, stencil_radius]`.
+     * \return A \ref StencilSubscript that resolves the column on the next `operator[]` call.
+     */
     template <std::signed_integral index_t>
     StencilSubscript<index_t> operator[](index_t r) const
         requires(stencil_radius <= std::numeric_limits<index_t>::max())

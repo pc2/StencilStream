@@ -100,7 +100,7 @@ template <typename Cell> class Grid {
      * \brief Copy the contents of the SYCL buffer into the grid.
      *
      * The SYCL buffer will be accessed read-only one the host; It may be used elsewhere too. The
-     * buffer however has to have the same size as the grid, otherwise a \ref std::range_error is
+     * buffer however has to have the same size as the grid, otherwise a std::range_error is
      * thrown.
      *
      * \param other_buffer The buffer to copy the data from.
@@ -119,7 +119,7 @@ template <typename Cell> class Grid {
      * \brief Copy the contents of the grid into the SYCL buffer.
      *
      * The contents of the SYCL buffer will be overwritten on the host. The buffer also has to have
-     * the same size as the grid, otherwise a \ref std::range_error is thrown.
+     * the same size as the grid, otherwise a std::range_error is thrown.
      *
      * \param other_buffer The buffer to copy the data to.
      * \throws std::range_error The size of the buffer does not match the grid.
@@ -162,6 +162,12 @@ template <typename Cell> class Grid {
      */
     std::size_t get_grid_width() const { return buffer.get_range()[1]; }
 
+    /**
+     * \brief Return the dimensions of the grid as a two-element range.
+     *
+     * The first element is the height (number of rows) and the second element is the width (number
+     * of columns).
+     */
     sycl::range<2> get_grid_range() const { return buffer.get_range(); }
 
     /**
@@ -169,6 +175,12 @@ template <typename Cell> class Grid {
      */
     Grid make_similar() const { return Grid(buffer.get_range()); }
 
+    /**
+     * \brief Return a reference to the underlying SYCL buffer.
+     *
+     * Provides direct access to the internal SYCL buffer, for use by the \ref StencilUpdate
+     * backend when submitting kernels.
+     */
     sycl::buffer<Cell, 2> &get_buffer() { return buffer; }
 
   private:

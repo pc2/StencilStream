@@ -14,7 +14,7 @@ For each supported combination, refer to the official compatibility notes from I
 | Backend      | OS Requirements |
 |--------------|-----------|
 | x86 CPU      | • [oneAPI CPU](https://www.intel.com/content/www/us/en/developer/articles/system-requirements/oneapi-base-toolkit/2024.html) |
-| NVIDIA GPU   | • [oneAPI NVIDIA](https://www.intel.com/content/www/us/en/developer/articles/system-requirements/oneapi-base-toolkit/2024.html) <br> • [Codeplay NVIDIA](https://developer.codeplay.com/products/oneapi/nvidia/2025.1.1/guides/get-started-guide-nvidia.html) </br> |
+| NVIDIA GPU   | • [oneAPI NVIDIA](https://www.intel.com/content/www/us/en/developer/articles/system-requirements/oneapi-base-toolkit/2024.html) <br> • [Codeplay NVIDIA](https://developer.codeplay.com/products/oneapi/nvidia/2025.1.1/guides/get-started-guide-nvidia.html) |
 | Intel FPGA   | • [oneAPI FPGA](https://www.intel.com/content/www/us/en/developer/articles/system-requirements/oneapi-dpcpp/2025.html) |
 
 ---
@@ -37,8 +37,8 @@ Depending on your hardware, additional toolchains may be required, such as CUDA 
 | OS        | Device       | Required Tools                                        |
 |-----------|--------------|-------------------------------------------------------|
 | Linux     | x86 CPU      | • oneAPI DPC++ Compiler                                 |
-| Linux     | NVIDIA GPU   | • CUDA Toolkit <br> • oneAPI for NVIDIA GPUs by Codeplay </br>              |
-| Linux     | Intel FPGA   | • Intel FPGA SDK <br> • SYCL FPGA runtime  </br>                 |
+| Linux     | NVIDIA GPU   | • CUDA Toolkit <br> • oneAPI for NVIDIA GPUs by Codeplay              |
+| Linux     | Intel FPGA   | • Intel FPGA SDK <br> • SYCL FPGA runtime                  |
 
 
 #### Product and Version Information
