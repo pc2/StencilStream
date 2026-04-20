@@ -73,7 +73,6 @@ default:
         - .fpga_benchmark
     variables:
         STST_N_RANKS: 1
-    variables:
         SCHEDULER_PARAMETERS: -A $SLURM_ACCOUNT -p fpga --constraint=bittware_520n_20.4.0_max -t 01:00:00
 
 .multi_fpga_benchmark:
