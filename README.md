@@ -81,6 +81,95 @@ The convection app, found in [examples/convection](examples/convection/), simula
 
 All applications were built and benchmarked at commit 5d82883fe3302f6bbf7a1adcc353ed464dd1d35e, using Intel OneAPI 23.2.0, Boost 1.81.0, and the Bittware 520N HPC board support package 20.4.0.
 
+### Building and Running
+
+#### Environment Setup on Noctua 2
+
+Most of the development of StencilStream was done on the [Noctua 2 supercomputer at the Paderborn Center for Parallel Computing](https://pc2.uni-paderborn.de/systems-and-services/noctua-2). Loading the necessary software on this software is therefore handled by one of two scripts. For building and running CPU and FPGA targets, source the following script with the base of the repository as the current working directory:
+
+```bash
+source scripts/env_fpga.sh
+```
+
+For GPU targets, source the following script:
+
+```bash
+source scripts/env_cuda.sh
+```
+
+This will load the necessary software modules and also instantiate the Julia project.
+
+#### Building
+
+Configure the project from the repository root:
+
+```bash
+mkdir -p build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+```
+
+Then build a specific target:
+
+```bash
+make <target>
+```
+
+CUDA and CPU targets as well as FPGA emulation targets compile in a few minutes, but FPGA synthesis takes several hours. Also, when building the multi-FPGA examples, you have to set the `CHANNEL_MAPPIN_MODE=2` environment variable to get correct results:
+
+```bash
+CHANNEL_MAPPING_MODE=2 make <target>
+```
+
+The targets corresponding to the performance table above are:
+
+| Target | Example | Backend |
+|---|---|---|
+| `convection` | Convection | FPGA Monotile |
+| `convection_cuda` | Convection | CUDA |
+| `hotspot_cuda` | HotSpot | CUDA |
+| `hotspot_mono` | HotSpot | FPGA Monotile |
+| `hotspot_multi_mono` | HotSpot | FPGA Multi-FPGA Monotile |
+| `hotspot_tiling` | HotSpot | FPGA Tiling |
+| `fdtd_coef_device_cuda` | FDTD | CUDA |
+| `fdtd_coef_device_mono` | FDTD | FPGA Monotile |
+| `fdtd_coef_device_multi_mono` | FDTD | FPGA Multi-FPGA Monotile |
+| `fdtd_coef_device_tiling` | FDTD | FPGA Tiling |
+| `Jacobi5General_cuda` | Jacobi | CUDA |
+| `Jacobi5General_mono` | Jacobi | FPGA Monotile |
+| `Jacobi5General_multi_mono` | Jacobi | FPGA Multi-FPGA Monotile |
+| `Jacobi5General_tiling` | Jacobi | FPGA Tiling |
+
+Compiled binaries land in `build/examples/<example>/`.
+
+#### Benchmarking
+
+Each example has a benchmark script at `examples/<example>/scripts/benchmark.jl`. Run it from the example directory. For Convection, HotSpot, and FDTD:
+
+```bash
+cd examples/<example>
+./scripts/benchmark.jl max_perf <path-to-executable> <variant> <n_ranks>
+```
+
+`<variant>` is `mono`, `tiling`, or `cuda`. For multi-FPGA monotile targets use `multi_mono` and set `<n_ranks>` to `24`; for all other targets use `1`.
+
+For example, to benchmark the single-FPGA HotSpot monotile binary:
+
+```bash
+cd examples/hotspot
+./scripts/benchmark.jl max_perf ../../build/examples/hotspot/hotspot_mono mono 1
+```
+
+The Jacobi benchmark script reads the variant directly from the binary, so it takes one fewer argument:
+
+```bash
+cd examples/jacobi
+./scripts/benchmark.jl max_perf <path-to-executable> <n_ranks>
+```
+
+Results are written to `metrics.<variant>.json` in the example directory (Jacobi writes `metrics.<executable-name>.json`).
+
+FPGA benchmarks must run on an FPGA node with the `bittware_520n_20.4.0_max` constraint. Multi-FPGA benchmarks additionally require one MPI rank per FPGA and `--ntasks-per-node=2` in the Slurm job configuration.
+
 ## Licensing & Citing
 
 StencilStream is published under MIT license, as found in [LICENSE.md](LICENSE.md). When using StencilStream for a scientific publication, please cite the following: 
