@@ -2,3 +2,4 @@ conway_hw
 conway_emu
 conway_cpu
 !input.txt
+!CMakeLists.standalone.txt

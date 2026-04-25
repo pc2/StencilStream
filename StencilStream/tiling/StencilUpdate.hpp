@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2024 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
+ * Copyright © 2020-2026 Paderborn Center for Parallel Computing, Paderborn
  * University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -59,7 +59,7 @@ namespace tiling {
  * increase the logic and on-chip memory utilization and might lower the clock frequency.
  *
  * \tparam TDVStrategy (Optimization parameter) The precomputation strategy for the time-dependent
- * value system (\ref page-tdv "See guide").
+ * value system.
  */
 template <concepts::TransitionFunction F, std::size_t temporal_parallelism = 1,
           std::size_t spatial_parallelism = 1, std::size_t max_tile_height = 1024,

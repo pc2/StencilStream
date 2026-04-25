@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2024 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
+ * Copyright © 2020-2026 Paderborn Center for Parallel Computing, Paderborn
  * University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -19,16 +19,16 @@
  */
 
 #include <StencilStream/BaseTransitionFunction.hpp>
-#include <StencilStream/cpu/StencilUpdate.hpp>
-#include <StencilStream/cuda/StencilUpdate.hpp>
-#include <StencilStream/monotile/StencilUpdate.hpp>
 
 using namespace stencil;
 #if defined(STENCILSTREAM_BACKEND_CPU)
+#include <StencilStream/cpu/StencilUpdate.hpp>
 using namespace stencil::cpu;
 #elif defined(STENCILSTREAM_BACKEND_CUDA)
+#include <StencilStream/cuda/StencilUpdate.hpp>
 using namespace stencil::cuda;
 #else
+#include <StencilStream/monotile/StencilUpdate.hpp>
 using namespace stencil::monotile;
 #endif
 

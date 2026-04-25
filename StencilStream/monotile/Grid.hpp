@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2024 Jan-Oliver Opdenhövel, Paderborn Center for Parallel Computing, Paderborn
+ * Copyright © 2020-2026 Paderborn Center for Parallel Computing, Paderborn
  * University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -48,10 +48,6 @@ namespace monotile {
  * method \ref copy_from_buffer. The method \ref copy_to_buffer does the reverse: It writes the
  * contents of the grid into a SYCL buffer.
  *
- * On the device side, the data can be read or written with the help of the method templates \ref
- * submit_read and \ref submit_write. Those take a SYCL pipe as a template argument and enqueue
- * kernels that read/write the contents of the grid to/from the pipes.
- *
  * \tparam Cell The cell type to store.
  *
  * \tparam spatial_parallelism The number of cells to load and store in parallel. Has to match the
@@ -66,6 +62,13 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
      */
     static constexpr std::size_t dimensions = 2;
 
+    /**
+     * \brief The vectorized cell type used for internal storage.
+     *
+     * Groups `spatial_parallelism` cells into a single padded value for memory-aligned bulk
+     * access. The padding ensures that the memory word boundary is respected when loading or
+     * storing multiple cells at once.
+     */
     using CellVector = stencil::internal::Padded<std::array<Cell, spatial_parallelism>>;
 
     /**
@@ -134,8 +137,21 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
      */
     std::size_t get_grid_width() const { return grid_range[1]; }
 
+    /**
+     * \brief Return the dimensions of the grid as a two-element range.
+     *
+     * The first element is the height (number of rows) and the second element is the width (number
+     * of columns), both measured in individual cells.
+     */
     sycl::range<2> get_grid_range() const { return grid_range; }
 
+    /**
+     * \brief Return the dimensions of the grid, optionally in vectorized units.
+     *
+     * \param vectorized If true, the column dimension is expressed in \ref CellVector units
+     * (i.e., divided by `spatial_parallelism`, rounded up). If false, individual cell units are
+     * used and the result is identical to the no-argument overload.
+     */
     sycl::range<2> get_grid_range(bool vectorized) const {
         return vectorized ? tile_buffer.get_range() : grid_range;
     }
@@ -212,7 +228,7 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
      * \brief Copy the contents of the SYCL buffer into the grid.
      *
      * The SYCL buffer will be accessed read-only one the host; It may be used elsewhere too. The
-     * buffer however has to have the same size as the grid, otherwise a \ref std::range_error is
+     * buffer however has to have the same size as the grid, otherwise a std::range_error is
      * thrown.
      *
      * \param input_buffer The buffer to copy the data from.
@@ -238,7 +254,7 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
      * \brief Copy the contents of the grid into the SYCL buffer.
      *
      * The contents of the SYCL buffer will be overwritten on the host. The buffer also has to have
-     * the same size as the grid, otherwise a \ref std::range_error is thrown.
+     * the same size as the grid, otherwise a std::range_error is thrown.
      *
      * \param output_buffer The buffer to copy the data to.
      * \throws std::range_error The size of the buffer does not match the grid.
@@ -259,6 +275,13 @@ template <class Cell, std::size_t spatial_parallelism = 1> class Grid {
         }
     }
 
+    /**
+     * \brief Return the underlying vectorized SYCL buffer.
+     *
+     * Returns the internal SYCL buffer whose cells are stored in \ref CellVector units.
+     * This is used by the \ref StencilUpdate backend to submit read and write kernels directly
+     * against the vectorized storage layout.
+     */
     sycl::buffer<CellVector, 2> get_internal() const { return tile_buffer; }
 
   private:
