@@ -4,7 +4,7 @@ name: Doxygen
 
 on:
   push:
-    branches: [ master ]
+    branches: [ staging ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -26,8 +26,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Doxygen Build
-        uses: mattnotmitt/doxygen-action@v1.9.8
+      - name: Install packages
+        run: apt update && apt upgrade -y && apt install doxygen graphviz
+
+      - name: Build the documentation
+        run: doxygen
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
