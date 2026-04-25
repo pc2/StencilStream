@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install packages
-        run: apt update && apt upgrade -y && apt install doxygen graphviz
+        run: sudo apt update && sudo apt upgrade -y && sudo apt install doxygen graphviz
 
       - name: Build the documentation
         run: doxygen
