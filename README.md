@@ -69,7 +69,7 @@ The FDTD application in [examples/fdtd](examples/fdtd/) is used to simulate the 
 
 The convection app, found in [examples/convection](examples/convection/), simulates the convection within Earth's Mantle. It is a port of an example app for the [ParallelStencil.jl framework](https://github.com/omlins/ParallelStencil.jl) and can also be configured using a JSON file. Below, you find the animated output of the [default experiment](examples/convection/experiments/default.json).
 
-![A video showing convection, computed by the Convection app](https://raw.githubusercontent.com/pc2/StencilStream/main/docs/convection-animation.mp4)
+![A video showing convection, computed by the Convection app](https://raw.githubusercontent.com/pc2/StencilStream/master/docs/convection-animation.mp4)
 
 # 📈 Performance & FPGA Resource Usage
 
