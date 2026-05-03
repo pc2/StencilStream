@@ -47,7 +47,7 @@ StencilStream also features a fully functional CPU backend for functional evalua
 
 We have implemented multiple example applications to show the capabilities of StencilStream in terms of simplicity, expressiveness, and performance. One is a simple sketch to show how to get started, two are common stencil code benchmark, and two are proper applications that use StencilStream's advanced features. They are presented in the following:
 
-## 🧬 Conway's Game of Life
+## Conway's Game of Life
 
 Our implementation of Conway's Game of Life is found in the subfolder [examples/conway](examples/conway/). It reads in the current state of a grid from standard-in, computes a requested number of iterations, and then writes it out again.
 
