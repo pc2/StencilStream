@@ -43,11 +43,11 @@ With the 4.0.0 release, StencilStream also features a GPU backend that utilizes 
 
 StencilStream also features a fully functional CPU backend for functional evaluation. Optimizing this backend to reach the full potential of modern CPUs still is a direction for future work.
 
-# Examples
+# 📖 Examples
 
 We have implemented multiple example applications to show the capabilities of StencilStream in terms of simplicity, expressiveness, and performance. One is a simple sketch to show how to get started, two are common stencil code benchmark, and two are proper applications that use StencilStream's advanced features. They are presented in the following:
 
-## Conway's Game of Life
+## 🧬 Conway's Game of Life
 
 Our implementation of Conway's Game of Life is found in the subfolder [examples/conway](examples/conway/). It reads in the current state of a grid from standard-in, computes a requested number of iterations, and then writes it out again.
 
@@ -71,15 +71,15 @@ The convection app, found in [examples/convection](examples/convection/), simula
 
 ![A video showing convection, computed by the Convection app](docs/convection-animation.mp4)
 
-## Performance & FPGA Resource Usage
+# 📈 Performance & FPGA Resource Usage
 
 ![Line plots showing the cell throughput against the input grid size of the Jacobi, HotSpot, FDTD, and Convection examples, using the GPU backend, Monotile FPGA backend, and Tiling FPGA backend](docs/throughput_1x4.png)
 
 A thorough evaluation of each backend's performance is found in [our latest publication on StencilStream 4.0.0](https://doi.org/10.1145/3811257.3811259). As you can see in the performance plot above from this publication (Tim Stöhr et al., CC BY 4.0), all backends achieve very high throughput rates for single-device execution. The highest measured throughput is 176.08 billion cell updates per second for the Jacobi benchmark, achieved by the Tiling FPGA backend on a BittWare 520N accelerator with an Intel Stratix 10 GX 2800 FPGA, which is equivalent to 1.58 TFLOPS. In terms of arithmetic throughput, the highest measured value is 1.84 TFLOPS achieved by the Monotile FPGA backend for the HotSpot benchmark, using the same accelerator.
 
-## Building and Running the Examples
+# 🏗️ Building and Running the Examples
 
-### Environment Setup on Noctua 2
+## Environment Setup on Noctua 2
 
 Most of the development of StencilStream was done on the [Noctua 2 supercomputer at the Paderborn Center for Parallel Computing](https://pc2.uni-paderborn.de/systems-and-services/noctua-2). Loading the necessary software on this system handled by one of two scripts. For building and running CPU and FPGA targets, source the following script with the base of the repository as the current working directory:
 
@@ -95,7 +95,7 @@ source scripts/env_cuda.sh
 
 This will load the necessary software modules and also instantiate the Julia project.
 
-### Building
+## Building
 
 Configure the project from the repository root:
 
@@ -137,7 +137,7 @@ The targets corresponding to the performance table above are:
 
 Compiled binaries land in `build/examples/<example>/`.
 
-### Benchmarking
+## Benchmarking
 
 Each example has a benchmark script at `examples/<example>/scripts/benchmark.jl`. Run it from the example directory. For Convection, HotSpot, and FDTD:
 
@@ -164,7 +164,7 @@ cd examples/jacobi
 
 Results are written to `metrics.<variant>.json` in the example directory (Jacobi writes `metrics.<executable-name>.json`).
 
-# Licensing & Citing
+# ⚖️ Licensing & Citing
 
 StencilStream is published under MIT license, as found in [LICENSE.md](LICENSE.md). When using StencilStream for a scientific publication, please cite one of the following: 
 
